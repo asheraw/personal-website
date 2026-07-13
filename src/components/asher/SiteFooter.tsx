@@ -1,6 +1,6 @@
 "use client";
 
-import { Instagram, Linkedin, Youtube, Mail } from "lucide-react";
+import { Instagram, Linkedin, Youtube, Mail, MessageCircle, Globe } from "lucide-react";
 
 const NAV_GROUPS = [
   {
@@ -21,21 +21,21 @@ const NAV_GROUPS = [
     ],
   },
   {
-    title: "Reflections",
+    title: "More",
     links: [
-      { label: "Latest Essays", href: "#reflections" },
-      { label: "Storytelling", href: "#reflections" },
-      { label: "AI & Creativity", href: "#reflections" },
-      { label: "Faith & Theatre", href: "#faith" },
+      { label: "At a Glance", href: "#glance" },
+      { label: "Two Callings", href: "#two-callings" },
+      { label: "Philosophy", href: "#philosophy" },
+      { label: "Faith", href: "#faith" },
     ],
   },
   {
     title: "Connect",
     links: [
+      { label: "Email", href: "mailto:asher@asheraw.com" },
+      { label: "WhatsApp", href: "https://wa.me/6591881944" },
+      { label: "asheraw.com", href: "https://asheraw.com" },
       { label: "Book a Session", href: "#contact" },
-      { label: "Workshops", href: "#contact" },
-      { label: "Speaking", href: "#contact" },
-      { label: "Email", href: "mailto:hello@asheraw.sg" },
     ],
   },
 ];
@@ -57,7 +57,7 @@ export function SiteFooter() {
         <div className="flex flex-col gap-6 border-b border-amber-faint pb-10 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="font-mono-stage text-[10px] uppercase tracking-[0.3em] text-spotlight/70">
-              Singapore · Est. MMXXVI
+              Singapore · asheraw.com
             </p>
             <h3 className="mt-3 font-display text-4xl font-semibold tracking-[-0.01em] text-ivory sm:text-5xl">
               Asher<span className="text-spotlight">.</span>Aw
@@ -70,7 +70,9 @@ export function SiteFooter() {
 
           <div className="flex items-center gap-3">
             {[
-              { icon: Mail, href: "mailto:hello@asheraw.sg", label: "Email" },
+              { icon: Mail, href: "mailto:asher@asheraw.com", label: "Email" },
+              { icon: MessageCircle, href: "https://wa.me/6591881944", label: "WhatsApp" },
+              { icon: Globe, href: "https://asheraw.com", label: "Website" },
               { icon: Instagram, href: "#", label: "Instagram" },
               { icon: Linkedin, href: "#", label: "LinkedIn" },
               { icon: Youtube, href: "#", label: "YouTube" },
@@ -78,6 +80,8 @@ export function SiteFooter() {
               <a
                 key={s.label}
                 href={s.href}
+                target={s.href.startsWith("http") ? "_blank" : undefined}
+                rel={s.href.startsWith("http") ? "noreferrer" : undefined}
                 aria-label={s.label}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:bg-spotlight/5 hover:text-spotlight"
               >
@@ -99,6 +103,8 @@ export function SiteFooter() {
                   <li key={l.label}>
                     <a
                       href={l.href}
+                      target={l.href.startsWith("http") ? "_blank" : undefined}
+                      rel={l.href.startsWith("http") ? "noreferrer" : undefined}
                       className="group inline-flex items-center text-sm text-stone/80 transition-colors hover:text-ivory"
                     >
                       <span className="mr-0 w-0 overflow-hidden text-spotlight transition-all group-hover:mr-2 group-hover:w-3">

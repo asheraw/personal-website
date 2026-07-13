@@ -1,7 +1,29 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Drama, GraduationCap, Church } from "lucide-react";
 import { Reveal, Eyebrow, fadeUp, staggerParent } from "./primitives";
+
+const PILLARS = [
+  {
+    n: "01",
+    icon: Drama,
+    label: "Theatre",
+    body: "10+ years on the Christian theatre stage.",
+  },
+  {
+    n: "02",
+    icon: GraduationCap,
+    label: "Coaching",
+    body: "Helping communicators find their own voice.",
+  },
+  {
+    n: "03",
+    icon: Church,
+    label: "Faith",
+    body: "Values that shape how the work is done.",
+  },
+];
 
 export function ThreePillars() {
   return (
@@ -18,7 +40,8 @@ export function ThreePillars() {
           <Eyebrow index="00" label="The Premise" />
         </Reveal>
 
-        <div className="mt-8 grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:gap-20">
+        <div className="mt-8 grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
+          {/* Left — headline */}
           <Reveal>
             <p className="font-mono-stage text-xs uppercase tracking-[0.32em] text-spotlight/80">
               Finding Your Voice
@@ -29,58 +52,40 @@ export function ThreePillars() {
               worth telling
               <br />
               <span className="italic text-spotlight-gradient">a voice</span> worth
-              <br />
               hearing
-              <br />
-              <span className="italic text-ivory-gradient">a life</span> worth
-              living
             </h2>
           </Reveal>
 
+          {/* Right — three pillar cards */}
           <motion.div
             variants={staggerParent}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-80px" }}
-            className="flex flex-col justify-end gap-6"
+            className="flex flex-col justify-end gap-3"
           >
-            <motion.p
-              variants={fadeUp}
-              className="max-w-md text-base leading-relaxed text-stone/90 sm:text-lg"
-            >
-              Across theatre, coaching, marketing, and ministry — the work has
-              always been the same. To help someone say the truest thing in the
-              clearest way. To find the line that makes a room lean in. To
-              perform not for applause, but for connection.
-            </motion.p>
-            <motion.p
-              variants={fadeUp}
-              className="max-w-md text-base leading-relaxed text-stone/70"
-            >
-              Asher believes effective communication comes from{" "}
-              <span className="text-ivory">authenticity, not volume</span>. That
-              introverts can become outstanding communicators without pretending
-              to be extroverts. That every individual has experiences that can
-              positively impact others.
-            </motion.p>
-
-            <motion.div
-              variants={fadeUp}
-              className="grid grid-cols-3 gap-4 border-t border-amber-faint pt-6 font-mono-stage text-[10px] uppercase tracking-[0.22em] text-stone/60"
-            >
-              <div>
-                <p className="text-spotlight/70">01</p>
-                <p className="mt-1 text-ivory/80">Theatre</p>
-              </div>
-              <div>
-                <p className="text-spotlight/70">02</p>
-                <p className="mt-1 text-ivory/80">Coaching</p>
-              </div>
-              <div>
-                <p className="text-spotlight/70">03</p>
-                <p className="mt-1 text-ivory/80">Faith</p>
-              </div>
-            </motion.div>
+            {PILLARS.map((p) => (
+              <motion.div
+                key={p.n}
+                variants={fadeUp}
+                className="group flex items-center gap-5 rounded-2xl border border-amber-faint bg-stage/40 p-5 transition-all hover:border-spotlight/40 hover:bg-spotlight/[0.03]"
+              >
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-spotlight/30 bg-spotlight/5 text-spotlight">
+                  <p.icon size={20} />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-mono-stage text-[10px] uppercase tracking-[0.22em] text-spotlight/60">
+                      {p.n}
+                    </span>
+                    <h3 className="font-display text-xl font-semibold text-ivory">
+                      {p.label}
+                    </h3>
+                  </div>
+                  <p className="mt-1 text-sm text-stone/75">{p.body}</p>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </div>

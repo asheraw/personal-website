@@ -4,26 +4,10 @@ import { motion } from "framer-motion";
 import { Reveal, Eyebrow, Counter } from "./primitives";
 
 const STATS = [
-  {
-    value: <Counter end={15} suffix="+" />,
-    label: "Years in Marketing & Communications",
-    detail: "Branding, digital marketing, content strategy, storytelling.",
-  },
-  {
-    value: <Counter end={10} suffix="+" />,
-    label: "Years on Stage",
-    detail: "Christian theatre productions, dramatic roles, ensemble work.",
-  },
-  {
-    value: <Counter end={10} suffix="+" />,
-    label: "Years Portraying Jesus",
-    detail: "Easter productions across multiple years for live audiences.",
-  },
-  {
-    value: <Counter end={50} suffix="+" />,
-    label: "Workshops Facilitated",
-    detail: "Corporate training, content coaching, personal branding.",
-  },
+  { value: <Counter end={15} suffix="+" />, label: "Years in Marketing" },
+  { value: <Counter end={10} suffix="+" />, label: "Years on Stage" },
+  { value: <Counter end={10} suffix="+" />, label: "Years as Jesus" },
+  { value: <Counter end={50} suffix="+" />, label: "Workshops Facilitated" },
 ];
 
 const BRANDS = ["Lexus", "OCBC", "Bayer", "Nas Academy"];
@@ -41,19 +25,15 @@ export function AtAGlance() {
 
       <div className="relative mx-auto max-w-[1500px]">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:gap-16">
+          {/* Left — heading + brands */}
           <Reveal>
-            <Eyebrow index="04" label="At a Glance" />
+            <Eyebrow index="05" label="At a Glance" />
             <h2 className="mt-6 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
-              Built to be used like a craft — practised, lived, and shared.
+              Built to be used like a craft — practised, lived, shared.
             </h2>
-            <p className="mt-6 max-w-md text-base leading-relaxed text-stone/80">
-              A quick snapshot of the work so far. Marketing and theatre,
-              running in parallel for more than a decade and a half — both
-              pointing at the same instinct: communicate ideas that move people.
-            </p>
 
             {/* Brands */}
-            <div className="mt-10 border-t border-amber-faint pt-6">
+            <div className="mt-10">
               <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60">
                 Brands worked with
               </p>
@@ -70,25 +50,22 @@ export function AtAGlance() {
             </div>
           </Reveal>
 
-          {/* Stats grid */}
+          {/* Stats grid — large visual numbers, minimal text */}
           <div className="grid gap-px overflow-hidden rounded-2xl border border-amber-faint bg-amber-faint sm:grid-cols-2">
             {STATS.map((s, i) => (
               <Reveal key={i} delay={(i % 2) * 0.05}>
                 <motion.div
                   whileHover={{ y: -2 }}
-                  className="group relative h-full bg-stage p-8 transition-colors hover:bg-spotlight/[0.03]"
+                  className="group relative h-full bg-stage p-8 transition-colors hover:bg-spotlight/[0.03] sm:p-10"
                 >
                   <span className="absolute right-6 top-6 font-mono-stage text-[10px] uppercase tracking-[0.22em] text-stone/40">
                     {String(i + 1).padStart(2, "0")} / 04
                   </span>
-                  <p className="font-display text-5xl font-semibold text-spotlight-gradient sm:text-6xl">
+                  <p className="font-display text-6xl font-semibold text-spotlight-gradient sm:text-7xl">
                     {s.value}
                   </p>
-                  <p className="mt-3 font-display text-base font-medium text-ivory">
+                  <p className="mt-3 font-mono-stage text-[10px] uppercase tracking-[0.22em] text-stone/70">
                     {s.label}
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-stone/70">
-                    {s.detail}
                   </p>
                 </motion.div>
               </Reveal>

@@ -10,7 +10,6 @@ const BOOT_LINES = [
   "/ lights_dimming",
   "/ script_loaded",
   "/ finding_your_voice",
-  "/ taking_a_breath",
   "/ the_story_begins",
 ];
 
@@ -27,11 +26,13 @@ export function BootHero() {
   const [progress, setProgress] = useState(0);
   const [booted, setBooted] = useState(false);
   const [stepLabel, setStepLabel] = useState(PROGRESS_STEPS[0]);
+  // After boot completes, fade out the terminal block entirely.
+  const [hideTerminal, setHideTerminal] = useState(false);
 
   // Boot line reveal
   useEffect(() => {
     if (visibleLines >= BOOT_LINES.length) return;
-    const t = setTimeout(() => setVisibleLines((v) => v + 1), 380);
+    const t = setTimeout(() => setVisibleLines((v) => v + 1), 320);
     return () => clearTimeout(t);
   }, [visibleLines]);
 
@@ -39,7 +40,7 @@ export function BootHero() {
   useEffect(() => {
     if (booted) return;
     const start = performance.now();
-    const duration = 3200;
+    const duration = 2600;
     let raf = 0;
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
@@ -51,7 +52,11 @@ export function BootHero() {
       );
       setStepLabel(PROGRESS_STEPS[stepIdx]);
       if (t < 1) raf = requestAnimationFrame(tick);
-      else setBooted(true);
+      else {
+        setBooted(true);
+        // After boot, hide the terminal block shortly after
+        setTimeout(() => setHideTerminal(true), 700);
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -75,88 +80,96 @@ export function BootHero() {
         Singapore · 1.3521° N, 103.8198° E
       </div>
       <div className="pointer-events-none absolute right-5 top-20 hidden font-mono-stage text-[10px] uppercase tracking-[0.3em] text-stone/60 sm:right-8 sm:block lg:right-12">
-        Est. MMXXVI / v.1.0
+        asheraw.com · v.1.0
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-[1500px]">
-        {/* Boot terminal */}
-        <div className="mb-10 sm:mb-14">
-          <div className="mb-4 flex items-center gap-3 font-mono-stage text-[10px] uppercase tracking-[0.28em] text-stone/70">
-            <span className="inline-flex h-2 w-2 animate-soft-blink rounded-full bg-spotlight" />
-            <span>{stepLabel}</span>
-            <span className="text-stone/40">·</span>
-            <span className="text-spotlight/70">{progress}%_COMPLETE</span>
-          </div>
+        {/* Boot terminal — auto-hides after completion */}
+        <AnimatePresence>
+          {!hideTerminal && (
+            <motion.div
+              initial={{ opacity: 1 }}
+              animate={{ opacity: booted ? 0.4 : 1 }}
+              exit={{ opacity: 0, height: 0, marginTop: 0 }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
+              className="mb-10 overflow-hidden sm:mb-12"
+            >
+              <div className="mb-3 flex items-center gap-3 font-mono-stage text-[10px] uppercase tracking-[0.28em] text-stone/70">
+                <span
+                  className={`inline-flex h-2 w-2 rounded-full bg-spotlight ${
+                    !booted ? "animate-soft-blink" : ""
+                  }`}
+                />
+                <span>{stepLabel}</span>
+                <span className="text-stone/40">·</span>
+                <span className="text-spotlight/70">{progress}%_COMPLETE</span>
+              </div>
 
-          {/* Boot lines */}
-          <div className="min-h-[180px] sm:min-h-[200px]">
-            <AnimatePresence>
-              {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
-                <motion.div
-                  key={line}
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="font-mono-stage text-sm text-stone/80 sm:text-base"
-                >
-                  <span className="text-spotlight/70">{">"}</span>{" "}
-                  <span>{line}</span>
-                  {i === visibleLines - 1 && (
-                    <span className="ml-1 inline-block h-4 w-2 animate-soft-blink bg-spotlight align-middle" />
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+              {/* Boot lines — single condensed line */}
+              <div className="flex min-h-[28px] flex-wrap items-center gap-x-5 gap-y-1">
+                {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
+                  <motion.span
+                    key={line}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="font-mono-stage text-xs text-stone/70 sm:text-sm"
+                  >
+                    <span className="text-spotlight/70">{">"}</span> {line}
+                  </motion.span>
+                ))}
+                {!booted && (
+                  <span className="ml-1 inline-block h-4 w-2 animate-soft-blink bg-spotlight align-middle" />
+                )}
+              </div>
 
-          {/* Progress bar */}
-          <div className="mt-2 max-w-md">
-            <div className="h-px w-full bg-spotlight/15">
-              <motion.div
-                className="h-px bg-spotlight"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ ease: "linear", duration: 0.1 }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/50">
-              <span>0%</span>
-              <span className="text-spotlight/70">{progress}%</span>
-              <span>100%</span>
-            </div>
-          </div>
-        </div>
+              {/* Progress bar */}
+              <div className="mt-3 max-w-md">
+                <div className="h-px w-full bg-spotlight/15">
+                  <motion.div
+                    className="h-px bg-spotlight"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ ease: "linear", duration: 0.1 }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Hero copy */}
+        {/* Hero — text + visual */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={booted ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-5xl"
+          className="grid items-center gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-12"
         >
-          <p className="mb-5 font-mono-stage text-xs uppercase tracking-[0.32em] text-spotlight/80">
-            Asher Aw · Singapore
-          </p>
+          {/* Left: copy */}
+          <div>
+            <p className="mb-4 font-mono-stage text-xs uppercase tracking-[0.32em] text-spotlight/80">
+              Asher Aw · Singapore
+            </p>
 
-          <h1 className="font-display text-[12vw] font-semibold leading-[0.92] tracking-[-0.02em] text-ivory sm:text-[10vw] lg:text-[8.5vw] xl:text-[140px]">
-            An actor who
-            <br />
-            <span className="italic font-medium text-spotlight-gradient">teaches.</span>{" "}
-            <span className="italic font-medium text-ivory-gradient">A teacher</span>
-            <br />
-            who <span className="italic font-medium text-spotlight-gradient">acts.</span>
-          </h1>
+            <h1 className="font-display text-[10vw] font-semibold leading-[0.92] tracking-[-0.02em] text-ivory sm:text-[8vw] lg:text-[clamp(48px,6.2vw,96px)]">
+              An actor who
+              <br />
+              <span className="italic font-medium text-spotlight-gradient">teaches.</span>{" "}
+              <span className="italic font-medium text-ivory-gradient">A teacher</span>
+              <br />
+              who{" "}
+              <span className="italic font-medium text-spotlight-gradient">acts.</span>
+            </h1>
 
-          <div className="mt-10 grid gap-8 sm:grid-cols-[1fr_auto] sm:items-end">
-            <p className="max-w-xl text-base leading-relaxed text-stone/90 sm:text-lg">
+            <p className="mt-7 max-w-xl text-base leading-relaxed text-stone/90 sm:text-lg">
               Theatre actor, communications coach, and storyteller based in
-              Singapore. Fifteen years in marketing. Ten years on stage. One
-              quiet conviction — that{" "}
+              Singapore. 15+ years in marketing. 10+ years on stage. One quiet
+              conviction — that{" "}
               <span className="text-spotlight">everyone has a story worth telling</span>,
               and that authenticity moves people further than volume ever will.
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
                 href="#contact"
                 className="group inline-flex items-center gap-2 rounded-full bg-spotlight px-6 py-3 font-mono-stage text-xs uppercase tracking-[0.2em] text-stage transition-transform hover:scale-[1.03]"
@@ -175,6 +188,55 @@ export function BootHero() {
               </a>
             </div>
           </div>
+
+          {/* Right: hero visual */}
+          <motion.div
+            initial={{ opacity: 0, scale: 1.02 }}
+            animate={booted ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+            className="relative hidden lg:block"
+          >
+            <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-amber-faint">
+              {/* Image */}
+              <img
+                src="/asher/hero-stage.png"
+                alt="Empty theatre stage with a single dramatic spotlight"
+                className="h-full w-full object-cover"
+              />
+              {/* Gradient overlays */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(10,8,7,0.0) 0%, rgba(10,8,7,0.25) 60%, rgba(10,8,7,0.85) 100%)",
+                }}
+              />
+              {/* Caption strip */}
+              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-5">
+                <div>
+                  <p className="font-mono-stage text-[10px] uppercase tracking-[0.28em] text-spotlight/80">
+                    / scene_01
+                  </p>
+                  <p className="mt-1 font-display text-lg italic text-ivory">
+                    The story begins.
+                  </p>
+                </div>
+                <span className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60">
+                  LIVE
+                </span>
+              </div>
+              {/* Corner brackets */}
+              <span className="absolute left-3 top-3 h-5 w-5 border-l border-t border-spotlight/40" />
+              <span className="absolute right-3 top-3 h-5 w-5 border-r border-t border-spotlight/40" />
+              <span className="absolute left-3 bottom-3 h-5 w-5 border-b border-l border-spotlight/40" />
+              <span className="absolute right-3 bottom-3 h-5 w-5 border-b border-r border-spotlight/40" />
+            </div>
+
+            {/* Floating tag */}
+            <div className="absolute -left-4 top-6 hidden rounded-full border border-amber-faint bg-stage/85 px-3 py-1 font-mono-stage text-[10px] uppercase tracking-[0.22em] text-spotlight/80 backdrop-blur-sm xl:block">
+              ● Now Performing
+            </div>
+          </motion.div>
         </motion.div>
       </div>
 

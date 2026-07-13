@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Mail, Calendar, MessageCircle, ChevronRight } from "lucide-react";
+import { Mail, Calendar, MessageCircle, ChevronRight, Globe } from "lucide-react";
 import { Reveal, Eyebrow } from "./primitives";
 
 const OFFERINGS = [
@@ -44,7 +44,7 @@ export function BookingCTA() {
 
       <div className="relative mx-auto max-w-[1500px]">
         <Reveal>
-          <Eyebrow index="08" label="Work With Asher" />
+          <Eyebrow index="07" label="Work With Asher" />
         </Reveal>
 
         <div className="mt-8 grid gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
@@ -62,9 +62,67 @@ export function BookingCTA() {
               love to hear from you.
             </p>
 
-            <div className="mt-10 flex flex-wrap gap-3">
+            {/* Contact channels — visual */}
+            <div className="mt-10 grid gap-3 sm:grid-cols-3">
               <a
-                href="mailto:hello@asheraw.sg"
+                href="mailto:asher@asheraw.com"
+                className="group flex items-center gap-3 rounded-2xl border border-amber-faint bg-stage/40 p-4 transition-all hover:border-spotlight/40 hover:bg-spotlight/[0.03]"
+              >
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-spotlight/30 bg-spotlight/5 text-spotlight">
+                  <Mail size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono-stage text-[9px] uppercase tracking-[0.22em] text-stone/60">
+                    Email
+                  </p>
+                  <p className="truncate text-sm font-medium text-ivory transition-colors group-hover:text-spotlight">
+                    asher@asheraw.com
+                  </p>
+                </div>
+              </a>
+
+              <a
+                href="https://wa.me/6591881944"
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-center gap-3 rounded-2xl border border-amber-faint bg-stage/40 p-4 transition-all hover:border-spotlight/40 hover:bg-spotlight/[0.03]"
+              >
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-spotlight/30 bg-spotlight/5 text-spotlight">
+                  <MessageCircle size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono-stage text-[9px] uppercase tracking-[0.22em] text-stone/60">
+                    WhatsApp
+                  </p>
+                  <p className="truncate text-sm font-medium text-ivory transition-colors group-hover:text-spotlight">
+                    +65 9188 1944
+                  </p>
+                </div>
+              </a>
+
+              <a
+                href="https://asheraw.com"
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-center gap-3 rounded-2xl border border-amber-faint bg-stage/40 p-4 transition-all hover:border-spotlight/40 hover:bg-spotlight/[0.03]"
+              >
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-spotlight/30 bg-spotlight/5 text-spotlight">
+                  <Globe size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-mono-stage text-[9px] uppercase tracking-[0.22em] text-stone/60">
+                    Web
+                  </p>
+                  <p className="truncate text-sm font-medium text-ivory transition-colors group-hover:text-spotlight">
+                    asheraw.com
+                  </p>
+                </div>
+              </a>
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a
+                href="mailto:asher@asheraw.com"
                 className="group inline-flex items-center gap-2 rounded-full bg-spotlight px-7 py-4 font-mono-stage text-xs uppercase tracking-[0.2em] text-stage transition-transform hover:scale-[1.03]"
               >
                 Start a Conversation
@@ -74,10 +132,12 @@ export function BookingCTA() {
                 />
               </a>
               <a
-                href="mailto:bookings@asheraw.sg"
+                href="https://wa.me/6591881944"
+                target="_blank"
+                rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-full border border-amber-faint px-7 py-4 font-mono-stage text-xs uppercase tracking-[0.2em] text-ivory transition-colors hover:border-spotlight/50 hover:text-spotlight"
               >
-                Book a Workshop
+                WhatsApp Asher
               </a>
             </div>
 
@@ -91,7 +151,7 @@ export function BookingCTA() {
             {OFFERINGS.map((o, i) => (
               <Reveal key={o.title} delay={i * 0.08}>
                 <motion.a
-                  href="mailto:hello@asheraw.sg"
+                  href="mailto:asher@asheraw.com"
                   whileHover={{ y: -2 }}
                   className="group flex items-start gap-5 rounded-2xl border border-amber-faint bg-stage/40 p-6 transition-colors hover:border-spotlight/40 hover:bg-spotlight/[0.03]"
                 >

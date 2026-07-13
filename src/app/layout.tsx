@@ -44,6 +44,7 @@ export const metadata: Metadata = {
     title: "Asher Aw — Actor. Coach. Storyteller.",
     description:
       "Singapore-based theatre actor, communications coach, and storyteller. Helping people communicate with authenticity.",
+    url: "https://asheraw.com",
     siteName: "Asher Aw",
     type: "website",
   },

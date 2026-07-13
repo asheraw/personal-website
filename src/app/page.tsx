@@ -9,7 +9,6 @@ import { FaithSection } from "@/components/asher/FaithSection";
 import { AtAGlance } from "@/components/asher/AtAGlance";
 import { TwoCallings } from "@/components/asher/TwoCallings";
 import { Philosophy } from "@/components/asher/Philosophy";
-import { Reflections } from "@/components/asher/Reflections";
 import { BookingCTA } from "@/components/asher/BookingCTA";
 import { SiteFooter } from "@/components/asher/SiteFooter";
 
@@ -26,7 +25,6 @@ export default function Home() {
         <AtAGlance />
         <TwoCallings />
         <Philosophy />
-        <Reflections />
         <BookingCTA />
       </main>
       <SiteFooter />

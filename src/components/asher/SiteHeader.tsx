@@ -10,7 +10,7 @@ const NAV = [
   { label: "Coaching", href: "#coaching", index: "02" },
   { label: "Faith", href: "#faith", index: "03" },
   { label: "At a Glance", href: "#glance" },
-  { label: "Reflections", href: "#reflections" },
+  { label: "Philosophy", href: "#philosophy" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -68,6 +68,14 @@ export function SiteHeader() {
 
           {/* Right CTA */}
           <div className="hidden items-center gap-3 lg:flex">
+            <a
+              href="https://wa.me/6591881944"
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-flex items-center gap-2 rounded-full border border-amber-faint px-4 py-2 font-mono-stage text-xs uppercase tracking-[0.18em] text-ivory transition-colors hover:border-spotlight/50 hover:text-spotlight"
+            >
+              WhatsApp +65 9188 1944
+            </a>
             <a
               href="#contact"
               className="group relative overflow-hidden rounded-full border border-spotlight/40 bg-spotlight/10 px-5 py-2 font-mono-stage text-xs uppercase tracking-[0.18em] text-spotlight transition-all hover:bg-spotlight hover:text-stage"

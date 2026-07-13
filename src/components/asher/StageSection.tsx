@@ -1,21 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Drama, Star, Crown, Users } from "lucide-react";
+import { Drama, Crown, Users } from "lucide-react";
 import { Reveal, Eyebrow, Counter } from "./primitives";
 
 const ROLES = [
   {
     role: "Jesus Christ",
     production: "Easter Productions",
-    years: "Multiple Years · 10+",
-    note: "Portrayed across multiple years for live Easter audiences.",
-  },
-  {
-    role: "Joseph",
-    production: "Christmas Productions",
-    years: "Recurring",
-    note: "Christmas drama productions for church and public audiences.",
+    years: "Ongoing · 10+ Years",
+    note: "Portrayed across multiple years for live Easter audiences. Currently ongoing.",
   },
   {
     role: "Lead Dramatic Roles",
@@ -52,33 +46,55 @@ export function StageSection() {
           <Eyebrow index="01" label="The Stage · Theatre" />
         </Reveal>
 
-        {/* Numbered chapter head */}
-        <Reveal delay={0.05}>
-          <div className="mt-6 flex flex-wrap items-end gap-x-6 gap-y-2">
-            <span className="font-mono-stage text-xs uppercase tracking-[0.3em] text-stone/60">
-              The chain:
-            </span>
-            <span className="font-display text-3xl font-semibold text-spotlight sm:text-4xl">
-              0 1
-            </span>
-            <span className="font-mono-stage text-xs text-stone/60">/</span>
-            <span className="font-mono-stage text-xs text-stone/60">0 3</span>
-          </div>
-        </Reveal>
+        {/* Chapter head + headline */}
+        <div className="mt-6 grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-12">
+          <Reveal delay={0.05}>
+            <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+              <span className="font-mono-stage text-xs uppercase tracking-[0.3em] text-stone/60">
+                The chain:
+              </span>
+              <span className="font-display text-3xl font-semibold text-spotlight sm:text-4xl">
+                0 1
+              </span>
+              <span className="font-mono-stage text-xs text-stone/60">/</span>
+              <span className="font-mono-stage text-xs text-stone/60">0 3</span>
+            </div>
+            <h2 className="mt-6 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
+              The stage has been one of the defining parts of my life.
+            </h2>
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-stone/85 sm:text-lg">
+              Ten years performing in Christian theatre productions. Roles that
+              combine emotional depth, storytelling, and meaningful themes — the
+              kind of work that asks something of you, not just the audience.
+            </p>
+          </Reveal>
 
-        <Reveal delay={0.1}>
-          <h2 className="mt-6 max-w-4xl font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
-            The stage has been one of the defining parts of my life.
-          </h2>
-        </Reveal>
-
-        <Reveal delay={0.15}>
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-stone/85 sm:text-lg">
-            Ten years performing in Christian theatre productions. Roles that
-            combine emotional depth, storytelling, and meaningful themes — the
-            kind of work that asks something of you, not just the audience.
-          </p>
-        </Reveal>
+          {/* Visual side panel */}
+          <Reveal delay={0.1}>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-amber-faint">
+              <img
+                src="/asher/stage-spotlight.png"
+                alt="Vintage brass theatre spotlight in warm amber light"
+                className="h-full w-full object-cover"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(10,8,7,0.0) 40%, rgba(10,8,7,0.7) 100%)",
+                }}
+              />
+              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4">
+                <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-spotlight/80">
+                  / scene_02 · spotlight
+                </p>
+                <span className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60">
+                  ACT I
+                </span>
+              </div>
+            </div>
+          </Reveal>
+        </div>
 
         {/* Stat row */}
         <div className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-amber-faint bg-amber-faint sm:grid-cols-4">
@@ -128,9 +144,17 @@ export function StageSection() {
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <div>
-                    <p className="font-display text-lg font-semibold text-ivory transition-colors group-hover:text-spotlight">
-                      {r.role}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-display text-lg font-semibold text-ivory transition-colors group-hover:text-spotlight">
+                        {r.role}
+                      </p>
+                      {r.years.startsWith("Ongoing") && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-spotlight/40 bg-spotlight/10 px-2 py-0.5 font-mono-stage text-[9px] uppercase tracking-[0.18em] text-spotlight">
+                          <span className="h-1.5 w-1.5 animate-soft-blink rounded-full bg-spotlight" />
+                          Ongoing
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-1 text-sm text-stone/70">{r.note}</p>
                   </div>
                   <p className="hidden text-sm text-stone/80 sm:block">
@@ -156,7 +180,7 @@ export function StageSection() {
             {
               icon: Crown,
               title: "Portrayal",
-              body: "Portraying Jesus Christ in Easter productions and Joseph in Christmas productions across multiple years.",
+              body: "Portraying Jesus Christ in Easter productions across multiple years — currently ongoing.",
             },
             {
               icon: Users,

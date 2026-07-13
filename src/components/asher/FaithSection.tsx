@@ -3,13 +3,7 @@
 import { motion } from "framer-motion";
 import { Reveal, Eyebrow } from "./primitives";
 
-const VALUES = [
-  "Integrity",
-  "Humility",
-  "Service",
-  "Compassion",
-  "Excellence",
-];
+const VALUES = ["Integrity", "Humility", "Service", "Compassion", "Excellence"];
 
 export function FaithSection() {
   return (
@@ -49,7 +43,7 @@ export function FaithSection() {
           </div>
         </Reveal>
 
-        <div className="mt-10 grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
+        <div className="mt-10 grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
           {/* Quote block */}
           <Reveal>
             <div>
@@ -57,64 +51,68 @@ export function FaithSection() {
                 Faith in the work
               </p>
               <h2 className="mt-4 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
-                Rather than separating faith from work, he sees values as
-                principles that influence{" "}
+                Values that influence{" "}
                 <span className="italic text-spotlight-gradient">
                   how he performs, teaches, and serves.
                 </span>
               </h2>
 
-              <p className="mt-8 max-w-lg text-base leading-relaxed text-stone/85">
-                Asher is a Christian, and his faith has played an important role
-                throughout his life. His theatre work has often been an extension
-                of that faith — not through preaching from the stage, but through
-                storytelling that holds truth, grace, and human dignity at its
-                centre.
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-stone/85">
+                Rather than separating faith from work, Asher sees integrity,
+                humility, service, compassion, and excellence as principles
+                that shape everything — on stage, in workshops, and in the
+                in-between moments where most of life actually happens.
               </p>
             </div>
           </Reveal>
 
-          {/* Values list — script style */}
+          {/* Visual + values side-by-side */}
           <Reveal delay={0.08}>
-            <div className="rounded-2xl border border-amber-faint bg-stage/40 p-8 sm:p-10">
-              <div className="mb-6 flex items-center justify-between">
-                <p className="font-mono-stage text-xs uppercase tracking-[0.25em] text-spotlight/80">
-                  Values in practice
-                </p>
-                <span className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/40">
-                  / values.cfg
-                </span>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              {/* Light beam image */}
+              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-amber-faint sm:col-span-2 lg:col-span-1">
+                <img
+                  src="/asher/faith-light.png"
+                  alt="A single ray of warm golden light in a dark space"
+                  className="h-full w-full object-cover"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(10,8,7,0.0) 50%, rgba(10,8,7,0.75) 100%)",
+                  }}
+                />
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4">
+                  <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-spotlight/80">
+                    / scene_04 · light
+                  </p>
+                  <span className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60">
+                    ACT III
+                  </span>
+                </div>
               </div>
 
-              <ul className="space-y-3">
-                {VALUES.map((v, i) => (
-                  <motion.li
-                    key={v}
-                    initial={{ opacity: 0, y: 8 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.08, duration: 0.5 }}
-                    className="group flex items-center gap-4 rounded-lg border border-amber-faint/40 px-5 py-4 transition-colors hover:border-spotlight/40 hover:bg-spotlight/[0.03]"
-                  >
-                    <span className="font-mono-stage text-[10px] uppercase tracking-[0.22em] text-spotlight/60">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <span className="font-display text-xl font-medium text-ivory transition-colors group-hover:text-spotlight">
+              {/* Values list — compact */}
+              <div className="rounded-2xl border border-amber-faint bg-stage/40 p-5">
+                <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-spotlight/80">
+                  Values in practice
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {VALUES.map((v, i) => (
+                    <motion.span
+                      key={v}
+                      initial={{ opacity: 0, y: 6 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.07, duration: 0.4 }}
+                      className="rounded-full border border-amber-faint/60 px-3 py-1.5 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-ivory/90"
+                    >
                       {v}
-                    </span>
-                    <span className="ml-auto font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/40">
-                      active
-                    </span>
-                  </motion.li>
-                ))}
-              </ul>
-
-              <p className="mt-6 border-t border-amber-faint/60 pt-6 text-xs leading-relaxed text-stone/60">
-                These are not slogans. They are the everyday principles that
-                shape how Asher performs, teaches, writes, and interacts with
-                others — on stage, in workshops, and in the in-between moments
-                where most of life actually happens.
-              </p>
+                    </motion.span>
+                  ))}
+                </div>
+              </div>
             </div>
           </Reveal>
         </div>
