@@ -93,16 +93,6 @@ export function CoachingSection() {
 
           {/* Text */}
           <Reveal delay={0.1} className="order-1 lg:order-2">
-            <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
-              <span className="font-mono-stage text-xs uppercase tracking-[0.3em] text-stone/60">
-                The chain:
-              </span>
-              <span className="font-display text-3xl font-semibold text-spotlight sm:text-4xl">
-                0 2
-              </span>
-              <span className="font-mono-stage text-xs text-stone/60">/</span>
-              <span className="font-mono-stage text-xs text-stone/60">0 3</span>
-            </div>
             <h2 className="mt-6 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
               Helping people become more confident communicators — without
               becoming someone else.

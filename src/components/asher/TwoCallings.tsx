@@ -22,7 +22,7 @@ export function TwoCallings() {
       <div className="relative mx-auto max-w-[1500px]">
         <Reveal>
           <div className="flex flex-col gap-6 border-b border-amber-faint pb-12">
-            <Eyebrow index="04" label="Two Callings, One Story" />
+            <Eyebrow index="05" label="Two Callings, One Story" />
             <h2 className="max-w-5xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-7xl">
               Many roles, <span className="italic text-spotlight-gradient">one</span>{" "}
               <span className="italic text-ivory-gradient">craft.</span>

@@ -30,19 +30,6 @@ export function FaithSection() {
           <Eyebrow index="03" label="The Heart · Faith" />
         </Reveal>
 
-        <Reveal delay={0.05}>
-          <div className="mt-6 flex flex-wrap items-end gap-x-6 gap-y-2">
-            <span className="font-mono-stage text-xs uppercase tracking-[0.3em] text-stone/60">
-              The chain:
-            </span>
-            <span className="font-display text-3xl font-semibold text-spotlight sm:text-4xl">
-              0 3
-            </span>
-            <span className="font-mono-stage text-xs text-stone/60">/</span>
-            <span className="font-mono-stage text-xs text-stone/60">0 3</span>
-          </div>
-        </Reveal>
-
         <div className="mt-10 grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
           {/* Quote block */}
           <Reveal>
