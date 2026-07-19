@@ -1,16 +1,32 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { GameCanvas, ZONE_LABELS } from "./GameCanvas";
-import { IsometricWorld, ISO_ZONE_LABELS } from "./IsometricWorld";
+import { ISO_ZONE_LABELS } from "./IsometricWorld";
 import { PlaySections } from "./PlaySections";
 import { track } from "@/lib/analytics";
 
-type PlayVersion = "v1" | "v2";
+// Lazy-load the 3D world so it doesn't affect initial page load
+const World3D = dynamic(() => import("./World3D").then(m => m.World3D), {
+  ssr: false,
+  loading: () => (
+    <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-amber-faint bg-stage">
+      <div className="text-center">
+        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-spotlight/30 border-t-spotlight" />
+        <p className="font-mono-stage text-xs uppercase tracking-[0.2em] text-stone/60">Loading 3D world…</p>
+      </div>
+    </div>
+  ),
+});
+
+const ZONE_LABELS_3D = ISO_ZONE_LABELS; // same labels
+
+type PlayVersion = "v1" | "v3";
 
 export function PlayMode() {
   const [activeSection, setActiveSection] = useState<string>("hero");
-  const [playVersion, setPlayVersion] = useState<PlayVersion>("v2"); // Default to v2 (3D isometric)
+  const [playVersion, setPlayVersion] = useState<PlayVersion>("v3"); // Default to 3D
   const contentRef = useRef<HTMLDivElement>(null);
   const gamePanelRef = useRef<HTMLDivElement>(null);
   const [panelHeight, setPanelHeight] = useState<number | null>(null);
@@ -57,7 +73,7 @@ export function PlayMode() {
     window.setTimeout(() => { isProgrammaticScroll.current = false; }, 900);
   }, []);
 
-  const zoneLabels = playVersion === "v2" ? ISO_ZONE_LABELS : ZONE_LABELS;
+  const zoneLabels = playVersion === "v3" ? ZONE_LABELS_3D : ZONE_LABELS;
   const currentZoneInfo = zoneLabels[activeSection] || zoneLabels.hero;
 
   return (
@@ -79,33 +95,29 @@ export function PlayMode() {
               </button>
               <button
                 type="button"
-                onClick={() => setPlayVersion("v2")}
-                className={`rounded-full px-2.5 py-0.5 font-mono-stage text-[9px] uppercase tracking-[0.18em] transition-all ${playVersion === "v2" ? "bg-spotlight text-stage" : "text-stone/70 hover:text-ivory"}`}
-                aria-pressed={playVersion === "v2"}
-                title="3D isometric diorama"
+                onClick={() => setPlayVersion("v3")}
+                className={`rounded-full px-2.5 py-0.5 font-mono-stage text-[9px] uppercase tracking-[0.18em] transition-all ${playVersion === "v3" ? "bg-spotlight text-stage" : "text-stone/70 hover:text-ivory"}`}
+                aria-pressed={playVersion === "v3"}
+                title="3D world"
               >
                 3D
               </button>
             </div>
           </div>
           <h1 className="mt-3 font-display text-4xl font-semibold leading-tight tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
-            {playVersion === "v2" ? (
-              <>Explore Asher&rsquo;s <span className="italic text-spotlight-gradient">diorama.</span></>
-            ) : (
-              <>Walk Asher through <span className="italic text-spotlight-gradient">his world.</span></>
-            )}
+            Walk Asher through <span className="italic text-spotlight-gradient">his world.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-stone/80">
-            {playVersion === "v2"
-              ? "An interactive 3D isometric world. Use arrow keys, WASD, or click a building to move Asher. When he enters a zone, the info on the right updates."
+            {playVersion === "v3"
+              ? "Use arrow keys, WASD, or click a building to move Asher around the 3D world. When he enters a zone, the info on the right updates."
               : "Use arrow keys, WASD, or click a zone to move Asher. When he steps into a zone, the info on the right updates."}
           </p>
         </div>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start">
           <div ref={gamePanelRef} className="lg:sticky lg:top-20">
             <div className="rounded-2xl border border-amber-faint bg-stage/40 p-3 sm:p-4">
-              {playVersion === "v2" ? (
-                <IsometricWorld activeSection={activeSection} onZoneEnter={handleZoneEnter} />
+              {playVersion === "v3" ? (
+                <World3D activeSection={activeSection} onZoneEnter={handleZoneEnter} />
               ) : (
                 <GameCanvas activeSection={activeSection} onZoneEnter={handleZoneEnter} />
               )}
