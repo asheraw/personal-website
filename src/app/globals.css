@@ -140,6 +140,9 @@
     @apply bg-background text-foreground;
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: "ss01", "cv01", "cv02";
+    /* Reserve scrollbar space on body too, so Radix UI's overflow:hidden
+       on body (when Select/Dialog opens) doesn't cause the page to shift. */
+    scrollbar-gutter: stable;
   }
   ::selection { background: rgba(240, 184, 101, 0.25); color: #fff7e6; }
   .light ::selection { background: rgba(184, 132, 46, 0.25); color: #2a1f15; }
@@ -194,6 +197,10 @@
 
 html { scrollbar-color: rgba(240, 184, 101, 0.25) transparent; scrollbar-gutter: stable; }
 .light html { scrollbar-color: rgba(184, 132, 46, 0.3) transparent; }
+/* Also apply to body — Radix UI sets body { overflow: hidden } when Select/Dialog
+   opens, which removes the scrollbar and shifts the page. scrollbar-gutter: stable
+   on body reserves the space even when overflow changes. */
+body { scrollbar-gutter: stable; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb { background: rgba(184, 146, 74, 0.25); border-radius: 5px; border: 2px solid var(--background); }

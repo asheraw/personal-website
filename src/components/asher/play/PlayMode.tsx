@@ -48,7 +48,11 @@ export function PlayMode() {
     const root = contentRef.current; if (!root) return;
     const el = root.querySelector(`[data-section-id="${zoneId}"]`); if (!el) return;
     isProgrammaticScroll.current = true;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Manually set scrollTop on the content panel only — NOT scrollIntoView,
+    // which would also scroll the window and cause the whole page to jump.
+    const target = el as HTMLElement;
+    const offset = target.offsetTop;
+    root.scrollTo({ top: offset, behavior: "smooth" });
     setActiveSection(zoneId);
     track({ action: "play_zone_enter", category: "play", label: zoneId });
     window.setTimeout(() => { isProgrammaticScroll.current = false; }, 900);
@@ -76,10 +80,12 @@ export function PlayMode() {
             </div>
           </div>
           {/* Content panel — exactly the same height as the game panel.
-              Scrolls internally so the page doesn't bounce. */}
+              Scrolls internally so the page doesn't bounce.
+              overscroll-contain prevents scroll from chaining to the page
+              when the user reaches the top/bottom of the panel. */}
           <div
             ref={contentRef}
-            className="rounded-2xl border border-amber-faint bg-stage/30 overflow-y-auto scrollbar-thin-amber"
+            className="rounded-2xl border border-amber-faint bg-stage/30 overflow-y-auto scrollbar-thin-amber overscroll-contain"
             style={panelHeight ? { height: `${panelHeight}px` } : undefined}
           >
             <PlaySections />
