@@ -2,16 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, BookOpen } from "lucide-react";
+import { Sun, Moon, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 import { track } from "@/lib/analytics";
 
-const NAV = [
-  { label: "At a Glance", href: "#glance" },
-  { label: "Philosophy", href: "#philosophy" },
-  { label: "Contact", href: "#contact" },
-];
+const NAV = []; // No nav links — hamburger menu removed
 
 export type Mode = "story" | "play";
 
@@ -52,28 +48,9 @@ export function SiteHeader({ mode = "story", setMode }: { mode?: Mode; setMode?:
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </button>
             <a href="https://wa.me/6591881944" target="_blank" rel="noreferrer" onClick={() => track({ action: "whatsapp_click", category: "contact", label: "header" })} className="group inline-flex items-center gap-2 rounded-full bg-spotlight px-5 py-2 font-mono-stage text-xs uppercase tracking-[0.18em] text-stage transition-all hover:scale-[1.03]">WhatsApp Asher</a>
-            {mode === "story" && (
-              <button type="button" onClick={() => setOpen((v) => !v)} className="rounded-md p-2 text-ivory transition-colors hover:bg-spotlight/10 lg:hidden" aria-label="Toggle menu">
-                {open ? <X size={20} /> : <Menu size={20} />}
-              </button>
-            )}
           </div>
         </div>
       </div>
-      <AnimatePresence>
-        {open && mode === "story" && (
-          <motion.nav initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden border-t border-amber-faint bg-stage/95 backdrop-blur-xl lg:hidden">
-            <div className="mx-auto max-w-[1500px] px-5 py-4">
-              {NAV.map((item) => (
-                <a key={item.href} href={item.href} onClick={() => setOpen(false)} className="flex items-center justify-between border-b border-amber-faint/60 py-3 font-mono-stage text-sm uppercase tracking-[0.18em] text-ivory">
-                  <span>{item.label}</span>
-                  <span className="text-spotlight/60">→</span>
-                </a>
-              ))}
-            </div>
-          </motion.nav>
-        )}
-      </AnimatePresence>
     </header>
   );
 }

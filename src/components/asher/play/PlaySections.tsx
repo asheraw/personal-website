@@ -20,7 +20,7 @@ const ICONS: Record<string, IconType> = {
 function Section({ id, eyebrow, title, iconKey, children }: { id: string; eyebrow: string; title: string; iconKey: string; children: React.ReactNode; }) {
   const Icon = ICONS[iconKey] || Sparkles;
   return (
-    <section id={`play-${id}`} data-section-id={id} className="flex min-h-[60vh] flex-col justify-center scroll-mt-4 border-b border-amber-faint px-8 py-14 sm:px-10 sm:py-16">
+    <section id={`play-${id}`} data-section-id={id} className="flex flex-col justify-start scroll-mt-4 border-b border-amber-faint px-8 py-10 sm:px-10 sm:py-12">
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
         <div className="flex items-center gap-3">
           <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-spotlight/30 bg-spotlight/5 text-spotlight"><Icon size={18} /></div>

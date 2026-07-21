@@ -15,21 +15,46 @@ export type Zone3D = {
 };
 
 const ZONES_3D: Zone3D[] = [
-  { id: "stage",      label: "The Stage",    position: [-6, 0, -4], color: "#3d2a14", accentColor: "#f0b865", activity: "Standing in the spotlight" },
-  { id: "coaching",   label: "The Studio",   position: [0, 0, -4],  color: "#2d2417", accentColor: "#d99846", activity: "Recording a podcast" },
-  { id: "faith",      label: "The Heart",    position: [6, 0, -4],  color: "#2a1f15", accentColor: "#f0b865", activity: "In prayer" },
-  { id: "glance",     label: "At a Glance",  position: [-6, 0, 0],  color: "#241c14", accentColor: "#b8924a", activity: "Examining achievements" },
-  { id: "hero",       label: "Welcome",      position: [0, 0, 0],   color: "#3d2a14", accentColor: "#f0b865", activity: "Welcoming you" },
-  { id: "callings",   label: "Two Callings", position: [6, 0, 0],   color: "#2d2417", accentColor: "#d99846", activity: "Between two callings" },
-  { id: "philosophy", label: "Philosophy",   position: [-6, 0, 4],  color: "#2a1f15", accentColor: "#f0b865", activity: "Studying with books" },
-  { id: "contact",    label: "Contact",      position: [0, 0, 4],   color: "#241c14", accentColor: "#b8924a", activity: "On the phone" },
+  // Clockwise: arrow(1) → Stage(2) → Studio(3) → Heart(4) → Welcome(5) → Contact(6) → Philosophy(7) → Two Callings(8) → At a Glance(9)
+  { id: "stage",      label: "The Stage",    position: [0, 0, -4],   color: "#3d2a14", accentColor: "#f0b865", activity: "The Introverted Performer" },
+  { id: "coaching",   label: "The Studio",   position: [6, 0, -4],   color: "#2d2417", accentColor: "#d99846", activity: "Presenting Powerfully" },
+  { id: "faith",      label: "The Heart",    position: [6, 0, 0],    color: "#2a1f15", accentColor: "#f0b865", activity: "Faith-led Working Principles" },
+  { id: "hero",       label: "Welcome",      position: [0, 0, 0],    color: "#3d2a14", accentColor: "#f0b865", activity: "Being Authentic" },
+  { id: "contact",    label: "Contact",      position: [-6, 0, 0],   color: "#241c14", accentColor: "#b8924a", activity: "Connect with Asher" },
+  { id: "philosophy", label: "Philosophy",   position: [-6, 0, 4],   color: "#2a1f15", accentColor: "#f0b865", activity: "#KeepTryingUntil You Reach Your Goals" },
+  { id: "callings",   label: "Two Callings", position: [0, 0, 4],    color: "#2d2417", accentColor: "#d99846", activity: "Blended Expertise" },
+  { id: "glance",     label: "At a Glance",  position: [6, 0, 4],    color: "#241c14", accentColor: "#b8924a", activity: "Experienced Jack-of-all-Trades" },
 ];
 
-const ZONE_LABELS_3D: Record<string, { activity: string; label: string }> = Object.fromEntries(
-  ZONES_3D.map(z => [z.id, { activity: z.activity, label: z.label }])
-);
+const ZONE_LABELS_3D: Record<string, { activity: string; label: string }> = {
+  ...Object.fromEntries(ZONES_3D.map(z => [z.id, { activity: z.activity, label: z.label }])),
+  directions: { activity: "Move In A Clockwise Direction", label: "Directions" },
+};
 
 let onZoneClick = (_id: string) => {};
+
+// Flat arrow shape on the ground — pointing right toward Stage
+function ArrowShape() {
+  const arrowShape = useMemo(() => {
+    const shape = new THREE.Shape();
+    // Clean arrow: shaft + arrowhead, centered at origin, pointing right
+    shape.moveTo(-0.8, -0.15);   // shaft bottom-left
+    shape.lineTo(0.3, -0.15);    // shaft bottom-right (arrowhead base)
+    shape.lineTo(0.3, -0.4);     // arrowhead bottom
+    shape.lineTo(0.9, 0);        // arrowhead tip
+    shape.lineTo(0.3, 0.4);      // arrowhead top
+    shape.lineTo(0.3, 0.15);     // shaft top-right
+    shape.lineTo(-0.8, 0.15);    // shaft top-left
+    shape.closePath();
+    return shape;
+  }, []);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-6, 0.04, -4]} scale={1.5}>
+      <shapeGeometry args={[arrowShape]} />
+      <meshBasicMaterial color="#f0b865" transparent opacity={0.4} side={THREE.DoubleSide} />
+    </mesh>
+  );
+}
 
 function Ground({ activeZone }: { activeZone: string | null }) {
   return (
@@ -38,6 +63,17 @@ function Ground({ activeZone }: { activeZone: string | null }) {
         <planeGeometry args={[40, 40]} />
         <meshStandardMaterial color="#1a1410" roughness={0.85} />
       </mesh>
+      {/* Arrow tile at square 1 (top-left, pointing right toward Stage) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-6, 0.02, -4]}>
+        <planeGeometry args={[4, 4]} />
+        <meshStandardMaterial color="#2a2018" transparent opacity={0.5} />
+      </mesh>
+      {/* Flat arrow on ground — custom shape pointing right */}
+      <ArrowShape />
+      {/* Directions label */}
+      <Html position={[-6, 1.5, -4]} center distanceFactor={12} occlude={false}>
+        <div style={{ background: "rgba(20,16,12,0.5)", color: "rgba(245,239,228,0.4)", padding: "4px 12px", borderRadius: "999px", fontFamily: "ui-monospace, monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap", border: "1px solid rgba(240,184,101,0.15)", opacity: 0.45, pointerEvents: "none", backdropFilter: "blur(4px)" }}>Directions</div>
+      </Html>
       {ZONES_3D.map((zone) => {
         const isActive = zone.id === activeZone;
         return (
@@ -126,10 +162,14 @@ function Cathedral({ active }: { active: boolean }) {
   }, []);
   return (
     <group>
+      {/* Floor mat */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} receiveShadow><circleGeometry args={[1.8, 32]} /><meshStandardMaterial color="#2a1f15" roughness={0.7} /></mesh>
-      <mesh position={[0, 1.5, -1.8]} castShadow><boxGeometry args={[3, 3, 0.15]} /><meshStandardMaterial color="#3a2a1a" roughness={0.7} /></mesh>
-      <mesh position={[0, 1.6, -1.7]} scale={0.5}><shapeGeometry args={[heartShape]} /><meshStandardMaterial color="#c44d3f" roughness={0.4} emissive={active ? "#c44d3f" : "#000000"} emissiveIntensity={active ? 0.6 : 0.15} side={THREE.DoubleSide} /></mesh>
-      {active && <pointLight position={[0, 1.5, 0]} intensity={0.4} color="#c44d3f" distance={4} />}
+      {/* Heart flat on the ground — large, glowing. No protruding objects. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]} scale={1.2}>
+        <shapeGeometry args={[heartShape]} />
+        <meshStandardMaterial color="#c44d3f" roughness={0.3} metalness={0.4} emissive={active ? "#c44d3f" : "#000000"} emissiveIntensity={active ? 0.7 : 0.2} side={THREE.DoubleSide} />
+      </mesh>
+      {active && <pointLight position={[0, 1, 0]} intensity={0.4} color="#c44d3f" distance={4} />}
     </group>
   );
 }
@@ -158,12 +198,37 @@ function MagnifierZone({ active }: { active: boolean }) {
 
 // Welcome — flat plaza with star
 function WelcomePlaza({ active }: { active: boolean }) {
+  // Proper 5-pointed star shape — point UP (not upside down)
+  const starShape = useMemo(() => {
+    const shape = new THREE.Shape();
+    const outerR = 0.6;
+    const innerR = 0.25;
+    const points = 5;
+    for (let i = 0; i < points * 2; i++) {
+      const r = i % 2 === 0 ? outerR : innerR;
+      // Start at top (Math.PI / 2) so the first point points UP after ground rotation
+      const angle = (i / (points * 2)) * Math.PI * 2 + Math.PI / 2;
+      const x = Math.cos(angle) * r;
+      const y = Math.sin(angle) * r;
+      if (i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    }
+    shape.closePath();
+    return shape;
+  }, []);
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} receiveShadow><circleGeometry args={[2, 32]} /><meshStandardMaterial color="#3d2a14" roughness={0.6} /></mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}><circleGeometry args={[1, 5]} /><meshStandardMaterial color="#f0b865" metalness={0.7} roughness={0.2} emissive={active ? "#f0b865" : "#000000"} emissiveIntensity={active ? 0.6 : 0.2} side={THREE.DoubleSide} /></mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}><ringGeometry args={[0.4, 0.5, 32]} /><meshBasicMaterial color="#f0b865" transparent opacity={active ? 0.8 : 0.3} side={THREE.DoubleSide} /></mesh>
-      {active && <pointLight position={[0, 2, 0]} intensity={0.4} color="#f0b865" distance={5} />}
+      {/* Floor mat — no circle, just the ground tile */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} receiveShadow>
+        <planeGeometry args={[3, 3]} />
+        <meshStandardMaterial color="#3d2a14" roughness={0.6} />
+      </mesh>
+      {/* Small 5-pointed star on the ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+        <shapeGeometry args={[starShape]} />
+        <meshStandardMaterial color="#f0b865" metalness={0.7} roughness={0.2} emissive={active ? "#f0b865" : "#000000"} emissiveIntensity={active ? 0.6 : 0.2} side={THREE.DoubleSide} />
+      </mesh>
+      {active && <pointLight position={[0, 1.5, 0]} intensity={0.3} color="#f0b865" distance={4} />}
     </group>
   );
 }
@@ -406,14 +471,19 @@ function Scene({ activeSection, onZoneEnter }: { activeSection: string; onZoneEn
       charPosRef.current = [newX, 0, newZ]; setCharPos([newX, 0, newZ]);
       if (dx !== 0 || dz !== 0) { const newFacing = Math.atan2(dx, dz); facingRef.current = newFacing; setFacing(newFacing); }
     }
+    // Check if on the arrow (directions) tile — at [-6, 0, -4]
+    const onArrow = Math.abs(charPosRef.current[0] - (-6)) < 1.8 && Math.abs(charPosRef.current[2] - (-4)) < 1.8;
     const zone = ZONES_3D.find(z => { const ddx = charPosRef.current[0] - z.position[0]; const ddz = charPosRef.current[2] - z.position[2]; return Math.sqrt(ddx * ddx + ddz * ddz) < 1.8; });
-    const zoneId = zone ? zone.id : null;
+    // If on arrow tile and not on a real zone, show "directions"
+    const zoneId = zone ? zone.id : (onArrow ? "directions" : null);
     if (zoneId !== currentZone) setCurrentZone(zoneId || "hero");
+    // Report zone changes (including "directions") to update the status bar
     if (zoneId && zoneId !== lastReportedZone.current && !charTargetRef.current) { lastReportedZone.current = zoneId; onZoneEnterRef.current(zoneId); }
   });
 
   const currentZoneData = ZONES_3D.find(z => z.id === currentZone);
-  const activity = charTarget !== null ? "walking" : (currentZoneData?.activity || "idle");
+  const isDirections = currentZone === "directions";
+  const activity = charTarget !== null ? "walking" : (isDirections ? "Move In A Clockwise Direction" : (currentZoneData?.activity || "idle"));
   const isMoving = charTarget !== null;
 
   return (

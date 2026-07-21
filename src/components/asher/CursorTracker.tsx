@@ -9,6 +9,8 @@ export function CursorTracker() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Skip on touch devices — no mouse on mobile
+    if (window.matchMedia("(hover: none)").matches) return;
 
     let raf = 0;
     let targetX = window.innerWidth / 2;

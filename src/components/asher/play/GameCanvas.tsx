@@ -15,26 +15,28 @@ type Zone = {
   activity: Activity; icon: string; tint: string;
 };
 
+// Clockwise: arrow(1) → Stage(2) → Studio(3) → Heart(4) → Welcome(5) → Contact(6) → Philosophy(7) → Two Callings(8) → At a Glance(9)
 const ZONES: Zone[] = [
-  { id: "stage",      label: "The Stage",    x: 40,  y: 40,  w: 200, h: 140, activity: "mic",         icon: "spotlight", tint: "#3d2a14" },
-  { id: "coaching",   label: "The Studio",   x: 260, y: 40,  w: 200, h: 140, activity: "singing",     icon: "mic",       tint: "#2d2417" },
-  { id: "faith",      label: "The Heart",    x: 480, y: 40,  w: 200, h: 140, activity: "reading",     icon: "bible",     tint: "#2a1f15" },
-  { id: "glance",     label: "At a Glance",  x: 40,  y: 200, w: 200, h: 140, activity: "magnifying",  icon: "magnifier", tint: "#241c14" },
+  { id: "stage",      label: "The Stage",    x: 260, y: 40,  w: 200, h: 140, activity: "mic",         icon: "spotlight", tint: "#3d2a14" },
+  { id: "coaching",   label: "The Studio",   x: 480, y: 40,  w: 200, h: 140, activity: "singing",     icon: "mic",       tint: "#2d2417" },
+  { id: "faith",      label: "The Heart",    x: 480, y: 200, w: 200, h: 140, activity: "reading",     icon: "bible",     tint: "#2a1f15" },
   { id: "hero",       label: "Welcome",      x: 260, y: 200, w: 200, h: 140, activity: "welcome",     icon: "star",      tint: "#3d2a14" },
-  { id: "callings",   label: "Two Callings", x: 480, y: 200, w: 200, h: 140, activity: "masks",       icon: "masks",     tint: "#2d2417" },
+  { id: "contact",    label: "Contact",      x: 40,  y: 200, w: 200, h: 140, activity: "phone",       icon: "letter",    tint: "#241c14" },
   { id: "philosophy", label: "Philosophy",   x: 40,  y: 360, w: 200, h: 140, activity: "studious",    icon: "book",      tint: "#2a1f15" },
-  { id: "contact",    label: "Contact",      x: 260, y: 360, w: 200, h: 140, activity: "phone",       icon: "letter",    tint: "#241c14" },
+  { id: "callings",   label: "Two Callings", x: 260, y: 360, w: 200, h: 140, activity: "masks",       icon: "masks",     tint: "#2d2417" },
+  { id: "glance",     label: "At a Glance",  x: 480, y: 360, w: 200, h: 140, activity: "magnifying",  icon: "magnifier", tint: "#241c14" },
 ];
 
 const ZONE_LABELS: Record<string, { activity: string; label: string }> = {
-  stage:      { activity: "Holding a microphone",         label: "The Stage" },
-  coaching:   { activity: "Singing with musical notes",   label: "The Studio" },
-  faith:      { activity: "Reading the Bible",            label: "The Heart" },
-  glance:     { activity: "Examining with a magnifying glass", label: "At a Glance" },
-  hero:       { activity: "Welcoming you",                label: "Welcome" },
-  callings:   { activity: "Holding the masks",            label: "Two Callings" },
-  philosophy: { activity: "Studying with books",          label: "Philosophy" },
-  contact:    { activity: "Talking on the phone",         label: "Contact" },
+  stage:      { activity: "The Introverted Performer",            label: "The Stage" },
+  coaching:   { activity: "Presenting Powerfully",                label: "The Studio" },
+  faith:      { activity: "Faith-led Working Principles",         label: "The Heart" },
+  glance:     { activity: "Experienced Jack-of-all-Trades",       label: "At a Glance" },
+  hero:       { activity: "Being Authentic",                      label: "Welcome" },
+  callings:   { activity: "Blended Expertise",                    label: "Two Callings" },
+  philosophy: { activity: "#KeepTryingUntil You Reach Your Goals", label: "Philosophy" },
+  contact:    { activity: "Connect with Asher",                   label: "Contact" },
+  directions: { activity: "Move In A Clockwise Direction",        label: "Directions" },
 };
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -369,8 +371,11 @@ export function GameCanvas({ activeSection, onZoneEnter }: { activeSection: stri
       if (dx > 0.1) char.facing = 1; else if (dx < -0.1) char.facing = -1;
       let inZone: string | null = null;
       for (const zone of ZONES) { if (char.x >= zone.x && char.x <= zone.x+zone.w && char.y >= zone.y && char.y <= zone.y+zone.h) { inZone = zone.id; break; } }
+      // Check if on the arrow (directions) tile — at [40, 40, 200, 140]
+      if (!inZone && char.x >= 40 && char.x <= 240 && char.y >= 40 && char.y <= 180) { inZone = "directions"; }
       if (inZone !== currentZoneRef.current) currentZoneRef.current = inZone;
       const arrived = !targetZoneRef.current && isAutoWalkingRef.current;
+      // Report zone changes (including "directions") to update the status bar
       if (inZone && inZone !== lastReportedZoneRef.current) {
         if (isAutoWalkingRef.current && !arrived) {} else { lastReportedZoneRef.current = inZone; onZoneEnterRef.current(inZone); }
       }
@@ -382,6 +387,31 @@ export function GameCanvas({ activeSection, onZoneEnter }: { activeSection: stri
       for (let x = 0; x <= WORLD_W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); ctx.stroke(); }
       for (let y = 0; y <= WORLD_H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_W, y); ctx.stroke(); }
       drawDust(ctx, 1/60);
+      // Draw arrow tile at square 1 (top-left, pointing right toward Stage)
+      ctx.fillStyle = "#2a2018";
+      ctx.fillRect(40, 40, 200, 140);
+      ctx.strokeStyle = "rgba(240,184,101,0.12)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(40, 40, 200, 140);
+      // Clean centered arrow pointing right — single path, no overlap
+      ctx.fillStyle = "rgba(240,184,101,0.35)";
+      ctx.beginPath();
+      // Start at left of shaft, go right, then arrowhead, back along bottom
+      ctx.moveTo(90, 100);    // shaft top-left
+      ctx.lineTo(150, 100);   // shaft top-right (where arrowhead starts)
+      ctx.lineTo(150, 85);    // arrowhead top
+      ctx.lineTo(185, 110);   // arrowhead tip
+      ctx.lineTo(150, 135);   // arrowhead bottom
+      ctx.lineTo(150, 120);   // shaft bottom-right
+      ctx.lineTo(90, 120);    // shaft bottom-left
+      ctx.closePath();
+      ctx.fill();
+      // Label
+      ctx.fillStyle = "rgba(138,124,102,0.6)";
+      ctx.font = "600 10px ui-monospace, monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("DIRECTIONS", 140, 55);
       for (const zone of ZONES) drawZone(ctx, zone, zone.id === currentZoneRef.current, zone.id === hoveredZoneRef.current);
       const char = charRef.current;
       const cz = ZONES.find(z => z.id === currentZoneRef.current);
