@@ -65,6 +65,7 @@ function buildMailtoHref(data: FormSnapshot) {
 
 export function ContactForm() {
   const [status, setStatus] = useState<Status>("idle");
+  const [countryCode, setCountryCode] = useState("+65");
   const [errorMsg, setErrorMsg] = useState("");
   const [captcha, setCaptcha] = useState<{ a: number; b: number }>({ a: 2, b: 3 });
   const [captchaAnswer, setCaptchaAnswer] = useState("");
@@ -84,6 +85,7 @@ export function ContactForm() {
     const form = e.currentTarget;
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries()) as Record<string, string>;
+	data.countryCode = countryCode;
 	console.log(data);
 
     const snapshot: FormSnapshot = {
@@ -191,7 +193,7 @@ export function ContactForm() {
       <div className="space-y-2">
         <Label className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Contact Number (with country code)</Label>
         <div className="grid gap-2 sm:grid-cols-[200px_1fr]">
-          <Select name="countryCode">
+          <Select value={countryCode} onValueChange={setCountryCode}>
             <SelectTrigger className="border-amber-faint bg-stage/40 text-ivory w-full overflow-hidden"><SelectValue placeholder="+65" /></SelectTrigger>
             <SelectContent className="bg-card border-amber-faint max-h-64">
               {COUNTRY_CODES.map((c) => (<SelectItem key={c.code} value={c.code} className="text-ivory focus:bg-spotlight/10 focus:text-spotlight">{c.label}</SelectItem>))}
