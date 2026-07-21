@@ -86,7 +86,6 @@ export function ContactForm() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries()) as Record<string, string>;
 	data.countryCode = countryCode;
-	console.log(data);
 
     const snapshot: FormSnapshot = {
       name: data.name || "",
