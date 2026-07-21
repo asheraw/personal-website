@@ -84,6 +84,7 @@ export function ContactForm() {
     const form = e.currentTarget;
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries()) as Record<string, string>;
+	console.log(data);
 
     const snapshot: FormSnapshot = {
       name: data.name || "",
