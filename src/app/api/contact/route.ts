@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await resend.emails.send({
-        from: "Asher Aw Site <onboarding@resend.dev>", // swap for a verified domain sender once DNS is set up
+        from: "AsherAw.com Contact Form <hello@asheraw.com>", // swap for a verified domain sender once DNS is set up
         to: NOTIFY_EMAIL,
         replyTo: email,
         subject: `[Site Contact] ${subject}`,
