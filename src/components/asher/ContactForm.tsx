@@ -196,7 +196,7 @@ export function ContactForm() {
               {COUNTRY_CODES.map((c) => (<SelectItem key={c.code} value={c.code} className="text-ivory focus:bg-spotlight/10 focus:text-spotlight">{c.label}</SelectItem>))}
             </SelectContent>
           </Select>
-          <Input name="phone" type="tel" placeholder="9188 1944" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
+          <Input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" onInput={(e) => {e.currentTarget.value = e.currentTarget.value.replace(/\D/g, "");}} placeholder="Your mobile number" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
         </div>
         <p className="text-xs text-stone/50">If your country code isn&rsquo;t listed, select &ldquo;Other&rdquo; and include it in your message.</p>
       </div>
