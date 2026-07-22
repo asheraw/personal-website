@@ -10,7 +10,7 @@ const STATS = [
   { value: <Counter end={50} suffix="+" />, label: "Workshops Facilitated" },
 ];
 
-const BRANDS = ["Lexus", "OCBC", "Bayer", "Nas Academy"];
+const BRANDS = ["Lexus", "OCBC", "Bayer", "Nas Academy", "*SCAPE Singapore", "Singapore Police Force", "Singapore Heart Foundation"];
 
 export function AtAGlance() {
   return (
