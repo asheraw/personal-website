@@ -51,7 +51,7 @@ export const GLANCE_STATS: Stat[] = [
   { value: "50+", label: "Workshops Run" },
 ];
 
-export const BRANDS = ["Lexus", "OCBC", "Bayer", "Nas Academy"];
+export const BRANDS = ["Lexus", "OCBC", "Bayer", "Nas Academy", "*SCAPE Singapore", "Singapore Police Force", "Singapore Heart Foundation"];
 
 export type Topic = { title: string; body: string };
 
