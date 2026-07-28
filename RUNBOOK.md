@@ -37,18 +37,25 @@ not after something has already gone wrong with it.
 Studio has a "Preview" feature (look for it in the top navigation) that shows exactly how a draft will look on
 the real site — including unpublished changes — with buttons to check desktop, tablet, and mobile sizes.
 
-**One-time setup required before this works** (not done yet as of this writing):
-1. Go to [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **Tokens** → **Add API token**.
-2. Name it something like `Preview`. Permissions: **Viewer** (it only needs to read content, including drafts —
-   never write).
-3. Copy the token.
-4. Add it to **Vercel** (not GitHub this time — this one needs to be available to the live website itself):
-   Vercel project → **Settings** → **Environment Variables** → add `SANITY_API_READ_TOKEN` with the token as
-   the value → redeploy.
+**One-time setup required before this works** -- two separate steps, both done as of 2026-07-28:
 
-**If Preview shows an error or blank page:** almost always means that token isn't set (or was set only for
-Preview/Development environment in Vercel and not Production, or vice versa). Double-check it's added for
-whichever environment you're testing.
+1. **A read token**, so the website is allowed to read draft content:
+   - [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **Tokens** → **Add API token**.
+   - Name it something like `Preview`. Permissions: **Viewer** (read-only, never write).
+   - Copy the token, add it to **Vercel** (Settings → Environment Variables) as `SANITY_API_READ_TOKEN` → redeploy.
+
+2. **A CORS origin**, so the browser is allowed to make the live preview connection at all:
+   - [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **CORS Origins** → **Add CORS origin**.
+   - Origin: `https://asheraw.com`. Check **"Allow credentials"** (required -- the preview connection is
+     authenticated, not anonymous). Save. Takes effect immediately, no redeploy needed.
+
+**If Preview shows an error or blank page:** almost always one of the two steps above wasn't done, or step 1
+was only set for the wrong Vercel environment (Preview/Development vs Production).
+
+**If Presentation crashes after sitting idle for a while** with `CorsOriginError` / "The current origin is
+not allowed to connect to the Live Content API": this is step 2 above -- the CORS origin is missing or
+doesn't have "Allow credentials" checked. The initial preview view still works even without this (confirmed
+2026-07-28); it's specifically the ongoing real-time connection that fails without it.
 
 ---
 
