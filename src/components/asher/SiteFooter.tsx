@@ -7,7 +7,7 @@ type StoryNav = { title: string; links: { label: string; href: string }[] };
 const STORY_NAV: StoryNav[] = [
   { title: "Stage", links: [{ label: "Theatre", href: "/#stage" }, { label: "Selected Roles", href: "/#stage" }, { label: "Directing", href: "/#stage" }] },
   { title: "Coaching", links: [{ label: "Personal Branding", href: "/#coaching" }, { label: "Storytelling", href: "/#coaching" }, { label: "AI-Assisted Content", href: "/#coaching" }, { label: "Workshops", href: "/#contact" }] },
-  { title: "More", links: [{ label: "At a Glance", href: "/#glance" }, { label: "Two Callings", href: "/#two-callings" }, { label: "Philosophy", href: "/#philosophy" }, { label: "Faith", href: "/#faith" }] },
+  { title: "More", links: [{ label: "Blog", href: "/blog" }, { label: "At a Glance", href: "/#glance" }, { label: "Two Callings", href: "/#two-callings" }, { label: "Philosophy", href: "/#philosophy" }, { label: "Faith", href: "/#faith" }] },
   { title: "Connect", links: [{ label: "WhatsApp", href: "https://wa.me/6591881944" }, { label: "Email", href: "mailto:asher@asheraw.com" }, { label: "Book a Session", href: "/#contact" }] },
 ];
 

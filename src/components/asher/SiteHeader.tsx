@@ -44,6 +44,9 @@ export function SiteHeader({ mode = "story", setMode }: { mode?: Mode; setMode?:
             )}
           </div>
           <div className="flex items-center gap-3">
+            <a href="/blog" onClick={() => track({ action: "nav_click", category: "navigation", label: "blog" })} className="hidden font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70 transition-colors hover:text-spotlight sm:inline-block">
+              Blog
+            </a>
             <button type="button" onClick={() => { track({ action: "theme_toggle", category: "ui", label: theme === "dark" ? "dark_to_light" : "light_to_dark" }); toggleTheme(); }} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:text-spotlight" aria-label={theme === "dark" ? "Turn on the lights" : "Turn off the lights"} title={theme === "dark" ? "Turn on the lights" : "Turn off the lights"}>
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </button>
