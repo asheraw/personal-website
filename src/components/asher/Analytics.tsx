@@ -1,8 +1,28 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Script from "next/script";
+import { CONSENT_EVENT, getConsent } from "@/lib/consent";
 
 const GTM_ID = "GTM-PVCX5DQ";
 
 export function Analytics() {
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    setAllowed(getConsent() === "granted");
+
+    const handleChange = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      setAllowed(detail === "granted");
+    };
+
+    window.addEventListener(CONSENT_EVENT, handleChange);
+    return () => window.removeEventListener(CONSENT_EVENT, handleChange);
+  }, []);
+
+  if (!allowed) return null;
+
   return (
     <>
       <Script id="gtm-init" strategy="afterInteractive">

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/asher/ThemeProvider";
 import { CursorTracker } from "@/components/asher/CursorTracker";
 import { Analytics } from "@/components/asher/Analytics";
+import { CookieConsent } from "@/components/asher/CookieConsent";
 import { StructuredData } from "@/components/asher/StructuredData";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <CursorTracker />
           {children}
           <Toaster />
+          <CookieConsent />
         </ThemeProvider>
       </body>
     </html>
