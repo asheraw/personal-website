@@ -43,14 +43,61 @@ export const postType = defineType({
       of: [defineArrayMember({type: 'reference', to: {type: 'category'}})],
     }),
     defineField({
+      name: 'tags',
+      type: 'array',
+      of: [defineArrayMember({type: 'string'})],
+      options: {
+        layout: 'tags',
+      },
+      description: 'Free-form topic labels, separate from categories.',
+    }),
+    defineField({
       name: 'publishedAt',
       type: 'datetime',
       description: 'Defaults to the moment you create the post. Change it any time — your change is always kept.',
       initialValue: () => new Date().toISOString(),
     }),
     defineField({
+      name: 'excerpt',
+      type: 'text',
+      rows: 3,
+      description: 'A short summary shown in post listings and used as the search-engine description when no SEO description is set below.',
+      validation: (rule) => rule.max(300),
+    }),
+    defineField({
       name: 'body',
       type: 'blockContent',
+    }),
+    defineField({
+      name: 'seoTitle',
+      title: 'SEO title (optional)',
+      type: 'string',
+      description: 'Overrides the page title shown in search results and browser tabs. Leave blank to use the post title.',
+      validation: (rule) => rule.max(70),
+    }),
+    defineField({
+      name: 'seoDescription',
+      title: 'SEO description (optional)',
+      type: 'text',
+      rows: 3,
+      description: 'Overrides the description shown in search results and social shares. Leave blank to use the excerpt.',
+      validation: (rule) => rule.max(160),
+    }),
+    defineField({
+      name: 'socialImage',
+      title: 'Social sharing image (optional)',
+      type: 'image',
+      description: 'Overrides the image shown when this post is shared on social media. Leave blank to use the featured image.',
+      options: {
+        hotspot: true,
+      },
+    }),
+    defineField({
+      name: 'noIndex',
+      title: 'Hide from search engines',
+      type: 'boolean',
+      description: 'Turn on to keep this post out of Google and other search results (it stays visible on your site).',
+      initialValue: false,
     }),
   ],
   preview: {

@@ -24,7 +24,10 @@ export const metadata: Metadata = {
   authors: [{ name: "Asher Aw", url: SITE_URL }],
   creator: "Asher Aw",
   publisher: "Asher Aw",
-  alternates: { canonical: SITE_URL },
+  alternates: {
+    canonical: SITE_URL,
+    types: { "application/rss+xml": `${SITE_URL}/rss.xml` },
+  },
   openGraph: { type: "website", locale: "en_SG", url: SITE_URL, siteName: "Asher Aw", title: TITLE, description: DESCRIPTION, images: [{ url: OG_IMAGE, width: 1344, height: 768, alt: "Asher Aw — Actor, Coach, Storyteller" }] },
   twitter: { card: "summary_large_image", site: "@AsherAw", creator: "@AsherAw", title: TITLE, description: DESCRIPTION, images: [OG_IMAGE] },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 } },
