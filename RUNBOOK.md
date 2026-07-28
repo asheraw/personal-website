@@ -32,6 +32,26 @@ not after something has already gone wrong with it.
 
 ---
 
+## Live preview: one-time setup, and "Preview shows an error"
+
+Studio has a "Preview" feature (look for it in the top navigation) that shows exactly how a draft will look on
+the real site — including unpublished changes — with buttons to check desktop, tablet, and mobile sizes.
+
+**One-time setup required before this works** (not done yet as of this writing):
+1. Go to [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **Tokens** → **Add API token**.
+2. Name it something like `Preview`. Permissions: **Viewer** (it only needs to read content, including drafts —
+   never write).
+3. Copy the token.
+4. Add it to **Vercel** (not GitHub this time — this one needs to be available to the live website itself):
+   Vercel project → **Settings** → **Environment Variables** → add `SANITY_API_READ_TOKEN` with the token as
+   the value → redeploy.
+
+**If Preview shows an error or blank page:** almost always means that token isn't set (or was set only for
+Preview/Development environment in Vercel and not Production, or vice versa). Double-check it's added for
+whichever environment you're testing.
+
+---
+
 ## Backups: "The daily backup failed" / "Where's my content backed up?"
 
 See **BACKUP_AND_RECOVERY_GUIDE.md** for the full explanation and the one-time setup steps. Quick reference:

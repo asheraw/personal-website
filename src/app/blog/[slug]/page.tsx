@@ -3,8 +3,10 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { urlFor } from "@/sanity/lib/image";
 import { notFound } from "next/navigation";
+import { draftMode } from "next/headers";
 import { PortableText } from "@portabletext/react";
 import { client } from "@/sanity/lib/client";
+import { previewClient } from "@/sanity/lib/preview-client";
 import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
@@ -36,13 +38,17 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-async function getPost(slug: string) {
+async function getPost(slug: string, isPreviewing: boolean) {
+  if (isPreviewing) {
+    return previewClient.fetch<Post | null>(POST_BY_SLUG_QUERY, { slug });
+  }
   return client.fetch<Post | null>(POST_BY_SLUG_QUERY, { slug });
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const { isEnabled: isPreviewing } = await draftMode();
+  const post = await getPost(slug, isPreviewing);
   if (!post) return {};
 
   const title = post.seoTitle || post.title;
@@ -77,7 +83,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PostPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const { isEnabled: isPreviewing } = await draftMode();
+  const post = await getPost(slug, isPreviewing);
 
   if (!post) {
     notFound();
@@ -100,6 +107,14 @@ export default async function PostPage({ params }: PageProps) {
 
   return (
     <BlogChrome>
+      {isPreviewing && (
+        <div className="sticky top-16 z-40 flex items-center justify-between gap-4 border-y border-spotlight/40 bg-spotlight/10 px-5 py-2 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-spotlight sm:px-8">
+          <span>Previewing a draft — this may not be published yet</span>
+          <a href="/api/draft-mode/disable" className="underline hover:no-underline">
+            Exit preview
+          </a>
+        </div>
+      )}
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
         <script
           type="application/ld+json"

@@ -22,6 +22,14 @@ export const postType = defineType({
       name: 'author',
       type: 'reference',
       to: {type: 'author'},
+      description: 'Defaults to Asher Aw. Change it any time — e.g. for a guest post.',
+      initialValue: async (_params, context) => {
+        const client = context.getClient({apiVersion: '2023-01-01'})
+        const defaultAuthorId = await client.fetch<string | null>(
+          `*[_type == "author" && slug.current == "asher-aw"][0]._id`
+        )
+        return defaultAuthorId ? {_type: 'reference', _ref: defaultAuthorId} : undefined
+      },
     }),
     defineField({
       name: 'mainImage',
