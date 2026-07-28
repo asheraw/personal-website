@@ -45,6 +45,8 @@ export const postType = defineType({
     defineField({
       name: 'publishedAt',
       type: 'datetime',
+      description: 'Defaults to the moment you create the post. Change it any time — your change is always kept.',
+      initialValue: () => new Date().toISOString(),
     }),
     defineField({
       name: 'body',
