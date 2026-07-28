@@ -47,13 +47,13 @@ jobs:
 
       - name: Export Sanity content
         env:
-          SANITY_API_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
+          SANITY_AUTH_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
         run: |
-          if [ -z "$SANITY_API_TOKEN" ]; then
+          if [ -z "$SANITY_AUTH_TOKEN" ]; then
             echo "::error::SANITY_API_TOKEN secret is not set. See BACKUP_AND_RECOVERY_GUIDE.md."
             exit 1
           fi
-          npx sanity dataset export production sanity-backup.tar.gz --token "$SANITY_API_TOKEN"
+          npx sanity dataset export production sanity-backup.tar.gz
 
       - name: Check whether content actually changed since the last backup
         id: check
