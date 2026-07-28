@@ -43,6 +43,20 @@ export const postType = defineType({
       of: [defineArrayMember({type: 'reference', to: {type: 'category'}})],
     }),
     defineField({
+      name: 'primaryCategory',
+      title: 'Primary category (for breadcrumb)',
+      type: 'reference',
+      to: {type: 'category'},
+      description:
+        "Which category should show in the breadcrumb and drive this post's main topic. Only matters if you picked more than one category above — leave blank to just use the first one.",
+      options: {
+        filter: ({document}) => {
+          const selected = ((document as {categories?: {_ref: string}[]})?.categories ?? []).map((c) => c._ref)
+          return {filter: '_id in $selected', params: {selected}}
+        },
+      },
+    }),
+    defineField({
       name: 'tags',
       type: 'array',
       of: [defineArrayMember({type: 'string'})],

@@ -30,6 +30,7 @@ type Post = {
   tags?: string[];
   author?: { name: string; slug: string; image?: unknown } | null;
   categories?: { title: string; slug: string }[];
+  primaryCategory?: { title: string; slug: string } | null;
 };
 
 type PageProps = {
@@ -111,18 +112,22 @@ export default async function PostPage({ params }: PageProps) {
           <Link href="/blog" className="transition-colors hover:text-spotlight">
             Blog
           </Link>
-          {post.categories?.[0] && (
-            <>
-              {" "}
-              /{" "}
-              <Link
-                href={`/blog/category/${post.categories[0].slug}`}
-                className="transition-colors hover:text-spotlight"
-              >
-                {post.categories[0].title}
-              </Link>
-            </>
-          )}
+          {(() => {
+            const breadcrumbCategory = post.primaryCategory ?? post.categories?.[0];
+            if (!breadcrumbCategory) return null;
+            return (
+              <>
+                {" "}
+                /{" "}
+                <Link
+                  href={`/blog/category/${breadcrumbCategory.slug}`}
+                  className="transition-colors hover:text-spotlight"
+                >
+                  {breadcrumbCategory.title}
+                </Link>
+              </>
+            );
+          })()}
         </nav>
 
         <article>
@@ -130,8 +135,8 @@ export default async function PostPage({ params }: PageProps) {
             {post.title}
           </h1>
 
-          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
-            {post.publishedAt && (
+          {post.publishedAt && (
+            <div className="mt-5 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
               <time dateTime={post.publishedAt}>
                 {new Date(post.publishedAt).toLocaleDateString(undefined, {
                   year: "numeric",
@@ -139,16 +144,8 @@ export default async function PostPage({ params }: PageProps) {
                   day: "numeric",
                 })}
               </time>
-            )}
-            {post.author && (
-              <>
-                <span aria-hidden="true">·</span>
-                <Link href={`/blog/author/${post.author.slug}`} className="transition-colors hover:text-spotlight">
-                  {post.author.name}
-                </Link>
-              </>
-            )}
-          </div>
+            </div>
+          )}
 
           {post.mainImage && (
             <div className="mt-10">

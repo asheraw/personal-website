@@ -6,6 +6,10 @@ export const POST_SUMMARY_PROJECTION = `{
   title,
   "slug": slug.current,
   excerpt,
+  // Fallback preview text when no manual excerpt is set, trimmed to a
+  // generous raw length here -- the exact display length + word-boundary
+  // trimming happens in the frontend (see src/lib/text.ts).
+  "autoExcerpt": pt::text(body)[0...400],
   publishedAt,
   _updatedAt,
   mainImage,
@@ -33,7 +37,8 @@ export const POST_BY_SLUG_QUERY = `
     noIndex,
     tags,
     "author": author->{name, "slug": slug.current, image, bio},
-    "categories": categories[]->{title, "slug": slug.current}
+    "categories": categories[]->{title, "slug": slug.current},
+    "primaryCategory": primaryCategory->{title, "slug": slug.current}
   }
 `;
 
@@ -69,6 +74,7 @@ export type PostSummary = {
   title: string;
   slug: string;
   excerpt?: string;
+  autoExcerpt?: string;
   publishedAt?: string;
   _updatedAt: string;
   mainImage?: { asset?: { _ref: string }; alt?: string };

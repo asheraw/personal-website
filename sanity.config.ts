@@ -12,6 +12,7 @@ import {structureTool} from 'sanity/structure'
 import {apiVersion, dataset, projectId} from './src/sanity/env'
 import {schema} from './src/sanity/schemaTypes'
 import {structure} from './src/sanity/structure'
+import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
 
 export default defineConfig({
   basePath: '/studio',
@@ -19,6 +20,14 @@ export default defineConfig({
   dataset,
   // Add and edit the content schema in the './sanity/schemaTypes' folder
   schema,
+  document: {
+    actions: (prev, context) => {
+      if (context.schemaType !== 'post') return prev
+      return prev.map((action) =>
+        (action as {action?: string}).action === 'publish' ? withAutoPublishDate(action) : action
+      )
+    },
+  },
   plugins: [
     structureTool({structure}),
     // Vision is for querying with GROQ from inside the Studio

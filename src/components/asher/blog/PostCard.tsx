@@ -2,8 +2,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
+import { truncateText } from "@/lib/text";
+
+const CARD_BLURB_LENGTH = 200;
 
 export function PostCard({ post }: { post: PostSummary }) {
+  const blurbSource = post.excerpt || post.autoExcerpt;
+  const blurb = blurbSource ? truncateText(blurbSource, CARD_BLURB_LENGTH) : undefined;
+
   return (
     <article className="border-b border-amber-faint pb-12 last:border-none">
       {post.mainImage && (
@@ -45,7 +51,7 @@ export function PostCard({ post }: { post: PostSummary }) {
         ))}
       </div>
 
-      {post.excerpt && <p className="mt-4 leading-relaxed text-stone/85">{post.excerpt}</p>}
+      {blurb && <p className="mt-4 leading-relaxed text-stone/85">{blurb}</p>}
 
       <Link
         href={`/blog/${post.slug}`}

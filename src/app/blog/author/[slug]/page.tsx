@@ -34,6 +34,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${author.name} — Blog`,
     description: `Posts written by ${author.name}.`,
     alternates: { canonical: `/blog/author/${slug}` },
+    // This lists the same posts as /blog for a single-author site, so it's
+    // kept out of search results to avoid competing with /blog for ranking.
+    // Revisit if guest authors are ever added.
+    robots: { index: false, follow: true },
   };
 }
 
