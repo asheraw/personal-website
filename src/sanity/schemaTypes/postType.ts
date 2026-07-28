@@ -22,7 +22,6 @@ export const postType = defineType({
       name: 'author',
       type: 'reference',
       to: {type: 'author'},
-      description: 'Defaults to Asher Aw. Change it any time — e.g. for a guest post.',
       initialValue: async (_params, context) => {
         const client = context.getClient({apiVersion: '2023-01-01'})
         const defaultAuthorId = await client.fetch<string | null>(
@@ -48,7 +47,8 @@ export const postType = defineType({
     defineField({
       name: 'categories',
       type: 'array',
-      of: [defineArrayMember({type: 'reference', to: {type: 'category'}})],
+      description: 'Pick from existing categories. To add a brand-new category, do that from the Categories tab in the left sidebar, then come back here to pick it.',
+      of: [defineArrayMember({type: 'reference', to: {type: 'category'}, options: {disableNew: true}})],
     }),
     defineField({
       name: 'primaryCategory',
@@ -58,6 +58,7 @@ export const postType = defineType({
       description:
         "Which category should show in the breadcrumb and drive this post's main topic. Only matters if you picked more than one category above — leave blank to just use the first one.",
       options: {
+        disableNew: true,
         filter: ({document}) => {
           const selected = ((document as {categories?: {_ref: string}[]})?.categories ?? []).map((c) => c._ref)
           return {filter: '_id in $selected', params: {selected}}
