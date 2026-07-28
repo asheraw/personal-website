@@ -4,7 +4,10 @@ import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
 
-const CARD_BLURB_LENGTH = 200;
+// Matches the excerpt field's own 160-character guidance in Studio, so
+// a manually-written excerpt basically never needs trimming here -- this
+// mainly kicks in for the auto-generated fallback pulled from post body.
+const CARD_BLURB_LENGTH = 160;
 
 export function PostCard({ post }: { post: PostSummary }) {
   const blurbSource = post.excerpt || post.autoExcerpt;

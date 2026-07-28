@@ -32,7 +32,6 @@ export const POST_BY_SLUG_QUERY = `
     body,
     mainImage,
     seoTitle,
-    seoDescription,
     socialImage,
     noIndex,
     tags,

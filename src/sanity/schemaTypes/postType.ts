@@ -73,10 +73,12 @@ export const postType = defineType({
     }),
     defineField({
       name: 'excerpt',
+      title: 'Excerpt / SEO description',
       type: 'text',
       rows: 3,
-      description: 'A short summary shown in post listings and used as the search-engine description when no SEO description is set below.',
-      validation: (rule) => rule.max(300),
+      description:
+        'Shown on the blog listing AND used as the search-engine/social description — one summary, doing both jobs. Keep it under 160 characters; anything past that gets cut off in Google results and doesn’t help clicks anyway.',
+      validation: (rule) => rule.max(160).warning('Past ~160 characters this gets cut off in Google and social previews.'),
     }),
     defineField({
       name: 'body',
@@ -88,14 +90,6 @@ export const postType = defineType({
       type: 'string',
       description: 'Overrides the page title shown in search results and browser tabs. Leave blank to use the post title.',
       validation: (rule) => rule.max(70),
-    }),
-    defineField({
-      name: 'seoDescription',
-      title: 'SEO description (optional)',
-      type: 'text',
-      rows: 3,
-      description: 'Overrides the description shown in search results and social shares. Leave blank to use the excerpt.',
-      validation: (rule) => rule.max(160),
     }),
     defineField({
       name: 'socialImage',

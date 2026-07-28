@@ -24,7 +24,6 @@ type Post = {
   body: unknown;
   mainImage?: { asset?: { _ref: string }; alt?: string };
   seoTitle?: string;
-  seoDescription?: string;
   socialImage?: { asset?: { _ref: string } };
   noIndex?: boolean;
   tags?: string[];
@@ -47,7 +46,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!post) return {};
 
   const title = post.seoTitle || post.title;
-  const description = post.seoDescription || post.excerpt || undefined;
+  const description = post.excerpt || undefined;
   const imageSource = post.socialImage ?? post.mainImage;
   const image = imageSource ? urlFor(imageSource).width(1200).height(630).fit("crop").url() : undefined;
   const url = `${SITE_URL}/blog/${post.slug}`;
@@ -90,7 +89,7 @@ export default async function PostPage({ params }: PageProps) {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.seoDescription || post.excerpt,
+    description: post.excerpt,
     url,
     datePublished: post.publishedAt,
     dateModified: post._updatedAt,
