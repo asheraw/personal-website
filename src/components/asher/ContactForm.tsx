@@ -11,7 +11,7 @@ import { track } from "@/lib/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
-const NOTIFY_EMAIL = "hello@asheraw.com"; // TODO: replace with the real inbox to receive fallback mailto messages
+const NOTIFY_EMAIL = "hello@asheraw.com"; // confirmed correct inbox for fallback mailto messages (2026-07-28)
 
 const COUNTRY_CODES = [
   { code: "+65", label: "Singapore (+65)" },
