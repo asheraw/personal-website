@@ -9,7 +9,7 @@ import { truncateText } from "@/lib/text";
 // mainly kicks in for the auto-generated fallback pulled from post body.
 const CARD_BLURB_LENGTH = 160;
 
-export function PostCard({ post }: { post: PostSummary }) {
+export function PostCard({ post, priority = false }: { post: PostSummary; priority?: boolean }) {
   const blurbSource = post.excerpt || post.autoExcerpt;
   const blurb = blurbSource ? truncateText(blurbSource, CARD_BLURB_LENGTH) : undefined;
 
@@ -22,6 +22,11 @@ export function PostCard({ post }: { post: PostSummary }) {
             alt={post.mainImage.alt ?? post.title}
             width={1200}
             height={630}
+            // Only the first card on a page loads immediately (it's the one
+            // visible without scrolling) -- every other card's image loads
+            // lazily as the visitor scrolls down to it.
+            priority={priority}
+            loading={priority ? undefined : "lazy"}
             className="h-auto w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
           />
         </Link>

@@ -35,8 +35,8 @@ export default async function BlogPage() {
         )}
 
         <div className="mt-16 space-y-16">
-          {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
+          {posts.map((post, index) => (
+            <PostCard key={post._id} post={post} priority={index === 0} />
           ))}
         </div>
       </div>
