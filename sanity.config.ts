@@ -14,6 +14,7 @@ import {apiVersion, dataset, projectId} from './src/sanity/env'
 import {schema} from './src/sanity/schemaTypes'
 import {structure} from './src/sanity/structure'
 import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
+import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 
 export default defineConfig({
   basePath: '/studio',
@@ -24,9 +25,10 @@ export default defineConfig({
   document: {
     actions: (prev, context) => {
       if (context.schemaType !== 'post') return prev
-      return prev.map((action) =>
+      const withDateAction = prev.map((action) =>
         (action as {action?: string}).action === 'publish' ? withAutoPublishDate(action) : action
       )
+      return [openInPresentationAction, ...withDateAction]
     },
   },
   plugins: [
