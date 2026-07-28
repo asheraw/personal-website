@@ -5,8 +5,7 @@ import { urlFor } from "@/sanity/lib/image";
 import { notFound } from "next/navigation";
 import { draftMode } from "next/headers";
 import { PortableText } from "@portabletext/react";
-import { client } from "@/sanity/lib/client";
-import { previewClient } from "@/sanity/lib/preview-client";
+import { sanityFetch } from "@/sanity/lib/live";
 import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
@@ -38,17 +37,14 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-async function getPost(slug: string, isPreviewing: boolean) {
-  if (isPreviewing) {
-    return previewClient.fetch<Post | null>(POST_BY_SLUG_QUERY, { slug });
-  }
-  return client.fetch<Post | null>(POST_BY_SLUG_QUERY, { slug });
+async function getPost(slug: string) {
+  const { data } = await sanityFetch({ query: POST_BY_SLUG_QUERY, params: { slug } });
+  return data as Post | null;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const { isEnabled: isPreviewing } = await draftMode();
-  const post = await getPost(slug, isPreviewing);
+  const post = await getPost(slug);
   if (!post) return {};
 
   const title = post.seoTitle || post.title;
@@ -84,7 +80,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function PostPage({ params }: PageProps) {
   const { slug } = await params;
   const { isEnabled: isPreviewing } = await draftMode();
-  const post = await getPost(slug, isPreviewing);
+  const post = await getPost(slug);
 
   if (!post) {
     notFound();

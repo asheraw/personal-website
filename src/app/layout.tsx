@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { draftMode } from "next/headers";
 import { VisualEditing } from "next-sanity/visual-editing";
+import { SanityLive } from "@/sanity/lib/live";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/asher/ThemeProvider";
@@ -56,6 +57,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             connection (click-to-edit overlays, instant updates) when
             viewing a draft through Preview. Invisible otherwise. */}
         {isPreviewing && <VisualEditing />}
+        {/* Keeps pages that use sanityFetch() updated in real time. */}
+        <SanityLive />
       </body>
     </html>
   );
