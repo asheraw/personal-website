@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import { draftMode } from "next/headers";
+import { VisualEditing } from "next-sanity/visual-editing";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/asher/ThemeProvider";
@@ -36,7 +38,9 @@ export const metadata: Metadata = {
   icons: { icon: [{ url: "/favicon.ico" }, { url: "/icon.svg", type: "image/svg+xml" }] },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
+  const { isEnabled: isPreviewing } = await draftMode();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head><StructuredData /></head>
@@ -48,6 +52,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Toaster />
           <CookieConsent />
         </ThemeProvider>
+        {/* Lets Sanity Studio's Presentation tool establish its live
+            connection (click-to-edit overlays, instant updates) when
+            viewing a draft through Preview. Invisible otherwise. */}
+        {isPreviewing && <VisualEditing />}
       </body>
     </html>
   );

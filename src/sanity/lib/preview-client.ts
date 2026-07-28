@@ -12,4 +12,9 @@ export const previewClient = createClient({
   useCdn: false,
   token: process.env.SANITY_API_READ_TOKEN,
   perspective: "previewDrafts",
+  // Lets the Presentation tool's click-to-edit overlays know which
+  // field/document a piece of text on the page came from.
+  stega: {
+    studioUrl: "/studio",
+  },
 });
