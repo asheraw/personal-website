@@ -151,7 +151,7 @@ export default async function PostPage({ params }: PageProps) {
           </div>
 
           {post.mainImage && (
-            <div className="mt-10 overflow-hidden rounded-lg">
+            <div className="mt-10">
               <Image
                 src={urlFor(post.mainImage).width(1200).url()}
                 alt={post.mainImage.alt ?? post.title}

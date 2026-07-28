@@ -1,7 +1,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { PortableTextComponents } from "@portabletext/react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
+import { Accordion } from "@/components/asher/blog/Accordion";
+
+function getYouTubeId(url: string): string | null {
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
+  );
+  return match ? match[1] : null;
+}
+
+const CALLOUT_STYLES: Record<string, { label: string; classes: string }> = {
+  note: { label: "Note", classes: "border-spotlight/50 bg-spotlight/5" },
+  tip: { label: "Tip", classes: "border-emerald-500/40 bg-emerald-500/5" },
+  warning: { label: "Warning", classes: "border-destructive/50 bg-destructive/5" },
+};
 
 export const postBodyComponents: PortableTextComponents = {
   block: {
@@ -32,13 +48,22 @@ export const postBodyComponents: PortableTextComponents = {
   },
   list: {
     bullet: ({ children }) => <ul className="list-disc space-y-2 pl-6 text-ivory/90">{children}</ul>,
+    number: ({ children }) => <ol className="list-decimal space-y-2 pl-6 text-ivory/90">{children}</ol>,
   },
   listItem: {
     bullet: ({ children }) => <li className="leading-7">{children}</li>,
+    number: ({ children }) => <li className="leading-7">{children}</li>,
   },
   marks: {
     strong: ({ children }) => <strong className="font-semibold text-ivory">{children}</strong>,
     em: ({ children }) => <em className="italic">{children}</em>,
+    underline: ({ children }) => <span className="underline underline-offset-2">{children}</span>,
+    "strike-through": ({ children }) => <span className="line-through">{children}</span>,
+    code: ({ children }) => (
+      <code className="rounded bg-secondary px-1.5 py-0.5 font-mono-stage text-[0.9em] text-spotlight">
+        {children}
+      </code>
+    ),
     link: ({ value, children }) => {
       const href = (value?.href as string) ?? "#";
       const isExternal = /^https?:\/\//.test(href) && !href.includes("asheraw.com");
@@ -58,13 +83,56 @@ export const postBodyComponents: PortableTextComponents = {
     image: ({ value }) => {
       if (!value?.asset) return null;
       return (
-        <div className="my-8 overflow-hidden rounded-lg">
+        <figure className="my-8">
           <Image
             src={urlFor(value).width(1200).url()}
             alt={value.alt ?? ""}
             width={1200}
             height={800}
             className="h-auto w-full"
+          />
+          {value.caption && (
+            <figcaption className="mt-2 text-center font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60">
+              {value.caption}
+            </figcaption>
+          )}
+        </figure>
+      );
+    },
+    divider: () => <hr className="my-10 border-amber-faint" />,
+    codeBlock: ({ value }) => (
+      <div className="my-8 overflow-hidden rounded-lg border border-amber-faint text-sm">
+        <SyntaxHighlighter
+          language={value?.language || "text"}
+          style={oneDark}
+          customStyle={{ margin: 0, padding: "1.25rem", background: "transparent" }}
+          wrapLongLines
+        >
+          {value?.code || ""}
+        </SyntaxHighlighter>
+      </div>
+    ),
+    callout: ({ value }) => {
+      const style = CALLOUT_STYLES[value?.style as string] ?? CALLOUT_STYLES.note;
+      return (
+        <div className={`my-8 rounded-lg border px-5 py-4 ${style.classes}`}>
+          <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">{style.label}</p>
+          <p className="mt-2 whitespace-pre-wrap leading-relaxed text-ivory/90">{value?.text}</p>
+        </div>
+      );
+    },
+    accordion: ({ value }) => <Accordion title={value?.title} content={value?.content} />,
+    youtube: ({ value }) => {
+      const id = value?.url ? getYouTubeId(value.url as string) : null;
+      if (!id) return null;
+      return (
+        <div className="my-8 aspect-video overflow-hidden rounded-lg border border-amber-faint">
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${id}`}
+            title="YouTube video"
+            className="h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
           />
         </div>
       );

@@ -1,5 +1,8 @@
-import {defineType, defineArrayMember} from 'sanity'
+import {defineType, defineArrayMember, defineField} from 'sanity'
 import {ImageIcon} from '@sanity/icons/Image'
+import {CodeBlockIcon} from '@sanity/icons/CodeBlock'
+import {UlistIcon} from '@sanity/icons/Ulist'
+import {PlayIcon} from '@sanity/icons/Play'
 
 /**
  * This is the schema type for block content used in the post document type
@@ -11,6 +14,18 @@ import {ImageIcon} from '@sanity/icons/Image'
  *    type: 'blockContent'
  *  }
  */
+
+const CODE_LANGUAGES = [
+  {title: 'Plain text', value: 'text'},
+  {title: 'JavaScript', value: 'javascript'},
+  {title: 'TypeScript', value: 'typescript'},
+  {title: 'HTML', value: 'html'},
+  {title: 'CSS', value: 'css'},
+  {title: 'JSON', value: 'json'},
+  {title: 'Bash / Shell', value: 'bash'},
+  {title: 'Python', value: 'python'},
+  {title: 'Markdown', value: 'markdown'},
+]
 
 export const blockContentType = defineType({
   title: 'Block Content',
@@ -31,7 +46,10 @@ export const blockContentType = defineType({
         {title: 'H4', value: 'h4'},
         {title: 'Quote', value: 'blockquote'},
       ],
-      lists: [{title: 'Bullet', value: 'bullet'}],
+      lists: [
+        {title: 'Bullet', value: 'bullet'},
+        {title: 'Numbered', value: 'number'},
+      ],
       // Marks let you mark up inline text in the Portable Text Editor
       marks: {
         // Decorators usually describe a single property – e.g. a typographic
@@ -39,6 +57,9 @@ export const blockContentType = defineType({
         decorators: [
           {title: 'Strong', value: 'strong'},
           {title: 'Emphasis', value: 'em'},
+          {title: 'Underline', value: 'underline'},
+          {title: 'Strike', value: 'strike-through'},
+          {title: 'Inline code', value: 'code'},
         ],
         // Annotations can be any object structure – e.g. a link or a footnote.
         annotations: [
@@ -65,12 +86,116 @@ export const blockContentType = defineType({
       icon: ImageIcon,
       options: {hotspot: true},
       fields: [
-        {
+        defineField({
           name: 'alt',
           type: 'string',
-          title: 'Alternative Text',
-        }
-      ]
+          title: 'Alternative text',
+          description: 'Describe the image for screen readers and search engines.',
+        }),
+        defineField({
+          name: 'caption',
+          type: 'string',
+          title: 'Caption (optional)',
+          description: 'Shown beneath the image.',
+        }),
+      ],
+    }),
+    defineArrayMember({
+      type: 'object',
+      name: 'divider',
+      title: 'Divider',
+      icon: UlistIcon,
+      fields: [defineField({name: 'style', type: 'string', hidden: true, initialValue: 'divider'})],
+      preview: {prepare: () => ({title: '— Divider —'})},
+    }),
+    defineArrayMember({
+      type: 'object',
+      name: 'codeBlock',
+      title: 'Code block',
+      icon: CodeBlockIcon,
+      fields: [
+        defineField({
+          name: 'language',
+          title: 'Language',
+          type: 'string',
+          options: {list: CODE_LANGUAGES},
+          initialValue: 'text',
+        }),
+        defineField({
+          name: 'code',
+          title: 'Code',
+          type: 'text',
+          rows: 8,
+        }),
+      ],
+      preview: {
+        select: {code: 'code', language: 'language'},
+        prepare: ({code, language}) => ({
+          title: code ? code.split('\n')[0] : 'Code block',
+          subtitle: language,
+        }),
+      },
+    }),
+    defineArrayMember({
+      type: 'object',
+      name: 'callout',
+      title: 'Callout',
+      fields: [
+        defineField({
+          name: 'style',
+          title: 'Style',
+          type: 'string',
+          options: {
+            list: [
+              {title: 'Note', value: 'note'},
+              {title: 'Tip', value: 'tip'},
+              {title: 'Warning', value: 'warning'},
+            ],
+          },
+          initialValue: 'note',
+        }),
+        defineField({
+          name: 'text',
+          title: 'Text',
+          type: 'text',
+          rows: 3,
+        }),
+      ],
+      preview: {
+        select: {text: 'text', style: 'style'},
+        prepare: ({text, style}) => ({title: text || 'Callout', subtitle: style}),
+      },
+    }),
+    defineArrayMember({
+      type: 'object',
+      name: 'accordion',
+      title: 'Accordion (show/hide)',
+      fields: [
+        defineField({name: 'title', title: 'Heading (always visible)', type: 'string'}),
+        defineField({name: 'content', title: 'Content (hidden until clicked)', type: 'text', rows: 4}),
+      ],
+      preview: {
+        select: {title: 'title'},
+        prepare: ({title}) => ({title: title || 'Accordion'}),
+      },
+    }),
+    defineArrayMember({
+      type: 'object',
+      name: 'youtube',
+      title: 'YouTube embed',
+      icon: PlayIcon,
+      fields: [
+        defineField({
+          name: 'url',
+          title: 'YouTube URL',
+          type: 'url',
+          description: 'Paste the full video URL, e.g. https://www.youtube.com/watch?v=...',
+        }),
+      ],
+      preview: {
+        select: {url: 'url'},
+        prepare: ({url}) => ({title: 'YouTube embed', subtitle: url}),
+      },
     }),
   ],
 })

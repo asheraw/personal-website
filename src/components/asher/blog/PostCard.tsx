@@ -7,7 +7,7 @@ export function PostCard({ post }: { post: PostSummary }) {
   return (
     <article className="border-b border-amber-faint pb-12 last:border-none">
       {post.mainImage && (
-        <Link href={`/blog/${post.slug}`} className="block mb-5 overflow-hidden rounded-lg">
+        <Link href={`/blog/${post.slug}`} className="block mb-5">
           <Image
             src={urlFor(post.mainImage).width(1200).height(630).fit("crop").url()}
             alt={post.mainImage.alt ?? post.title}
@@ -33,14 +33,6 @@ export function PostCard({ post }: { post: PostSummary }) {
               day: "numeric",
             })}
           </time>
-        )}
-        {post.author && (
-          <>
-            <span aria-hidden="true">·</span>
-            <Link href={`/blog/author/${post.author.slug}`} className="transition-colors hover:text-spotlight">
-              {post.author.name}
-            </Link>
-          </>
         )}
         {post.categories?.map((category) => (
           <Link

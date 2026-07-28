@@ -28,7 +28,7 @@ export function SiteHeader({ mode = "story", setMode }: { mode?: Mode; setMode?:
       <div className="mx-auto max-w-[1500px] px-5 sm:px-8 lg:px-12">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
-            <a href="#top" className="group flex items-center gap-3">
+            <a href="/#top" className="group flex items-center gap-3">
               <span className="font-display text-xl font-semibold tracking-tight text-ivory" style={{ letterSpacing: "-0.01em" }}>Asher <span className="text-spotlight">Aw</span></span>
               <span className="hidden font-mono-stage text-[10px] uppercase tracking-[0.3em] text-stone/70 sm:inline-block">Actor · Coach · Storyteller</span>
             </a>
