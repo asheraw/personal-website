@@ -74,9 +74,35 @@ See **BACKUP_AND_RECOVERY_GUIDE.md** for the full explanation and the one-time s
 
 ## Contact form: "A visitor said the form didn't work" / "I'm not getting notification emails"
 
-- The form saves every submission to a database table (`ContactSubmission`) *and* tries to send you a notification email via Resend. If Resend isn't configured, the submission is still saved — you just don't get an email about it. So: if someone says they submitted the form but you got no email, the message may still exist in the database even if notification failed.
-- Required for the notification email to work: `RESEND_API_KEY` and `CONTACT_NOTIFICATION_EMAIL` environment variables must be set wherever the site is actually deployed (Vercel's project settings — not just a local `.env` file, which never reaches production).
-- As of 2026-07-28 the contact form was confirmed working in production (tested, notification email received) — if it breaks later, the first thing to check is whether those two environment variables are still correctly set in Vercel.
+- The form saves every submission as a **Contact Submission** document in Sanity (visible in Studio's left
+  sidebar) *and* tries to send you a notification email via Resend. If Resend isn't configured, the
+  submission is still saved — you just don't get an email about it. So: if someone says they submitted the
+  form but you got no email, check Studio → Contact Submissions before assuming it's lost.
+- Required for the notification email to work: `RESEND_API_KEY` and `CONTACT_NOTIFICATION_EMAIL` environment
+  variables must be set in Vercel's project settings (not just a local `.env` file, which never reaches
+  production).
+- As of 2026-07-28 the contact form was confirmed working in production (tested, notification email
+  received) — if it breaks later, the first thing to check is whether those two environment variables are
+  still correctly set in Vercel.
+
+**One-time setup for saving submissions (do this once):** the form needs a Sanity token that can *write*
+content, not just read it — different from every other token set up so far in this guide, which are all
+read-only.
+1. [sanity.io/manage](https://www.sanity.io/manage) → your project → **API** → **Tokens** → **Add API token**.
+2. Name it something like `Contact Form Writer`. Permissions: **Editor** (needs to create and update
+   submission records — Viewer alone won't work here).
+3. Copy the token, add it to **Vercel** (Settings → Environment Variables) as `SANITY_API_WRITE_TOKEN` →
+   redeploy.
+
+**If submissions stop saving:** almost always this token — expired, revoked, or never set for the right
+Vercel environment. The error in Vercel's logs will say something like `Insufficient permissions; permission
+"create" required`, which confirms it's this token, not something else.
+
+**History:** originally used a separate Postgres database (via Supabase) for this. Migrated to Sanity on
+2026-07-28 after Supabase's free tier auto-paused the project from inactivity (it pauses after ~1 week with
+no activity, and needs a manual unpause). Storing submissions in Sanity instead means no second service that
+can silently go to sleep, and submissions are automatically swept up by the same daily backup that covers
+blog content.
 
 ---
 

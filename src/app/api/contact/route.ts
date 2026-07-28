@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
-import { db } from "@/lib/db";
+import { writeClient } from "@/sanity/lib/write-client";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const NOTIFY_EMAIL = process.env.CONTACT_NOTIFICATION_EMAIL || "";
@@ -29,17 +29,25 @@ export async function POST(request: NextRequest) {
     const phone = body.phone || "";
     const ip = request.headers.get("x-forwarded-for") || "unknown";
 
-    // Step 1: write to the database FIRST, before attempting to send.
+    // Step 1: write to Sanity FIRST, before attempting to send.
     // This is the record that survives even if the email step fails outright.
     let submission;
     try {
-      submission = await db.contactSubmission.create({
-        data: { name, email, subject, message, countryCode, phone, ip },
+      submission = await writeClient.create({
+        _type: "contactSubmission",
+        name,
+        email,
+        subject,
+        message,
+        countryCode,
+        phone,
+        ip,
+        emailSent: false,
       });
     } catch (dbError) {
-      // If even the database write fails, we genuinely have nothing —
+      // If even the save fails, we genuinely have nothing —
       // tell the client honestly so it can offer the mailto fallback.
-      console.error("[contact] Database write failed:", dbError);
+      console.error("[contact] Sanity write failed:", dbError);
       return NextResponse.json(
         { success: false, error: "Could not process your message. Please use the email link below instead." },
         { status: 500 }
@@ -64,22 +72,16 @@ export async function POST(request: NextRequest) {
         text: `From: ${name} <${email}>\nPhone: ${countryCode} ${phone}\n\n${message}`,
       });
 
-      await db.contactSubmission.update({
-        where: { id: submission.id },
-        data: { emailSent: true },
-      });
+      await writeClient.patch(submission._id).set({ emailSent: true }).commit();
 
       return NextResponse.json({ success: true, message: "Submission received." });
     } catch (emailError) {
       const errMsg = emailError instanceof Error ? emailError.message : "Unknown email error";
       console.error("[contact] Email send failed:", errMsg);
 
-      await db.contactSubmission.update({
-        where: { id: submission.id },
-        data: { emailError: errMsg },
-      });
+      await writeClient.patch(submission._id).set({ emailError: errMsg }).commit();
 
-      // The message IS saved in the database — but Asher won't see it until
+      // The message IS saved in Sanity — but Asher won't see it until
       // he checks manually, so tell the visitor honestly and offer the fallback.
       return NextResponse.json({
         success: false,
