@@ -13,8 +13,14 @@ export const previewClient = createClient({
   token: process.env.SANITY_API_READ_TOKEN,
   perspective: "previewDrafts",
   // Lets the Presentation tool's click-to-edit overlays know which
-  // field/document a piece of text on the page came from.
+  // field/document a piece of text on the page came from. `enabled`
+  // defaults to false in Sanity's client -- without it, nothing gets
+  // encoded and there's nothing for the overlays to attach to, even
+  // with VisualEditing mounted correctly. Safe to always leave on here
+  // since this client is only ever used inside Draft Mode / preview,
+  // never for regular public page views.
   stega: {
+    enabled: true,
     studioUrl: "/studio",
   },
 });

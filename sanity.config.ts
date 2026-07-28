@@ -28,7 +28,10 @@ export default defineConfig({
       const withDateAction = prev.map((action) =>
         (action as {action?: string}).action === 'publish' ? withAutoPublishDate(action) : action
       )
-      return [openInPresentationAction, ...withDateAction]
+      // Publish must stay the primary (first) action -- Studio renders
+      // whichever action is first as the big prominent button. Preview
+      // goes right after it as a secondary action instead.
+      return [withDateAction[0], openInPresentationAction, ...withDateAction.slice(1)]
     },
   },
   plugins: [
