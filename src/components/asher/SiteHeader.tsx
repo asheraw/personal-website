@@ -44,13 +44,13 @@ export function SiteHeader({ mode = "story", setMode }: { mode?: Mode; setMode?:
             )}
           </div>
           <div className="flex items-center gap-3">
-            <a href="/blog" onClick={() => track({ action: "nav_click", category: "navigation", label: "blog" })} className="hidden font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70 transition-colors hover:text-spotlight sm:inline-block">
+            <a href="/blog" onClick={() => track({ action: "nav_click", category: "navigation", label: "blog" })} className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70 transition-colors hover:text-spotlight">
               Blog
             </a>
             <button type="button" onClick={() => { track({ action: "theme_toggle", category: "ui", label: theme === "dark" ? "dark_to_light" : "light_to_dark" }); toggleTheme(); }} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:text-spotlight" aria-label={theme === "dark" ? "Turn on the lights" : "Turn off the lights"} title={theme === "dark" ? "Turn on the lights" : "Turn off the lights"}>
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </button>
-            <a href="https://wa.me/6591881944" target="_blank" rel="noreferrer" onClick={() => track({ action: "whatsapp_click", category: "contact", label: "header" })} className="group inline-flex items-center gap-2 rounded-full bg-spotlight px-5 py-2 font-mono-stage text-xs uppercase tracking-[0.18em] text-stage transition-all hover:scale-[1.03]">WhatsApp Asher</a>
+            <a href="https://wa.me/6591881944" target="_blank" rel="noreferrer" onClick={() => track({ action: "whatsapp_click", category: "contact", label: "header" })} className="group inline-flex items-center gap-2 rounded-full bg-spotlight px-5 py-2 font-mono-stage text-xs uppercase tracking-[0.18em] text-stage transition-all hover:scale-[1.03]">WhatsApp</a>
           </div>
         </div>
       </div>
