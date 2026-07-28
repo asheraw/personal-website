@@ -29,6 +29,10 @@ The backup robot needs permission to read your Sanity content. This takes about 
 
 That's it. The backup will now run automatically every day at 9am UTC. You can also trigger it manually any time: go to the **Actions** tab on GitHub, click **Daily Content Backup** in the left list, then **Run workflow**.
 
+## Does it save a new copy every day even if nothing changed?
+
+No. Every day it checks your content, but it only actually saves a new backup copy if something is genuinely different from the last one (a new post, an edit, a deleted post, etc.). If nothing changed, it logs "no changes" and moves on — no clutter, nothing extra stored. You'll see this reflected in the Actions tab: some daily runs will show a backup file attached, others won't (because there was nothing new to save that day).
+
 ## Where to find a backup
 
 - Go to the **Actions** tab on GitHub → **Daily Content Backup** → click any past run → scroll to **Artifacts** → download the `.tar.gz` file.
@@ -44,6 +48,10 @@ Sanity keeps its own "trash"/history for a little while after a change — this 
 2. You'll need someone with the Sanity CLI installed to run one command to import it back in:
    `npx sanity dataset import sanity-backup-2026-07-28.tar.gz production`
 3. This is a good moment to ask your developer/agent for help rather than doing it solo — restoring into the *wrong* dataset would overwrite live content.
+
+## If a backup run fails with a permissions error
+
+The backup remembers "yesterday's fingerprint" by saving a tiny text file back into your GitHub repo. If your repo's default settings don't allow that, you'll see a failed run mentioning permissions. To fix: on GitHub, go to **Settings → Actions → General → Workflow permissions**, choose **Read and write permissions**, then **Save**. One-time fix, not something you'll need to touch again.
 
 ## What this does NOT yet cover
 

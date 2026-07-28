@@ -4,6 +4,11 @@ name: Daily Content Backup
 # to a downloadable file, once a day, automatically. This runs on GitHub's
 # servers, not on Asher's computer, so it happens even if the laptop is off.
 #
+# To avoid piling up identical copies, a saved backup only happens on days
+# when the content actually changed. A tiny fingerprint file
+# (.backup-state/last-hash.txt) is how it remembers what "yesterday" looked
+# like -- it's just a short line of text, not a copy of your content.
+#
 # Requires a repository secret named SANITY_API_TOKEN.
 # See BACKUP_AND_RECOVERY_GUIDE.md for setup steps and how to restore.
 
@@ -11,6 +16,9 @@ on:
   schedule:
     - cron: '0 9 * * *' # every day at 09:00 UTC
   workflow_dispatch: {} # lets a human trigger it manually from the Actions tab
+
+permissions:
+  contents: write # needed so the workflow can update the fingerprint file
 
 jobs:
   backup:
@@ -35,12 +43,46 @@ jobs:
             echo "::error::SANITY_API_TOKEN secret is not set. See BACKUP_AND_RECOVERY_GUIDE.md."
             exit 1
           fi
-          DATE=$(date +%Y-%m-%d)
-          npx sanity dataset export production "sanity-backup-$DATE.tar.gz" --token "$SANITY_API_TOKEN"
+          npx sanity dataset export production sanity-backup.tar.gz --token "$SANITY_API_TOKEN"
+
+      - name: Check whether content actually changed since the last backup
+        id: check
+        run: |
+          # Hash only the actual document content, not the .tar.gz container
+          # (the container's timestamps differ every run even with no real changes).
+          NEW_HASH=$(tar -xzf sanity-backup.tar.gz -O data.ndjson | sha256sum | cut -d' ' -f1)
+          OLD_HASH=""
+          if [ -f .backup-state/last-hash.txt ]; then
+            OLD_HASH=$(cat .backup-state/last-hash.txt)
+          fi
+          echo "new_hash=$NEW_HASH" >> "$GITHUB_OUTPUT"
+          if [ "$NEW_HASH" = "$OLD_HASH" ]; then
+            echo "No content changes since the last backup -- skipping."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Content changed since the last backup -- saving a new one."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rename backup with today's date
+        if: steps.check.outputs.changed == 'true'
+        run: mv sanity-backup.tar.gz "sanity-backup-$(date +%Y-%m-%d).tar.gz"
 
       - name: Upload backup as an artifact
+        if: steps.check.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: sanity-backup-${{ github.run_id }}
           path: sanity-backup-*.tar.gz
           retention-days: 30
+
+      - name: Record today's fingerprint
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          mkdir -p .backup-state
+          echo "${{ steps.check.outputs.new_hash }}" > .backup-state/last-hash.txt
+          git config user.name "asheraw-backup-bot"
+          git config user.email "actions@github.com"
+          git add .backup-state/last-hash.txt
+          git commit -m "Update content backup fingerprint [skip ci]"
+          git push
