@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { client } from "@/sanity/lib/client";
 import { CATEGORY_BY_SLUG_QUERY, POSTS_BY_CATEGORY_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { PostCard } from "@/components/asher/blog/PostCard";
+import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 
 export const revalidate = 60;
 
@@ -38,26 +39,31 @@ export default async function CategoryPage({ params }: PageProps) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
-      <nav className="mb-6 text-sm text-muted-foreground">
-        <Link href="/blog" className="hover:underline">
-          Blog
-        </Link>{" "}
-        / {category.title}
-      </nav>
+    <BlogChrome>
+      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+        <nav className="mb-6 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
+          <Link href="/blog" className="transition-colors hover:text-spotlight">
+            Blog
+          </Link>{" "}
+          / {category.title}
+        </nav>
 
-      <h1 className="mb-3 text-4xl font-bold">{category.title}</h1>
-      {category.description && <p className="mb-12 text-muted-foreground">{category.description}</p>}
+        <p className="font-mono-stage text-[10px] uppercase tracking-[0.3em] text-spotlight/70">Category</p>
+        <h1 className="mt-3 font-display text-4xl font-semibold tracking-[-0.01em] text-ivory sm:text-5xl">
+          {category.title}
+        </h1>
+        {category.description && <p className="mt-4 max-w-xl leading-relaxed text-stone/80">{category.description}</p>}
 
-      {posts.length === 0 ? (
-        <p className="text-muted-foreground">No posts in this category yet.</p>
-      ) : (
-        <div className="space-y-12">
-          {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
-          ))}
-        </div>
-      )}
-    </main>
+        {posts.length === 0 ? (
+          <p className="mt-16 text-stone/70">No posts in this category yet.</p>
+        ) : (
+          <div className="mt-16 space-y-16">
+            {posts.map((post) => (
+              <PostCard key={post._id} post={post} />
+            ))}
+          </div>
+        )}
+      </div>
+    </BlogChrome>
   );
 }

@@ -7,6 +7,8 @@ import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import { AUTHOR_BY_SLUG_QUERY, POSTS_BY_AUTHOR_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { PostCard } from "@/components/asher/blog/PostCard";
+import { BlogChrome } from "@/components/asher/blog/BlogChrome";
+import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
 
 export const revalidate = 60;
 
@@ -47,43 +49,49 @@ export default async function AuthorPage({ params }: PageProps) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
-      <nav className="mb-6 text-sm text-muted-foreground">
-        <Link href="/blog" className="hover:underline">
-          Blog
-        </Link>{" "}
-        / {author.name}
-      </nav>
+    <BlogChrome>
+      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+        <nav className="mb-6 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
+          <Link href="/blog" className="transition-colors hover:text-spotlight">
+            Blog
+          </Link>{" "}
+          / {author.name}
+        </nav>
 
-      <div className="flex items-center gap-4 mb-12">
-        {author.image && (
-          <Image
-            src={urlFor(author.image).width(96).height(96).fit("crop").url()}
-            alt={author.name}
-            width={96}
-            height={96}
-            className="rounded-full"
-          />
+        <div className="flex items-center gap-5">
+          {author.image && (
+            <Image
+              src={urlFor(author.image).width(96).height(96).fit("crop").url()}
+              alt={author.name}
+              width={96}
+              height={96}
+              className="rounded-full border border-amber-faint"
+            />
+          )}
+          <div>
+            <p className="font-mono-stage text-[10px] uppercase tracking-[0.3em] text-spotlight/70">Author</p>
+            <h1 className="mt-1 font-display text-3xl font-semibold tracking-[-0.01em] text-ivory sm:text-4xl">
+              {author.name}
+            </h1>
+          </div>
+        </div>
+
+        {author.bio ? (
+          <div className="mt-6 max-w-xl text-stone/85">
+            <PortableText value={author.bio as never} components={postBodyComponents} />
+          </div>
+        ) : null}
+
+        {posts.length === 0 ? (
+          <p className="mt-16 text-stone/70">No posts from this author yet.</p>
+        ) : (
+          <div className="mt-16 space-y-16">
+            {posts.map((post) => (
+              <PostCard key={post._id} post={post} />
+            ))}
+          </div>
         )}
-        <div>
-          <h1 className="text-3xl font-bold">{author.name}</h1>
-          {author.bio ? (
-            <div className="text-muted-foreground mt-1">
-              <PortableText value={author.bio as never} />
-            </div>
-          ) : null}
-        </div>
       </div>
-
-      {posts.length === 0 ? (
-        <p className="text-muted-foreground">No posts from this author yet.</p>
-      ) : (
-        <div className="space-y-12">
-          {posts.map((post) => (
-            <PostCard key={post._id} post={post} />
-          ))}
-        </div>
-      )}
-    </main>
+    </BlogChrome>
   );
 }

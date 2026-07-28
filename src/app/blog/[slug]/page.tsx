@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import { client } from "@/sanity/lib/client";
 import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
+import { BlogChrome } from "@/components/asher/blog/BlogChrome";
+import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
 
 // Re-check Sanity for new or edited posts at most once per minute,
 // instead of only ever showing what existed at the last deploy.
@@ -97,89 +99,107 @@ export default async function PostPage({ params }: PageProps) {
   };
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
-      <script
-        type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+    <BlogChrome>
+      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
 
-      <nav className="mb-6 text-sm text-muted-foreground">
-        <Link href="/blog" className="hover:underline">
-          Blog
-        </Link>
-        {post.categories?.[0] && (
-          <>
-            {" "}
-            /{" "}
-            <Link href={`/blog/category/${post.categories[0].slug}`} className="hover:underline">
-              {post.categories[0].title}
-            </Link>
-          </>
-        )}
-      </nav>
-
-      <article>
-        <h1 className="mb-3 text-4xl font-bold">{post.title}</h1>
-
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-10 text-sm text-gray-500">
-          {post.publishedAt && (
-            <time dateTime={post.publishedAt}>
-              {new Date(post.publishedAt).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </time>
-          )}
-          {post.author && (
+        <nav className="mb-6 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
+          <Link href="/blog" className="transition-colors hover:text-spotlight">
+            Blog
+          </Link>
+          {post.categories?.[0] && (
             <>
-              <span aria-hidden="true">·</span>
-              <Link href={`/blog/author/${post.author.slug}`} className="hover:underline">
-                {post.author.name}
+              {" "}
+              /{" "}
+              <Link
+                href={`/blog/category/${post.categories[0].slug}`}
+                className="transition-colors hover:text-spotlight"
+              >
+                {post.categories[0].title}
               </Link>
             </>
           )}
-        </div>
+        </nav>
 
-        {post.mainImage && (
-          <Image
-            src={urlFor(post.mainImage).width(1200).url()}
-            alt={post.mainImage.alt ?? post.title}
-            width={1200}
-            height={675}
-            className="rounded-lg w-full h-auto mb-10"
-            priority
-          />
-        )}
+        <article>
+          <h1 className="font-display text-4xl font-semibold tracking-[-0.01em] text-ivory sm:text-5xl">
+            {post.title}
+          </h1>
 
-        <div className="space-y-6 text-lg leading-8">
-          <PortableText value={post.body as never} />
-        </div>
-
-        {(post.categories?.length || post.tags?.length) && (
-          <div className="mt-12 flex flex-wrap gap-2 border-t border-border pt-6">
-            {post.categories?.map((category) => (
-              <Link
-                key={category.slug}
-                href={`/blog/category/${category.slug}`}
-                className="rounded-full border border-border px-3 py-1 text-sm hover:bg-muted"
-              >
-                {category.title}
-              </Link>
-            ))}
-            {post.tags?.map((tag) => (
-              <Link
-                key={tag}
-                href={`/blog/tag/${encodeURIComponent(tag)}`}
-                className="rounded-full bg-muted px-3 py-1 text-sm hover:bg-muted/70"
-              >
-                #{tag}
-              </Link>
-            ))}
+          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
+            {post.publishedAt && (
+              <time dateTime={post.publishedAt}>
+                {new Date(post.publishedAt).toLocaleDateString(undefined, {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+            )}
+            {post.author && (
+              <>
+                <span aria-hidden="true">·</span>
+                <Link href={`/blog/author/${post.author.slug}`} className="transition-colors hover:text-spotlight">
+                  {post.author.name}
+                </Link>
+              </>
+            )}
           </div>
-        )}
-      </article>
-    </main>
+
+          {post.mainImage && (
+            <div className="mt-10 overflow-hidden rounded-lg">
+              <Image
+                src={urlFor(post.mainImage).width(1200).url()}
+                alt={post.mainImage.alt ?? post.title}
+                width={1200}
+                height={675}
+                className="h-auto w-full"
+                priority
+              />
+            </div>
+          )}
+
+          <div className="mt-10 space-y-6 text-lg">
+            <PortableText value={post.body as never} components={postBodyComponents} />
+          </div>
+
+          {(post.categories?.length || post.tags?.length) ? (
+            <div className="mt-14 flex flex-wrap gap-2 border-t border-amber-faint pt-8">
+              {post.categories?.map((category) => (
+                <Link
+                  key={category.slug}
+                  href={`/blog/category/${category.slug}`}
+                  className="rounded-full border border-amber-faint px-3 py-1 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/80 transition-colors hover:border-spotlight/50 hover:text-spotlight"
+                >
+                  {category.title}
+                </Link>
+              ))}
+              {post.tags?.map((tag) => (
+                <Link
+                  key={tag}
+                  href={`/blog/tag/${encodeURIComponent(tag)}`}
+                  className="rounded-full bg-secondary px-3 py-1 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/80 transition-colors hover:text-spotlight"
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="mt-14 border-t border-amber-faint pt-8">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-1.5 font-mono-stage text-xs uppercase tracking-[0.18em] text-spotlight transition-all hover:gap-2.5"
+            >
+              <span aria-hidden="true">←</span> Back to blog
+            </Link>
+          </div>
+        </article>
+      </div>
+    </BlogChrome>
   );
 }
