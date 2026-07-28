@@ -9,6 +9,10 @@ name: Daily Content Backup
 # (.backup-state/last-hash.txt) is how it remembers what "yesterday" looked
 # like -- it's just a short line of text, not a copy of your content.
 #
+# This only installs the one small tool needed to talk to Sanity -- it does
+# NOT install or build the whole website, so it can't be broken by unrelated
+# website dependency changes.
+#
 # Requires a repository secret named SANITY_API_TOKEN.
 # See BACKUP_AND_RECOVERY_GUIDE.md for setup steps and how to restore.
 
@@ -20,6 +24,12 @@ on:
 permissions:
   contents: write # needed so the workflow can update the fingerprint file
 
+env:
+  # Public project identifiers (not secret) -- same values as .env.local,
+  # repeated here because CI doesn't have access to that (gitignored) file.
+  NEXT_PUBLIC_SANITY_PROJECT_ID: oj9eajjd
+  NEXT_PUBLIC_SANITY_DATASET: production
+
 jobs:
   backup:
     runs-on: ubuntu-latest
@@ -30,10 +40,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install the Sanity CLI only
+        run: npm install --no-save sanity@^5.31.1
 
       - name: Export Sanity content
         env:
