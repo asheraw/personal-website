@@ -9,15 +9,49 @@ import { track } from "@/lib/analytics";
 const BOOT_LINES = ["/ entering_stage", "/ lights_dimming", "/ script_loaded", "/ finding_your_voice", "/ the_story_begins"];
 const PROGRESS_STEPS = ["INITIALISING SCENE", "PREPARING SCROLL VECTOR", "AUTHENTICATING RUNTIME", "LOADING CHARACTER", "SEQUENCE INITIATED"];
 
-let hasBootedThisSession = false;
+// Once-per-day, not once-per-session -- persists across refreshes and new
+// visits (unlike a plain in-memory flag, which resets on every reload),
+// and resets naturally once a new calendar day starts. Same component
+// renders at every screen size, so this covers mobile automatically too.
+const BOOT_STORAGE_KEY = "asheraw-boot-shown-date";
+
+function hasBootedToday(): boolean {
+  try {
+    return window.localStorage.getItem(BOOT_STORAGE_KEY) === new Date().toDateString();
+  } catch {
+    return false; // private browsing / storage blocked -- just replays each time
+  }
+}
+
+function markBootedToday() {
+  try {
+    window.localStorage.setItem(BOOT_STORAGE_KEY, new Date().toDateString());
+  } catch {
+    // ignore -- nothing to persist to
+  }
+}
 
 export function BootHero() {
-  const [booted, setBooted] = useState(hasBootedThisSession);
-  const [hideOverlay, setHideOverlay] = useState(hasBootedThisSession);
-  const [visibleLines, setVisibleLines] = useState(hasBootedThisSession ? BOOT_LINES.length : 0);
-  const [progress, setProgress] = useState(hasBootedThisSession ? 100 : 0);
+  // Always start "not booted" -- matches what the server renders, so
+  // hydration doesn't mismatch. If it already ran today, a useEffect below
+  // (client-only, where localStorage actually exists) skips straight to
+  // the finished state right after mount.
+  const [booted, setBooted] = useState(false);
+  const [hideOverlay, setHideOverlay] = useState(false);
+  const [visibleLines, setVisibleLines] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [stepLabel, setStepLabel] = useState(PROGRESS_STEPS[0]);
   const { theme, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    if (hasBootedToday()) {
+      setBooted(true);
+      setHideOverlay(true);
+      setVisibleLines(BOOT_LINES.length);
+      setProgress(100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (booted) return;
@@ -38,7 +72,7 @@ export function BootHero() {
       const stepIdx = Math.min(PROGRESS_STEPS.length - 1, Math.floor(eased * PROGRESS_STEPS.length));
       setStepLabel(PROGRESS_STEPS[stepIdx]);
       if (t < 1) raf = requestAnimationFrame(tick);
-      else { setBooted(true); hasBootedThisSession = true; setTimeout(() => setHideOverlay(true), 600); }
+      else { setBooted(true); markBootedToday(); setTimeout(() => setHideOverlay(true), 600); }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);

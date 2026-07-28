@@ -161,7 +161,15 @@ export function ContactForm() {
         <p className="mt-3 max-w-sm text-xs text-stone/50">This opens your email app with your message already filled in — just hit send.</p>
         <button
           type="button"
-          onClick={() => { setStatus("idle"); setErrorMsg(""); }}
+          onClick={() => {
+            setStatus("idle");
+            setErrorMsg("");
+            // Fresh challenge to solve, since the old one (and any wrong
+            // answer) shouldn't carry over — but lastSubmission is kept,
+            // so the form below re-fills with what they already typed.
+            setCaptcha({ a: Math.floor(Math.random() * 8) + 2, b: Math.floor(Math.random() * 8) + 2 });
+            setCaptchaAnswer("");
+          }}
           className="mt-4 font-mono-stage text-[10px] uppercase tracking-[0.2em] text-spotlight hover:underline"
         >
           Try the form again
@@ -178,16 +186,16 @@ export function ContactForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="name" className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Your Name <span className="text-spotlight">*</span></Label>
-          <Input id="name" name="name" required placeholder="Jane Doe" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
+          <Input id="name" name="name" required defaultValue={lastSubmission?.name} placeholder="Jane Doe" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="email" className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Reply Email <span className="text-spotlight">*</span></Label>
-          <Input id="email" name="email" type="email" required placeholder="jane@example.com" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
+          <Input id="email" name="email" type="email" required defaultValue={lastSubmission?.email} placeholder="jane@example.com" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
         </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="subject" className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Subject <span className="text-spotlight">*</span></Label>
-        <Input id="subject" name="subject" required placeholder="1:1 coaching, workshop enquiry, speaking..." className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
+        <Input id="subject" name="subject" required defaultValue={lastSubmission?.subject} placeholder="1:1 coaching, workshop enquiry, speaking..." className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
       </div>
       <div className="space-y-2">
         <Label className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Contact Number (with country code)</Label>
@@ -198,13 +206,13 @@ export function ContactForm() {
               {COUNTRY_CODES.map((c) => (<SelectItem key={c.code} value={c.code} className="text-ivory focus:bg-spotlight/10 focus:text-spotlight">{c.label}</SelectItem>))}
             </SelectContent>
           </Select>
-          <Input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" onInput={(e) => {e.currentTarget.value = e.currentTarget.value.replace(/\D/g, "");}} placeholder="Your mobile number" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
+          <Input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" defaultValue={lastSubmission?.phone} onInput={(e) => {e.currentTarget.value = e.currentTarget.value.replace(/\D/g, "");}} placeholder="Your mobile number" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
         </div>
         <p className="text-xs text-stone/50">If your country code isn&rsquo;t listed, select &ldquo;Other&rdquo; and include it in your message.</p>
       </div>
       <div className="space-y-2">
         <Label htmlFor="message" className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Message <span className="text-spotlight">*</span></Label>
-        <Textarea id="message" name="message" required rows={5} placeholder="Tell Asher what you&rsquo;re working on, what you need help with, or what you&rsquo;d like to explore together..." className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40 resize-none" />
+        <Textarea id="message" name="message" required rows={5} defaultValue={lastSubmission?.message} placeholder="Tell Asher what you&rsquo;re working on, what you need help with, or what you&rsquo;d like to explore together..." className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40 resize-none" />
       </div>
       <div className="space-y-2">
         <Label htmlFor="captcha" className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Quick check (helps stop spam) <span className="text-spotlight">*</span></Label>
