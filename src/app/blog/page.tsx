@@ -24,10 +24,10 @@ export default async function BlogPage() {
           Asher Aw
         </p>
         <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
-          Blog
+          Dig The Mind of Asher
         </h1>
         <p className="mt-4 max-w-xl leading-relaxed text-stone/80">
-          Essays, stories, and lessons on acting, coaching, and communicating ideas that connect.
+          Welcome to my blog, I&apos;m currently going through a revamp so there&apos;s many things that are still a Work-In-Progress.
         </p>
 
         {posts.length === 0 && (

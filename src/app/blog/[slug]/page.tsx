@@ -10,9 +10,12 @@ import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
 
-// Re-check Sanity for new or edited posts at most once per minute,
-// instead of only ever showing what existed at the last deploy.
-export const revalidate = 60;
+// No time-based revalidate here anymore -- sanityFetch() (via Sanity's
+// Live Content API) keeps this page fresh on its own, both for normal
+// visitors and for the live preview connection. Having both a fixed
+// revalidate timer AND live tag-based updates active on the same page
+// is the likely cause of every keystroke in Presentation forcing a full
+// page reload instead of a smooth in-place update.
 
 const SITE_URL = "https://asheraw.com";
 
