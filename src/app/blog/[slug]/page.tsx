@@ -4,6 +4,10 @@ import { notFound } from "next/navigation";
 import { PortableText } from "@portabletext/react";
 import { client } from "@/sanity/lib/client";
 
+// Re-check Sanity for new or edited posts at most once per minute,
+// instead of only ever showing what existed at the last deploy.
+export const revalidate = 60;
+
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
