@@ -12,6 +12,7 @@ import {
   Award,
 } from "lucide-react";
 import { Reveal, Eyebrow } from "./primitives";
+import { useTheme } from "./ThemeProvider";
 
 const TOPICS = [
   { icon: Award, title: "Personal Branding", body: "A brand voice that feels like you." },
@@ -32,6 +33,7 @@ const CREDENTIALS = [
 ];
 
 export function CoachingSection() {
+  const { theme } = useTheme();
   return (
     <section
       id="coaching"
@@ -65,7 +67,9 @@ export function CoachingSection() {
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgba(10,8,7,0.0) 40%, rgba(10,8,7,0.7) 100%)",
+                    theme === "dark"
+                      ? "linear-gradient(180deg, rgba(10,8,7,0.0) 40%, rgba(10,8,7,0.7) 100%)"
+                      : "linear-gradient(180deg, rgba(250,246,238,0.0) 40%, rgba(250,246,238,0.7) 100%)",
                 }}
               />
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4">

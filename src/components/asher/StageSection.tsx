@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { Drama, Crown, Users, ExternalLink } from "lucide-react";
 import { Reveal, Eyebrow, StatValue } from "./primitives";
 import { ROLES, STAGE_STATS, STAGE_PILLARS } from "./data";
+import { useTheme } from "./ThemeProvider";
 
 export function StageSection() {
+  const { theme } = useTheme();
   return (
     <section id="stage" className="relative overflow-hidden border-t border-amber-faint bg-stage px-5 py-24 sm:px-8 sm:py-32 lg:px-12">
       <div className="pointer-events-none absolute inset-0" aria-hidden style={{ background: "radial-gradient(ellipse 50% 50% at 80% 30%, rgba(240,184,101,0.10) 0%, transparent 60%)" }} />
@@ -19,7 +21,7 @@ export function StageSection() {
           <Reveal delay={0.1}>
             <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-amber-faint">
               <img src="/asher/stage-spotlight.png" alt="Vintage brass theatre spotlight in warm amber light" className="h-full w-full object-cover" />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,8,7,0.0) 40%, rgba(10,8,7,0.7) 100%)" }} />
+              <div className="absolute inset-0" style={{ background: theme === "dark" ? "linear-gradient(180deg, rgba(10,8,7,0.0) 40%, rgba(10,8,7,0.7) 100%)" : "linear-gradient(180deg, rgba(250,246,238,0.0) 40%, rgba(250,246,238,0.7) 100%)" }} />
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4">
                 <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-spotlight/80">/ scene_02 · spotlight</p>
                 <span className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60">ACT I</span>

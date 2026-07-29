@@ -2,10 +2,12 @@
 
 import { motion } from "framer-motion";
 import { Reveal, Eyebrow } from "./primitives";
+import { useTheme } from "./ThemeProvider";
 
 const VALUES = ["Integrity", "Humility", "Service", "Compassion", "Excellence"];
 
 export function FaithSection() {
+  const { theme } = useTheme();
   return (
     <section
       id="faith"
@@ -67,7 +69,9 @@ export function FaithSection() {
                   className="absolute inset-0"
                   style={{
                     background:
-                      "linear-gradient(180deg, rgba(10,8,7,0.0) 50%, rgba(10,8,7,0.75) 100%)",
+                      theme === "dark"
+                        ? "linear-gradient(180deg, rgba(10,8,7,0.0) 50%, rgba(10,8,7,0.75) 100%)"
+                        : "linear-gradient(180deg, rgba(250,246,238,0.0) 50%, rgba(250,246,238,0.75) 100%)",
                   }}
                 />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-4">
