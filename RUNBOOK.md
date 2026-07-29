@@ -17,6 +17,42 @@ not after something has already gone wrong with it.
 
 ---
 
+## Writing posts: image upload / alt text issues in Studio
+
+**"I click Image in the post body but can't upload a new file, only pick an existing one":** this is a known,
+confirmed limitation in Sanity itself (not something specific to this site) — [tracked upstream as
+sanity-io/sanity#12129](https://github.com/sanity-io/sanity/issues/12129), closed by Sanity as "not planned."
+It only affects **drag-and-drop**: dragging an image file onto the body editor fails because the post body
+mixes plain images with the custom block types added on 2026-07-28 (callouts, code blocks, accordions, etc.),
+and Sanity's drag-and-drop handler can't resolve an upload target when an array mixes image blocks with
+custom object blocks.
+**Workaround:** don't drag the file in — click the Image tool, then use the **Browse/Upload button** inside
+the dialog instead. That path doesn't go through the broken resolver and should work normally. (Uploading via
+the post's separate Main Image field also always works, as already discovered.)
+
+**"Typing in the alt text field closes the dialog immediately":** this matched a known class of Sanity Studio
+bug (image inputs inside dialogs losing focus/closing unexpectedly). Studio was upgraded from v5 to v6 on
+2026-07-29 partly to pick up fixes in this area (including a documented Portable Text typing/cursor fix in
+v6.6.0) — **needs to be confirmed by actually testing it**, since this can't be verified without logging into
+Studio directly. If it's still happening after the upgrade, this needs a fresh report to Sanity with exact
+repro steps, since it wasn't a known, already-documented issue.
+
+---
+
+## Studio version: currently on Sanity v6
+
+Upgraded from v5.31.1 (Sanity's own "maintenance" tag for the v5 line — no longer receiving fixes) to v6.7.0
+on 2026-07-29. Breaking changes checked against this project's actual config (auth, search, document actions) —
+none applied. One requirement worth knowing:
+
+**Node.js 22.12+ is required to build Studio in v6.** If a deploy on Vercel starts failing after this
+upgrade (or any future Sanity upgrade) with build errors mentioning Node version, unsupported syntax, or
+engines — check **Vercel → Project → Settings → General → Node.js Version** and bump it to 22.x or newer.
+A failed build does *not* take the live site down — Vercel keeps serving the last successful deploy — it just
+means this specific update won't go live until the Node version is fixed.
+
+---
+
 ## Publishing: "I published a post but it's not showing up"
 
 **Symptoms:** A post is published in Sanity Studio (asheraw.com/studio) but doesn't appear on asheraw.com/blog.
