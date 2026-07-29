@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: `You are helping a blogger choose SEO metadata for a post they're about to publish. Based on the title and content below, suggest THREE options each for an SEO title and an excerpt, so the author can pick the one they like best (they'll edit it afterward, so these are starting points, not final copy).
 
 Write in the author's own voice as it comes through in the content — not generic marketing copy. Never invent facts, quotes, numbers, or details that aren't actually in the post.
