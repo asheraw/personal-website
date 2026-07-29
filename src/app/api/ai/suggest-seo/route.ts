@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI, Type } from "@google/genai";
+import { truncateText } from "@/lib/text";
 
 // Called from Studio's "Suggest SEO & Excerpt" button (see
 // src/sanity/actions/suggestSeo.tsx). Never called for regular site
-// visitors, and never writes anything on its own -- it only returns a
-// suggestion for the editor to review and choose to apply.
+// visitors, and never writes anything on its own -- it only returns
+// suggestions for the editor to review and choose from.
 export async function POST(request: NextRequest) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(
-      { error: "AI suggestions aren't set up yet — ANTHROPIC_API_KEY is missing. See RUNBOOK.md." },
+      { error: "AI suggestions aren't set up yet — GEMINI_API_KEY is missing. See RUNBOOK.md." },
       { status: 500 }
     );
   }
@@ -22,63 +23,66 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   try {
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 400,
-      tools: [
-        {
-          name: "provide_seo_suggestion",
-          description: "Provide the suggested SEO title and excerpt for the blog post.",
-          input_schema: {
-            type: "object",
-            properties: {
-              seoTitle: {
-                type: "string",
-                description: "Suggested SEO title, 70 characters or fewer.",
-              },
-              excerpt: {
-                type: "string",
-                description:
-                  "Suggested excerpt, 160 characters or fewer, used as both the meta description and the blog listing preview.",
-              },
-            },
-            required: ["seoTitle", "excerpt"],
-          },
-        },
-      ],
-      tool_choice: { type: "tool", name: "provide_seo_suggestion" },
-      messages: [
-        {
-          role: "user",
-          content: `You are helping write SEO metadata for a personal blog post. Based on the title and content below, suggest an SEO title (70 characters or fewer) and an excerpt (160 characters or fewer, works as both a meta description and a blog-listing preview).
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `You are helping a blogger choose SEO metadata for a post they're about to publish. Based on the title and content below, suggest THREE options each for an SEO title and an excerpt, so the author can pick the one they like best (they'll edit it afterward, so these are starting points, not final copy).
 
 Write in the author's own voice as it comes through in the content — not generic marketing copy. Never invent facts, quotes, numbers, or details that aren't actually in the post.
+
+SEO titles: 70 characters or fewer each.
+
+Excerpts: 160 characters or fewer each (this doubles as the meta description AND the blog listing preview). Two hard requirements for every excerpt:
+1. The post's single most important point, value, or keyword must appear within the FIRST 120 characters — mobile search results often cut off well before 160, so don't save the point for the end.
+2. Write to create curiosity that earns the click — an open loop, a specific tension, or a concrete detail — never a flat, generic summary that already gives everything away.
 
 Title: ${title}
 
 Content:
 ${bodyText.slice(0, 6000)}`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            seoTitles: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Exactly 3 suggested SEO titles, 70 characters or fewer each.",
+            },
+            excerpts: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description:
+                "Exactly 3 suggested excerpts, 160 characters or fewer each, key point within the first 120 characters, written to create curiosity.",
+            },
+          },
+          required: ["seoTitles", "excerpts"],
         },
-      ],
+      },
     });
 
-    const toolUse = message.content.find((block) => block.type === "tool_use");
-    if (!toolUse || toolUse.type !== "tool_use") {
-      throw new Error("Model didn't return a structured suggestion");
-    }
+    const raw = response.text;
+    if (!raw) throw new Error("Empty response from model");
 
-    const input = toolUse.input as { seoTitle?: string; excerpt?: string };
-    const seoTitle = (input.seoTitle || "").slice(0, 70).trim();
-    const excerpt = (input.excerpt || "").slice(0, 160).trim();
+    const parsed = JSON.parse(raw) as { seoTitles?: string[]; excerpts?: string[] };
 
-    if (!seoTitle || !excerpt) {
+    const seoTitles = (parsed.seoTitles || [])
+      .map((t) => truncateText(t.trim(), 70))
+      .filter(Boolean)
+      .slice(0, 3);
+    const excerpts = (parsed.excerpts || [])
+      .map((e) => truncateText(e.trim(), 160))
+      .filter(Boolean)
+      .slice(0, 3);
+
+    if (seoTitles.length === 0 || excerpts.length === 0) {
       throw new Error("Suggestion was incomplete");
     }
 
-    return NextResponse.json({ seoTitle, excerpt });
+    return NextResponse.json({ seoTitles, excerpts });
   } catch (error) {
     console.error("[ai/suggest-seo] failed:", error);
     return NextResponse.json(

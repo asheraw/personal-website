@@ -4,7 +4,7 @@ import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 
-type Suggestion = {seoTitle: string; excerpt: string}
+type Suggestions = {seoTitles: string[]; excerpts: string[]}
 
 type PostDraft = {
   title?: string
@@ -24,18 +24,56 @@ function portableTextToPlainText(blocks: unknown): string {
     .join('\n\n')
 }
 
+function TitleOption({text, onUse}: {text: string; onUse: () => void}) {
+  return (
+    <Card padding={3} radius={2} tone="primary" border>
+      <Flex align="center" justify="space-between" gap={3}>
+        <Text>{text}</Text>
+        <Button text="Use this" tone="positive" mode="ghost" onClick={onUse} />
+      </Flex>
+      <Box marginTop={2}>
+        <Text size={0} muted>
+          {text.length}/70 characters
+        </Text>
+      </Box>
+    </Card>
+  )
+}
+
+function ExcerptOption({text, onUse}: {text: string; onUse: () => void}) {
+  // First 120 characters shown in normal weight (what mobile search results
+  // actually show); the rest is muted, so it's visually clear at a glance
+  // whether the important part is front-loaded the way it needs to be.
+  const visible = text.slice(0, 120)
+  const overflow = text.slice(120)
+  return (
+    <Card padding={3} radius={2} tone="primary" border>
+      <Text>
+        {visible}
+        {overflow && <Text muted>{overflow}</Text>}
+      </Text>
+      <Flex align="center" justify="space-between" gap={3} marginTop={3}>
+        <Text size={0} muted>
+          {text.length}/160 characters · first 120 shown above the muted part
+        </Text>
+        <Button text="Use this" tone="positive" mode="ghost" onClick={onUse} />
+      </Flex>
+    </Card>
+  )
+}
+
 /**
- * "Suggest SEO & Excerpt" -- drafts a suggested SEO title and excerpt from
- * the post's own content via Claude, shown for review. Never writes
- * anything without the editor explicitly clicking "Use this suggestion" --
- * matches the ACE spec's "AI proposes, humans decide" rule.
+ * "Suggest SEO & Excerpt" -- drafts 3 options each for SEO title and excerpt
+ * from the post's own content via Gemini, shown for review. Never writes
+ * anything without the editor explicitly picking one -- matches the ACE
+ * spec's "AI proposes, humans decide" rule.
  */
 export function createSuggestSeoAction(): DocumentActionComponent {
   const SuggestSeoAction: DocumentActionComponent = (props: DocumentActionProps) => {
     const {patch} = useDocumentOperation(props.id, props.type)
     const [dialogOpen, setDialogOpen] = useState(false)
     const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
-    const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
+    const [suggestions, setSuggestions] = useState<Suggestions | null>(null)
     const [error, setError] = useState('')
 
     const draft = props.draft as PostDraft | null
@@ -52,7 +90,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Something went wrong')
-        setSuggestion(data)
+        setSuggestions(data)
         setStatus('done')
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
@@ -77,7 +115,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                 {status === 'loading' && (
                   <Flex align="center" gap={3}>
                     <Spinner />
-                    <Text>Reading the post and drafting a suggestion…</Text>
+                    <Text>Reading the post and drafting suggestions…</Text>
                   </Flex>
                 )}
                 {status === 'error' && (
@@ -86,44 +124,34 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                     <Button text="Try again" tone="primary" onClick={runSuggestion} />
                   </Stack>
                 )}
-                {status === 'done' && suggestion && (
-                  <Stack space={4}>
-                    <Card padding={3} radius={2} tone="primary" border>
-                      <Stack space={2}>
-                        <Heading size={0}>Suggested SEO title</Heading>
-                        <Text>{suggestion.seoTitle}</Text>
-                      </Stack>
-                    </Card>
-                    <Card padding={3} radius={2} tone="primary" border>
-                      <Stack space={2}>
-                        <Heading size={0}>Suggested excerpt</Heading>
-                        <Text>{suggestion.excerpt}</Text>
-                      </Stack>
-                    </Card>
+                {status === 'done' && suggestions && (
+                  <Stack space={5}>
+                    <Stack space={3}>
+                      <Heading size={1}>SEO title — pick one</Heading>
+                      {suggestions.seoTitles.map((titleOption) => (
+                        <TitleOption
+                          key={titleOption}
+                          text={titleOption}
+                          onUse={() => patch.execute([{set: {seoTitle: titleOption}}])}
+                        />
+                      ))}
+                    </Stack>
+                    <Stack space={3}>
+                      <Heading size={1}>Excerpt — pick one</Heading>
+                      {suggestions.excerpts.map((excerptOption) => (
+                        <ExcerptOption
+                          key={excerptOption}
+                          text={excerptOption}
+                          onUse={() => patch.execute([{set: {excerpt: excerptOption}}])}
+                        />
+                      ))}
+                    </Stack>
                     <Text size={1} muted>
-                      This replaces whatever is currently in those two fields — review before applying.
+                      Picking one replaces whatever&rsquo;s currently in that field. You can still edit it
+                      afterward — these are starting points, not final copy.
                     </Text>
-                    <Flex gap={2}>
-                      <Button
-                        text="Use this suggestion"
-                        tone="positive"
-                        icon={SparklesIcon}
-                        onClick={() => {
-                          patch.execute([
-                            {set: {seoTitle: suggestion.seoTitle, excerpt: suggestion.excerpt}},
-                          ])
-                          setDialogOpen(false)
-                          setStatus('idle')
-                        }}
-                      />
-                      <Button
-                        text="Discard"
-                        mode="ghost"
-                        onClick={() => {
-                          setDialogOpen(false)
-                          setStatus('idle')
-                        }}
-                      />
+                    <Flex justify="flex-end">
+                      <Button text="Close" mode="ghost" onClick={() => setDialogOpen(false)} />
                     </Flex>
                   </Stack>
                 )}
