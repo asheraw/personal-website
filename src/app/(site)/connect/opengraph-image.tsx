@@ -5,7 +5,7 @@ export const alt = "Connect with Asher Aw — WhatsApp, Instagram, YouTube, Link
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const PLATFORMS = ["WhatsApp", "Instagram", "YouTube", "LinkedIn", "TikTok", "X", "Email"];
+const PLATFORMS = ["Facebook", "Instagram", "YouTube", "LinkedIn", "X", "TikTok"];
 
 export default function Image() {
   return new ImageResponse(

@@ -1,29 +1,33 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2, ArrowLeft, ArrowUpRight } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2, ArrowLeft, ArrowUpRight } from "lucide-react";
 import { CONTACT_INFO } from "@/components/asher/data";
 
 const SITE_URL = "https://asheraw.com";
 const TITLE = "Connect with Asher Aw";
-const DESCRIPTION = "All the ways to reach Asher Aw — WhatsApp, Instagram, YouTube, LinkedIn, TikTok, X, and email, all in one place.";
+const DESCRIPTION = "All the ways to reach Asher Aw — Facebook, Instagram, YouTube, LinkedIn, X, TikTok, and email, all in one place.";
 
 export const metadata: Metadata = {
   title: "Connect",
   description: DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/connect` },
-  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
   openGraph: { type: "website", url: `${SITE_URL}/connect`, siteName: "Asher Aw", title: TITLE, description: DESCRIPTION },
   twitter: { card: "summary_large_image", site: "@AsherAw", creator: "@AsherAw", title: TITLE, description: DESCRIPTION },
 };
 
 const LINKS = [
-  { label: "WhatsApp", value: CONTACT_INFO.whatsapp, href: CONTACT_INFO.whatsappUrl, icon: MessageCircle, primary: true },
-  { label: "Instagram", value: "@itsAsherAw", href: "https://www.instagram.com/itsAsherAw", icon: Instagram },
-  { label: "YouTube", value: "@itsAsherAw", href: "https://www.youtube.com/@itsAsherAw", icon: Youtube },
-  { label: "LinkedIn", value: "in/itsAsherAw", href: "https://www.linkedin.com/in/itsAsherAw", icon: Linkedin },
-  { label: "TikTok", value: "@itsAsherAw", href: "https://www.tiktok.com/@itsAsherAw", icon: Music2 },
-  { label: "X", value: "@AsherAw", href: "https://x.com/AsherAw", icon: Twitter },
-  { label: "Email", value: CONTACT_INFO.email, href: `mailto:${CONTACT_INFO.email}`, icon: Mail },
+  { label: "Facebook", value: "facebook.com/AsherAw", href: "https://facebook.com/AsherAw", icon: Facebook, primary: true, note: "Most active here — best place to send a friend request or follow." },
+  { label: "Instagram", value: "@itsAsherAw", href: "https://instagram.com/itsAsherAw", icon: Instagram },
+  { label: "YouTube", value: "@itsAsherAw", href: "https://youtube.com/@itsAsherAw", icon: Youtube },
+  { label: "LinkedIn", value: "linkedin.com/in/itsasheraw", href: "https://linkedin.com/in/itsasheraw", icon: Linkedin, note: "If you're a student or attendee at one of my sessions, please leave a recommendation or testimonial." },
+  { label: "X (Twitter)", value: "@AsherAw", href: "https://twitter.com/AsherAw", icon: Twitter, note: "Fun fact — President Barack Obama follows me (for real)." },
+  { label: "TikTok", value: "@itsAsherAw", href: "https://tiktok.com/@itsAsherAw", icon: Music2 },
+  { label: "Facebook Page", value: "facebook.com/itsAsherAw", href: "https://facebook.com/itsAsherAw", icon: Facebook },
+];
+
+const DIRECT = [
+  { label: "WhatsApp", href: CONTACT_INFO.whatsappUrl, icon: MessageCircle },
+  { label: "Email", href: `mailto:${CONTACT_INFO.email}`, icon: Mail },
 ];
 
 export default function ConnectPage() {
@@ -45,9 +49,9 @@ export default function ConnectPage() {
             <a
               key={l.label}
               href={l.href}
-              target={l.href.startsWith("http") ? "_blank" : undefined}
-              rel={l.href.startsWith("http") ? "noreferrer" : undefined}
-              className={`group flex items-center gap-4 rounded-2xl border p-4 transition-all ${l.primary ? "border-spotlight/40 bg-spotlight/10 hover:border-spotlight hover:bg-spotlight/20" : "border-amber-faint bg-stage/40 hover:border-spotlight/40 hover:bg-spotlight/[0.03]"}`}
+              target="_blank"
+              rel="noreferrer"
+              className={`group flex items-start gap-4 rounded-2xl border p-4 transition-all ${l.primary ? "border-spotlight/40 bg-spotlight/10 hover:border-spotlight hover:bg-spotlight/20" : "border-amber-faint bg-stage/40 hover:border-spotlight/40 hover:bg-spotlight/[0.03]"}`}
             >
               <div className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-spotlight ${l.primary ? "border-spotlight/40 bg-spotlight/10" : "border-spotlight/30 bg-spotlight/5"}`}>
                 <l.icon size={18} />
@@ -55,13 +59,26 @@ export default function ConnectPage() {
               <div className="flex-1">
                 <p className={`font-mono-stage text-[10px] uppercase tracking-[0.2em] ${l.primary ? "text-spotlight/80" : "text-stone/60"}`}>{l.label}</p>
                 <p className="text-base font-medium text-ivory transition-colors group-hover:text-spotlight">{l.value}</p>
+                {l.note && <p className="mt-1.5 text-xs leading-relaxed text-stone/60">{l.note}</p>}
               </div>
-              <ArrowUpRight size={16} className="text-stone/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-spotlight" />
+              <ArrowUpRight size={16} className="mt-1 shrink-0 text-stone/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-spotlight" />
             </a>
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-center gap-4">
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/50">Prefer to reach me directly?</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {DIRECT.map((d) => (
+              <a key={d.label} href={d.href} target={d.href.startsWith("http") ? "_blank" : undefined} rel={d.href.startsWith("http") ? "noreferrer" : undefined} className="inline-flex items-center gap-2 rounded-full border border-amber-faint px-4 py-2 font-mono-stage text-xs uppercase tracking-[0.16em] text-ivory/90 transition-colors hover:border-spotlight/40 hover:text-spotlight">
+                <d.icon size={14} />
+                {d.label}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-10 flex flex-col items-center gap-4">
           <Link href="/" className="group inline-flex items-center gap-2 font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60 transition-colors hover:text-spotlight">
             <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
             asheraw.com
