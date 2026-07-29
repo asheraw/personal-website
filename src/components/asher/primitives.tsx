@@ -176,6 +176,22 @@ export function SpotlightBeam({ className }: { className?: string }) {
   );
 }
 
+/* ---------- StatValue (number-or-word stat, gradient-text-safe) ---------- */
+
+// Renders a stat's value ("20+", "100+", "Multiple"...) -- animates the count
+// up if it starts with a digit, otherwise just prints the word as-is. Always
+// wrapped in inline-block + pb-1: text-spotlight-gradient's background-clip:
+// text can clip descenders/lowercase letters (e.g. the "e" in "Multiple")
+// right at the box edge without that padding.
+export function StatValue({ value }: { value: string }) {
+  const match = value.match(/^(\d+)(.*)$/);
+  return (
+    <span className="inline-block pb-1">
+      {match ? <Counter end={parseInt(match[1], 10)} suffix={match[2]} /> : value}
+    </span>
+  );
+}
+
 /* ---------- Counter (animated number) ---------- */
 
 export function Counter({

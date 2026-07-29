@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Drama, Crown, Users, ExternalLink } from "lucide-react";
-import { Reveal, Eyebrow, Counter } from "./primitives";
+import { Reveal, Eyebrow, StatValue } from "./primitives";
 import { ROLES, STAGE_STATS, STAGE_PILLARS } from "./data";
 
 export function StageSection() {
@@ -31,7 +31,7 @@ export function StageSection() {
           {STAGE_STATS.map((stat, i) => (
             <Reveal key={i} delay={i * 0.05}>
               <div className="h-full bg-stage p-6 sm:p-8">
-                <p className="font-display text-3xl font-semibold text-spotlight-gradient sm:text-4xl">{stat.value === "10+" ? <Counter end={10} suffix="+" /> : stat.value === "50+" ? <Counter end={50} suffix="+" /> : stat.value}</p>
+                <p className="font-display text-3xl font-semibold text-spotlight-gradient sm:text-4xl"><StatValue value={stat.value} /></p>
                 <p className="mt-2 font-mono-stage text-[10px] uppercase tracking-[0.22em] text-stone/70">{stat.label}</p>
               </div>
             </Reveal>
@@ -39,10 +39,7 @@ export function StageSection() {
         </div>
         <div className="mt-16">
           <Reveal>
-            <div className="mb-6 flex items-end justify-between">
-              <h3 className="font-display text-2xl font-semibold text-ivory sm:text-3xl">Selected Roles</h3>
-              <span className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60">/ selected_credits</span>
-            </div>
+            <h3 className="mb-6 font-display text-2xl font-semibold text-ivory sm:text-3xl">Selected Roles</h3>
           </Reveal>
           <div className="overflow-hidden rounded-2xl border border-amber-faint">
             <div className="hidden grid-cols-[60px_1fr_auto] gap-6 border-b border-amber-faint bg-stage/60 px-6 py-4 font-mono-stage text-[10px] uppercase tracking-[0.22em] text-stone/60 sm:grid">

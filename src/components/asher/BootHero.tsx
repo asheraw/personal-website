@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SpotlightBeam } from "./primitives";
 import { useTheme } from "./ThemeProvider";
@@ -43,7 +43,12 @@ export function BootHero() {
   const [stepLabel, setStepLabel] = useState(PROGRESS_STEPS[0]);
   const { theme, toggleTheme } = useTheme();
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) -- this needs to resolve BEFORE the
+  // browser paints, or a returning same-day visitor sees a one-frame flash
+  // of the boot overlay before it corrects itself. useEffect runs after
+  // paint, which is exactly that flash; useLayoutEffect runs before it.
+  // Server-side this is a no-op (no window), same as useEffect would be.
+  useLayoutEffect(() => {
     if (hasBootedToday()) {
       setBooted(true);
       setHideOverlay(true);

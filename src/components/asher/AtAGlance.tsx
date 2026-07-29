@@ -1,16 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Reveal, Eyebrow, Counter } from "./primitives";
-
-const STATS = [
-  { value: <Counter end={15} suffix="+" />, label: "Years in Marketing" },
-  { value: <Counter end={10} suffix="+" />, label: "Years on Stage" },
-  { value: <Counter end={10} suffix="+" />, label: "Years as Jesus" },
-  { value: <Counter end={50} suffix="+" />, label: "Workshops Facilitated" },
-];
-
-const BRANDS = ["Lexus", "OCBC", "Bayer", "Nas Academy", "*SCAPE Singapore", "Singapore Police Force", "Singapore Heart Foundation"];
+import { Reveal, Eyebrow, StatValue } from "./primitives";
+import { GLANCE_STATS, BRANDS } from "./data";
 
 export function AtAGlance() {
   return (
@@ -52,7 +44,7 @@ export function AtAGlance() {
 
           {/* Stats grid — large visual numbers, minimal text */}
           <div className="grid gap-px overflow-hidden rounded-2xl border border-amber-faint bg-amber-faint sm:grid-cols-2">
-            {STATS.map((s, i) => (
+            {GLANCE_STATS.map((s, i) => (
               <Reveal key={i} delay={(i % 2) * 0.05}>
                 <motion.div
                   whileHover={{ y: -2 }}
@@ -62,7 +54,7 @@ export function AtAGlance() {
                     {String(i + 1).padStart(2, "0")} / 04
                   </span>
                   <p className="font-display text-6xl font-semibold leading-[1.05] text-spotlight-gradient sm:text-7xl">
-                    <span className="inline-block pb-1">{s.value}</span>
+                    <StatValue value={s.value} />
                   </p>
                   <p className="mt-3 font-mono-stage text-[10px] uppercase tracking-[0.22em] text-stone/70">
                     {s.label}

@@ -48,7 +48,7 @@ export function CoachingSection() {
 
       <div className="relative mx-auto max-w-[1500px]">
         <Reveal>
-          <Eyebrow index="02" label="The Studio · Coaching & Training" />
+          <Eyebrow index="02" label="The Studio · Coaching" />
         </Reveal>
 
         {/* Chapter head + visual */}
@@ -134,9 +134,6 @@ export function CoachingSection() {
         {/* Coaching philosophy block */}
         <Reveal delay={0.05}>
           <div className="mt-16 relative overflow-hidden rounded-2xl border border-amber-faint bg-stage/40 p-8 sm:p-12">
-            <span className="absolute right-6 top-6 font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/40">
-              / coaching_philosophy
-            </span>
             <p className="font-mono-stage text-xs uppercase tracking-[0.25em] text-spotlight/80">
               Philosophy
             </p>

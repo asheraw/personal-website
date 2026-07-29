@@ -38,7 +38,7 @@ export const ROLES: Role[] = [
 export type Stat = { value: string; label: string; detail?: string };
 
 export const STAGE_STATS: Stat[] = [
-  { value: "10+", label: "Years on Stage" },
+  { value: "20+", label: "Years on Stage" },
   { value: "10+", label: "Years as Jesus (Easter)" },
   { value: "50+", label: "Live Performances" },
   { value: "Multiple", label: "Productions Directed" },
@@ -46,9 +46,9 @@ export const STAGE_STATS: Stat[] = [
 
 export const GLANCE_STATS: Stat[] = [
   { value: "15+", label: "Years in Marketing" },
-  { value: "10+", label: "Years on Stage" },
+  { value: "20+", label: "Years on Stage" },
   { value: "10+", label: "Years as Jesus" },
-  { value: "50+", label: "Workshops Run" },
+  { value: "100+", label: "Workshops Facilitated" },
 ];
 
 export const BRANDS = ["Lexus", "OCBC", "Bayer", "Nas Academy", "*SCAPE Singapore", "Singapore Police Force", "Singapore Heart Foundation"];

@@ -195,7 +195,7 @@ export function ContactForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="subject" className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Subject <span className="text-spotlight">*</span></Label>
-        <Input id="subject" name="subject" required defaultValue={lastSubmission?.subject} placeholder="1:1 coaching, workshop enquiry, speaking..." className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
+        <Input id="subject" name="subject" required defaultValue={lastSubmission?.subject} placeholder="What's this about?" className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40" />
       </div>
       <div className="space-y-2">
         <Label className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">Contact Number (with country code)</Label>

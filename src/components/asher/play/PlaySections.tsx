@@ -6,7 +6,7 @@ import {
   Sparkles, BookOpen, PenLine, ChevronRight, ExternalLink,
 } from "lucide-react";
 import {
-  ROLES, GLANCE_STATS, BRANDS, COACHING_TOPICS, COACHING_CREDENTIALS,
+  ROLES, STAGE_STATS, GLANCE_STATS, BRANDS, COACHING_TOPICS, COACHING_CREDENTIALS,
   FAITH_VALUES, PRINCIPLES, PERSONALITY, COACHING_PHILOSOPHY_QUOTE,
   CONTACT_INFO, SOCIALS, STAGE_PILLARS,
 } from "../data";
@@ -45,7 +45,7 @@ export function PlaySections() {
 
       <Section id="stage" eyebrow="01 · The Stage" title="The stage has been one of the defining parts of my life." iconKey="drama">
         <p className="text-base leading-relaxed text-stone/85">Ten years performing in Christian theatre productions. Roles that combine emotional depth, storytelling, and meaningful themes — the kind of work that asks something of you, not just the audience.</p>
-        <div className="mt-5 grid grid-cols-3 gap-3">{[{v:"10+",l:"Years on Stage"},{v:"10+",l:"Years as Jesus"},{v:"50+",l:"Performances"}].map((s) => (<div key={s.l} className="rounded-xl border border-amber-faint bg-stage/40 p-3 text-center"><p className="font-display text-3xl font-semibold text-spotlight-gradient">{s.v}</p><p className="mt-1 font-mono-stage text-xs uppercase tracking-[0.18em] text-stone/60">{s.l}</p></div>))}</div>
+        <div className="mt-5 grid grid-cols-2 gap-3">{STAGE_STATS.map((s) => (<div key={s.label} className="rounded-xl border border-amber-faint bg-stage/40 p-3 text-center"><p className="font-display text-3xl font-semibold text-spotlight-gradient">{s.value}</p><p className="mt-1 font-mono-stage text-xs uppercase tracking-[0.18em] text-stone/60">{s.label}</p></div>))}</div>
         <div className="mt-6"><p className="mb-3 font-mono-stage text-xs uppercase tracking-[0.22em] text-stone/60">/ selected_credits</p>
           <div className="space-y-2">{ROLES.map((r, i) => (<div key={r.role} className="flex items-start gap-3 rounded-lg border border-amber-faint/40 p-3"><span className="font-mono-stage text-sm text-spotlight/70 pt-0.5">{String(i+1).padStart(2,"0")}</span><div className="flex-1 min-w-0"><div className="flex items-center gap-2 flex-wrap"><p className="font-display text-base font-semibold text-ivory">{r.role}</p>{r.ongoing && (<span className="inline-flex items-center gap-1 rounded-full border border-spotlight/40 bg-spotlight/10 px-2 py-0.5 font-mono-stage text-xs uppercase tracking-[0.15em] text-spotlight"><span className="h-1 w-1 animate-soft-blink rounded-full bg-spotlight" /> Ongoing</span>)}{r.link && (<a href={r.link} target="_blank" rel="noreferrer" className="inline-flex items-center text-spotlight/70 transition-colors hover:text-spotlight" aria-label={r.linkLabel} title={r.linkLabel}><ExternalLink size={14} /></a>)}</div><p className="mt-1 text-base text-stone/70">{r.note}</p><p className="mt-1 font-mono-stage text-xs uppercase tracking-[0.15em] text-spotlight/70">{r.years}</p></div></div>))}</div>
         </div>
