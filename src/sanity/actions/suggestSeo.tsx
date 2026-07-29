@@ -76,17 +76,20 @@ export function createSuggestSeoAction(): DocumentActionComponent {
     const [suggestions, setSuggestions] = useState<Suggestions | null>(null)
     const [error, setError] = useState('')
 
-    const draft = props.draft as PostDraft | null
+    // A post with no unpublished edits has no draft at all -- only a
+    // published version. Fall back to that, otherwise this silently sends
+    // an empty title/body for any post that's already live and untouched.
+    const source = (props.draft ?? props.published) as PostDraft | null
 
     async function runSuggestion() {
       setStatus('loading')
       setError('')
       try {
-        const bodyText = portableTextToPlainText(draft?.body)
+        const bodyText = portableTextToPlainText(source?.body)
         const res = await fetch('/api/ai/suggest-seo', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({title: draft?.title, bodyText}),
+          body: JSON.stringify({title: source?.title, bodyText}),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Something went wrong')
