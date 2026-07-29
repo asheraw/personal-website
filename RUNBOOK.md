@@ -26,16 +26,15 @@ It only affects **drag-and-drop**: dragging an image file onto the body editor f
 mixes plain images with the custom block types added on 2026-07-28 (callouts, code blocks, accordions, etc.),
 and Sanity's drag-and-drop handler can't resolve an upload target when an array mixes image blocks with
 custom object blocks.
-**Workaround:** don't drag the file in — click the Image tool, then use the **Browse/Upload button** inside
-the dialog instead. That path doesn't go through the broken resolver and should work normally. (Uploading via
-the post's separate Main Image field also always works, as already discovered.)
+**Workaround (confirmed working 2026-07-29):** don't drag the file in — click the Image tool, then use the
+**Browse/Upload button** inside the dialog instead. (Uploading via the post's separate Main Image field also
+always works, as already discovered.)
 
-**"Typing in the alt text field closes the dialog immediately":** this matched a known class of Sanity Studio
-bug (image inputs inside dialogs losing focus/closing unexpectedly). Studio was upgraded from v5 to v6 on
-2026-07-29 partly to pick up fixes in this area (including a documented Portable Text typing/cursor fix in
-v6.6.0) — **needs to be confirmed by actually testing it**, since this can't be verified without logging into
-Studio directly. If it's still happening after the upgrade, this needs a fresh report to Sanity with exact
-repro steps, since it wasn't a known, already-documented issue.
+**"Typing in the alt text field closes the dialog immediately":** matched a known class of Sanity Studio bug
+(image inputs inside dialogs losing focus/closing unexpectedly). **Fixed by the Studio v5 → v6 upgrade on
+2026-07-29** (confirmed working by Asher the same day) — likely the documented Portable Text typing/cursor
+fix that shipped in v6.6.0. If this ever reappears after a future Sanity upgrade, it's worth checking that
+upgrade's changelog for anything touching Portable Text input focus before assuming it's a new issue.
 
 ---
 
