@@ -14,6 +14,7 @@ import {apiVersion, dataset, projectId} from './src/sanity/env'
 import {schema} from './src/sanity/schemaTypes'
 import {structure} from './src/sanity/structure'
 import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
+import {withPrePublishChecklist} from './src/sanity/actions/prepareForPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 
 export default defineConfig({
@@ -26,7 +27,9 @@ export default defineConfig({
     actions: (prev, context) => {
       if (context.schemaType !== 'post') return prev
       const withDateAction = prev.map((action) =>
-        (action as {action?: string}).action === 'publish' ? withAutoPublishDate(action) : action
+        (action as {action?: string}).action === 'publish'
+          ? withPrePublishChecklist(withAutoPublishDate(action))
+          : action
       )
       // Publish must stay the primary (first) action -- Studio renders
       // whichever action is first as the big prominent button. Preview
