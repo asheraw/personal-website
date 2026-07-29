@@ -244,6 +244,15 @@ format:
 **Fix:** Added `export const revalidate = 60` to the blog list and post pages.
 **Follow-up:** None currently — working as intended.
 
+### 2026-07-29 — First restore drill (Phase 0 exit criteria)
+**Symptom:** N/A — this was a planned drill, not an incident. The ACE PRD requires a tested monthly restore drill before Phase 0 (Audit & Protection) can be considered closed; one had never been run.
+**What was done:** Exported the live `production` dataset (34 documents, 14 assets), imported it into a new throwaway dataset (`restore-drill`, kept set to Private — a full export includes contact form PII and unpublished drafts), then compared every real content document (posts, authors, categories, contact submissions, images) between `production` and `restore-drill`.
+**Result:** Every document matched exactly, aside from differences that are expected and don't indicate any data loss:
+- Image asset `path`/`url`/`_createdAt` naturally differ because they're scoped to the dataset name (`.../production/...` vs `.../restore-drill/...`) and re-stamped on import.
+- One post and one draft showed real content differences — traced to production being actively edited in Studio in the ~4 minutes between the export snapshot and the later verification query, not a restore defect. Confirmed by checking the frozen export file directly: it already lacked the newer content, proving the import faithfully reproduced exactly what was exported.
+**Timing:** export ~3s, import ~11s, verification a few seconds more — well inside the PRD's <2h RTO target.
+**Follow-up:** Repeat monthly using `scripts/restore-drill.mjs` (see `BACKUP_AND_RECOVERY_GUIDE.md`). Since production is a live system, expect similar "drift" mismatches if a drill runs while someone is actively editing — check the frozen export file itself before assuming a real problem.
+
 ### 2026-07-28 — Backup workflow's first three runs failed
 **Symptom:** GitHub Action for daily backups failed with, in order: a generic `npm ci` failure, an
 out-of-sync-lockfile error, and a `--token` flag error.

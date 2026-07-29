@@ -53,10 +53,20 @@ Sanity keeps its own "trash"/history for a little while after a change — this 
 
 The backup remembers "yesterday's fingerprint" by saving a tiny text file back into your GitHub repo. If your repo's default settings don't allow that, you'll see a failed run mentioning permissions. To fix: on GitHub, go to **Settings → Actions → General → Workflow permissions**, choose **Read and write permissions**, then **Save**. One-time fix, not something you'll need to touch again.
 
-## What this does NOT yet cover
+## Before a big change: take an extra snapshot first
 
-This is the first, essential layer of protection. Two more layers are planned but not built yet:
-- **Before big changes** (like changing how content is structured), taking an extra "just in case" snapshot right before the change.
-- **A tested restore drill** — actually practicing a restore once a month, so we know for certain the backups work, not just that they exist.
+Before anything to Sanity content that would be painful to redo by hand (bulk edits, restructuring fields), manually trigger a fresh backup rather than relying on the last daily one: **Actions → Daily Content Backup → Run workflow**. This uses the same backup mechanism above, just on demand instead of waiting for the 9am UTC run — so you always have a copy from right before the change, not just from earlier that day. See "Before any schema change, bulk edit, or deploy" in `RUNBOOK.md`.
 
-These will be added as the site develops further.
+## Restore drills
+
+Once a month (or before anything risky), prove the backups actually restore — not just that they exist. This never touches `production`; it restores into a separate throwaway dataset instead, so there's zero risk to the live site.
+
+1. In sanity.io/manage, create a new dataset (e.g. `restore-drill`). This is the one step that needs to be done by a project Administrator in the Sanity web UI — a regular Editor-level API token can't create or delete datasets.
+2. `node scripts/restore-drill.mjs export ./restore-drill-export.tar.gz`
+3. `node scripts/restore-drill.mjs import ./restore-drill-export.tar.gz restore-drill`
+4. `node scripts/restore-drill.mjs verify restore-drill`
+5. Delete the throwaway dataset in sanity.io/manage once verified.
+
+First drill run: 2026-07-29, fully successful — see the incident log in `RUNBOOK.md` for details and timing.
+
+**Important:** while a dataset is set up for a drill, set its visibility to **Private** in sanity.io/manage, not Public. A full export includes contact form submissions (names, emails, phone numbers) and unpublished drafts — Public means anyone with your project ID (visible in the site's own JavaScript, not a secret) could read all of that with no login required.
