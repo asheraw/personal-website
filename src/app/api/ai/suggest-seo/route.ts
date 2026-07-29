@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
 import { truncateText } from "@/lib/text";
+import { writeClient } from "@/sanity/lib/write-client";
 
 // Called from Studio's "Suggest SEO & Excerpt" button (see
 // src/sanity/actions/suggestSeo.tsx). Never called for regular site
@@ -26,9 +27,21 @@ export async function POST(request: NextRequest) {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
   try {
+    // Used so tag suggestions reuse an already-established tag instead of
+    // inventing a near-duplicate (e.g. "coaching" vs "Coaching") -- the
+    // exact problem the Studio's tag autocomplete field is also there to
+    // prevent.
+    const existingTags: string[] = await writeClient.fetch(
+      `array::unique(*[_type == "post" && defined(tags)].tags[])`
+    );
+
+    const existingTagsBlock = existingTags.length
+      ? `\n\nExisting tags already used elsewhere on this blog: ${existingTags.slice(0, 60).join(", ")}. When one of these genuinely fits, reuse it with its exact existing spelling and capitalization rather than inventing a near-duplicate. Only suggest a new tag when nothing existing fits.`
+      : "";
+
     const response = await ai.models.generateContent({
       model: "gemini-3.6-flash",
-      contents: `You are helping a blogger choose SEO metadata for a post they're about to publish. Based on the title and content below, suggest THREE options each for an SEO title and an excerpt, so the author can pick the one they like best (they'll edit it afterward, so these are starting points, not final copy).
+      contents: `You are helping a blogger choose SEO metadata and tags for a post they're about to publish. Based on the title and content below, suggest THREE options each for an SEO title and an excerpt, plus 3-5 topic tags, so the author can pick what they like best (they'll edit it afterward, so these are starting points, not final copy).
 
 Write in the author's own voice as it comes through in the content — not generic marketing copy. Never invent facts, quotes, numbers, or details that aren't actually in the post.
 
@@ -37,6 +50,8 @@ SEO titles: 70 characters or fewer each.
 Excerpts: 160 characters or fewer each (this doubles as the meta description AND the blog listing preview). Two hard requirements for every excerpt:
 1. The post's single most important point, value, or keyword must appear within the FIRST 120 characters — mobile search results often cut off well before 160, so don't save the point for the end.
 2. Write to create curiosity that earns the click — an open loop, a specific tension, or a concrete detail — never a flat, generic summary that already gives everything away.
+
+Tags: 3-5 short topic labels (1-3 words each, lowercase unless reusing an existing tag's own casing) that describe what this post is actually about.${existingTagsBlock}
 
 Title: ${title}
 
@@ -58,8 +73,14 @@ ${bodyText.slice(0, 6000)}`,
               description:
                 "Exactly 3 suggested excerpts, 160 characters or fewer each, key point within the first 120 characters, written to create curiosity.",
             },
+            tags: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description:
+                "3-5 topic tags for the post, reusing an existing tag's exact spelling when one genuinely fits.",
+            },
           },
-          required: ["seoTitles", "excerpts"],
+          required: ["seoTitles", "excerpts", "tags"],
         },
       },
     });
@@ -67,7 +88,7 @@ ${bodyText.slice(0, 6000)}`,
     const raw = response.text;
     if (!raw) throw new Error("Empty response from model");
 
-    const parsed = JSON.parse(raw) as { seoTitles?: string[]; excerpts?: string[] };
+    const parsed = JSON.parse(raw) as { seoTitles?: string[]; excerpts?: string[]; tags?: string[] };
 
     const seoTitles = (parsed.seoTitles || [])
       .map((t) => truncateText(t.trim(), 70))
@@ -77,12 +98,16 @@ ${bodyText.slice(0, 6000)}`,
       .map((e) => truncateText(e.trim(), 160))
       .filter(Boolean)
       .slice(0, 3);
+    const tags = (parsed.tags || [])
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, 5);
 
     if (seoTitles.length === 0 || excerpts.length === 0) {
       throw new Error("Suggestion was incomplete");
     }
 
-    return NextResponse.json({ seoTitles, excerpts });
+    return NextResponse.json({ seoTitles, excerpts, tags });
   } catch (error) {
     console.error("[ai/suggest-seo] failed:", error);
     return NextResponse.json(

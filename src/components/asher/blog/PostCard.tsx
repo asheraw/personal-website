@@ -3,6 +3,7 @@ import Image from "next/image";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
+import { estimateReadingTimeFromText } from "@/lib/portableText";
 
 // Matches the excerpt field's own 160-character guidance in Studio, so
 // a manually-written excerpt basically never needs trimming here -- this
@@ -12,6 +13,7 @@ const CARD_BLURB_LENGTH = 160;
 export function PostCard({ post, priority = false }: { post: PostSummary; priority?: boolean }) {
   const blurbSource = post.excerpt || post.autoExcerpt;
   const blurb = blurbSource ? truncateText(blurbSource, CARD_BLURB_LENGTH) : undefined;
+  const readingTime = post.bodyPlainText ? estimateReadingTimeFromText(post.bodyPlainText) : undefined;
 
   return (
     <article className="border-b border-amber-faint pb-12 last:border-none">
@@ -48,6 +50,8 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
             })}
           </time>
         )}
+        {post.publishedAt && readingTime && <span aria-hidden="true">·</span>}
+        {readingTime && <span>{readingTime} min read</span>}
         {post.categories?.map((category) => (
           <Link
             key={category.slug}

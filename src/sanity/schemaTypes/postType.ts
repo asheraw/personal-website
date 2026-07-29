@@ -1,5 +1,8 @@
 import {DocumentTextIcon} from '@sanity/icons/DocumentText'
 import {defineArrayMember, defineField, defineType} from 'sanity'
+import {estimateReadingTimeMinutes} from '../../lib/portableText'
+import {CategoryCheckboxInput} from '../components/CategoryCheckboxInput'
+import {TagsAutocompleteInput} from '../components/TagsAutocompleteInput'
 
 export const postType = defineType({
   name: 'post',
@@ -49,6 +52,7 @@ export const postType = defineType({
       type: 'array',
       description: 'Pick from existing categories. To add a brand-new category, do that from the Categories tab in the left sidebar, then come back here to pick it.',
       of: [defineArrayMember({type: 'reference', to: {type: 'category'}, options: {disableNew: true}})],
+      components: {input: CategoryCheckboxInput},
     }),
     defineField({
       name: 'primaryCategory',
@@ -69,10 +73,8 @@ export const postType = defineType({
       name: 'tags',
       type: 'array',
       of: [defineArrayMember({type: 'string'})],
-      options: {
-        layout: 'tags',
-      },
-      description: 'Free-form topic labels, separate from categories.',
+      description: 'Free-form topic labels, separate from categories. Existing tags are suggested as you type, to avoid near-duplicates.',
+      components: {input: TagsAutocompleteInput},
     }),
     defineField({
       name: 'publishedAt',
@@ -122,10 +124,13 @@ export const postType = defineType({
       title: 'title',
       author: 'author.name',
       media: 'mainImage',
+      body: 'body',
     },
     prepare(selection) {
-      const {author} = selection
-      return {...selection, subtitle: author && `by ${author}`}
+      const {author, body} = selection
+      const minutes = estimateReadingTimeMinutes(body)
+      const parts = [author && `by ${author}`, `${minutes} min read`].filter(Boolean)
+      return {...selection, subtitle: parts.join(' · ')}
     },
   },
 })

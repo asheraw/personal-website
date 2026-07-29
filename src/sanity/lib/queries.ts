@@ -10,6 +10,9 @@ export const POST_SUMMARY_PROJECTION = `{
   // generous raw length here -- the exact display length + word-boundary
   // trimming happens in the frontend (see src/lib/text.ts).
   "autoExcerpt": pt::text(body)[0...400],
+  // Untruncated plain text, used only to estimate reading time -- cheaper
+  // than fetching the full block-structured body just for a word count.
+  "bodyPlainText": pt::text(body),
   publishedAt,
   _updatedAt,
   mainImage,
@@ -74,6 +77,7 @@ export type PostSummary = {
   slug: string;
   excerpt?: string;
   autoExcerpt?: string;
+  bodyPlainText?: string;
   publishedAt?: string;
   _updatedAt: string;
   mainImage?: { asset?: { _ref: string }; alt?: string };

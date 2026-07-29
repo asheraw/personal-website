@@ -9,6 +9,7 @@ import { sanityFetch } from "@/sanity/lib/live";
 import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
+import { estimateReadingTimeMinutes } from "@/lib/portableText";
 
 // No time-based revalidate here anymore -- sanityFetch() (via Sanity's
 // Live Content API) keeps this page fresh on its own, both for normal
@@ -91,6 +92,7 @@ export default async function PostPage({ params }: PageProps) {
 
   const url = `${SITE_URL}/blog/${post.slug}`;
   const imageSource = post.socialImage ?? post.mainImage;
+  const readingTime = estimateReadingTimeMinutes(post.body);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -148,15 +150,19 @@ export default async function PostPage({ params }: PageProps) {
             {post.title}
           </h1>
 
-          {post.publishedAt && (
-            <div className="mt-5 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
-              <time dateTime={post.publishedAt}>
-                {new Date(post.publishedAt).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </time>
+          {(post.publishedAt || readingTime) && (
+            <div className="mt-5 flex flex-wrap items-center gap-x-3 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
+              {post.publishedAt && (
+                <time dateTime={post.publishedAt}>
+                  {new Date(post.publishedAt).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </time>
+              )}
+              {post.publishedAt && <span aria-hidden="true">·</span>}
+              <span>{readingTime} min read</span>
             </div>
           )}
 

@@ -3,25 +3,14 @@ import {useDocumentOperation} from 'sanity'
 import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
+import {portableTextToPlainText} from '../../lib/portableText'
 
-type Suggestions = {seoTitles: string[]; excerpts: string[]}
+type Suggestions = {seoTitles: string[]; excerpts: string[]; tags: string[]}
 
 type PostDraft = {
   title?: string
   body?: unknown
-}
-
-function portableTextToPlainText(blocks: unknown): string {
-  if (!Array.isArray(blocks)) return ''
-  return blocks
-    .map((block) => {
-      if (typeof block !== 'object' || block === null) return ''
-      const b = block as {_type?: string; children?: {text?: string}[]}
-      if (b._type !== 'block' || !Array.isArray(b.children)) return ''
-      return b.children.map((c) => c.text || '').join('')
-    })
-    .filter(Boolean)
-    .join('\n\n')
+  tags?: string[]
 }
 
 function TitleOption({text, onUse}: {text: string; onUse: () => void}) {
@@ -62,6 +51,66 @@ function ExcerptOption({text, onUse}: {text: string; onUse: () => void}) {
   )
 }
 
+function TagsSuggestion({
+  tags,
+  currentTags,
+  onAdd,
+}: {
+  tags: string[]
+  currentTags: string[]
+  onAdd: (selected: string[]) => void
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const toggle = (tag: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
+      return next
+    })
+  }
+
+  return (
+    <Card padding={3} radius={2} tone="primary" border>
+      <Flex wrap="wrap" gap={2}>
+        {tags.map((tag) => {
+          const alreadyAdded = currentTags.includes(tag)
+          const isSelected = selected.has(tag)
+          return (
+            <Card
+              key={tag}
+              padding={2}
+              radius={2}
+              tone={alreadyAdded ? 'transparent' : isSelected ? 'positive' : 'default'}
+              border
+              onClick={alreadyAdded ? undefined : () => toggle(tag)}
+              style={{cursor: alreadyAdded ? 'default' : 'pointer'}}
+            >
+              <Text size={1} muted={alreadyAdded}>
+                {tag}
+                {alreadyAdded ? ' ✓' : ''}
+              </Text>
+            </Card>
+          )
+        })}
+      </Flex>
+      <Flex justify="flex-end" marginTop={3}>
+        <Button
+          text={selected.size ? `Add ${selected.size} tag${selected.size === 1 ? '' : 's'}` : 'Add tags'}
+          tone="positive"
+          mode="ghost"
+          disabled={selected.size === 0}
+          onClick={() => {
+            onAdd([...selected])
+            setSelected(new Set())
+          }}
+        />
+      </Flex>
+    </Card>
+  )
+}
+
 /**
  * "Suggest SEO & Excerpt" -- drafts 3 options each for SEO title and excerpt
  * from the post's own content via Gemini, shown for review. Never writes
@@ -80,6 +129,17 @@ export function createSuggestSeoAction(): DocumentActionComponent {
     // published version. Fall back to that, otherwise this silently sends
     // an empty title/body for any post that's already live and untouched.
     const source = (props.draft ?? props.published) as PostDraft | null
+
+    // Tags get ADDED to, not replaced like title/excerpt -- tracked locally
+    // so the UI can grey out already-added suggestions immediately without
+    // waiting on the document to refetch after each patch.
+    const [currentTags, setCurrentTags] = useState<string[]>(() => source?.tags ?? [])
+
+    const handleAddTags = (selected: string[]) => {
+      const merged = Array.from(new Set([...currentTags, ...selected]))
+      patch.execute([{set: {tags: merged}}])
+      setCurrentTags(merged)
+    }
 
     async function runSuggestion() {
       setStatus('loading')
@@ -111,7 +171,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
       dialog: dialogOpen
         ? {
             type: 'dialog',
-            header: 'AI-suggested SEO title & excerpt',
+            header: 'AI-suggested SEO title, excerpt & tags',
             onClose: () => setDialogOpen(false),
             content: (
               <Box padding={4}>
@@ -149,9 +209,20 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                         />
                       ))}
                     </Stack>
+                    {suggestions.tags.length > 0 && (
+                      <Stack space={3}>
+                        <Heading size={1}>Tags — click any you want, then add</Heading>
+                        <TagsSuggestion
+                          tags={suggestions.tags}
+                          currentTags={currentTags}
+                          onAdd={handleAddTags}
+                        />
+                      </Stack>
+                    )}
                     <Text size={1} muted>
-                      Picking one replaces whatever&rsquo;s currently in that field. You can still edit it
-                      afterward — these are starting points, not final copy.
+                      Picking a title or excerpt replaces whatever&rsquo;s currently there; tags get added
+                      to whatever&rsquo;s already set, not replaced. You can still edit any of it afterward —
+                      these are starting points, not final copy.
                     </Text>
                     <Flex justify="flex-end">
                       <Button text="Close" mode="ghost" onClick={() => setDialogOpen(false)} />
