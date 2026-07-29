@@ -16,6 +16,7 @@ import {structure} from './src/sanity/structure'
 import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
 import {withPrePublishChecklist} from './src/sanity/actions/prepareForPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
+import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 
 export default defineConfig({
   basePath: '/studio',
@@ -32,9 +33,14 @@ export default defineConfig({
           : action
       )
       // Publish must stay the primary (first) action -- Studio renders
-      // whichever action is first as the big prominent button. Preview
-      // goes right after it as a secondary action instead.
-      return [withDateAction[0], openInPresentationAction, ...withDateAction.slice(1)]
+      // whichever action is first as the big prominent button. Everything
+      // else goes after it as secondary actions instead.
+      return [
+        withDateAction[0],
+        openInPresentationAction,
+        createSuggestSeoAction(),
+        ...withDateAction.slice(1),
+      ]
     },
   },
   plugins: [

@@ -52,6 +52,26 @@ means this specific update won't go live until the Node version is fixed.
 
 ---
 
+## Prepare for Publish: checklist + AI-suggested SEO
+
+**The pre-publish checklist** (shipped 2026-07-29) runs automatically every time Publish is clicked on a
+post — no setup needed. If the post is missing a featured image, an excerpt, a category, or has an
+overly-long title, a dialog lists what's missing with a choice to go fix it or publish anyway. If nothing's
+flagged, publishing works exactly as before with no extra step.
+
+**"Suggest SEO & Excerpt"** (in the "..." menu next to Publish) drafts a suggested SEO title and excerpt from
+the post's own content using Claude (Anthropic) — shown for review, never applied automatically. Requires a
+one-time setup:
+1. Get an API key from [console.anthropic.com](https://console.anthropic.com) → API Keys.
+2. Add it to **Vercel** (Settings → Environment Variables) as `ANTHROPIC_API_KEY` → redeploy.
+
+**If "Suggest SEO & Excerpt" shows an error:** almost always the key above isn't set, or was only set for
+the wrong Vercel environment. The dialog's error message says plainly if the key is missing. Each use makes
+one small API call to Anthropic (a few post paragraphs in, a short suggestion out) — cost is negligible at
+personal-blog volume, but if this is ever used heavily, worth knowing it's a paid-per-use API, not free.
+
+---
+
 ## Publishing: "I published a post but it's not showing up"
 
 **Symptoms:** A post is published in Sanity Studio (asheraw.com/studio) but doesn't appear on asheraw.com/blog.
