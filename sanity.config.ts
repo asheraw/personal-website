@@ -17,6 +17,7 @@ import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
 import {withPrePublishChecklist} from './src/sanity/actions/prepareForPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
+import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 
 export default defineConfig({
   basePath: '/studio',
@@ -26,6 +27,11 @@ export default defineConfig({
   schema,
   document: {
     actions: (prev, context) => {
+      if (context.schemaType === 'category') {
+        return prev.map((action) =>
+          (action as {action?: string}).action === 'delete' ? withCategoryDeleteGuard(action) : action
+        )
+      }
       if (context.schemaType !== 'post') return prev
       const withDateAction = prev.map((action) =>
         (action as {action?: string}).action === 'publish'
