@@ -18,6 +18,22 @@ const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["lati
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Sets the light/dark class on <html> synchronously, before the
+            browser paints anything. Without this, the page always paints
+            dark first (that's what the server and ThemeProvider's initial
+            state assume) and only corrects once React hydrates and its
+            useEffect runs -- on a heavier page like the homepage, that gap
+            is wide enough to actually see: the toggle button (driven by
+            React state, updates instantly) says "light" while the
+            background (driven by this CSS class, lagging behind) is still
+            dark. This script closes that gap entirely. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("asher-theme");if(t!=="light"&&t!=="dark")t="dark";document.documentElement.classList.add(t);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} font-sans antialiased bg-background text-foreground`}>
         {children}
       </body>
