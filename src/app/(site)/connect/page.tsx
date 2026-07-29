@@ -37,10 +37,11 @@ export default function ConnectPage() {
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.06] mix-blend-overlay" aria-hidden />
       <div className="relative mx-auto max-w-lg">
         <div className="flex flex-col items-center text-center">
-          <p className="font-mono-stage text-[10px] uppercase tracking-[0.3em] text-spotlight/70">Singapore · Actor · Coach · Storyteller</p>
-          <h1 className="mt-4 font-display text-4xl font-semibold tracking-[-0.01em] text-ivory sm:text-5xl">
-            Let&rsquo;s <span className="text-spotlight-gradient italic">connect</span>
-          </h1>
+          <div className="w-full overflow-hidden rounded-2xl border border-amber-faint">
+            <img src="/asher/connect-hero.jpg" alt="Connect with Asher Aw — Facebook, Instagram, Twitter, YouTube, LinkedIn, Messenger, and TikTok" className="w-full" />
+          </div>
+          <p className="mt-6 font-mono-stage text-[10px] uppercase tracking-[0.3em] text-spotlight/70">Singapore · Actor · Coach · Storyteller</p>
+          <h1 className="sr-only">Connect with Asher Aw</h1>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-stone/75 sm:text-base">Every way to reach Asher, in one place. Pick whatever&rsquo;s easiest for you.</p>
         </div>
 
