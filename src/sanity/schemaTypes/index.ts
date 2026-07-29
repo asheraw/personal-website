@@ -5,7 +5,8 @@ import {categoryType} from './categoryType'
 import {postType} from './postType'
 import {authorType} from './authorType'
 import {contactSubmissionType} from './contactSubmissionType'
+import {aiPromptSettingsType} from './aiPromptSettingsType'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType],
+  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType],
 }

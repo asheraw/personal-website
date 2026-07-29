@@ -9,7 +9,16 @@ export const postType = defineType({
   title: 'Post',
   type: 'document',
   icon: DocumentTextIcon,
+  // Field order matches how Asher actually writes, not a database-y default
+  // order: draft the body first, then title, then everything downstream of
+  // the title (slug), then the image (made manually, after the content is
+  // settled), then category/tags, then the stuff that's basically automatic
+  // (author) or decided right before hitting Publish (date, SEO, social).
   fields: [
+    defineField({
+      name: 'body',
+      type: 'blockContent',
+    }),
     defineField({
       name: 'title',
       type: 'string',
@@ -19,18 +28,6 @@ export const postType = defineType({
       type: 'slug',
       options: {
         source: 'title',
-      },
-    }),
-    defineField({
-      name: 'author',
-      type: 'reference',
-      to: {type: 'author'},
-      initialValue: async (_params, context) => {
-        const client = context.getClient({apiVersion: '2023-01-01'})
-        const defaultAuthorId = await client.fetch<string | null>(
-          `*[_type == "author" && slug.current == "asher-aw"][0]._id`
-        )
-        return defaultAuthorId ? {_type: 'reference', _ref: defaultAuthorId} : undefined
       },
     }),
     defineField({
@@ -77,6 +74,18 @@ export const postType = defineType({
       components: {input: TagsAutocompleteInput},
     }),
     defineField({
+      name: 'author',
+      type: 'reference',
+      to: {type: 'author'},
+      initialValue: async (_params, context) => {
+        const client = context.getClient({apiVersion: '2023-01-01'})
+        const defaultAuthorId = await client.fetch<string | null>(
+          `*[_type == "author" && slug.current == "asher-aw"][0]._id`
+        )
+        return defaultAuthorId ? {_type: 'reference', _ref: defaultAuthorId} : undefined
+      },
+    }),
+    defineField({
       name: 'publishedAt',
       type: 'datetime',
       description: 'Defaults to the moment you create the post. Change it any time — your change is always kept.',
@@ -90,10 +99,6 @@ export const postType = defineType({
       description:
         'Shown on the blog listing AND used as the search-engine/social description — one summary, doing both jobs. Keep it under 160 characters; anything past that gets cut off in Google results and doesn’t help clicks anyway.',
       validation: (rule) => rule.max(160).warning('Past ~160 characters this gets cut off in Google and social previews.'),
-    }),
-    defineField({
-      name: 'body',
-      type: 'blockContent',
     }),
     defineField({
       name: 'seoTitle',

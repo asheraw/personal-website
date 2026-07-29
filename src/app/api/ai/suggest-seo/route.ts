@@ -39,6 +39,16 @@ export async function POST(request: NextRequest) {
       ? `\n\nExisting tags already used elsewhere on this blog: ${existingTags.slice(0, 60).join(", ")}. When one of these genuinely fits, reuse it with its exact existing spelling and capitalization rather than inventing a near-duplicate. Only suggest a new tag when nothing existing fits.`
       : "";
 
+    // Editable in Studio under "AI Suggestion Settings" -- lets Asher tweak
+    // tone/phrasing without needing a code change. Only ever one such
+    // document; missing entirely just means no extra guidance yet.
+    const settings: {extraGuidance?: string} | null = await writeClient.fetch(
+      `*[_type == "aiPromptSettings"][0]{extraGuidance}`
+    );
+    const extraGuidanceBlock = settings?.extraGuidance?.trim()
+      ? `\n\nAdditional guidance from the author -- follow this closely: ${settings.extraGuidance.trim()}`
+      : "";
+
     const response = await ai.models.generateContent({
       model: "gemini-3.6-flash",
       contents: `You are helping a blogger choose SEO metadata and tags for a post they're about to publish. Based on the title and content below, suggest THREE options each for an SEO title and an excerpt, plus 3-5 topic tags, so the author can pick what they like best (they'll edit it afterward, so these are starting points, not final copy).
@@ -51,7 +61,7 @@ Excerpts: 160 characters or fewer each (this doubles as the meta description AND
 1. The post's single most important point, value, or keyword must appear within the FIRST 120 characters — mobile search results often cut off well before 160, so don't save the point for the end.
 2. Write to create curiosity that earns the click — an open loop, a specific tension, or a concrete detail — never a flat, generic summary that already gives everything away.
 
-Tags: 3-5 short topic labels (1-3 words each, lowercase unless reusing an existing tag's own casing) that describe what this post is actually about.${existingTagsBlock}
+Tags: 3-5 short topic labels (1-3 words each, lowercase unless reusing an existing tag's own casing) that describe what this post is actually about.${existingTagsBlock}${extraGuidanceBlock}
 
 Title: ${title}
 
