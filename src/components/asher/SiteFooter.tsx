@@ -1,6 +1,7 @@
 "use client";
 
 import { Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2 } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 type StoryNav = { title: string; links: { label: string; href: string }[] };
 
@@ -37,7 +38,16 @@ export function SiteFooter({ mode = "story" }: { mode?: "story" | "play" }) {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {SOCIALS.map((s) => (
-              <a key={s.label} href={s.href} target={s.href.startsWith("http") ? "_blank" : undefined} rel={s.href.startsWith("http") ? "noreferrer" : undefined} aria-label={s.label} title={s.label} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:bg-spotlight/5 hover:text-spotlight">
+              <a
+                key={s.label}
+                href={s.href}
+                target={s.href.startsWith("http") ? "_blank" : undefined}
+                rel={s.href.startsWith("http") ? "noreferrer" : undefined}
+                aria-label={s.label}
+                title={s.label}
+                onClick={s.label === "WhatsApp" ? () => track({ action: "whatsapp_click", category: "contact", label: "footer_social" }) : undefined}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:bg-spotlight/5 hover:text-spotlight"
+              >
                 <s.icon size={18} />
               </a>
             ))}
@@ -51,7 +61,13 @@ export function SiteFooter({ mode = "story" }: { mode?: "story" | "play" }) {
                 <ul className="mt-4 space-y-3">
                   {group.links.map((l) => (
                     <li key={l.label}>
-                      <a href={l.href} target={l.href.startsWith("http") ? "_blank" : undefined} rel={l.href.startsWith("http") ? "noreferrer" : undefined} className="group inline-flex items-center text-sm text-stone/80 transition-colors hover:text-ivory">
+                      <a
+                        href={l.href}
+                        target={l.href.startsWith("http") ? "_blank" : undefined}
+                        rel={l.href.startsWith("http") ? "noreferrer" : undefined}
+                        onClick={l.label === "WhatsApp" ? () => track({ action: "whatsapp_click", category: "contact", label: "footer_nav" }) : undefined}
+                        className="group inline-flex items-center text-sm text-stone/80 transition-colors hover:text-ivory"
+                      >
                         <span className="mr-0 w-0 overflow-hidden text-spotlight transition-all group-hover:mr-2 group-hover:w-3">→</span>
                         {l.label}
                       </a>
