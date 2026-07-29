@@ -27,6 +27,7 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('author').title('Authors'),
       S.divider(),
       S.documentTypeListItem('contactSubmission').title('Contact Submissions'),
+      S.documentTypeListItem('notFoundHit').title('404 Hits'),
       S.divider(),
       // Singleton: always opens this one fixed document, never a list --
       // there should only ever be exactly one AI Suggestion Settings doc.
@@ -38,6 +39,6 @@ export const structure: StructureResolver = (S) =>
       ...S.documentTypeListItems().filter(
         (item) =>
           item.getId() &&
-          !['post', 'category', 'author', 'contactSubmission', 'aiPromptSettings'].includes(item.getId()!),
+          !['post', 'category', 'author', 'contactSubmission', 'notFoundHit', 'aiPromptSettings'].includes(item.getId()!),
       ),
     ])
