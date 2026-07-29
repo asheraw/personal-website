@@ -61,7 +61,7 @@ flagged, publishing works exactly as before with no extra step.
 
 **"Suggest SEO & Excerpt"** (in the "..." menu next to Publish) drafts 3 options each for SEO title and
 excerpt from the post's own content using Google's Gemini API — shown for review, never applied
-automatically; picking one just fills that field, still fully editable afterward. Uses `gemini-2.5-flash`,
+automatically; picking one just fills that field, still fully editable afterward. Uses `gemini-3.6-flash`,
 which is on Gemini's free tier (1,500 requests/day, no credit card) — at personal-blog volume this should
 never cost anything. (Originally built against Anthropic's Claude API, but Claude Pro subscription credit
 doesn't cover API usage — that's billed completely separately and needs its own top-up. Switched to Gemini
@@ -71,6 +71,19 @@ on 2026-07-29 specifically because it has a genuine permanent free tier.) Requir
 
 **If "Suggest SEO & Excerpt" shows an error:** almost always the key above isn't set, or was only set for
 the wrong Vercel environment. The dialog's error message says plainly if the key is missing.
+
+**"Nothing to summarize" on a post that clearly has content:** happened once (2026-07-30) on a post with no
+pending edits — the action was only reading the *draft* version of the document, and a published, untouched
+post has no draft at all. Fixed by falling back to the published version when there's no draft. If this
+exact symptom ever reappears, check `src/sanity/actions/suggestSeo.tsx` still reads
+`props.draft ?? props.published`, not `props.draft` alone.
+
+**Model name changes fast on Gemini's side:** this already broke once (2026-07-30) — `gemini-2.5-flash`
+returned a 404 "no longer available to new users" despite being listed as a stable model in Google's own
+docs at the time. If suggestions start failing after previously working, check
+[ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) for the current model
+name before assuming something else broke, and update the model string in
+`src/app/api/ai/suggest-seo/route.ts`.
 
 **Excerpt suggestions specifically follow two rules, on purpose:** the post's main point/keyword must land
 within the first 120 characters (mobile search results often truncate before the full 160), and the copy

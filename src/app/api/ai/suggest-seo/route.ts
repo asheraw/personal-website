@@ -85,12 +85,8 @@ ${bodyText.slice(0, 6000)}`,
     return NextResponse.json({ seoTitles, excerpts });
   } catch (error) {
     console.error("[ai/suggest-seo] failed:", error);
-    // TEMP: surfacing the real error message while diagnosing a live issue
-    // (2026-07-30) -- revert to the generic message once resolved, this
-    // endpoint has no auth and shouldn't leak internals long-term.
-    const detail = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Couldn't get a suggestion right now — try again in a moment.", detail },
+      { error: "Couldn't get a suggestion right now — try again in a moment." },
       { status: 500 }
     );
   }
