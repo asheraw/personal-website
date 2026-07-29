@@ -90,6 +90,60 @@ within the first 120 characters (mobile search results often truncate before the
 should create curiosity rather than give everything away flatly. The dialog visually shows the first-120
 portion vs. the rest so this is easy to check at a glance before picking one.
 
+**Suggestions also include 3-5 tags** (shipped 2026-07-29), shown as clickable chips — click any you want,
+then "Add" merges them into the post's existing tags (doesn't replace them, unlike title/excerpt which do
+replace). Tags already used elsewhere on the blog are passed to Gemini so it prefers reusing an existing
+tag's exact spelling instead of inventing a near-duplicate like "coaching" vs "Coaching".
+
+**The instructions given to the AI are editable** (shipped 2026-07-29) — in Studio's left sidebar, under
+**AI Suggestion Settings**. Change tone, phrasing habits, things to always/never do, whatever's useful.
+Nothing there is load-bearing for the feature to keep working: Gemini's response *shape* is enforced
+separately by `responseSchema` in `src/app/api/ai/suggest-seo/route.ts`, and title/excerpt lengths are
+hard-truncated in code regardless of what the instructions say — so editing freely can make suggestions
+worse, but can't break the feature. Leave the field blank to fall back to the built-in default (kept as
+`DEFAULT_AI_PROMPT_INSTRUCTIONS` in `src/lib/aiPromptDefaults.ts`, shared with the settings field's starting
+value so the two can't quietly drift apart).
+
+---
+
+## Post metadata: reading time, categories, tags
+
+**Reading time** ("X min read", shown in Studio's post list and on the live blog) is calculated
+automatically from the post body — nothing to fill in, and it can't go stale since it's computed fresh each
+time rather than stored. Lives in `src/lib/portableText.ts` (`estimateReadingTimeMinutes`), shared by Studio
+and the frontend so both always agree.
+
+**Categories** use a checkbox list in Studio (shipped 2026-07-29) instead of Sanity's default search-and-pick
+popup — every existing category is visible at a glance, laid out in 2-3 columns depending on how many there
+are. Custom input component: `src/sanity/components/CategoryCheckboxInput.tsx`.
+
+**Tags autocomplete** (shipped 2026-07-29): typing suggests tags already used on other posts, to cut down on
+near-duplicates. If nothing's suggested, that just means the tag you're typing hasn't been used before — not
+a bug. Custom input component: `src/sanity/components/TagsAutocompleteInput.tsx`.
+
+---
+
+## Categories: viewing usage and safe deletion
+
+**"Which posts use this category?"** — open the category in Studio; alongside the normal **Editor** tab
+there's a **Posts** tab listing every post that references it. Read-only, just for reference before deciding
+whether to edit or delete. Component: `src/sanity/components/CategoryPostsView.tsx`, wired up in
+`src/sanity/structure.ts`.
+
+**Deleting a category that's still in use** (shipped 2026-07-29) no longer just silently orphans the posts
+using it. If nothing references the category, Delete works exactly as it always has — no extra step. If
+posts do use it, a dialog lists them and asks whether to reassign them to another category or leave them
+uncategorised; only after that choice is applied does the actual deletion run. Wrapped in
+`src/sanity/actions/categoryDeleteGuard.tsx`, wired into `sanity.config.ts`'s `document.actions`.
+
+**If a bulk category reassignment ever looks wrong** (posts not correctly moved off the deleted category,
+or ending up with a duplicate category reference): the reassignment logic patches every affected post in one
+Sanity transaction before the delete runs. This already caught one real bug during testing — calling
+`.unset()` more than once on the same Sanity patch silently drops all but the last call's paths instead of
+accumulating them, so every field being removed has to be collected into a single `.unset([...])` call, not
+several chained ones. If this class of bug ever resurfaces (e.g. in a future bulk-edit feature), that's the
+first thing to check.
+
 ---
 
 ## Publishing: "I published a post but it's not showing up"
