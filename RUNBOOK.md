@@ -6,6 +6,12 @@ detail for a developer (human or AI) picking this up cold.
 This file grows over time — every new feature should add its own troubleshooting entry here when it ships,
 not after something has already gone wrong with it.
 
+**Before making any non-trivial change, read `ACE_PRD.md` and `ACE_MASTER_SPEC.md`** — the project's actual
+spec and roadmap, committed here so every session (desktop or remote) works from the same source instead of
+relying on separate Claude project knowledge that can drift. This file (the runbook) stays the source of
+truth for *current, as-built* behavior; the other two are the source of truth for *what ACE is supposed to
+become*. Where they disagree with what's actually deployed, this file wins.
+
 ---
 
 ## How urgent is it? (severity levels)
@@ -275,7 +281,7 @@ blog content.
 - The site auto-deploys on every push to `main` via Vercel. There is no staging environment yet — treat `main` as production.
 - Before touching `prisma/schema.prisma`, know that only `ContactSubmission` (and `User`, currently unused/dormant) exist there on purpose. Content does not belong here.
 - Read `BACKUP_AND_RECOVERY_GUIDE.md` before doing anything with Sanity content structure.
-- If unsure whether a change is safe to make without asking the site owner first, it probably needs asking — see the Decision Authority guidance in the project's master spec (ACE — Asher's Content Engine).
+- If unsure whether a change is safe to make without asking the site owner first, it probably needs asking — see the Decision Authority Matrix in `ACE_MASTER_SPEC.md` (Part VII).
 
 ---
 
