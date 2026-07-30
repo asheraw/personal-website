@@ -12,6 +12,10 @@ relying on separate Claude project knowledge that can drift. This file (the runb
 truth for *current, as-built* behavior; the other two are the source of truth for *what ACE is supposed to
 become*. Where they disagree with what's actually deployed, this file wins.
 
+**For what's actually shipped and when, read `CHANGELOG.md`** — one running log, newest entry on top. When
+a session finishes real work, it adds a dated entry there instead of leaving the only record in a chat-only
+summary that other sessions can't see.
+
 ---
 
 ## How urgent is it? (severity levels)
