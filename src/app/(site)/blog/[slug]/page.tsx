@@ -55,7 +55,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = post.seoTitle || post.title;
   const description = post.excerpt || undefined;
   const imageSource = post.socialImage ?? post.mainImage;
-  const image = imageSource ? urlFor(imageSource).width(1200).height(630).fit("crop").url() : undefined;
+  // .format("jpg").quality(75): social crawlers (WhatsApp especially) are
+  // known to silently drop the preview image if it's too large/slow to
+  // fetch. Without an explicit format, Sanity serves the source file as-is
+  // -- a source PNG can come out at 1-2MB+ at this crop size, well past
+  // what WhatsApp reliably handles. JPG at this quality looks the same for
+  // a photo-style crop and comes out at a fraction of the size.
+  const image = imageSource
+    ? urlFor(imageSource).width(1200).height(630).fit("crop").format("jpg").quality(75).url()
+    : undefined;
   const url = `${SITE_URL}/blog/${post.slug}`;
 
   return {
@@ -103,7 +111,7 @@ export default async function PostPage({ params }: PageProps) {
     datePublished: post.publishedAt,
     dateModified: post._updatedAt,
     author: post.author ? { "@type": "Person", name: post.author.name } : undefined,
-    image: imageSource ? urlFor(imageSource).width(1200).height(630).fit("crop").url() : undefined,
+    image: imageSource ? urlFor(imageSource).width(1200).height(630).fit("crop").format("jpg").quality(75).url() : undefined,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
 
