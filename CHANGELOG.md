@@ -132,6 +132,28 @@ not the API — same class of bug already seen once with the AI settings singlet
 passing: Reusable Snippets was appearing twice in Studio's sidebar navigation, since it was never added to
 the "don't also show this in the generic list" exclusion.
 
+### Continued once more (Studio usability follow-ups from testing the day's work)
+
+**Comments now show a live pending-count badge right in Studio's nav bar**, not just inside the Comments
+screen itself — WordPress-style, so there's no need to click in just to check. Sanity has no built-in way to
+badge a nav item, but a tool's icon can be any component, so the icon quietly polls the pending count itself.
+
+**Site Settings expanded** from just "default author" to also cover the site's title, meta description, and
+default social-share image — previously hardcoded in code, now editable in Studio, split into clearly labeled
+sections. A settings change can take up to a couple of minutes to show up live (Sanity's own caching plus this
+site's own refresh window stacking) — confirmed and explained, not worth tightening further for something
+this infrequent.
+
+**404 Hits redesigned** into one overview page instead of a list you click into one path at a time, sorted by
+how often each was hit. Now also keeps a full log of every individual hit (not just first-seen/last-seen) —
+Asher specifically wanted this to be able to tell a burst of attempts in a short window (someone probing for
+pages) apart from scattered one-off broken links. Capped per path so it can't grow forever if someone really
+does hammer the same URL.
+
+**Reusable Snippets confirmed not broken** — checked the actual data directly: zero snippets have been
+created yet, so the empty screen is correct, expected behavior, not a bug. Also cleared out a handful of 404
+entries that turned out to be from this session's own testing rather than real visitors.
+
 ---
 
 ## 2026-07-29
