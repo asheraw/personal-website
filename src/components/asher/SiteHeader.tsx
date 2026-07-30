@@ -106,29 +106,41 @@ export function SiteHeader({
               Blog
             </a>
             <div className="relative">
-              <button type="button" onClick={() => { track({ action: "theme_toggle", category: "ui", label: `${theme === "dark" ? "dark_to_light" : "light_to_dark"}_${context}` }); toggleTheme(); dismissHint(); }} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:text-spotlight" aria-label={theme === "dark" ? "Turn on the lights" : "Turn off the lights"} title={theme === "dark" ? "Turn on the lights" : "Turn off the lights"}>
+              <AnimatePresence>
+                {showHint && (
+                  <motion.span
+                    initial={{ opacity: 0.6, scale: 1 }}
+                    animate={{ opacity: 0, scale: 1.7 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+                    className="pointer-events-none absolute inset-0 rounded-full bg-spotlight/60"
+                    aria-hidden
+                  />
+                )}
+              </AnimatePresence>
+              <button type="button" onClick={() => { track({ action: "theme_toggle", category: "ui", label: `${theme === "dark" ? "dark_to_light" : "light_to_dark"}_${context}` }); toggleTheme(); dismissHint(); }} className={cn("relative inline-flex h-9 w-9 items-center justify-center rounded-full border text-stone/80 transition-all hover:border-spotlight/50 hover:text-spotlight", showHint ? "border-spotlight/60 text-spotlight" : "border-amber-faint")} aria-label={theme === "dark" ? "Turn on the lights" : "Turn off the lights"} title={theme === "dark" ? "Turn on the lights" : "Turn off the lights"}>
                 {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
               </button>
               <AnimatePresence>
                 {showHint && (
                   <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.4 }}
+                    initial={{ opacity: 0, y: -6, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
                     className="pointer-events-none absolute right-0 top-full mt-2 flex flex-col items-end"
                   >
                     <motion.div
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                      className="mr-3 text-spotlight/80"
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                      className="mr-3 text-spotlight"
                       aria-hidden
                     >
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transform: "rotate(180deg)" }}>
                         <path d="M7 2v10M3 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </motion.div>
-                    <span className="mt-1 whitespace-nowrap rounded-full border border-amber-faint bg-stage/90 px-3 py-1 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/80 backdrop-blur-sm">
+                    <span className="mt-1 whitespace-nowrap rounded-full border border-spotlight/50 bg-stage px-3 py-1.5 font-mono-stage text-[10px] font-semibold uppercase tracking-[0.18em] text-spotlight shadow-lg shadow-spotlight/10">
                       Try {theme === "dark" ? "light" : "dark"} mode
                     </span>
                   </motion.div>
