@@ -1,0 +1,141 @@
+# Development Log
+
+A running, single log of what's actually shipped on asheraw.com — one entry per work session, newest at the
+top. This is the one place (human or AI, desktop or remote) should read to know what's actually been done,
+and the one place to add a new entry to when something ships. Don't create a separate summary document per
+day — add a dated section here instead, so there's never more than one place to check.
+
+Written for two audiences at once: Asher, reading in plain English, and a new developer (human or AI)
+picking up the project cold. For *why* something works the way it does, or what to do when it breaks, see
+`RUNBOOK.md`. For the project's actual goals and roadmap, see `ACE_PRD.md` and `ACE_MASTER_SPEC.md`.
+
+---
+
+## 2026-07-30
+
+**Theme system:** Found and fixed a real React hydration bug in `ThemeProvider` — it read the visitor's
+saved theme during the very first render, which could differ from what the server rendered, causing React
+to silently discard and rebuild large chunks of the page on every full page load for anyone using light
+mode. This is very likely the actual cause of light mode "reverting" across navigation reported the night
+before. Fixed by always starting state at `"dark"` (matching the server) and correcting once, before paint.
+
+**Header & footer:** `SiteHeader` and `SiteFooter` now render once, globally, from the shared site layout
+instead of every page carrying its own copy — intended to fix `/connect` and the 404 page never having had
+a theme toggle. **Status: reported by Asher as still not working correctly on `/connect` and the 404 page —
+open issue, not yet resolved.** Needs a fresh look before considering this closed.
+
+**Theme-toggle hint:** the once-daily "try light/dark mode" nudge was too subtle on mobile and looped
+forever even after being seen. Reworked: dropped the infinite pulse, added a persistent static ring around
+the button (visible without relying on animation timing) plus a few finite pulses on first appearance, and
+made the hint badge itself tappable (bigger target than the small icon, especially on mobile).
+
+**Blog:** added a reading-progress bar to individual post pages — fills as you scroll through the article,
+same math as the homepage's existing scroll-progress indicator.
+
+**Project alignment:** the ACE PRD and master spec previously only existed in Claude.ai project knowledge,
+which the desktop Claude Code session could see and this remote session couldn't — causing this session and
+the desktop session to disagree about what phase the project was actually in. Committed both as
+`ACE_PRD.md` and `ACE_MASTER_SPEC.md` so every session, going forward, reads the same source. Also created
+this file for the same reason — no more one-off run-sheet artifacts that only exist as a chat link.
+
+**Reality check on Phase 0 / Phase 1:** cross-referenced the run sheet's "Phase 0 formally closed" and
+"Phase 1 gaps closed" claims against the actual PRD's exit criteria. Neither phase is actually complete:
+- Phase 0 is missing its two required planning documents, `CURRENT_STATE_AUDIT.md` and
+  `IMPLEMENTATION_PLAN.md` — the backup/restore half of Phase 0 is solid, the audit half was skipped.
+- Phase 1 is missing a Site Settings singleton, distraction-free writing mode, reusable content
+  snippets, and full (image-level) media library reuse tracking.
+
+This isn't a criticism of past work — it's the first time these claims were actually checked against the
+real spec instead of a shorter, looser description of it. Flagging it here so it doesn't get re-declared
+"done" by mistake in a future session.
+
+**Housekeeping:** opened [PR #1](https://github.com/asheraw/personal-website/pull/1) to merge all of the
+above from `claude/project-ace-progress-clpqg9` into `main`.
+
+---
+
+## 2026-07-29
+
+**Content:** imported 10 old blog posts (2013–2019) from a prior platform as Studio drafts, original publish
+dates preserved, Markdown converted to real rich content. Two posts flagged for a manual retype (encoding
+damage from an old export); one flagged for a privacy read before publishing.
+
+**Mobile bug sweep:** fixed several real display bugs found by an actual phone-width scroll-through —
+clipped placeholder text, a clipped stat-card word, a boot-animation flash on repeat visits, overlapping
+labels, an awkward heading wrap. Found and fixed the underlying cause of a stats mismatch: the homepage's
+Story and Play modes each kept their own separate copy of career stats, so updating one silently left the
+other stale — both now read from one shared source.
+
+**Phase 0 (Audit & Protection):** ran the first full backup restore drill — exported live content, restored
+into a throwaway copy, verified every document matched, all in under 15 seconds. Built reusable tooling so
+this can repeat monthly. *(Note, added 2026-07-30: the restore-drill/backup half of Phase 0 is genuinely
+solid, but Phase 0 also required two planning documents — `CURRENT_STATE_AUDIT.md` and
+`IMPLEMENTATION_PLAN.md` — that were never written. Phase 0 is not actually fully closed; see today's entry
+above.)*
+
+**Phase 1 gaps closed:** reading time now shown automatically on every post; categories switched from a
+search-and-pick popup to an all-visible checkbox list; tags now autocomplete from existing tags to cut down
+on near-duplicates; the AI suggestion tool now proposes tags too, alongside titles and excerpts.
+
+**Studio tuning:** reordered post editor fields to match the real writing order (body → title → slug →
+image → category → tags → author → date → SEO last). Made the AI's instructions fully editable in Studio.
+
+**Category safety:** every category now has a "Posts" tab showing what uses it before you touch anything;
+deleting an in-use category now asks whether to reassign its posts or leave them uncategorised, instead of
+silently orphaning them.
+
+**Reader engagement groundwork:** WhatsApp and theme-toggle clicks are now tracked separately for blog pages
+vs. the homepage (previously lumped together, making some questions unanswerable). Added the once-daily
+"try dark/light mode" hint.
+
+**Late pass:** brought back `/connect` (link-in-bio style page); added the site's first real favicon (one
+had been referenced in code but the actual files never existed); added a proper on-brand 404 page with
+every hit logged to a "404 Hits" list in Studio.
+
+**Real bug, actually fixed:** the homepage's light mode was rendering with the wrong (dark) colours on
+first load even though the toggle itself said "light" — the page always started in dark colours by default
+and only switched once the page's script finished running, usually too fast to notice but visible on the
+homepage's heavier animation load. Fixed by setting the correct colours before the page draws anything, on
+every page. *(Note, added 2026-07-30: this fix addressed the visible colour flash, but not the deeper React
+hydration mismatch that caused theme state itself to go flaky across navigation — that was found and fixed
+the next session; see today's entry above.)*
+
+Found during the fix, deferred: light mode not surviving home→blog navigation, and the theme switch missing
+on `/connect` and non-functional on the 404 page.
+
+---
+
+## 2026-07-28
+
+**Safety net first:** automated daily backups of all blog content; fixed a bug where the live site was
+frozen on old content (new/edited posts weren't appearing at all — the blog pages never rechecked Sanity
+after the initial deploy); removed a leftover duplicate content table.
+
+**Blog, made real:** every post now gets its own real search-engine listing instead of a shared generic one;
+fixed the sitemap and added an RSS feed; added category/tag/author pages; rebuilt the visual design to
+actually match the rest of the site (dark stage theme, Playfair headings, amber accents); linked the blog
+into the homepage navigation.
+
+**Real writing tools:** fixed images embedded in a post silently never showing up live; added numbered
+lists, underline/strikethrough, dividers, code blocks with syntax highlighting, callouts, accordions,
+YouTube embeds, image captions; merged "Excerpt" and "SEO description" into one field; auto-generated
+excerpts when none is written; added a "primary category" for a clear breadcrumb even when a post has
+several categories.
+
+**The Studio itself:** new posts default to Asher as author; added a live preview tool (desktop/mobile,
+before publishing); traced and fixed a chain of issues (a missing security setting, an unwired connection, a
+misplaced Publish button) down to the real cause — Studio was refreshing on every keystroke because it
+accidentally shared setup with the rest of the site; gave it its own separate space, which stopped it. New
+categories can now only be created from the Categories tab, not accidentally mid-post.
+
+**Contact form, made durable:** moved submissions off a Postgres database (via Supabase) that was about to
+auto-pause itself from inactivity, into the existing Sanity project (already backed up daily); fixed a bug
+where retrying a failed submission wiped out everything already typed.
+
+**Small but real:** homepage intro animation now plays once a day instead of every reload; mobile header was
+missing the Blog link.
+
+---
+
+*Entries above 2026-07-28 predate this log; see git history and the RUNBOOK.md incident log for anything
+earlier.*

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/asher/SiteHeader";
 import { SiteFooter } from "@/components/asher/SiteFooter";
+import { SiteProviders } from "@/components/asher/SiteProviders";
+import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
 import { track } from "@/lib/analytics";
 
 export default function NotFound() {
@@ -31,44 +33,52 @@ export default function NotFound() {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-stage text-ivory">
-      <SiteHeader />
-      <main className="relative flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-5 pt-16 sm:px-8">
-        <div className="pointer-events-none absolute inset-0 bg-grid-paper opacity-40" aria-hidden />
-        <div
-          className="pointer-events-none absolute inset-0"
-          aria-hidden
-          style={{ background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(240,184,101,0.12) 0%, transparent 65%)" }}
-        />
-        <div className="relative mx-auto max-w-lg text-center">
-          <p className="font-mono-stage text-xs uppercase tracking-[0.3em] text-spotlight/70">
-            / act_404 · missing_scene
-          </p>
-          <h1 className="mt-5 font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
-            Scene not <span className="italic text-spotlight-gradient">found.</span>
-          </h1>
-          <p className="mt-6 leading-relaxed text-stone/80">
-            Whatever you were looking for isn&rsquo;t in this production — wrong link, an old cue that got cut,
-            or a page that never made it to opening night. Either way, there&rsquo;s a lot more happening on
-            the actual stage.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full bg-spotlight px-6 py-3 font-mono-stage text-xs uppercase tracking-[0.2em] text-stage transition-transform hover:scale-[1.03]"
-            >
-              Back to the Story
-            </Link>
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-2 rounded-full border border-amber-faint px-6 py-3 font-mono-stage text-xs uppercase tracking-[0.2em] text-ivory transition-colors hover:border-spotlight/50 hover:text-spotlight"
-            >
-              Read the Blog
-            </Link>
+    <SiteProviders>
+      {/* Same SiteHeader/SiteFooter as every other page -- this file has to
+          live at the true app root (Next.js requires that for the global
+          not-found boundary to catch genuinely unmatched URLs), so it can't
+          share the (site) layout's providers, but it mounts the identical
+          components rather than a bespoke copy. */}
+      <ConfigureSiteChrome context="404" />
+      <div className="min-h-screen bg-stage text-ivory">
+        <SiteHeader />
+        <main className="relative flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-5 pt-16 sm:px-8">
+          <div className="pointer-events-none absolute inset-0 bg-grid-paper opacity-40" aria-hidden />
+          <div
+            className="pointer-events-none absolute inset-0"
+            aria-hidden
+            style={{ background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(240,184,101,0.12) 0%, transparent 65%)" }}
+          />
+          <div className="relative mx-auto max-w-lg text-center">
+            <p className="font-mono-stage text-xs uppercase tracking-[0.3em] text-spotlight/70">
+              / act_404 · missing_scene
+            </p>
+            <h1 className="mt-5 font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
+              Scene not <span className="italic text-spotlight-gradient">found.</span>
+            </h1>
+            <p className="mt-6 leading-relaxed text-stone/80">
+              Whatever you were looking for isn&rsquo;t in this production — wrong link, an old cue that got cut,
+              or a page that never made it to opening night. Either way, there&rsquo;s a lot more happening on
+              the actual stage.
+            </p>
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 rounded-full bg-spotlight px-6 py-3 font-mono-stage text-xs uppercase tracking-[0.2em] text-stage transition-transform hover:scale-[1.03]"
+              >
+                Back to the Story
+              </Link>
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 rounded-full border border-amber-faint px-6 py-3 font-mono-stage text-xs uppercase tracking-[0.2em] text-ivory transition-colors hover:border-spotlight/50 hover:text-spotlight"
+              >
+                Read the Blog
+              </Link>
+            </div>
           </div>
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
+        </main>
+        <SiteFooter />
+      </div>
+    </SiteProviders>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Facebook, Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2, ArrowLeft, ArrowUpRight } from "lucide-react";
 import { CONTACT_INFO } from "@/components/asher/data";
+import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
 
 const SITE_URL = "https://asheraw.com";
 const TITLE = "Connect with Asher Aw";
@@ -32,7 +33,12 @@ const DIRECT = [
 
 export default function ConnectPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-stage px-5 py-16 text-ivory sm:px-8 sm:py-24">
+    <div className="relative min-h-screen overflow-hidden bg-stage px-5 pt-28 pb-16 text-ivory sm:px-8 sm:pt-32 sm:pb-24">
+      {/* The global SiteHeader now covers the theme toggle and site nav;
+          the full SiteFooter is skipped here in favour of the page's own
+          minimal "back to asheraw.com" footer below, since /connect is
+          deliberately a single-purpose link-in-bio page. */}
+      <ConfigureSiteChrome context="connect" footer={false} />
       <div className="pointer-events-none absolute inset-0" aria-hidden style={{ background: "radial-gradient(ellipse 70% 55% at 50% 0%, rgba(240,184,101,0.16) 0%, rgba(240,184,101,0.05) 40%, transparent 70%)" }} />
       <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.06] mix-blend-overlay" aria-hidden />
       <div className="relative mx-auto max-w-lg">

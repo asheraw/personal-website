@@ -8,6 +8,7 @@ import { PortableText } from "@portabletext/react";
 import { sanityFetch } from "@/sanity/lib/live";
 import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
+import { ReadingProgressBar } from "@/components/asher/blog/ReadingProgressBar";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
 import { estimateReadingTimeMinutes } from "@/lib/portableText";
 
@@ -108,6 +109,9 @@ export default async function PostPage({ params }: PageProps) {
 
   return (
     <BlogChrome>
+      {/* Skipped while previewing a draft -- it would sit at the exact same
+          top-16 offset as the "previewing a draft" banner below. */}
+      {!isPreviewing && <ReadingProgressBar targetId="post-article" />}
       {isPreviewing && (
         <div className="sticky top-16 z-40 flex items-center justify-between gap-4 border-y border-spotlight/40 bg-spotlight/10 px-5 py-2 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-spotlight sm:px-8">
           <span>Previewing a draft — this may not be published yet</span>
@@ -145,7 +149,7 @@ export default async function PostPage({ params }: PageProps) {
           })()}
         </nav>
 
-        <article>
+        <article id="post-article">
           <h1 className="font-display text-4xl font-semibold tracking-[-0.01em] text-ivory sm:text-5xl">
             {post.title}
           </h1>

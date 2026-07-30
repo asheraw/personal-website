@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sun, Moon, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
+import { useSiteChromeConfig, type Mode } from "./SiteChromeConfig";
 import { track } from "@/lib/analytics";
 
 const NAV = []; // No nav links — hamburger menu removed
@@ -31,24 +32,19 @@ function markHintShownToday() {
   }
 }
 
-export type Mode = "story" | "play";
+export type { Mode };
 
-export function SiteHeader({
-  mode = "story",
-  setMode,
-  context = "home",
-}: {
-  mode?: Mode;
-  setMode?: (m: Mode) => void;
-  // Which page this header is rendering on -- included in tracked click
-  // events so header WhatsApp clicks on the blog can be told apart from
-  // ones on the homepage, instead of all landing under one "header" label.
-  context?: "home" | "blog";
-}) {
+// Rendered once, globally, by the (site) layout (and separately, but
+// identically, by not-found.tsx). Reads mode/setMode/context from
+// SiteChromeConfig instead of taking props directly, so any page can
+// override just what it needs via <ConfigureSiteChrome /> without every
+// page having to place and wire up its own copy of this header.
+export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { mode, setMode, context } = useSiteChromeConfig();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -69,6 +65,16 @@ export function SiteHeader({
     if (!showHint) return;
     setShowHint(false);
     markHintShownToday();
+  }
+
+  // Shared by the icon button and the hint badge -- tapping either one
+  // performs the same "try it" action rather than the badge just being a
+  // label you have to dismiss separately, which matters most on mobile
+  // where the badge is the bigger, easier-to-hit target.
+  function handleToggleClick() {
+    track({ action: "theme_toggle", category: "ui", label: `${theme === "dark" ? "dark_to_light" : "light_to_dark"}_${context}` });
+    toggleTheme();
+    dismissHint();
   }
 
   useEffect(() => {
@@ -106,31 +112,65 @@ export function SiteHeader({
               Blog
             </a>
             <div className="relative">
-              <button type="button" onClick={() => { track({ action: "theme_toggle", category: "ui", label: `${theme === "dark" ? "dark_to_light" : "light_to_dark"}_${context}` }); toggleTheme(); dismissHint(); }} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:text-spotlight" aria-label={theme === "dark" ? "Turn on the lights" : "Turn off the lights"} title={theme === "dark" ? "Turn on the lights" : "Turn off the lights"}>
+              {/* A few quick pulses to catch the eye when the hint first
+                  appears, then it stops -- not an infinite loop, and not
+                  relied on alone: the button also gets a persistent static
+                  ring below for the whole time the hint is up, since a
+                  fading pulse ring is too easy to miss entirely on a small
+                  mobile screen if you're not looking at that exact moment. */}
+              <AnimatePresence>
+                {showHint && (
+                  <motion.span
+                    initial={{ opacity: 0.7, scale: 1 }}
+                    animate={{ opacity: 0, scale: 1.8 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1, repeat: 2, ease: "easeOut" }}
+                    className="pointer-events-none absolute inset-0 rounded-full bg-spotlight/60"
+                    aria-hidden
+                  />
+                )}
+              </AnimatePresence>
+              <motion.button
+                type="button"
+                onClick={handleToggleClick}
+                initial={showHint ? { scale: 1 } : false}
+                animate={showHint ? { scale: [1, 1.15, 1, 1.15, 1] } : { scale: 1 }}
+                transition={{ duration: 0.9, ease: "easeInOut" }}
+                className={cn(
+                  "relative inline-flex h-9 w-9 items-center justify-center rounded-full border text-stone/80 transition-all hover:border-spotlight/50 hover:text-spotlight",
+                  showHint ? "border-spotlight text-spotlight ring-2 ring-spotlight/40 ring-offset-2 ring-offset-stage" : "border-amber-faint"
+                )}
+                aria-label={theme === "dark" ? "Turn on the lights" : "Turn off the lights"}
+                title={theme === "dark" ? "Turn on the lights" : "Turn off the lights"}
+              >
                 {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
+              </motion.button>
               <AnimatePresence>
                 {showHint && (
                   <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.4 }}
-                    className="pointer-events-none absolute right-0 top-full mt-2 flex flex-col items-end"
+                    initial={{ opacity: 0, y: -6, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.9 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                    className="pointer-events-none absolute right-0 top-full z-10 mt-2 flex flex-col items-end"
                   >
                     <motion.div
-                      animate={{ y: [0, -4, 0] }}
-                      transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                      className="mr-3 text-spotlight/80"
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 1.2, repeat: 3, ease: "easeInOut" }}
+                      className="mr-3 text-spotlight"
                       aria-hidden
                     >
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ transform: "rotate(180deg)" }}>
                         <path d="M7 2v10M3 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </motion.div>
-                    <span className="mt-1 whitespace-nowrap rounded-full border border-amber-faint bg-stage/90 px-3 py-1 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/80 backdrop-blur-sm">
+                    <button
+                      type="button"
+                      onClick={handleToggleClick}
+                      className="mt-1 whitespace-nowrap rounded-full border border-spotlight bg-stage px-3 py-1.5 font-mono-stage text-[10px] font-semibold uppercase tracking-[0.18em] text-spotlight shadow-lg shadow-spotlight/20 pointer-events-auto"
+                    >
                       Try {theme === "dark" ? "light" : "dark"} mode
-                    </span>
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>

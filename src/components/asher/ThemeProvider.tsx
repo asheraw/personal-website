@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useLayoutEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 type Theme = "dark" | "light";
 
@@ -17,16 +17,40 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "dark";
-    const saved = window.localStorage.getItem("asher-theme");
-    return saved === "light" || saved === "dark" ? saved : "dark";
-  });
+  // Always starts at "dark" -- must match the server-rendered value exactly,
+  // since this initializer also runs as React's first CLIENT render during
+  // hydration (not just on the server). Reading localStorage here directly
+  // used to make that first client render diverge from the server's "dark"
+  // output whenever a visitor had saved "light", which is a real content
+  // mismatch (icon, aria-label, title all differ) -- React detects that and
+  // discards + rebuilds the whole mismatched subtree client-side, which is
+  // exactly the kind of thing that shows up as theme state going flaky
+  // across full page loads/navigations. The useLayoutEffect below corrects
+  // to the real saved theme synchronously before the next paint, so this
+  // costs one extra pre-paint render pass, not a visible flash.
+  const [theme, setThemeState] = useState<Theme>("dark");
 
-  // useLayoutEffect (not useEffect) so a toggle click updates the class
-  // before the next paint -- matches the blocking <head> script's job of
-  // never letting a stale class linger through a paint.
+  // Guards the one-time correction below so it can't fire again on a later
+  // run of this same effect -- without it, a user's own toggle click (which
+  // changes `theme` before localStorage has been updated to match) would
+  // get read back and "corrected" right back to the stale saved value,
+  // fighting every click.
+  const hasSyncedFromStorage = useRef(false);
+
+  // useLayoutEffect (not useEffect) so this resolves -- and any toggle
+  // click updates the class -- before the next paint -- matches the
+  // blocking <head> script's job of never letting a stale class linger
+  // through a paint.
   useLayoutEffect(() => {
+    if (!hasSyncedFromStorage.current) {
+      hasSyncedFromStorage.current = true;
+      const saved = window.localStorage.getItem("asher-theme");
+      const resolved: Theme = saved === "light" || saved === "dark" ? saved : "dark";
+      if (resolved !== theme) {
+        setThemeState(resolved);
+        return; // this effect re-runs once `theme` actually reflects `resolved`
+      }
+    }
     const root = document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);

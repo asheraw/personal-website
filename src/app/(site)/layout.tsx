@@ -3,7 +3,9 @@ import { draftMode } from "next/headers";
 import { VisualEditing } from "next-sanity/visual-editing";
 import { SanityLive } from "@/sanity/lib/live";
 import { Toaster } from "@/components/ui/toaster";
-import { ThemeProvider } from "@/components/asher/ThemeProvider";
+import { SiteProviders } from "@/components/asher/SiteProviders";
+import { SiteHeader } from "@/components/asher/SiteHeader";
+import { SiteFooter } from "@/components/asher/SiteFooter";
 import { CursorTracker } from "@/components/asher/CursorTracker";
 import { Analytics } from "@/components/asher/Analytics";
 import { CookieConsent } from "@/components/asher/CookieConsent";
@@ -45,12 +47,14 @@ export default async function SiteLayout({ children }: Readonly<{ children: Reac
     <>
       <StructuredData />
       <Analytics />
-      <ThemeProvider>
+      <SiteProviders>
         <CursorTracker />
+        <SiteHeader />
         {children}
+        <SiteFooter />
         <Toaster />
         <CookieConsent />
-      </ThemeProvider>
+      </SiteProviders>
       {/* Lets Sanity Studio's Presentation tool establish its live
           connection (click-to-edit overlays, instant updates) when
           viewing a draft through Preview. Invisible otherwise. */}
