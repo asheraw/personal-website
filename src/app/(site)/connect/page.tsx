@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Facebook, Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2, ArrowLeft, ArrowUpRight } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2, ArrowUpRight } from "lucide-react";
 import { CONTACT_INFO } from "@/components/asher/data";
 import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
 import { ContactForm } from "@/components/asher/ContactForm";
@@ -95,13 +94,6 @@ export default function ConnectPage() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <Link href="/" className="group inline-flex items-center gap-2 font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/60 transition-colors hover:text-spotlight">
-            <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
-            asheraw.com
-          </Link>
-          <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/40">© {new Date().getFullYear()} Asher Aw</p>
-        </div>
       </div>
     </div>
   );
