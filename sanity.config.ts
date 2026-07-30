@@ -19,7 +19,9 @@ import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
+import {CommentsTool} from './src/sanity/components/CommentsTool'
 import {ImageIcon} from '@sanity/icons/Image'
+import {CommentIcon} from '@sanity/icons/Comment'
 
 export default defineConfig({
   basePath: '/studio',
@@ -97,5 +99,8 @@ export default defineConfig({
     // posts actually use it -- the media-library-level equivalent of the
     // "Posts" tab already on every category.
     {name: 'media-library', title: 'Media', icon: ImageIcon, component: MediaLibraryTool},
+    // Comment moderation queue -- one-click approve/reject instead of
+    // opening, editing, and saving each comment document individually.
+    {name: 'comments', title: 'Comments', icon: CommentIcon, component: CommentsTool},
   ],
 })

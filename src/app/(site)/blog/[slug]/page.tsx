@@ -10,6 +10,7 @@ import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { ReadingProgressBar } from "@/components/asher/blog/ReadingProgressBar";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
+import { CommentSection } from "@/components/asher/blog/CommentSection";
 import { estimateReadingTimeMinutes } from "@/lib/portableText";
 
 // No time-based revalidate here anymore -- sanityFetch() (via Sanity's
@@ -22,6 +23,7 @@ import { estimateReadingTimeMinutes } from "@/lib/portableText";
 const SITE_URL = "https://asheraw.com";
 
 type Post = {
+  _id: string;
   title: string;
   slug: string;
   excerpt?: string;
@@ -227,6 +229,8 @@ export default async function PostPage({ params }: PageProps) {
             </Link>
           </div>
         </article>
+
+        <CommentSection postId={post._id} />
       </div>
     </BlogChrome>
   );
