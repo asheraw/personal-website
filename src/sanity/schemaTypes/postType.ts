@@ -3,6 +3,7 @@ import {defineArrayMember, defineField, defineType} from 'sanity'
 import {estimateReadingTimeMinutes} from '../../lib/portableText'
 import {CategoryCheckboxInput} from '../components/CategoryCheckboxInput'
 import {TagsAutocompleteInput} from '../components/TagsAutocompleteInput'
+import {DistractionFreeWritingPanel} from '../components/DistractionFreeWritingPanel'
 
 export const postType = defineType({
   name: 'post',
@@ -18,6 +19,7 @@ export const postType = defineType({
     defineField({
       name: 'body',
       type: 'blockContent',
+      components: {input: DistractionFreeWritingPanel},
     }),
     defineField({
       name: 'title',
@@ -86,11 +88,11 @@ export const postType = defineType({
         const fromSettings = await client.fetch<string | null>(
           `*[_type == "siteSettings"][0].defaultAuthor._ref`
         )
-        if (fromSettings) return {_type: 'reference', _ref: fromSettings}
+        if (fromSettings) return {_ref: fromSettings}
         const fallbackId = await client.fetch<string | null>(
           `*[_type == "author" && slug.current == "asher-aw"][0]._id`
         )
-        return fallbackId ? {_type: 'reference', _ref: fallbackId} : undefined
+        return fallbackId ? {_ref: fallbackId} : undefined
       },
     }),
     defineField({
