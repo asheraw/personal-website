@@ -43,14 +43,24 @@ initial value via a GROQ query for `slug.current == "asher-aw"`, not a Site Sett
 correct today but not what the PRD specifies ("configurable in Site Settings"), and brittle if that slug ever
 changes. Being replaced as part of this Phase 1 closure pass (see below).
 
-**Distraction-free writing mode: intentionally not built, pending Asher's confirmation.** The PRD lists this
-as Phase 1 scope (focus mode, document outline, typewriter scroll, word count, session timer, streak
-counter). Asher was asked directly on 2026-07-29 whether he wanted a focus-mode editor and said Sanity's
-default editor is good enough. That's a real answer from the actual Decision Authority (per the Decision
-Authority Matrix, this kind of UX/workflow preference is his call, not something to override toward strict
-PRD compliance) — but it leaves this specific PRD line item formally unmet. Flagged back to him again this
-session (2026-07-30) rather than silently building something he already declined, or silently marking Phase
-1 complete without it. Whatever he decides gets recorded here as the actual, final call.
+**Distraction-free writing mode: finally decided — not building it.** The PRD lists this as Phase 1 scope
+(focus mode, document outline, typewriter scroll, word count, session timer, streak counter). Asher was asked
+twice: 2026-07-29 (said Sanity's default editor is good enough) and again 2026-07-30, specifically because it
+was the one item keeping Phase 1 formally open. Second answer, same day: "For now, I can just use the current
+one, I don't have a big issue with it." Final. This is a legitimate PRD deviation, not a gap — his call, per
+the Decision Authority Matrix, and asked twice rather than assumed. **Phase 1 is now fully closed.**
+
+**Internal link picker: new, real gap surfaced by Asher, not yet built.** Asked 2026-07-30: right now, linking
+to another post inside the rich-text editor means manually typing or pasting its URL — there's no
+WordPress-style "search existing content" picker. Worse, the pasted URL embeds the *slug* directly, so if that
+other post's slug ever changes later, the link silently breaks with no warning. WordPress avoids this by
+linking through a stable numeric post ID internally and resolving it to the current slug at render time — the
+displayed URL always stays correct even after a slug change. This is exactly the PRD's "internal-link
+suggestions while editing" line under Content hygiene & platform tooling (Part III). The fix is architecturally
+the same pattern already used for reusable snippets: a new Portable Text mark/annotation that stores a
+*reference* to the target post (its stable `_id`) instead of a raw URL string, resolved to the current slug
+only at render time. Not yet built — flagged here so it isn't lost; ask Asher to confirm before building, since
+it changes how the rich-text link toolbar works for every future post.
 
 ---
 
@@ -74,10 +84,8 @@ Four items identified in `CURRENT_STATE_AUDIT.md` as still open. Build order and
    once, every post updates" actually true. Bigger than #1/#2 but still a single, well-scoped feature with a
    clear PRD description to build against.
 
-4. **Distraction-free writing mode.** Deliberately last, and gated on Asher's answer above — not started
-   until he confirms whether he wants it built, a lighter version of it, or wants this line item formally
-   accepted as "won't build" for Phase 1 (a legitimate outcome per the Decision Authority Matrix, as long as
-   it's a documented decision rather than a silent gap).
+4. **Distraction-free writing mode.** Resolved same day — Asher confirmed (second time asked) he doesn't
+   want it built. See the decision entry above. Phase 1 closed without it.
 
 Each of these ships with its own `RUNBOOK.md` entry (per the PRD's own rule: the runbook ships *with*
 features, not retroactively) and a `CHANGELOG.md` entry once done.
