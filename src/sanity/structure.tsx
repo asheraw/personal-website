@@ -56,7 +56,9 @@ export const structure: StructureResolver = (S) =>
         ),
       S.divider(),
       S.documentTypeListItem('contactSubmission').title('Contact Submissions'),
-      S.documentTypeListItem('notFoundHit').title('404 Hits'),
+      // 404 Hits moved to a top-nav tool (see sanity.config.ts) -- a single
+      // overview page listing every path, instead of clicking into each
+      // one's own document.
       S.divider(),
       // Singletons: always open one fixed document, never a list -- there
       // should only ever be exactly one of each.

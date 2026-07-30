@@ -20,8 +20,10 @@ import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
+import {CommentsToolIcon} from './src/sanity/components/CommentsToolIcon'
+import {NotFoundHitsTool} from './src/sanity/components/NotFoundHitsTool'
 import {ImageIcon} from '@sanity/icons/Image'
-import {CommentIcon} from '@sanity/icons/Comment'
+import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 
 export default defineConfig({
   basePath: '/studio',
@@ -101,6 +103,14 @@ export default defineConfig({
     {name: 'media-library', title: 'Media', icon: ImageIcon, component: MediaLibraryTool},
     // Comment moderation queue -- one-click approve/reject instead of
     // opening, editing, and saving each comment document individually.
-    {name: 'comments', title: 'Comments', icon: CommentIcon, component: CommentsTool},
+    // Icon is a live component (polls every 30s) so the pending count shows
+    // right in the persistent nav bar, WordPress-style -- Sanity Studio has
+    // no dedicated "badge on a tool" API, but `icon` accepts any component.
+    {name: 'comments', title: 'Comments', icon: CommentsToolIcon, component: CommentsTool},
+    // 404 hits, one overview page instead of clicking into each path's own
+    // document -- most-hit paths first, with a per-path expandable full hit
+    // log (every timestamp + referrer) for spotting scanning/bruteforcing
+    // patterns rather than just first/last seen.
+    {name: 'not-found-hits', title: '404 Hits', icon: LinkRemovedIcon, component: NotFoundHitsTool},
   ],
 })

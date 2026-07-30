@@ -31,12 +31,29 @@ export async function POST(request: NextRequest) {
       path: safePath,
       hitCount: 0,
       firstSeenAt: now,
+      hits: [],
     });
+
+    // Read-modify-write rather than a blind append: keeps the stored log
+    // capped at the most recent 500 entries so a path getting hammered
+    // (bot scanning, deliberate bruteforcing) can't grow this document
+    // without bound. hitCount (incremented separately below) stays the true
+    // total even past that cap.
+    const existing = await writeClient.fetch<{ hits?: { timestamp: string; referrer?: string }[] }>(
+      `*[_id == $id][0]{hits}`,
+      { id }
+    );
+    const newHit = {
+      _key: `hit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: now,
+      ...(safeReferrer ? { referrer: safeReferrer } : {}),
+    };
+    const updatedHits = [...(existing?.hits ?? []), newHit].slice(-500);
 
     await writeClient
       .patch(id)
       .inc({ hitCount: 1 })
-      .set({ lastSeenAt: now, ...(safeReferrer ? { referrer: safeReferrer } : {}) })
+      .set({ lastSeenAt: now, hits: updatedHits, ...(safeReferrer ? { referrer: safeReferrer } : {}) })
       .commit();
 
     return NextResponse.json({ success: true });

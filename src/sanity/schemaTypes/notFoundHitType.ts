@@ -1,5 +1,5 @@
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 
 // Created programmatically by the 404 page (see src/app/not-found.tsx and
 // src/app/api/track-404/route.ts) -- one document per distinct missing
@@ -25,6 +25,29 @@ export const notFoundHitType = defineType({
     }),
     defineField({name: 'firstSeenAt', title: 'First seen', type: 'datetime', readOnly: true}),
     defineField({name: 'lastSeenAt', title: 'Last seen', type: 'datetime', readOnly: true}),
+    defineField({
+      name: 'hits',
+      title: 'Hit log',
+      type: 'array',
+      readOnly: true,
+      description: 'Every individual hit on this path -- useful for spotting patterns (e.g. a burst of hits in a short window suggests scanning/bruteforcing rather than organic broken links). Capped at the most recent 500 to keep this from growing unbounded; hitCount above is the true total even past that cap.',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          fields: [
+            defineField({name: 'timestamp', type: 'datetime'}),
+            defineField({name: 'referrer', type: 'string'}),
+          ],
+          preview: {
+            select: {timestamp: 'timestamp', referrer: 'referrer'},
+            prepare: ({timestamp, referrer}) => ({
+              title: timestamp ? new Date(timestamp).toLocaleString() : 'Unknown time',
+              subtitle: referrer || 'No referrer',
+            }),
+          },
+        }),
+      ],
+    }),
     defineField({
       name: 'actioned',
       title: 'Actioned',
