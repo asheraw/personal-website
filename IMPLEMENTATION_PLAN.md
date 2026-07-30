@@ -26,10 +26,14 @@ Google-powered site-restricted search rather than standing up a paid or self-hos
 built (Phase 2+ territory) — flagging the decision now so a future session doesn't reach for Algolia/etc. by
 default.
 
-**Comments: Sanity-native, not Disqus or a hosted widget.** Decided 2026-07-29, not yet built (Phase 9).
-Disqus was explicitly rejected — third-party data ownership, ads/tracking, and a direct conflict with the
-project's "one canonical source in Sanity" principle (Pillar 1). The eventual system: its own Sanity document
-type, moderated in Studio, unread-count badge similar to what a self-hosted forum would show.
+**Comments: Sanity-native, not Disqus or a hosted widget.** Decided 2026-07-29, built 2026-07-30. Disqus was
+explicitly rejected — third-party data ownership, ads/tracking, and a direct conflict with the project's
+"one canonical source in Sanity" principle (Pillar 1). Its own `comment` document type, always created as
+"pending" via `/api/comments`, moderated in a dedicated Studio tool with one-click approve/reject and a
+pending count shown at the top (the "unread count badge" Asher asked for — see `RUNBOOK.md` for why it lives
+inside the tool rather than Studio's persistent top nav). Spam protection: honeypot + a math challenge,
+validated server-side (Asher specifically asked for honeypot-style protection over a third-party captcha
+service, matching the project's low-vendor-dependency preference).
 
 **Theme system: no external library.** A small custom React Context + CSS custom properties is enough for a
 two-state (light/dark) toggle; a full theming library would be more machinery than the problem needs (Rule
@@ -43,24 +47,27 @@ initial value via a GROQ query for `slug.current == "asher-aw"`, not a Site Sett
 correct today but not what the PRD specifies ("configurable in Site Settings"), and brittle if that slug ever
 changes. Being replaced as part of this Phase 1 closure pass (see below).
 
-**Distraction-free writing mode: finally decided — not building it.** The PRD lists this as Phase 1 scope
-(focus mode, document outline, typewriter scroll, word count, session timer, streak counter). Asher was asked
-twice: 2026-07-29 (said Sanity's default editor is good enough) and again 2026-07-30, specifically because it
-was the one item keeping Phase 1 formally open. Second answer, same day: "For now, I can just use the current
-one, I don't have a big issue with it." Final. This is a legitimate PRD deviation, not a gap — his call, per
-the Decision Authority Matrix, and asked twice rather than assumed. **Phase 1 is now fully closed.**
+**Distraction-free writing mode: declined twice, then built anyway.** The PRD lists this as Phase 1 scope
+(focus mode, document outline, typewriter scroll, word count, session timer, streak counter). Asher declined
+it twice — 2026-07-29 and again 2026-07-30 when re-asked specifically because it was the one item keeping
+Phase 1 formally open ("For now, I can just use the current one, I don't have a big issue with it") — Phase 1
+was closed without it on that basis. Later the same day he changed his mind and asked for it after all, so it
+was built: live word count, reading-time estimate, a session timer, and a collapsible heading outline with
+best-effort click-to-jump, layered on top of Studio's default editor rather than replacing it. The PRD's
+fade-non-active-paragraph focus mode and cursor-centering typewriter scroll were deliberately left out — see
+`RUNBOOK.md` for the reasoning (unstable Sanity editor internals, not worth the fragility). Phase 1 was
+already closed before this was built; this is extra, not a reopened gap.
 
-**Internal link picker: new, real gap surfaced by Asher, not yet built.** Asked 2026-07-30: right now, linking
-to another post inside the rich-text editor means manually typing or pasting its URL — there's no
-WordPress-style "search existing content" picker. Worse, the pasted URL embeds the *slug* directly, so if that
-other post's slug ever changes later, the link silently breaks with no warning. WordPress avoids this by
-linking through a stable numeric post ID internally and resolving it to the current slug at render time — the
-displayed URL always stays correct even after a slug change. This is exactly the PRD's "internal-link
-suggestions while editing" line under Content hygiene & platform tooling (Part III). The fix is architecturally
-the same pattern already used for reusable snippets: a new Portable Text mark/annotation that stores a
-*reference* to the target post (its stable `_id`) instead of a raw URL string, resolved to the current slug
-only at render time. Not yet built — flagged here so it isn't lost; ask Asher to confirm before building, since
-it changes how the rich-text link toolbar works for every future post.
+**Internal link picker: built 2026-07-30, same day it was surfaced.** Asher's exact pain point: linking to
+another post inside the rich-text editor meant manually typing or pasting its URL — there's no WordPress-style
+"search existing content" picker, and the pasted URL embeds the *slug* directly, so a later slug change on
+that post silently breaks the link with no warning. WordPress avoids this by linking through a stable numeric
+post ID internally and resolving it to the current slug at render time. Maps to the PRD's "internal-link
+suggestions while editing" line (Content hygiene & platform tooling, Part III). Built the same way: a new
+Portable Text annotation storing a *reference* to the target post (its stable `_id`), resolved to the current
+slug only at render time — same underlying pattern as reusable snippets. Uses Sanity's own built-in reference
+search (type to filter by title) for the picker itself, per Asher's explicit ask to keep it fast rather than
+building a custom heavy picker.
 
 ---
 

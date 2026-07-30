@@ -215,6 +215,84 @@ above) — without it, the block renders with only `_ref`, no actual content to 
 
 ---
 
+## Internal links: linking to another post without a raw URL
+
+In the rich-text toolbar, alongside the existing **URL** link, there's now **Internal link (post)** — search
+and pick a post (Sanity's own built-in reference search, type to filter by title) instead of typing or
+pasting its URL. The link stores a reference to the post's stable `_id`, not its slug, so if you rename that
+post's slug later, every internal link to it keeps working automatically — the current slug is resolved
+fresh every time the linking post is rendered (`POST_BY_SLUG_QUERY`), never baked in at write time.
+
+**How it works, for troubleshooting:** the annotation lives in `blockContentType.ts`'s `marks.annotations`
+as `internalLink` (an object field wrapping a `reference` to `post`). The query dereferences it inside
+`markDefs`: `markDefs[]{..., _type == "internalLink" => {"slug": reference->slug.current}}`. Renderer:
+`src/components/asher/blog/portableTextComponents.tsx`'s `marks.internalLink`.
+
+**If an internal link shows as plain text instead of a link:** the referenced post was deleted, or the query
+projection above got removed/changed — `value?.slug` comes back `undefined` and the renderer falls back to
+plain `<span>` text rather than a link to nowhere. Verified end-to-end 2026-07-30 with a throwaway test post
+linking to a real post, confirming the resolved slug matched exactly.
+
+---
+
+## Distraction-free writing: what's actually there
+
+The body field (Studio) now shows a small stats bar above the editor: live word count, estimated reading
+time, and a session timer (time since the document was opened — resets on page reload, it's not a persistent
+streak counter). Below that, a collapsible **Outline** lists every heading in the post with a best-effort
+click-to-jump (scrolls the editor to that heading if found).
+
+**Scope decision, on purpose:** the PRD also describes a fade-non-active-paragraph focus mode and a
+cursor-centering typewriter scroll. Neither is built. Both require patching the Portable Text editor's own
+rendering internals, which isn't a stable, documented customization surface in Sanity Studio — the "clever
+and fragile" pattern Rule #4 warns against, and a real risk of breaking on a future Sanity upgrade for
+comparatively little value. Full-screen writing itself is already covered by Studio's own built-in expand
+button on this field (top-right of the editor toolbar) — nothing new was needed there.
+
+**If the outline's click-to-jump doesn't scroll to the right place:** this relies on Sanity's Portable Text
+editor rendering each block with a `data-key` attribute matching its `_key` — a reasonable but unverified
+assumption (no Studio login available to visually confirm interactively this session). It's implemented
+defensively (does nothing if the element isn't found, never errors) — if it's not working, the outline
+listing itself (which headings exist, in order) is still accurate and useful on its own.
+
+---
+
+## Comments: how the moderation queue works
+
+Every comment submitted on a post starts as **pending** and shows nowhere on the live site until approved.
+**Studio → Comments** (top nav) is a dedicated moderation queue — not a plain document list — showing every
+comment with one-click **Approve**/**Reject** buttons, and a count of comments awaiting review at the top of
+the tool. Component: `src/sanity/components/CommentsTool.tsx`.
+
+**Spam protection:** a honeypot field (a hidden `website` input — real visitors never see or fill it; if it's
+filled, the request is silently accepted but nothing is actually saved) plus a simple math challenge (e.g.
+"4 + 6 = ?"). Unlike the equivalent-looking check on the contact form, which is only validated in the
+browser, this one is also re-checked server-side in `/api/comments`'s `POST` handler — a bot posting directly
+to the endpoint, skipping the visible form entirely, can't bypass it the way it currently could on
+`/api/contact`. Worth applying the same server-side check to `/api/contact` at some point for consistency,
+though the contact form is lower-risk (not publicly crawlable/spammable the way an open comment section is).
+
+**Two real bugs caught during testing, before this went live:**
+1. The comment-fetching route originally used the normal CDN-cached read client (`src/sanity/lib/client.ts`).
+   Sanity's CDN can take up to ~30-60 seconds to reflect a recent write — meaning approving a comment in
+   Studio wouldn't actually make it appear live right away. Fixed by using the non-cached `writeClient` for
+   reads in this route specifically (`src/app/api/comments/route.ts`), accepting a slightly higher read cost
+   for comments in exchange for approvals feeling close to instant.
+2. `createdAt` came back `null` on comments created via the API. The schema's `initialValue` for this field
+   (`() => new Date().toISOString()`) only fires when a document is created through Studio's own UI, not via
+   `client.create()` — the same gotcha already documented for the AI Suggestion Settings singleton earlier in
+   this file. Fixed by setting `createdAt` explicitly in the API route rather than relying on the schema.
+   **If any future feature creates documents via the API for a schema type with an `initialValue`, don't
+   assume it fires — set required fields explicitly in the API code.**
+
+**If a submitted comment never shows up, even as "pending":** check Studio → Comments directly first — the
+submitter never sees whether their comment was flagged as spam or is just awaiting review (deliberately, to
+avoid telling spammers which submissions got through). If it's not there at all, check the honeypot wasn't
+accidentally triggered (an autofill browser extension filling every input on the page, for example) or the
+math captcha wasn't miskeyed.
+
+---
+
 ## Publishing: "I published a post but it's not showing up"
 
 **Symptoms:** A post is published in Sanity Studio (asheraw.com/studio) but doesn't appear on asheraw.com/blog.
@@ -468,7 +546,10 @@ device to continue — this exact combination (real device, real network conditi
 never been tested, only simulated.
 **Follow-up:** Get browser/device details and, ideally, a screen recording of the actual repro next time this
 comes up, before attempting another blind fix — two fixes have already shipped for this exact symptom without
-confirming it's actually resolved from Asher's side.
+confirming it's actually resolved from Asher's side. **Update, same day:** narrowed — Chrome confirmed working
+correctly; the bug reproduces specifically on Comet (Perplexity's AI-agentic browser). Given how niche that
+browser is, likely not worth further investigation unless Asher decides Comet-user support specifically
+matters — his own assessment: "probably a rare case."
 
 ### 2026-07-30 — `not-found.tsx` metadata doesn't render (Next.js bug), 404 tab showed the raw URL
 **Symptom:** the browser tab for a 404 page showed the raw URL (e.g. "asheraw.com/this-page-does-not-exist")
@@ -486,3 +567,22 @@ the tab title specifically — confirmed working via a real browser check (`page
 string after the fix, empty string before it).
 **Follow-up:** if a future Next.js upgrade resolves the underlying bug, the manual `document.title` line is
 harmless to leave in place regardless — safe to leave as-is rather than needing to revisit.
+
+### 2026-07-30 — Blog post OG image not showing on WhatsApp shares
+**Symptom:** sharing a real, published post link on WhatsApp showed the title/description text but no
+preview image, despite the post having a Main Image set and the code already falling back to it correctly.
+**Root cause:** the OG/Twitter image URL requested a crop (`width(1200).height(630).fit("crop")`) but no
+format or quality, so Sanity's image CDN served the source file as-is. For this post's source image (a PNG),
+that came out to roughly 2MB at this crop size — confirmed directly via `curl` on the exact URL from the
+live page's actual `og:image` meta tag. WhatsApp's link-preview crawler is known to silently drop the image
+rather than show one that's slow or large to fetch, rather than erroring visibly.
+**Fix:** added `.format("jpg").quality(75)` to the OG/Twitter/structured-data image URL builders in
+`src/app/(site)/blog/[slug]/page.tsx`, and the same fix to `PostCard.tsx`'s blog-list thumbnails (identical
+unbounded-size pattern, page-load-weight issue rather than an OG-specific one). Confirmed the exact same
+source image at the new URL: ~224KB (9x smaller), and downloaded + visually inspected it — no visible quality
+loss for a photo/illustration-style crop.
+**Follow-up:** WhatsApp (via Facebook's crawler) caches a link's preview aggressively. Once this fix is live,
+any post URL already shared/tested before the fix may keep showing the old (imageless) cached preview until
+force-refreshed via [Facebook's Sharing Debugger](https://developers.facebook.com/tools/debug/) — paste the
+post URL in and click "Scrape Again." New shares of any post should show the image correctly without needing
+this step.
