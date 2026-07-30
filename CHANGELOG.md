@@ -85,10 +85,52 @@ criteria.
 - **Reusable content snippets** — a new "Reusable Snippets" document type; inserting one into a post stores
   a reference, not a copy, so editing the snippet updates every post using it. Verified end-to-end with a
   throwaway test snippet/post before trusting it (created and deleted via script, no real content touched).
-- **Distraction-free writing mode — deliberately not built.** This is the one remaining Phase 1 item. Asher
-  was asked about this exact feature before (2026-07-29) and said Sanity's default editor is good enough.
-  Flagged again this session rather than silently building something already declined, or silently leaving
-  Phase 1 incomplete without a record of why — his call either way, logged once he answers.
+- **Distraction-free writing mode — declined a second time, Phase 1 closed without it.** Asher was asked
+  about this exact feature before (2026-07-29) and said Sanity's default editor is good enough; asked again
+  since it was the only item keeping Phase 1 open, same answer. *(Update, later the same day: he changed his
+  mind and asked for it after all — see "Continued" below. Built after Phase 1 was already closed, as an
+  extra rather than a reopened gap.)*
+
+### Continued again (same day — OG image fix, internal link picker, writing mode, comments)
+
+**OG image on WhatsApp shares — actually fixed.** Asher tried sharing a real post and confirmed no preview
+image showed. Root cause: the OG image URL requested a crop but no format/quality, so a source PNG came out
+around 2MB at that crop size — confirmed directly via `curl` on the real URL from the post's actual meta
+tags. WhatsApp's crawler is known to silently drop oversized/slow images rather than error. Fixed by
+compressing to JPG at quality 75 (~224KB, 9x smaller, visually unchanged) for the OG/Twitter/structured-data
+image, and applied the same fix to blog-list thumbnails (`PostCard.tsx`) since they had the identical
+unbounded-size pattern. If a specific post URL was shared/tested before this fix, WhatsApp may keep showing
+its old cached (imageless) preview until forced to re-scrape via
+[Facebook's Sharing Debugger](https://developers.facebook.com/tools/debug/) — new shares of any post should
+just work.
+
+**Internal link picker.** In the rich-text editor, a new "Internal link (post)" option sits alongside the
+existing URL link — search and pick a post (Sanity's own built-in reference search, fast, nothing custom to
+load) instead of typing or pasting its URL. The link stores a reference to the post's stable ID, not its
+slug, so renaming that post's slug later doesn't silently break every link pointing at it — the current slug
+is resolved fresh every time the linking post renders. Verified end-to-end with a throwaway test post before
+trusting it against real content.
+
+**Distraction-free writing, after all.** Asher changed his mind after Phase 1 had already closed without it,
+and asked for it. Built: live word count, reading-time estimate, a session timer, and a collapsible heading
+outline (with best-effort click-to-jump) layered on top of Studio's existing editor rather than replacing it.
+Deliberately left out: a fade-non-active-paragraph focus effect and cursor-centering typewriter scroll — both
+would require patching Sanity's Portable Text editor internals in ways that aren't a stable customization
+surface, a real risk of breaking on a future Sanity upgrade for comparatively little value. Full-screen
+writing was already available via Studio's own built-in expand button on this field.
+
+**Comments — Sanity-native, decided 2026-07-29, built today.** Every comment starts as "pending" and shows
+nowhere on the site until approved in a new dedicated Studio moderation tool (one-click approve/reject, a
+pending count shown at the top — the "unread badge" Asher wanted, WordPress-style). Spam protection is a
+honeypot plus a simple math check, per Asher's preference for that over a third-party captcha service — and
+checked on the server this time, not just in the browser (a gap the existing, similar-looking contact-form
+check has, worth revisiting there too at some point). Two real bugs caught by testing before this went live:
+approving a comment wasn't showing up live for up to a minute (the read endpoint was using a CDN-cached
+client with real propagation lag — switched to a non-cached one for comments specifically), and submitted
+comments had no timestamp (a schema default that only applies to documents created through Studio's own UI,
+not the API — same class of bug already seen once with the AI settings singleton). Also fixed, found in
+passing: Reusable Snippets was appearing twice in Studio's sidebar navigation, since it was never added to
+the "don't also show this in the generic list" exclusion.
 
 ---
 
