@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/asher/SiteHeader";
 import { SiteFooter } from "@/components/asher/SiteFooter";
-import { ThemeProvider } from "@/components/asher/ThemeProvider";
+import { SiteProviders } from "@/components/asher/SiteProviders";
+import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
 import { track } from "@/lib/analytics";
 
 export default function NotFound() {
@@ -32,7 +33,13 @@ export default function NotFound() {
   }, [pathname]);
 
   return (
-    <ThemeProvider>
+    <SiteProviders>
+      {/* Same SiteHeader/SiteFooter as every other page -- this file has to
+          live at the true app root (Next.js requires that for the global
+          not-found boundary to catch genuinely unmatched URLs), so it can't
+          share the (site) layout's providers, but it mounts the identical
+          components rather than a bespoke copy. */}
+      <ConfigureSiteChrome context="404" />
       <div className="min-h-screen bg-stage text-ivory">
         <SiteHeader />
         <main className="relative flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-5 pt-16 sm:px-8">
@@ -72,6 +79,6 @@ export default function NotFound() {
         </main>
         <SiteFooter />
       </div>
-    </ThemeProvider>
+    </SiteProviders>
   );
 }

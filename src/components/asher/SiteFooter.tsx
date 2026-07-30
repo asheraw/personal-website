@@ -1,6 +1,7 @@
 "use client";
 
 import { Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2 } from "lucide-react";
+import { useSiteChromeConfig } from "./SiteChromeConfig";
 import { track } from "@/lib/analytics";
 
 type StoryNav = { title: string; links: { label: string; href: string }[] };
@@ -24,7 +25,14 @@ const SOCIALS = [
   { icon: MessageCircle, href: "https://wa.me/6591881944", label: "WhatsApp" },
 ];
 
-export function SiteFooter({ mode = "story" }: { mode?: "story" | "play" }) {
+// Rendered once, globally, by the (site) layout. Reads mode from
+// SiteChromeConfig (set via <ConfigureSiteChrome mode={...} />) instead of
+// taking it as a prop, and hides itself entirely when a page opts out via
+// <ConfigureSiteChrome footer={false} /> (e.g. /connect, which has its own
+// minimal footer-equivalent already built into the page).
+export function SiteFooter() {
+  const { mode, footer } = useSiteChromeConfig();
+  if (!footer) return null;
   const navGroups = mode === "play" ? PLAY_NAV : STORY_NAV;
   return (
     <footer className="relative overflow-hidden border-t border-amber-faint bg-stage px-5 py-16 sm:px-8 lg:px-12">
