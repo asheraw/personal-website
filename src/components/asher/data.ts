@@ -95,7 +95,7 @@ export const COACHING_PHILOSOPHY_QUOTE =
   "Communicate in a way that feels natural. Don't try to imitate louder personalities — find the version of you that the room actually wants to hear.";
 
 export const CONTACT_INFO = {
-  email: "asher@asheraw.com",
+  email: "hello@asheraw.com",
   whatsapp: "+65 9188 1944",
   whatsappUrl: "https://wa.me/6591881944",
 };

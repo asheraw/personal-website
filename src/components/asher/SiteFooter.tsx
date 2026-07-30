@@ -2,6 +2,7 @@
 
 import { Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2 } from "lucide-react";
 import { useSiteChromeConfig } from "./SiteChromeConfig";
+import { CONTACT_INFO } from "./data";
 import { track } from "@/lib/analytics";
 
 type StoryNav = { title: string; links: { label: string; href: string }[] };
@@ -10,7 +11,7 @@ const STORY_NAV: StoryNav[] = [
   { title: "Stage", links: [{ label: "Theatre", href: "/#stage" }, { label: "Selected Roles", href: "/#stage" }, { label: "Directing", href: "/#stage" }] },
   { title: "Coaching", links: [{ label: "Personal Branding", href: "/#coaching" }, { label: "Storytelling", href: "/#coaching" }, { label: "AI-Assisted Content", href: "/#coaching" }, { label: "Workshops", href: "/#contact" }] },
   { title: "More", links: [{ label: "Blog", href: "/blog" }, { label: "At a Glance", href: "/#glance" }, { label: "Two Callings", href: "/#two-callings" }, { label: "Philosophy", href: "/#philosophy" }, { label: "Faith", href: "/#faith" }] },
-  { title: "Connect", links: [{ label: "WhatsApp", href: "https://wa.me/6591881944" }, { label: "Email", href: "mailto:asher@asheraw.com" }, { label: "Book a Session", href: "/#contact" }] },
+  { title: "Connect", links: [{ label: "WhatsApp", href: "https://wa.me/6591881944" }, { label: "Email", href: `mailto:${CONTACT_INFO.email}` }, { label: "Book a Session", href: "/#contact" }] },
 ];
 
 const PLAY_NAV: StoryNav[] = [];
@@ -21,7 +22,7 @@ const SOCIALS = [
   { icon: Linkedin, href: "https://www.linkedin.com/in/itsAsherAw", label: "LinkedIn" },
   { icon: Music2, href: "https://www.tiktok.com/@itsAsherAw", label: "TikTok" },
   { icon: Twitter, href: "https://x.com/AsherAw", label: "X" },
-  { icon: Mail, href: "mailto:asher@asheraw.com", label: "Email" },
+  { icon: Mail, href: `mailto:${CONTACT_INFO.email}`, label: "Email" },
   { icon: MessageCircle, href: "https://wa.me/6591881944", label: "WhatsApp" },
 ];
 

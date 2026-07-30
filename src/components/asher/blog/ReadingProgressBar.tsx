@@ -12,7 +12,6 @@ export function ReadingProgressBar({ targetId }: { targetId: string }) {
 
   useEffect(() => {
     const el = document.getElementById(targetId);
-    console.log("[DEBUG mount]", { targetId, elFound: !!el });
     if (!el) return;
 
     // Same start/end-element formula as the homepage's ProgressionBar, just
@@ -24,7 +23,6 @@ export function ReadingProgressBar({ targetId }: { targetId: string }) {
       const totalRange = endBottom - startTop - window.innerHeight;
       const current = scrollY - startTop;
       const p = Math.max(0, Math.min(1, current / Math.max(1, totalRange)));
-      console.log("[DEBUG progress]", { scrollY, startTop, endBottom, totalRange, current, p });
       setProgress(p);
     };
 
