@@ -156,21 +156,38 @@ first thing to check.
 
 ---
 
-## Site Settings: the default author
+## Site Settings: default author, and site-wide title/description/social image
 
-**Studio -> Site Settings** (singleton, left sidebar) now holds the default author every new post starts
-assigned to — shipped 2026-07-30, replacing a hardcoded GROQ lookup for an author with slug `asher-aw`.
-Change it any time; it only affects posts created *after* the change, never retroactively touches existing
-ones. Schema: `src/sanity/schemaTypes/siteSettingsType.ts`. `postType.ts`'s `author` field still falls back
-to the old slug-based lookup if the Site Settings document has no default set (shouldn't happen in practice —
-the document was created directly with a default already set — but keeps a fresh/corrupted dataset from
-leaving new posts with no author at all).
+**Studio -> Site Settings** (singleton, left sidebar) started 2026-07-30 as just the default author every
+new post gets assigned to, then grew the same day (Asher asked directly) to also cover the site's identity/
+SEO fields, grouped into two labeled sections in the form:
 
-**If a new post's author field comes up empty:** check Studio -> Site Settings has a default author actually
-selected. If it does and posts still come up empty, check the singleton document itself exists — query
-`*[_type == "siteSettings"][0]` in the Vision tool; if it returns `null`, the document was deleted or never
-created and needs recreating (any document with `_id: "siteSettings"` and a `defaultAuthor` reference works,
-Studio's own "create new" won't offer it since it's a fixed-ID singleton, not a listed type).
+- **Site identity & SEO** — Site title, Meta description, Default social share image. These drive the
+  browser tab title, search-result snippet, and link-preview card for the homepage and any other `(site)`
+  page that doesn't set its own (blog posts always use their own title/excerpt/main image instead — this is
+  specifically the site-wide fallback). Previously hardcoded consts in `src/app/(site)/layout.tsx`.
+- **Publishing** — Default author, as before.
+
+Schema: `src/sanity/schemaTypes/siteSettingsType.ts`. Wired into `src/app/(site)/layout.tsx`, which changed
+from a static `export const metadata` to `export async function generateMetadata()` fetching this document,
+with the old hardcoded values kept as fallback constants (so a fresh/corrupted dataset with no Site Settings
+document never renders broken/empty metadata). `postType.ts`'s `author` field similarly falls back to the old
+slug-based lookup if Site Settings has no default author set.
+
+**A change in Site Settings can take up to a couple of minutes to show up live** — two separate delays stack:
+Sanity's CDN can take up to ~30-60 seconds to reflect a recent write (confirmed by testing — a title change
+didn't show up in a rebuild done immediately after saving, but did after waiting), and the site itself only
+re-checks Sanity once a minute (`export const revalidate = 60` on the layout). Not worth chasing further for
+something this infrequent to change — if this delay is ever a real problem, the fix is switching the
+`generateMetadata` fetch from the CDN-cached `client` to the non-cached `writeClient` (same fix already
+applied to comments, see below), trading a small ongoing cost for near-instant freshness.
+
+**If a new post's author field comes up empty, or the site title/description look wrong or missing:** check
+Studio -> Site Settings has values actually filled in. If it does and something still looks off, check the
+singleton document itself exists — query `*[_type == "siteSettings"][0]` in the Vision tool; if it returns
+`null`, the document was deleted or never created and needs recreating (any document with `_id: "siteSettings"`
+and the required fields works, Studio's own "create new" won't offer it since it's a fixed-ID singleton, not
+a listed type).
 
 ---
 
@@ -263,6 +280,15 @@ Every comment submitted on a post starts as **pending** and shows nowhere on the
 **Studio → Comments** (top nav) is a dedicated moderation queue — not a plain document list — showing every
 comment with one-click **Approve**/**Reject** buttons, and a count of comments awaiting review at the top of
 the tool. Component: `src/sanity/components/CommentsTool.tsx`.
+
+**The pending count also shows directly on the "Comments" nav icon itself** (shipped 2026-07-30, so you don't
+have to click in just to check) — a small red badge with the number, WordPress-style. Sanity Studio has no
+dedicated "badge on a tool" API; this works because a tool's `icon` config accepts any React component, not
+just a static icon, so `CommentsToolIcon.tsx` renders the normal icon plus a live badge, polling the pending
+count every 30 seconds. **Not visually confirmed in this session** (no Studio login available to check
+interactively) — implemented per Sanity's documented `Tool.icon` API and compiles/typechecks cleanly, but if
+the badge doesn't actually appear, that's the first thing to check by inspecting the rendered nav in
+browser devtools.
 
 **Spam protection:** a honeypot field (a hidden `website` input — real visitors never see or fill it; if it's
 filled, the request is silently accepted but nothing is actually saved) plus a simple math challenge (e.g.
@@ -428,6 +454,31 @@ what actually reflects in the browser tab; the `metadata` export in `src/app/not
 it does still apply to some fields (confirmed `robots: noindex` renders correctly) but shouldn't be trusted
 alone for `title` in this specific file. If a future Next.js upgrade fixes this upstream, the manual
 `document.title` line is harmless to leave in place either way.
+
+---
+
+## 404 hit tracking: one overview page, full per-hit log
+
+**Studio → 404 Hits** (top nav) redesigned 2026-07-30 from a plain document list (click into each path's own
+form) into a single overview page, most-hit paths first — same pattern as Media and Comments. Each row shows
+the path, total hit count, first/last seen, and an **Actioned** checkbox (toggle directly in the list, no
+need to open the document). Component: `src/sanity/components/NotFoundHitsTool.tsx`.
+
+**Full hit log, not just first/last seen:** every individual hit is now recorded (`hits` array on
+`notFoundHitType.ts` — timestamp + referrer per hit), expandable per-row in the tool. Asked for directly by
+Asher, specifically to be able to spot a burst of hits in a short window (suggests a bot scanning/
+bruteforcing for pages) versus scattered one-off hits over weeks (organic broken links, old bookmarks, etc.).
+Capped at the most recent 500 hits per path (`src/app/api/track-404/route.ts` trims via `.slice(-500)`) so a
+path getting hammered can't grow its document without bound — `hitCount` stays the true total even past that
+cap, only the detailed log trims.
+
+**Existing 404 hit documents from before 2026-07-30 have no hit log** — `hitCount`/`firstSeenAt`/`lastSeenAt`
+on them are still accurate, but the individual-hit detail was never captured before this shipped, so it can't
+be reconstructed retroactively. Only hits from this point forward have the full log.
+
+**If the hit log looks wrong or missing for a path that should have one:** check `/api/track-404/route.ts`
+still does a read-modify-write (fetch existing `hits`, append, `.slice(-500)`, then `.set()`) rather than a
+blind `.append()` — the read step is what makes the 500-cap possible; without it there's no way to trim.
 
 ---
 
