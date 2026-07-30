@@ -317,3 +317,34 @@ command.
 **Fix:** Regenerated the lockfile; changed the backup job to install only the Sanity CLI directly instead
 of the whole project; switched to the `SANITY_AUTH_TOKEN` environment variable.
 **Follow-up:** None — confirmed working end-to-end with a real successful backup afterward.
+
+### 2026-07-30 — Light mode theme state going flaky across full page loads
+**Symptom:** A visitor in light mode who fully navigated (not a same-tab Next.js `Link` transition) from one
+page to another — e.g. clicking the header's Blog link from the homepage — would sometimes land back in dark
+colours, only inconsistently fixed by toggling and refreshing. Separately, `/connect` had no theme toggle on
+it at all, and the 404 page's toggle button was visible but did nothing when clicked.
+**Root cause (main bug):** `ThemeProvider`'s `useState` initializer read `localStorage` directly
+(`typeof window === "undefined" ? "dark" : ...`). That function runs twice — once on the server (always
+"dark"), and again as React's first **client** render during hydration, where `window` already exists, so it
+immediately resolved to the real saved theme. For any visitor with `"light"` saved, that's a genuine content
+mismatch between what the server rendered and what the client's hydration pass produced (the toggle button's
+icon, `aria-label`, and `title` all differ dark vs. light) — confirmed via a real React hydration error in
+testing. React's recovery from a hydration mismatch is to discard and rebuild the entire mismatched subtree
+client-side, which is exactly the kind of thing that shows up as "sometimes wrong, fixed by refreshing."
+**Root cause (connect/404):** `/connect` never rendered `SiteHeader` (or any theme control) at all — it's a
+deliberately header-less link-in-bio page. `/app/not-found.tsx` sits outside the `(site)` route group (so
+Next.js's global 404 boundary can use it from the true root layout), which means it was never wrapped in
+`ThemeProvider` — its `SiteHeader` toggle button called the default no-op `toggleTheme` from `ThemeContext`'s
+fallback value instead of a real one.
+**Fix:** `ThemeProvider` (`src/components/asher/ThemeProvider.tsx`) now always starts its React state at
+`"dark"`, matching the server exactly on the first client render, and corrects to the real saved theme in a
+`useLayoutEffect` gated by a `hasSyncedFromStorage` ref so it only reads `localStorage` back once (an earlier
+version of this fix re-read `localStorage` on every effect run, which meant a user's own toggle click — where
+`localStorage` hasn't been updated to match the new state yet — got read back and immediately reverted; worth
+knowing if this class of bug ever needs revisiting). Since the correction happens inside a layout effect, it
+still resolves before the browser paints, so there's no visible flash. Added `ConnectThemeToggle.tsx` — a
+small standalone toggle (not the full `SiteHeader`) — to `/connect`, keeping its intentionally minimal design.
+Wrapped `not-found.tsx`'s content in its own `ThemeProvider`, scoped to just that page.
+**Follow-up:** None currently — verified with a scripted browser check across `/`, `/blog`, `/connect`, and a
+404 route: no hydration errors, and a saved `"light"` theme now survives a fresh full-page load of every one
+of them.
