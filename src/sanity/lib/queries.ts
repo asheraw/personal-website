@@ -34,6 +34,14 @@ export const POST_BY_SLUG_QUERY = `
     _updatedAt,
     body[]{
       ...,
+      _type == "block" => {
+        markDefs[]{
+          ...,
+          _type == "internalLink" => {
+            "slug": reference->slug.current
+          }
+        }
+      },
       _type == "snippetRef" => {
         "snippetData": @->{title, snippetType, content}
       }

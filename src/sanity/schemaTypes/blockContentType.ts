@@ -76,6 +76,30 @@ export const blockContentType = defineType({
               },
             ],
           },
+          // Links to another post by reference (its stable _id), not a
+          // pasted URL -- the link keeps working even if that post's slug
+          // changes later, since the current slug is only resolved at
+          // render time (POST_BY_SLUG_QUERY), not baked in when the link is
+          // created. Uses Sanity's own built-in reference search (type to
+          // filter by title) rather than a custom picker, so this stays
+          // fast -- nothing extra to build or load.
+          {
+            title: 'Internal link (post)',
+            name: 'internalLink',
+            type: 'object',
+            fields: [
+              defineField({
+                name: 'reference',
+                title: 'Post',
+                type: 'reference',
+                to: [{type: 'post'}],
+              }),
+            ],
+            preview: {
+              select: {title: 'reference.title'},
+              prepare: ({title}) => ({title: title ? `→ ${title}` : 'Internal link'}),
+            },
+          },
         ],
       },
     }),

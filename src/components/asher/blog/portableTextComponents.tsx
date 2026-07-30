@@ -96,6 +96,22 @@ export const postBodyComponents: PortableTextComponents = {
         </Link>
       );
     },
+    // Links to another post by reference -- "slug" is the *current* slug of
+    // the referenced post, resolved fresh by POST_BY_SLUG_QUERY every time
+    // this page renders, so a later slug change on the target post doesn't
+    // leave this link pointing at a stale, now-broken URL.
+    internalLink: ({ value, children }) => {
+      const slug = value?.slug as string | undefined;
+      if (!slug) return <span>{children}</span>;
+      return (
+        <Link
+          href={`/blog/${slug}`}
+          className="text-spotlight underline decoration-spotlight/40 underline-offset-2 transition-colors hover:decoration-spotlight"
+        >
+          {children}
+        </Link>
+      );
+    },
   },
   types: {
     image: ({ value }) => {
