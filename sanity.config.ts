@@ -18,6 +18,8 @@ import {withPrePublishChecklist} from './src/sanity/actions/prepareForPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
+import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
+import {ImageIcon} from '@sanity/icons/Image'
 
 export default defineConfig({
   basePath: '/studio',
@@ -87,5 +89,13 @@ export default defineConfig({
     // Vision is for querying with GROQ from inside the Studio
     // https://www.sanity.io/docs/the-vision-plugin
     visionTool({defaultApiVersion: apiVersion}),
+  ],
+  tools: (prev) => [
+    ...prev,
+    // A custom top-nav tool (not a document-type list, since image assets
+    // aren't browsed that way) showing every uploaded image and which
+    // posts actually use it -- the media-library-level equivalent of the
+    // "Posts" tab already on every category.
+    {name: 'media-library', title: 'Media', icon: ImageIcon, component: MediaLibraryTool},
   ],
 })

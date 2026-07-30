@@ -22,7 +22,9 @@ before. Fixed by always starting state at `"dark"` (matching the server) and cor
 **Header & footer:** `SiteHeader` and `SiteFooter` now render once, globally, from the shared site layout
 instead of every page carrying its own copy — intended to fix `/connect` and the 404 page never having had
 a theme toggle. **Status: reported by Asher as still not working correctly on `/connect` and the 404 page —
-open issue, not yet resolved.** Needs a fresh look before considering this closed.
+open issue, not yet resolved.** Needs a fresh look before considering this closed. *(Update, later the same
+day: `/connect` and 404 both confirmed working correctly by the next session — see "Continued" below. The
+home→blog colour issue specifically is still open.)*
 
 **Theme-toggle hint:** the once-daily "try light/dark mode" nudge was too subtle on mobile and looped
 forever even after being seen. Reworked: dropped the infinite pulse, added a persistent static ring around
@@ -51,6 +53,42 @@ real spec instead of a shorter, looser description of it. Flagging it here so it
 
 **Housekeeping:** opened [PR #1](https://github.com/asheraw/personal-website/pull/1) to merge all of the
 above from `claude/project-ace-progress-clpqg9` into `main`.
+
+### Continued (desktop session, later the same day)
+
+**Synced up:** pulled PR #1, read `ACE_PRD.md`/`ACE_MASTER_SPEC.md`/`RUNBOOK.md` fresh rather than trusting
+the prior summary, confirmed the Phase 0/1 reality check above is accurate.
+
+**`/connect` and the 404 page:** confirmed fixed — theme toggle works on both, real click-through tested
+(home → light → Blog link → `/connect` → a broken link → toggle right there on the 404 page) locally and
+live, every step correct. `/connect` now also shares the same `SiteFooter` as every other page (previously
+opted out with its own minimal one) and embeds the homepage's `ContactForm` instead of just a `mailto:` link.
+Contact email switched to `hello@asheraw.com` (Asher's own inbox) — see `RUNBOOK.md`. Fixed the 404 page's
+browser tab showing the raw URL — turned out to be a known Next.js bug where `not-found.tsx` metadata
+doesn't reliably render; worked around with a direct `document.title` assignment.
+
+**Home→blog colour bug: still open.** Re-tested Asher's exact repro extensively (real clicks, heavy
+throttling, live + local) and could not reproduce it in any automated test. Real and reported twice now —
+not a false alarm — but needs Asher's specific browser/device to keep investigating. Full detail in
+`RUNBOOK.md`'s incident log.
+
+**Phase 0, closed:** wrote `CURRENT_STATE_AUDIT.md` (full stack/schema/route snapshot) and
+`IMPLEMENTATION_PLAN.md` (key decisions made so far, with reasoning, plus the plan for the Phase 1 work
+below). Backup/restore half was already solid — Phase 0 is now genuinely complete per the PRD's exit
+criteria.
+
+**Phase 1, three of four gaps closed:**
+- **Site Settings singleton** — the default author (previously hardcoded to a specific author's slug) is
+  now configurable in Studio.
+- **Media library reuse tracking** — a new "Media" tool in Studio shows every image and which posts use it,
+  same technique as the existing category "Posts" tab.
+- **Reusable content snippets** — a new "Reusable Snippets" document type; inserting one into a post stores
+  a reference, not a copy, so editing the snippet updates every post using it. Verified end-to-end with a
+  throwaway test snippet/post before trusting it (created and deleted via script, no real content touched).
+- **Distraction-free writing mode — deliberately not built.** This is the one remaining Phase 1 item. Asher
+  was asked about this exact feature before (2026-07-29) and said Sanity's default editor is good enough.
+  Flagged again this session rather than silently building something already declined, or silently leaving
+  Phase 1 incomplete without a record of why — his call either way, logged once he answers.
 
 ---
 

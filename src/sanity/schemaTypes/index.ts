@@ -7,7 +7,9 @@ import {authorType} from './authorType'
 import {contactSubmissionType} from './contactSubmissionType'
 import {aiPromptSettingsType} from './aiPromptSettingsType'
 import {notFoundHitType} from './notFoundHitType'
+import {siteSettingsType} from './siteSettingsType'
+import {snippetType} from './snippetType'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType],
+  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType],
 }

@@ -137,8 +137,8 @@ a bug. Custom input component: `src/sanity/components/TagsAutocompleteInput.tsx`
 
 **"Which posts use this category?"** — open the category in Studio; alongside the normal **Editor** tab
 there's a **Posts** tab listing every post that references it. Read-only, just for reference before deciding
-whether to edit or delete. Component: `src/sanity/components/CategoryPostsView.tsx`, wired up in
-`src/sanity/structure.ts`.
+whether to edit or delete. Component: `src/sanity/components/ReferencedByPostsView.tsx` (generalized
+2026-07-30 to also power the same tab on Reusable Snippets — see below), wired up in `src/sanity/structure.tsx`.
 
 **Deleting a category that's still in use** (shipped 2026-07-29) no longer just silently orphans the posts
 using it. If nothing references the category, Delete works exactly as it always has — no extra step. If
@@ -153,6 +153,65 @@ Sanity transaction before the delete runs. This already caught one real bug duri
 accumulating them, so every field being removed has to be collected into a single `.unset([...])` call, not
 several chained ones. If this class of bug ever resurfaces (e.g. in a future bulk-edit feature), that's the
 first thing to check.
+
+---
+
+## Site Settings: the default author
+
+**Studio -> Site Settings** (singleton, left sidebar) now holds the default author every new post starts
+assigned to — shipped 2026-07-30, replacing a hardcoded GROQ lookup for an author with slug `asher-aw`.
+Change it any time; it only affects posts created *after* the change, never retroactively touches existing
+ones. Schema: `src/sanity/schemaTypes/siteSettingsType.ts`. `postType.ts`'s `author` field still falls back
+to the old slug-based lookup if the Site Settings document has no default set (shouldn't happen in practice —
+the document was created directly with a default already set — but keeps a fresh/corrupted dataset from
+leaving new posts with no author at all).
+
+**If a new post's author field comes up empty:** check Studio -> Site Settings has a default author actually
+selected. If it does and posts still come up empty, check the singleton document itself exists — query
+`*[_type == "siteSettings"][0]` in the Vision tool; if it returns `null`, the document was deleted or never
+created and needs recreating (any document with `_id: "siteSettings"` and a `defaultAuthor` reference works,
+Studio's own "create new" won't offer it since it's a fixed-ID singleton, not a listed type).
+
+---
+
+## Media library: which posts use an image
+
+**Studio -> Media** (top nav, next to Structure/Vision) shows every uploaded image in a grid, each with a
+"Used in N posts" badge (or an amber "Not used" badge if nothing currently references it) — shipped
+2026-07-30. Read-only, for reference before deleting an asset. Same underlying technique as the category/
+snippet "Posts" tabs — a GROQ `references()` query — just applied at the image-asset level instead of a
+specific document. Component: `src/sanity/components/MediaLibraryTool.tsx`, registered as a Studio tool in
+`sanity.config.ts`.
+
+**If the "Used in" counts look wrong:** the query only checks the `post` document type. If a future feature
+lets other document types (e.g. author bios) hold images too, this tool's query needs `_type == "post"`
+widened to match — currently by design, since posts are the only place images live today.
+
+---
+
+## Reusable snippets
+
+**Studio -> Reusable Snippets** (left sidebar) — shipped 2026-07-30. A snippet (pull quote, callout, call to
+action, author bio, or disclaimer) lives as its own document; inserting it into a post's body via the editor's
+block-insert menu ("Reusable snippet") stores only a *reference*, not a copy. Editing the snippet afterward
+updates every post that uses it, automatically, without touching those posts. Each snippet also has a **Used
+in** tab (same `ReferencedByPostsView` component as categories) showing which posts currently insert it,
+before you edit or delete one.
+
+**How it works, for troubleshooting:** the post body's Portable Text array can contain a `snippetRef` array
+member (`src/sanity/schemaTypes/blockContentType.ts`) — a plain Sanity `reference` type used directly as an
+array item, so Sanity stores it as `{_type: "snippetRef", _ref: "<snippet id>"}` inside `body[]`. The
+frontend query (`POST_BY_SLUG_QUERY` in `src/sanity/lib/queries.ts`) dereferences it specifically:
+`body[]{..., _type == "snippetRef" => {"snippetData": @->{title, snippetType, content}}}` — the `...` keeps
+`_key`/`_type`/`_ref`, and the conditional branch adds the resolved snippet content as `snippetData`. The
+renderer is in `src/components/asher/blog/portableTextComponents.tsx` (`types.snippetRef`), which picks a
+visual treatment based on the snippet's `snippetType`.
+
+**If a snippet shows up blank on the live post:** almost always the query wasn't updated to include the
+`snippetData` projection (check `POST_BY_SLUG_QUERY` still has the `_type == "snippetRef" =>` branch shown
+above) — without it, the block renders with only `_ref`, no actual content to show, and the renderer returns
+`null` since it has nothing to display. Verified end-to-end 2026-07-30 with a throwaway test snippet/post
+(created and deleted via script, never touched real content) before trusting it.
 
 ---
 
@@ -269,6 +328,31 @@ blog content.
 
 ---
 
+## Standalone pages: /connect and the 404 page
+
+**Both now share the same global `SiteHeader`/`SiteFooter` as every other page** (fixed 2026-07-30) — see
+the theme incident below for why they didn't before. `/connect` also now embeds the same `ContactForm` used
+on the homepage (`src/components/asher/ContactForm.tsx`) instead of just a plain `mailto:` link, so a visitor
+landing there directly (e.g. from an Instagram bio) can send a real message without navigating elsewhere.
+
+**Contact email:** `CONTACT_INFO.email` in `src/components/asher/data.ts` is the one place this is defined —
+`SiteFooter.tsx` reads from it too instead of its own hardcoded copy (fixed 2026-07-30, after the two had
+drifted to different addresses). Currently `hello@asheraw.com`. The contact *form's* Resend notification
+email is separate and lives in Vercel's `CONTACT_NOTIFICATION_EMAIL` environment variable — changing
+`CONTACT_INFO.email` does not change where form submissions get emailed; that needs updating directly in
+Vercel if it should also change.
+
+**404 page tab title:** `not-found.tsx` is a known, longstanding Next.js App Router bug (metadata exported
+from it — including `title` — frequently fails to render, especially for a genuinely unmatched URL rather
+than a matched route calling `notFound()` itself; see vercel/next.js#61236, #49030, #46619). Worked around by
+also setting `document.title` directly in `src/components/asher/NotFoundContent.tsx`'s mount effect — this is
+what actually reflects in the browser tab; the `metadata` export in `src/app/not-found.tsx` is kept too since
+it does still apply to some fields (confirmed `robots: noindex` renders correctly) but shouldn't be trusted
+alone for `title` in this specific file. If a future Next.js upgrade fixes this upstream, the manual
+`document.title` line is harmless to leave in place either way.
+
+---
+
 ## Contacts / where things live
 
 - **Code:** github.com/asheraw/personal-website (public repo)
@@ -355,6 +439,50 @@ knowing if this class of bug ever needs revisiting). Since the correction happen
 still resolves before the browser paints, so there's no visible flash. Added `ConnectThemeToggle.tsx` — a
 small standalone toggle (not the full `SiteHeader`) — to `/connect`, keeping its intentionally minimal design.
 Wrapped `not-found.tsx`'s content in its own `ThemeProvider`, scoped to just that page.
-**Follow-up:** None currently — verified with a scripted browser check across `/`, `/blog`, `/connect`, and a
-404 route: no hydration errors, and a saved `"light"` theme now survives a fresh full-page load of every one
-of them.
+**Follow-up:** Superseded same day — `ConnectThemeToggle.tsx` was replaced by making `SiteHeader`/`SiteFooter`
+global (see the 2026-07-30 "Global header/footer" entry below), and Asher reported the home→blog flash still
+happening even after this fix shipped — see the next entry.
+
+### 2026-07-30 — Global header/footer, and the home→blog flash reported as still happening
+**What changed:** `SiteHeader`/`SiteFooter` now render once from `(site)/layout.tsx` instead of every page
+placing its own copy (`ConnectThemeToggle.tsx` from the entry above removed, no longer needed). Pages that
+need something different register it via `<ConfigureSiteChrome />` (`src/components/asher/SiteChromeConfig.tsx`)
+instead of prop drilling — e.g. the homepage's Story/Play switch, `/connect` opting into (later, the full
+footer instead of opting out).
+**Symptom, still reported after this shipped:** Asher's exact repro — home, toggle to light, click the header
+Blog link (full page reload), land on `/blog` still showing the old dark-flash colours; toggling once more
+switches correctly to dark, but toggling back to light stays wrong; only toggling to dark + a hard refresh +
+toggling again produces correct colours from then on.
+**Investigated, not reproduced:** scripted browser checks — real clicks (not just `localStorage` injection),
+heavy CPU throttling (6×) plus artificial per-chunk network delay, sampling computed background colour and
+`<html>` class every ~80ms through the entire navigation — against both `localhost` (production build) and
+the live site. Every run showed the correct class/colour at every sampled point, on both environments, both
+before and after the ThemeProvider hydration fix above. Ruled out: a global CSS `transition` on
+`background-color` that could visually blend dark/light during a real (non-instant) switch (checked
+`globals.css` directly — no such transition exists, only `color`/`opacity`/`transform` transitions elsewhere).
+Ruled out: stale CDN/ISR caching of pre-fix HTML (checked via curl that the live `/blog` HTML already
+contains the current theme-init script).
+**Status: open.** Real, reported twice independently (by Asher, in his own browser, after two different
+attempted fixes) but not reproducible via any automated test tried so far. Needs Asher's specific browser and
+device to continue — this exact combination (real device, real network conditions, real click timing) has
+never been tested, only simulated.
+**Follow-up:** Get browser/device details and, ideally, a screen recording of the actual repro next time this
+comes up, before attempting another blind fix — two fixes have already shipped for this exact symptom without
+confirming it's actually resolved from Asher's side.
+
+### 2026-07-30 — `not-found.tsx` metadata doesn't render (Next.js bug), 404 tab showed the raw URL
+**Symptom:** the browser tab for a 404 page showed the raw URL (e.g. "asheraw.com/this-page-does-not-exist")
+instead of any page title.
+**Root cause:** confirmed via web search as a known, longstanding Next.js App Router limitation — metadata
+exported from `not-found.tsx` (this project's is at the app root, required by Next.js for the global 404
+boundary) frequently fails to render, `title` especially, for a genuinely unmatched URL. Verified directly:
+added a `metadata` export with `title`/`description`/`robots`, rebuilt, and checked the raw server HTML — no
+`<title>` tag rendered at all (confirmed via `curl`, ruling out a client-side-only quirk), while the `robots`
+field from that same object *did* render correctly (`<meta name="robots" content="noindex">`). Related, open
+Next.js issues: vercel/next.js#61236, #76923, #49030, #46619.
+**Fix:** kept the `metadata` export (still correct for the fields that do work) and added a
+`document.title = "..."` assignment in `NotFoundContent.tsx`'s mount effect as the actual, reliable fix for
+the tab title specifically — confirmed working via a real browser check (`page.title()` returned the correct
+string after the fix, empty string before it).
+**Follow-up:** if a future Next.js upgrade resolves the underlying bug, the manual `document.title` line is
+harmless to leave in place regardless — safe to leave as-is rather than needing to revisit.

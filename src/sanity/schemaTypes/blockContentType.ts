@@ -3,6 +3,7 @@ import {ImageIcon} from '@sanity/icons/Image'
 import {CodeBlockIcon} from '@sanity/icons/CodeBlock'
 import {UlistIcon} from '@sanity/icons/Ulist'
 import {PlayIcon} from '@sanity/icons/Play'
+import {ComponentIcon} from '@sanity/icons/Component'
 
 /**
  * This is the schema type for block content used in the post document type
@@ -178,6 +179,18 @@ export const blockContentType = defineType({
         select: {title: 'title'},
         prepare: ({title}) => ({title: title || 'Accordion'}),
       },
+    }),
+    // Embeds a *reference* to a Reusable Snippet document, not a copy of
+    // its content -- editing the snippet updates every post that inserts
+    // it. `to: [{type: 'snippet'}]` on an array member (rather than a
+    // nested reference field) is what makes Sanity store this directly as
+    // a `{_type: 'snippetRef', _ref: ...}` item in the body array itself.
+    defineArrayMember({
+      type: 'reference',
+      name: 'snippetRef',
+      title: 'Reusable snippet',
+      icon: ComponentIcon,
+      to: [{type: 'snippet'}],
     }),
     defineArrayMember({
       type: 'object',

@@ -5,16 +5,19 @@ import {Box, Card, Spinner, Stack, Text, Flex} from '@sanity/ui'
 type LinkedPost = {_id: string; title?: string; publishedAt?: string}
 
 /**
- * Extra tab on a category's document pane (see structure.ts) showing which
- * posts actually use it -- lets Asher tell at a glance whether a category
- * is safe to delete instead of guessing.
+ * Generic "which posts use this?" tab, added to a document's pane in
+ * structure.ts. Originally built just for categories (to tell at a glance
+ * whether one is safe to delete); generalized so the same view works for
+ * any document type posts can reference by `_ref` -- currently categories
+ * and reusable snippets.
  */
-export function CategoryPostsView(props: {documentId: string}) {
+export function ReferencedByPostsView(props: {documentId: string; itemLabel: string}) {
   const client = useClient({apiVersion: '2023-01-01'})
   const [posts, setPosts] = useState<LinkedPost[] | null>(null)
+  const {itemLabel} = props
 
-  // The stored reference on posts always points at the published category
-  // id, even while editing a draft of the category itself.
+  // The stored reference on posts always points at the published id, even
+  // while editing a draft of the referenced document itself.
   const publishedId = props.documentId.replace(/^drafts\./, '')
 
   useEffect(() => {
@@ -25,7 +28,7 @@ export function CategoryPostsView(props: {documentId: string}) {
       )
       .then((results) => {
         // A post can appear twice (its draft AND its published version both
-        // referencing this category) -- collapse to one row per post,
+        // referencing this document) -- collapse to one row per post,
         // preferring the draft since it reflects the most current state.
         const seen = new Map<string, LinkedPost>()
         for (const post of results) {
@@ -42,7 +45,7 @@ export function CategoryPostsView(props: {documentId: string}) {
         <Flex align="center" gap={3}>
           <Spinner muted />
           <Text muted size={1}>
-            Checking which posts use this category…
+            Checking which posts use this {itemLabel}…
           </Text>
         </Flex>
       </Box>
@@ -53,7 +56,7 @@ export function CategoryPostsView(props: {documentId: string}) {
     return (
       <Box padding={4}>
         <Text muted size={1}>
-          No posts use this category yet — safe to delete if you don&rsquo;t need it.
+          No posts use this {itemLabel} yet — safe to delete if you don&rsquo;t need it.
         </Text>
       </Box>
     )
@@ -63,7 +66,7 @@ export function CategoryPostsView(props: {documentId: string}) {
     <Box padding={4}>
       <Stack space={3}>
         <Text size={1} muted>
-          {posts.length} post{posts.length === 1 ? '' : 's'} use this category:
+          {posts.length} post{posts.length === 1 ? '' : 's'} use this {itemLabel}:
         </Text>
         {posts.map((post) => (
           <Card key={post._id} padding={3} radius={2} border>

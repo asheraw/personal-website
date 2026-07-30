@@ -77,12 +77,20 @@ export const postType = defineType({
       name: 'author',
       type: 'reference',
       to: {type: 'author'},
+      // Reads the default author from the Site Settings singleton (Studio
+      // sidebar -> Site Settings), configurable there instead of hardcoded.
+      // Falls back to the old slug-based lookup only if Site Settings has
+      // no default set yet (e.g. a fresh dataset before it's configured).
       initialValue: async (_params, context) => {
         const client = context.getClient({apiVersion: '2023-01-01'})
-        const defaultAuthorId = await client.fetch<string | null>(
+        const fromSettings = await client.fetch<string | null>(
+          `*[_type == "siteSettings"][0].defaultAuthor._ref`
+        )
+        if (fromSettings) return {_type: 'reference', _ref: fromSettings}
+        const fallbackId = await client.fetch<string | null>(
           `*[_type == "author" && slug.current == "asher-aw"][0]._id`
         )
-        return defaultAuthorId ? {_type: 'reference', _ref: defaultAuthorId} : undefined
+        return fallbackId ? {_type: 'reference', _ref: fallbackId} : undefined
       },
     }),
     defineField({

@@ -32,7 +32,12 @@ export const POST_BY_SLUG_QUERY = `
     excerpt,
     publishedAt,
     _updatedAt,
-    body,
+    body[]{
+      ...,
+      _type == "snippetRef" => {
+        "snippetData": @->{title, snippetType, content}
+      }
+    },
     mainImage,
     seoTitle,
     socialImage,

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { PortableTextComponents } from "@portabletext/react";
+import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
@@ -17,6 +17,24 @@ const CALLOUT_STYLES: Record<string, { label: string; classes: string }> = {
   note: { label: "Note", classes: "border-spotlight/50 bg-spotlight/5" },
   tip: { label: "Tip", classes: "border-emerald-500/40 bg-emerald-500/5" },
   warning: { label: "Warning", classes: "border-destructive/50 bg-destructive/5" },
+};
+
+// Minimal set of components for rendering a snippet's own (deliberately
+// simple -- just paragraphs, bold/italic, links) content, reused inside
+// each of the snippetType-specific wrappers below.
+const snippetBodyComponents: PortableTextComponents = {
+  block: {
+    normal: ({ children }) => <p>{children}</p>,
+  },
+  marks: {
+    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+    em: ({ children }) => <em className="italic">{children}</em>,
+    link: ({ value, children }) => (
+      <Link href={(value?.href as string) ?? "#"} className="underline underline-offset-2">
+        {children}
+      </Link>
+    ),
+  },
 };
 
 export const postBodyComponents: PortableTextComponents = {
@@ -123,6 +141,46 @@ export const postBodyComponents: PortableTextComponents = {
       );
     },
     accordion: ({ value }) => <Accordion title={value?.title} content={value?.content} />,
+    // Renders a Reusable Snippet inserted into this post -- `snippetData`
+    // is the dereferenced snippet document (see POST_BY_SLUG_QUERY), never
+    // a copy: editing the snippet in Studio updates every post that uses
+    // it, since only a reference is stored here.
+    snippetRef: ({ value }) => {
+      const snippet = value?.snippetData;
+      if (!snippet?.content) return null;
+      const body = <PortableText value={snippet.content} components={snippetBodyComponents} />;
+      switch (snippet.snippetType) {
+        case "pullquote":
+          return (
+            <blockquote className="my-10 border-l-2 border-spotlight/60 pl-6 font-display text-2xl italic leading-snug text-ivory">
+              {body}
+            </blockquote>
+          );
+        case "cta":
+          return (
+            <div className="my-8 rounded-lg border border-spotlight/40 bg-spotlight/5 px-6 py-5 text-center text-ivory/90">
+              {body}
+            </div>
+          );
+        case "authorbio":
+          return (
+            <div className="my-8 rounded-lg border border-amber-faint bg-stage/40 px-5 py-4 text-sm text-stone/85">
+              {body}
+            </div>
+          );
+        case "disclaimer":
+          return (
+            <div className="my-8 text-xs italic leading-relaxed text-stone/60">{body}</div>
+          );
+        case "callout":
+        default:
+          return (
+            <div className="my-8 rounded-lg border border-spotlight/50 bg-spotlight/5 px-5 py-4 text-ivory/90">
+              {body}
+            </div>
+          );
+      }
+    },
     youtube: ({ value }) => {
       const id = value?.url ? getYouTubeId(value.url as string) : null;
       if (!id) return null;
