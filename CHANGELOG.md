@@ -162,6 +162,15 @@ apart from each other. Also fixed a related, pre-existing gap while in there: se
 own `alternates` without realizing that silently drops the feed link a parent layout had already set (Next.js
 metadata doesn't deep-merge that field) — every blog page now re-declares its own feed link explicitly.
 
+### Continued (series/collections and footnotes/citations, shelved)
+
+That closed out the last of the phase gaps buildable without a real content-model decision. The two that
+remained — series/collections and footnotes/citations — turned out to be about something different than they
+read as in the spec: Asher's actual intent was publishing whole books on the site chapter by chapter (a
+revised "Live Streaming for Coaches & Consultants," and eventually "Acting As Jesus"), not grouping blog
+posts or sourcing essays. Neither book is ready to go up yet, so both are shelved rather than designed
+against a guess — logged in `IDEAS.md` with the real context so this isn't reinvented from scratch later.
+
 ---
 
 ## 2026-07-30

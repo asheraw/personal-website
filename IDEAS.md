@@ -10,6 +10,31 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## Series/collections & footnotes/citations
+
+**What:** both come from the original spec (`ACE_PRD.md` line 149, `ACE_MASTER_SPEC.md` lines 143/173) as
+generic STORY-frontend features — "group posts into an ordered series" and "academic-style, auto-numbered
+citations." Sitting in that list on their own, they read like blog features (a themed run of posts; sourced
+essays). They're not — clarified 2026-07-31: the actual intent was **publishing whole books on the site,
+chapter by chapter**, not grouping blog posts. Two specific books prompted it:
+- **"Live Streaming for Coaches & Consultants"** — already self-published on Amazon, but Asher isn't happy
+  with it as it stands and the content is now outdated. The idea was putting a revised version on-site as
+  chapters, where it can actually be updated over time instead of staying frozen as a static Amazon listing.
+- **"Acting As Jesus"** — background work done, not yet written.
+
+**Why not now:** neither book is ready to actually go up. A real "book on the site" feature needs its own
+design work once there's a specific book to build it around — chapter numbering and a table of contents,
+reading progress across an entire book rather than one post, whether it's a distinct content type from a
+blog post, a "start reading" entry point, and (for a book with real sources, unlike Asher's current blog
+content) whether footnotes/citations actually apply to *that* book specifically. None of that is worth
+guessing at unprompted for a book that doesn't exist on the site yet.
+
+**Worth revisiting when:** one of the two books is actually ready to start going up — most likely "Live
+Streaming for Coaches & Consultants" first, since it already exists and needs revision rather than being
+written from scratch, versus "Acting As Jesus," which is still at the background-work stage.
+
+---
+
 ## Notify a commenter by email when Asher replies
 
 **What:** when Asher replies to a comment from Studio, email the original commenter to let them know —
