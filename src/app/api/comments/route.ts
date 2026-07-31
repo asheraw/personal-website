@@ -95,13 +95,35 @@ export async function POST(request: NextRequest) {
       parentRef = parentComment;
     }
 
+    // Same header the contact form already reads. Not authoritative (a
+    // determined spammer can rotate IPs), but combined with the email
+    // check below it's a real deterrent against the common case: the same
+    // script or person retrying after a rejection.
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const normalizedEmail = email.toLowerCase();
+
+    // Once something's been marked Spam in Studio, matching future
+    // submissions (same email, or same IP if it's a real one) go straight
+    // to "spam" status instead of "pending" -- still saved for the record,
+    // never shown on the site, and skipped in the notification email
+    // below so this doesn't just move the moderation burden into Asher's
+    // inbox instead of Studio.
+    const isKnownSpammer = await writeClient.fetch<boolean>(
+      `count(*[
+        _type == "comment" && status == "spam" &&
+        (lower(email) == $email || (ip == $ip && $ip != "unknown"))
+      ]) > 0`,
+      { email: normalizedEmail, ip }
+    );
+
     await writeClient.create({
       _type: "comment",
       post: { _type: "reference", _ref: postId },
       name,
       email,
+      ip,
       message,
-      status: "pending",
+      status: isKnownSpammer ? "spam" : "pending",
       // The schema's initialValue for this field only applies when a
       // document is created through Studio's own UI, not via the API --
       // confirmed by testing (a comment created here came back with
@@ -114,7 +136,7 @@ export async function POST(request: NextRequest) {
       // subscription is on the commenter's own timeline, not the
       // moderation queue's. See /api/comments/notify-subscribers for what
       // actually sends the email, only once a reply is approved/visible.
-      ...(notifyOnReply
+      ...(notifyOnReply && !isKnownSpammer
         ? { notifyOnReply: true, notifyExpiresAt: new Date(Date.now() + THIRTY_DAYS_MS).toISOString() }
         : { notifyOnReply: false }),
     });
@@ -125,8 +147,11 @@ export async function POST(request: NextRequest) {
     // visitor sees. This exists because the in-Studio "pending" badge alone
     // wasn't enough: Asher missed real comments for days until a reader
     // told him directly, since nothing prompted him to actually open Studio
-    // and look. Mirrors the contact form's exact Resend setup.
-    if (resend && NOTIFY_EMAIL) {
+    // and look. Mirrors the contact form's exact Resend setup. Skipped
+    // entirely for a known-spammer match -- the whole point of auto-
+    // flagging is to keep this out of Asher's inbox, not just Studio's
+    // queue.
+    if (resend && NOTIFY_EMAIL && !isKnownSpammer) {
       try {
         const post = await writeClient.fetch(`*[_id == $postId][0]{title}`, { postId });
         await resend.emails.send({

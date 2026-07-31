@@ -32,6 +32,14 @@ export const commentType = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: 'ip',
+      title: 'IP address',
+      type: 'string',
+      description:
+        'Captured at submission, same as the contact form. Used (alongside email) to auto-flag future submissions once something from this address has been marked Spam.',
+      readOnly: true,
+    }),
+    defineField({
       name: 'message',
       title: 'Message',
       type: 'text',
@@ -47,8 +55,11 @@ export const commentType = defineType({
           {title: 'Pending review', value: 'pending'},
           {title: 'Approved (visible on site)', value: 'approved'},
           {title: 'Rejected', value: 'rejected'},
+          {title: 'Spam', value: 'spam'},
         ],
       },
+      description:
+        '"Rejected" is a one-off no; "Spam" additionally blocks this email/IP from getting past moderation automatically going forward (see /api/comments\'s spam check). Set by the Spam button in Studio -> Comments, not meant to be picked from this raw list directly.',
       initialValue: 'pending',
       validation: (rule) => rule.required(),
     }),

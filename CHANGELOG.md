@@ -267,6 +267,23 @@ been lost" straight into the math-check error message itself. Also cleaned up a 
 over from the earlier badge fix that still claimed the old (non-working) tool-icon badge was "confirmed
 working."
 
+### Continued (delete a comment, and a real anti-repeat-spam mechanism)
+
+Asher asked for two things: an actual way to delete a comment (Reject only ever hid it, never removed it),
+and whether spam could be reported "to Google or something." The honest answer on the second one: no, that's
+not a real capability for a site this size, and a fake button that does nothing wouldn't be worth building.
+What's real and now built:
+
+- **Delete**, with an inline confirm step, permanently removes a comment. Deleting a top-level comment with
+  replies doesn't cascade — the replies just quietly stop showing (nothing crashes), and the confirm text
+  says so.
+- **Mark as Spam**, separate from Reject: once anything is marked Spam, matching future submissions (same
+  email, or the same IP if it's a real one) get auto-sent to spam status the moment they're created — still
+  saved for the record, but never shown on the site, never counted as needing review, and skipped in the
+  notification email too. Comment IP addresses are now captured at submission specifically to make this
+  matching hold up better than email alone. Doesn't touch anything already posted — only blocks recurrence
+  going forward.
+
 ---
 
 ## 2026-07-30

@@ -460,8 +460,8 @@ listing itself (which headings exist, in order) is still accurate and useful on 
 
 Every comment submitted on a post starts as **pending** and shows nowhere on the live site until approved.
 **Studio → Comments** (top nav) is a dedicated moderation queue — not a plain document list — showing every
-comment with one-click **Approve**/**Reject** buttons, and a count of comments awaiting review at the top of
-the tool. Component: `src/sanity/components/CommentsTool.tsx`.
+comment with one-click **Approve** / **Reject** / **Mark as Spam** / **Delete** buttons, and a count of
+comments awaiting review at the top of the tool. Component: `src/sanity/components/CommentsTool.tsx`.
 
 **A pending count is also always visible, without opening the Comments tool at all** — a floating "N comments
 need review" badge in the corner of every Studio screen (fixed 2026-07-31 after an earlier attempt, a badge
@@ -485,6 +485,30 @@ browser, this one is also re-checked server-side in `/api/comments`'s `POST` han
 to the endpoint, skipping the visible form entirely, can't bypass it the way it currently could on
 `/api/contact`. Worth applying the same server-side check to `/api/contact` at some point for consistency,
 though the contact form is lower-risk (not publicly crawlable/spammable the way an open comment section is).
+
+**Delete, and Mark as Spam vs. Reject (shipped 2026-07-31, Asher asked directly).** Two things came up
+together:
+1. There was previously no way to actually remove a comment, only Reject (keeps it hidden but keeps the
+   record). **Delete** (`CommentsTool.tsx`) permanently removes the document — a confirm step appears inline
+   before it actually fires. Deleting a top-level comment doesn't cascade-delete its replies; they're just
+   orphaned (silently hidden, since the frontend only ever renders a reply nested under a top-level comment
+   that's still present) rather than crashing or showing broken. The confirm text says so explicitly when a
+   comment being deleted has replies.
+2. Asher also asked about reporting spam "to Google or something" to get it blocked more broadly — that's not
+   a real capability for a personal blog; there's no self-service API for this, and building a fake button
+   that doesn't actually do anything wouldn't be honest. What's real and actually built instead: **Mark as
+   Spam** is a separate status from Reject, and once anything is marked Spam, matching future submissions
+   (same email, or same IP if it's a real one — both compared case-insensitively / exactly against every past
+   `status == "spam"` comment) get auto-set to `status: "spam"` at creation instead of `"pending"`, in
+   `/api/comments`'s `POST` handler. Auto-flagged comments are still saved (nothing silently vanishes, so
+   there's always a record) but never show on the site, never count toward "needs review," and don't trigger
+   the notification email either — the point is keeping repeat spam out of both Studio's queue *and* Asher's
+   inbox, not just moving the burden from one to the other. Comment IP addresses are now captured at
+   submission (`ip` field, same `x-forwarded-for` header the contact form already reads) specifically to make
+   this matching more resilient than email alone, which is trivially rotated. Not perfect — a determined
+   spammer can rotate IPs too — but a real deterrent against the common case (the same script or person
+   retrying right after a rejection). This is intentionally forward-looking only: marking one comment as Spam
+   does *not* retroactively touch any other existing comment from that email/IP.
 
 **Getting the math check wrong doesn't lose the comment** (double-checked 2026-07-31, Asher asked directly).
 `CommentForm` (`CommentSection.tsx`) only calls `form.reset()` on a *successful* submit — every field is a

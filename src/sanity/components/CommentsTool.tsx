@@ -18,8 +18,9 @@ type CommentRow = {
   _id: string
   name: string
   email: string
+  ip: string | null
   message: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'approved' | 'rejected' | 'spam'
   createdAt: string
   postId: string | null
   postTitle: string | null
@@ -38,6 +39,7 @@ const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critic
   pending: 'caution',
   approved: 'positive',
   rejected: 'critical',
+  spam: 'critical',
 }
 
 // A custom Studio tool (not a plain document-type list) so pending comments
@@ -80,7 +82,7 @@ export function CommentsTool() {
     client
       .fetch<CommentRow[]>(
         `*[_type == "comment"] | order(createdAt desc){
-          _id, name, email, message, status, createdAt, isAuthorReply,
+          _id, name, email, ip, message, status, createdAt, isAuthorReply,
           "postId": post._ref, "postTitle": post->title, "postSlug": post->slug.current,
           "parentComment": parentComment._ref
         }`,
@@ -135,6 +137,21 @@ export function CommentsTool() {
     }
   }
 
+  // Permanent, unlike Reject/Spam -- both of those just keep a comment out
+  // of the live site while still leaving a record in Studio. This
+  // actually removes the document. No confirm dialog here at the data
+  // layer -- CommentCard handles the "are you sure" step in the UI before
+  // this ever gets called.
+  async function deleteComment(id: string) {
+    setBusyId(id)
+    try {
+      await client.delete(id)
+      setComments((prev) => (prev ? prev.filter((c) => c._id !== id) : prev))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   function startReply(id: string) {
     setReplyingId(id)
     setReplyText('')
@@ -166,6 +183,7 @@ export function CommentsTool() {
                 _id: created._id,
                 name: REPLY_AUTHOR_NAME,
                 email: '',
+                ip: null,
                 message: replyText.trim(),
                 status: 'approved',
                 createdAt: new Date().toISOString(),
@@ -283,8 +301,11 @@ export function CommentsTool() {
                         comment={comment}
                         isNew={isNew(comment)}
                         busy={busyId === comment._id}
+                        hasReplies={replies.length > 0}
                         onApprove={() => setStatus(comment._id, 'approved')}
                         onReject={() => setStatus(comment._id, 'rejected')}
+                        onSpam={() => setStatus(comment._id, 'spam')}
+                        onDelete={() => deleteComment(comment._id)}
                         onReplyClick={replyingId === comment._id ? undefined : () => startReply(comment._id)}
                       />
 
@@ -326,6 +347,8 @@ export function CommentsTool() {
                             busy={busyId === reply._id}
                             onApprove={() => setStatus(reply._id, 'approved')}
                             onReject={() => setStatus(reply._id, 'rejected')}
+                            onSpam={() => setStatus(reply._id, 'spam')}
+                            onDelete={() => deleteComment(reply._id)}
                             parentStatus={comment.status}
                           />
                         </Box>
@@ -346,19 +369,29 @@ function CommentCard({
   comment,
   isNew,
   busy,
+  hasReplies,
   onApprove,
   onReject,
+  onSpam,
+  onDelete,
   onReplyClick,
   parentStatus,
 }: {
   comment: CommentRow
   isNew: boolean
   busy: boolean
+  hasReplies?: boolean
   onApprove: () => void
   onReject: () => void
+  onSpam: () => void
+  onDelete: () => void
   onReplyClick?: () => void
   parentStatus?: CommentRow['status']
 }) {
+  // Local to this card, not lifted to CommentsTool -- purely a UI
+  // confirmation step before the actually-destructive onDelete fires.
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
   return (
     <Card padding={3} radius={2} border tone={comment.isAuthorReply ? 'primary' : undefined}>
       <Stack space={3}>
@@ -375,6 +408,11 @@ function CommentCard({
             {comment.email && (
               <Text size={0} muted>
                 {comment.email}
+              </Text>
+            )}
+            {comment.ip && comment.ip !== 'unknown' && (
+              <Text size={0} muted>
+                · {comment.ip}
               </Text>
             )}
             {isNew && (
@@ -397,15 +435,45 @@ function CommentCard({
         <Text size={0} muted>
           {new Date(comment.createdAt).toLocaleString()}
         </Text>
-        <Flex gap={2} wrap="wrap">
-          {comment.status !== 'approved' && (
-            <Button text="Approve" tone="positive" fontSize={1} disabled={busy} onClick={onApprove} />
-          )}
-          {comment.status !== 'rejected' && (
-            <Button text="Reject" tone="critical" mode="ghost" fontSize={1} disabled={busy} onClick={onReject} />
-          )}
-          {onReplyClick && <Button text="Reply" mode="ghost" fontSize={1} onClick={onReplyClick} />}
-        </Flex>
+
+        {confirmingDelete ? (
+          <Card padding={2} radius={2} tone="critical" border>
+            <Flex align="center" gap={2} wrap="wrap">
+              <Text size={1}>
+                Delete permanently{hasReplies ? ' — its replies will stay but be hidden' : ''}?
+              </Text>
+              <Button text="Yes, delete" tone="critical" fontSize={1} disabled={busy} onClick={onDelete} />
+              <Button
+                text="Cancel"
+                mode="ghost"
+                fontSize={1}
+                disabled={busy}
+                onClick={() => setConfirmingDelete(false)}
+              />
+            </Flex>
+          </Card>
+        ) : (
+          <Flex gap={2} wrap="wrap">
+            {comment.status !== 'approved' && (
+              <Button text="Approve" tone="positive" fontSize={1} disabled={busy} onClick={onApprove} />
+            )}
+            {comment.status !== 'rejected' && (
+              <Button text="Reject" tone="critical" mode="ghost" fontSize={1} disabled={busy} onClick={onReject} />
+            )}
+            {comment.status !== 'spam' && (
+              <Button text="Mark as Spam" tone="critical" mode="ghost" fontSize={1} disabled={busy} onClick={onSpam} />
+            )}
+            {onReplyClick && <Button text="Reply" mode="ghost" fontSize={1} onClick={onReplyClick} />}
+            <Button
+              text="Delete"
+              tone="critical"
+              mode="bleed"
+              fontSize={1}
+              disabled={busy}
+              onClick={() => setConfirmingDelete(true)}
+            />
+          </Flex>
+        )}
       </Stack>
     </Card>
   )
