@@ -19,7 +19,7 @@ export const POST_SUMMARY_PROJECTION = `{
   "author": author->{name, "slug": slug.current},
   "categories": categories[]->{title, "slug": slug.current},
   tags,
-  "commentCount": count(*[_type == "comment" && status == "approved" && references(^._id)])
+  "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && references(^._id)])
 }`;
 
 export const ALL_POSTS_QUERY = `
@@ -56,7 +56,7 @@ export const POST_BY_SLUG_QUERY = `
     "author": author->{name, "slug": slug.current, image, bio},
     "categories": categories[]->{title, "slug": slug.current},
     "primaryCategory": primaryCategory->{title, "slug": slug.current},
-    "commentCount": count(*[_type == "comment" && status == "approved" && references(^._id)])
+    "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && references(^._id)])
   }
 `;
 

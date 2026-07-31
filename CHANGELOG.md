@@ -284,6 +284,29 @@ What's real and now built:
   matching hold up better than email alone. Doesn't touch anything already posted — only blocks recurrence
   going forward.
 
+### Continued (Trash instead of permanent delete, Edit, and a real formatting bug fixed)
+
+Asher sent screenshots: a commenter's paragraph breaks showed up fine on the live site but as one run-on
+block in Studio. Real bug, traced to the actual cause — the line breaks were always saved correctly; Studio's
+Comments tool just wasn't displaying them (`@sanity/ui`'s `Text` collapses whitespace by default). One-line
+fix, nothing was ever actually lost.
+
+Also asked for: an editing option, and for Delete to work like a real trash can (recoverable, not instant).
+Both built:
+
+- **Edit** a comment's message in place, same inline pattern as Reply. Shows a small "edited" note next to
+  the timestamp in Studio only — not surfaced publicly.
+- **Delete reworked into Trash.** Trashing a comment hides it from the live site immediately but keeps the
+  document — a new **Trash** view in the tool lists everything trashed, with **Restore** or **Delete
+  Forever** (actually permanent, its own confirm step) for each. Anything left in Trash for 30 days gets
+  auto-deleted by a new daily Vercel Cron Job (`/api/cron/purge-trash`) — needs a one-time `CRON_SECRET`
+  environment variable set in Vercel before that part actually starts running (same shape as the
+  `GEMINI_API_KEY` setup). Every place that decides whether a comment counts as "live" (the public fetch, both
+  comment-count queries, the reply-notification eligibility check) was updated to also exclude trashed
+  comments, not just the obvious one.
+
+Small extra, per Asher: "Mark as Spam" no longer shows on a comment that's already been Approved.
+
 ---
 
 ## 2026-07-30

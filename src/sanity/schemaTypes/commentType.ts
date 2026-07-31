@@ -104,6 +104,23 @@ export const commentType = defineType({
       readOnly: true,
       hidden: ({document}) => !document?.notifyOnReply,
     }),
+    defineField({
+      name: 'editedAt',
+      title: 'Last edited by Asher',
+      type: 'datetime',
+      description: 'Set automatically whenever the message is edited from the Comments tool. Not shown publicly.',
+      readOnly: true,
+      hidden: ({document}) => !document?.editedAt,
+    }),
+    defineField({
+      name: 'trashedAt',
+      title: 'Trashed',
+      type: 'datetime',
+      description:
+        'Set by the Trash button in Studio -> Comments. A trashed comment never shows on the live site regardless of its status, and is permanently deleted automatically 30 days after this date (or sooner, from the Trash view).',
+      readOnly: true,
+      hidden: ({document}) => !document?.trashedAt,
+    }),
   ],
   orderings: [
     {
@@ -119,10 +136,11 @@ export const commentType = defineType({
       status: 'status',
       postTitle: 'post.title',
       parentComment: 'parentComment._ref',
+      trashedAt: 'trashedAt',
     },
-    prepare: ({name, message, status, postTitle, parentComment}) => ({
+    prepare: ({name, message, status, postTitle, parentComment, trashedAt}) => ({
       title: `${parentComment ? '↳ ' : ''}${name}: ${message?.slice(0, 60) ?? ''}`,
-      subtitle: `${status} · on "${postTitle ?? 'unknown post'}"`,
+      subtitle: `${trashedAt ? 'trashed · ' : ''}${status} · on "${postTitle ?? 'unknown post'}"`,
     }),
   },
 })

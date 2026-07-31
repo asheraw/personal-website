@@ -460,8 +460,8 @@ listing itself (which headings exist, in order) is still accurate and useful on 
 
 Every comment submitted on a post starts as **pending** and shows nowhere on the live site until approved.
 **Studio → Comments** (top nav) is a dedicated moderation queue — not a plain document list — showing every
-comment with one-click **Approve** / **Reject** / **Mark as Spam** / **Delete** buttons, and a count of
-comments awaiting review at the top of the tool. Component: `src/sanity/components/CommentsTool.tsx`.
+comment with one-click **Approve** / **Reject** / **Mark as Spam** / **Edit** / **Trash** buttons, and a count
+of comments awaiting review at the top of the tool. Component: `src/sanity/components/CommentsTool.tsx`.
 
 **A pending count is also always visible, without opening the Comments tool at all** — a floating "N comments
 need review" badge in the corner of every Studio screen (fixed 2026-07-31 after an earlier attempt, a badge
@@ -486,15 +486,53 @@ to the endpoint, skipping the visible form entirely, can't bypass it the way it 
 `/api/contact`. Worth applying the same server-side check to `/api/contact` at some point for consistency,
 though the contact form is lower-risk (not publicly crawlable/spammable the way an open comment section is).
 
-**Delete, and Mark as Spam vs. Reject (shipped 2026-07-31, Asher asked directly).** Two things came up
-together:
+**Trash (reworked into a real soft-delete same day, from Asher's feedback) and Mark as Spam vs. Reject
+(shipped 2026-07-31, Asher asked directly).** Several things came up together:
 1. There was previously no way to actually remove a comment, only Reject (keeps it hidden but keeps the
-   record). **Delete** (`CommentsTool.tsx`) permanently removes the document — a confirm step appears inline
-   before it actually fires. Deleting a top-level comment doesn't cascade-delete its replies; they're just
-   orphaned (silently hidden, since the frontend only ever renders a reply nested under a top-level comment
-   that's still present) rather than crashing or showing broken. The confirm text says so explicitly when a
-   comment being deleted has replies.
-2. Asher also asked about reporting spam "to Google or something" to get it blocked more broadly — that's not
+   record). A first pass added a permanent **Delete**; Asher asked for it to work like an actual trash can
+   instead — recoverable for a while, not gone the instant you click it. **Trash** (`CommentsTool.tsx`) is the
+   result: sets `trashedAt` on the comment (a soft delete, `client.patch`, not `client.delete`) — it
+   disappears from the live site and the normal Comments view immediately, but the document itself still
+   exists. A **Trash (N)** button in the tool's header switches to a dedicated view listing everything
+   trashed, each with **Restore** (clears `trashedAt`, comment goes right back to normal) and **Delete
+   Forever** (an actual, permanent `client.delete`, behind its own separate confirm step). Anything sitting in
+   Trash for 30+ days gets permanently deleted automatically — see the cron job below. Trashing a top-level
+   comment doesn't cascade-trash its replies; they just stop rendering on the live site too (the frontend only
+   ever nests a reply under a top-level comment that's still visible), not crash or show broken. The confirm
+   step says so explicitly when a comment being trashed has replies.
+
+   **Every query that decides what counts as "visible" was updated to also exclude trashed comments**, not
+   just the obvious one — a comment can technically still have `status: "approved"` while trashed (trashing
+   doesn't change status, it's an orthogonal flag), so anywhere that only checked `status == "approved"`
+   needed `&& !defined(trashedAt)` added too: the public comment fetch (`/api/comments` `GET`), both
+   `commentCount` computations (`src/sanity/lib/queries.ts`), and the reply-notification subscriber
+   eligibility check (`/api/comments/notify-subscribers`). Easy spot to introduce a bug if a new "is this
+   comment live" check gets added anywhere else later without remembering this.
+
+   **Auto-purge after 30 days** runs as a Vercel Cron Job (`vercel.json`'s `crons` entry) hitting
+   `/api/cron/purge-trash` once daily, which deletes anything with `trashedAt` older than 30 days
+   (`THIRTY_DAYS_MS` there, matching `TRASH_RETENTION_DAYS` shown to Asher in `CommentsTool.tsx` — if one ever
+   changes, change the other too). **Requires a one-time setup step**, same shape as `GEMINI_API_KEY`'s: add a
+   `CRON_SECRET` environment variable in Vercel (any long random string) and redeploy. Vercel automatically
+   sends it back as `Authorization: Bearer <CRON_SECRET>` on its own scheduled calls to the endpoint; the
+   route fails closed (rejects every request with 401) if that variable isn't set at all, since a
+   permanent-delete endpoint should never be reachable by just guessing the URL. Until that env var is set,
+   trashed comments stay in Trash indefinitely — not wrong, just not yet auto-cleaning itself.
+
+2. **Edit** (`CommentsTool.tsx`) lets a message be corrected in place — same inline-form pattern as Reply,
+   Save patches `message` and sets `editedAt`, which then shows as a small "edited &lt;date&gt;" next to the
+   timestamp *in Studio only*. Not shown on the live site — worth a conscious decision later if public
+   edit-transparency ever matters, but wasn't asked for and wasn't added unprompted.
+
+3. **The paragraph-break display bug Asher spotted via screenshot was real, and now fixed.** A commenter's
+   line breaks were always being *saved* correctly (proof: the live site rendered them fine, since
+   `CommentSection.tsx`'s `CommentCard` already used `whiteSpace: pre-wrap`) — Studio's Comments tool just
+   never displayed them, because `@sanity/ui`'s `Text` component collapses whitespace by default and nothing
+   told it not to. One-line fix: the same `whiteSpace: 'pre-wrap'` style, now also applied to the message
+   `Text` in `CommentsTool.tsx`. Nothing was ever actually lost; it only ever looked that way in the
+   moderation view.
+
+4. Asher also asked about reporting spam "to Google or something" to get it blocked more broadly — that's not
    a real capability for a personal blog; there's no self-service API for this, and building a fake button
    that doesn't actually do anything wouldn't be honest. What's real and actually built instead: **Mark as
    Spam** is a separate status from Reject, and once anything is marked Spam, matching future submissions
@@ -508,7 +546,9 @@ together:
    this matching more resilient than email alone, which is trivially rotated. Not perfect — a determined
    spammer can rotate IPs too — but a real deterrent against the common case (the same script or person
    retrying right after a rejection). This is intentionally forward-looking only: marking one comment as Spam
-   does *not* retroactively touch any other existing comment from that email/IP.
+   does *not* retroactively touch any other existing comment from that email/IP. The **Mark as Spam** button
+   itself is hidden once a comment is Approved (Asher's request) — flagging something as spam
+   after already accepting it doesn't make sense.
 
 **Getting the math check wrong doesn't lose the comment** (double-checked 2026-07-31, Asher asked directly).
 `CommentForm` (`CommentSection.tsx`) only calls `form.reset()` on a *successful* submit — every field is a

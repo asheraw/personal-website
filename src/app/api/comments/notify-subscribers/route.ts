@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const reply = await writeClient.fetch(
       `*[_id == $replyId][0]{
-        _id, name, email, message, status,
+        _id, name, email, message, status, trashedAt,
         "postSlug": post->slug.current,
         "postTitle": post->title,
         "parentComment": parentComment._ref
@@ -35,15 +35,16 @@ export async function POST(request: NextRequest) {
       { replyId }
     );
 
-    // Nothing to notify about: no such comment, not actually visible yet,
+    // Nothing to notify about: no such comment, not actually visible yet
+    // (not approved, or trashed even though it's technically "approved"),
     // or (shouldn't happen, but defensively) not itself a reply.
-    if (!reply || reply.status !== "approved" || !reply.parentComment) {
+    if (!reply || reply.status !== "approved" || reply.trashedAt || !reply.parentComment) {
       return NextResponse.json({ success: true });
     }
 
     const subscribers: Subscriber[] = await writeClient.fetch(
       `*[
-        _type == "comment" && status == "approved" && notifyOnReply == true &&
+        _type == "comment" && status == "approved" && !defined(trashedAt) && notifyOnReply == true &&
         defined(notifyExpiresAt) && notifyExpiresAt > now() &&
         (_id == $topLevelId || parentComment._ref == $topLevelId) &&
         _id != $replyId

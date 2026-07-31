@@ -14,6 +14,10 @@ const REPLY_AUTHOR_NAME = 'Asher Aw'
 // "New" tag. Doesn't sync across devices -- known limitation, not a bug.
 const LAST_SEEN_KEY = 'asheraw-comments-last-seen'
 
+// Matches THIRTY_DAYS_MS in /api/cron/purge-trash -- only used here for the
+// "auto-deletes on ..." display, the actual purge happens server-side.
+const TRASH_RETENTION_DAYS = 30
+
 type CommentRow = {
   _id: string
   name: string
@@ -22,6 +26,8 @@ type CommentRow = {
   message: string
   status: 'pending' | 'approved' | 'rejected' | 'spam'
   createdAt: string
+  editedAt: string | null
+  trashedAt: string | null
   postId: string | null
   postTitle: string | null
   postSlug: string | null
@@ -58,6 +64,12 @@ const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critic
 // browser. The always-visible in-app fix for "I didn't know to look" is the
 // email notification sent on every new comment (src/app/api/comments) --
 // this redesign is about the page being worth looking at once you do.
+//
+// Extended same day: Edit (fixes a typo or formatting issue without
+// bouncing out to the raw document editor) and Trash (soft delete -- a
+// trashed comment never shows on the live site, but sits recoverable for
+// 30 days before /api/cron/purge-trash removes it for good, or it can be
+// deleted immediately from the Trash view).
 export function CommentsTool() {
   const client = useClient({apiVersion: '2026-07-22'})
   const [comments, setComments] = useState<CommentRow[] | null>(null)
@@ -65,6 +77,10 @@ export function CommentsTool() {
   const [replyingId, setReplyingId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
   const [replyBusy, setReplyBusy] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
+  const [editBusy, setEditBusy] = useState(false)
+  const [viewingTrash, setViewingTrash] = useState(false)
 
   // Captured once, on mount, before this same visit overwrites it below --
   // so "New" during THIS visit reflects the PREVIOUS visit's bookmark, and
@@ -82,7 +98,7 @@ export function CommentsTool() {
     client
       .fetch<CommentRow[]>(
         `*[_type == "comment"] | order(createdAt desc){
-          _id, name, email, ip, message, status, createdAt, isAuthorReply,
+          _id, name, email, ip, message, status, createdAt, editedAt, trashedAt, isAuthorReply,
           "postId": post._ref, "postTitle": post->title, "postSlug": post->slug.current,
           "parentComment": parentComment._ref
         }`,
@@ -137,12 +153,38 @@ export function CommentsTool() {
     }
   }
 
-  // Permanent, unlike Reject/Spam -- both of those just keep a comment out
-  // of the live site while still leaving a record in Studio. This
-  // actually removes the document. No confirm dialog here at the data
-  // layer -- CommentCard handles the "are you sure" step in the UI before
-  // this ever gets called.
-  async function deleteComment(id: string) {
+  // Soft delete -- hides the comment everywhere on the live site
+  // immediately (every "approved" query also excludes anything with
+  // trashedAt set), but keeps the document around, recoverable, until
+  // either 30 days pass (auto-purged server-side, see
+  // /api/cron/purge-trash) or it's deleted permanently from the Trash view
+  // below. Trashing a comment with replies doesn't cascade-trash them --
+  // they just stop rendering on the live site too, since the frontend only
+  // ever nests a reply under a top-level comment that's still there.
+  async function trashComment(id: string) {
+    setBusyId(id)
+    try {
+      const trashedAt = new Date().toISOString()
+      await client.patch(id).set({trashedAt}).commit()
+      setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, trashedAt} : c)) : prev))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function restoreComment(id: string) {
+    setBusyId(id)
+    try {
+      await client.patch(id).unset(['trashedAt']).commit()
+      setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, trashedAt: null} : c)) : prev))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  // Actually irreversible, unlike trashComment -- only ever called from
+  // the Trash view, after its own separate confirm step.
+  async function deleteForever(id: string) {
     setBusyId(id)
     try {
       await client.delete(id)
@@ -155,6 +197,26 @@ export function CommentsTool() {
   function startReply(id: string) {
     setReplyingId(id)
     setReplyText('')
+  }
+
+  function startEdit(comment: CommentRow) {
+    setEditingId(comment._id)
+    setEditText(comment.message)
+  }
+
+  async function saveEdit(id: string) {
+    if (!editText.trim()) return
+    setEditBusy(true)
+    try {
+      const editedAt = new Date().toISOString()
+      await client.patch(id).set({message: editText.trim(), editedAt}).commit()
+      setComments((prev) =>
+        prev ? prev.map((c) => (c._id === id ? {...c, message: editText.trim(), editedAt} : c)) : prev,
+      )
+      setEditingId(null)
+    } finally {
+      setEditBusy(false)
+    }
   }
 
   // Replies are created already "approved" -- they're Asher's own words, not
@@ -187,6 +249,8 @@ export function CommentsTool() {
                 message: replyText.trim(),
                 status: 'approved',
                 createdAt: new Date().toISOString(),
+                editedAt: null,
+                trashedAt: null,
                 postId: parent.postId,
                 postTitle: parent.postTitle,
                 postSlug: parent.postSlug,
@@ -205,15 +269,19 @@ export function CommentsTool() {
     }
   }
 
-  const pending = useMemo(() => comments?.filter((c) => c.status === 'pending') ?? [], [comments])
+  const live = useMemo(() => comments?.filter((c) => !c.trashedAt) ?? [], [comments])
+  const trashed = useMemo(
+    () => (comments ?? []).filter((c) => c.trashedAt).sort((a, b) => +new Date(b.trashedAt!) - +new Date(a.trashedAt!)),
+    [comments],
+  )
+  const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
 
   // Grouped by post, posts with anything pending first, then by most
   // recent activity -- so the thing most likely to need you shows up
-  // without scrolling.
+  // without scrolling. Trashed comments never appear here at all.
   const groups = useMemo<PostGroup[]>(() => {
-    if (!comments) return []
     const byPost = new Map<string, PostGroup>()
-    for (const c of comments) {
+    for (const c of live) {
       const key = c.postId ?? 'unknown'
       if (!byPost.has(key)) byPost.set(key, {postId: c.postId, postTitle: c.postTitle, comments: []})
       byPost.get(key)!.comments.push(c)
@@ -225,7 +293,7 @@ export function CommentsTool() {
       const latest = (g: PostGroup) => Math.max(...g.comments.map((c) => +new Date(c.createdAt)))
       return latest(b) - latest(a)
     })
-  }, [comments])
+  }, [live])
 
   function isNew(comment: CommentRow) {
     return lastSeenAt !== null && new Date(comment.createdAt) > new Date(lastSeenAt)
@@ -242,124 +310,169 @@ export function CommentsTool() {
   return (
     <Box padding={4}>
       <Stack space={4}>
-        <Stack space={2}>
-          <Text size={3} weight="bold">
-            Comments
-          </Text>
-          <Text size={1} muted>
-            Nothing shows on the live site until approved here.
-          </Text>
-        </Stack>
+        <Flex align="flex-start" justify="space-between" gap={3} wrap="wrap">
+          <Stack space={2}>
+            <Text size={3} weight="bold">
+              Comments
+            </Text>
+            <Text size={1} muted>
+              Nothing shows on the live site until approved here.
+            </Text>
+          </Stack>
+          <Button
+            text={viewingTrash ? 'Back to Comments' : `Trash (${trashed.length})`}
+            mode={viewingTrash ? 'default' : 'ghost'}
+            tone={viewingTrash ? 'primary' : undefined}
+            fontSize={1}
+            onClick={() => setViewingTrash((v) => !v)}
+          />
+        </Flex>
 
-        {pending.length > 0 && (
-          <Card padding={4} radius={3} tone="caution" border>
-            <Flex align="center" gap={3}>
-              <Badge tone="caution" fontSize={2}>
-                {pending.length}
-              </Badge>
-              <Text size={2} weight="semibold">
-                {pending.length === 1 ? 'comment needs' : 'comments need'} your review
+        {viewingTrash ? (
+          <Stack space={3}>
+            {trashed.length === 0 ? (
+              <Text size={1} muted>
+                Trash is empty.
               </Text>
-            </Flex>
-          </Card>
-        )}
-
-        {comments.length === 0 && (
-          <Text size={1} muted>
-            No comments yet.
-          </Text>
-        )}
-
-        {groups.map((group) => {
-          const topLevel = group.comments
-            .filter((c) => !c.parentComment)
-            .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
-          const groupPending = group.comments.some((c) => c.status === 'pending')
-
-          return (
-            <Stack key={group.postId ?? 'unknown'} space={3}>
-              <Flex align="center" gap={2}>
-                <Text size={1} weight="semibold">
-                  On &ldquo;{group.postTitle ?? 'unknown post'}&rdquo;
-                </Text>
-                {groupPending && (
-                  <Badge tone="caution" fontSize={0}>
-                    needs review
+            ) : (
+              trashed.map((comment) => (
+                <TrashedCommentCard
+                  key={comment._id}
+                  comment={comment}
+                  busy={busyId === comment._id}
+                  onRestore={() => restoreComment(comment._id)}
+                  onDeleteForever={() => deleteForever(comment._id)}
+                />
+              ))
+            )}
+          </Stack>
+        ) : (
+          <>
+            {pending.length > 0 && (
+              <Card padding={4} radius={3} tone="caution" border>
+                <Flex align="center" gap={3}>
+                  <Badge tone="caution" fontSize={2}>
+                    {pending.length}
                   </Badge>
-                )}
-              </Flex>
+                  <Text size={2} weight="semibold">
+                    {pending.length === 1 ? 'comment needs' : 'comments need'} your review
+                  </Text>
+                </Flex>
+              </Card>
+            )}
 
-              <Stack space={4}>
-                {topLevel.map((comment) => {
-                  const replies = group.comments
-                    .filter((r) => r.parentComment === comment._id)
-                    .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+            {live.length === 0 && (
+              <Text size={1} muted>
+                No comments yet.
+              </Text>
+            )}
 
-                  return (
-                    <Stack key={comment._id} space={3}>
-                      <CommentCard
-                        comment={comment}
-                        isNew={isNew(comment)}
-                        busy={busyId === comment._id}
-                        hasReplies={replies.length > 0}
-                        onApprove={() => setStatus(comment._id, 'approved')}
-                        onReject={() => setStatus(comment._id, 'rejected')}
-                        onSpam={() => setStatus(comment._id, 'spam')}
-                        onDelete={() => deleteComment(comment._id)}
-                        onReplyClick={replyingId === comment._id ? undefined : () => startReply(comment._id)}
-                      />
+            {groups.map((group) => {
+              const topLevel = group.comments
+                .filter((c) => !c.parentComment)
+                .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+              const groupPending = group.comments.some((c) => c.status === 'pending')
 
-                      {replyingId === comment._id && (
-                        <Box marginLeft={4}>
-                          <Stack space={2}>
-                            <TextArea
-                              fontSize={1}
-                              rows={3}
-                              placeholder={`Reply as ${REPLY_AUTHOR_NAME}…`}
-                              value={replyText}
-                              onChange={(e) => setReplyText(e.currentTarget.value)}
-                            />
-                            <Flex gap={2}>
-                              <Button
-                                text="Post reply"
-                                tone="primary"
-                                fontSize={1}
-                                disabled={replyBusy || !replyText.trim()}
-                                onClick={() => submitReply(comment)}
-                              />
-                              <Button
-                                text="Cancel"
-                                mode="ghost"
-                                fontSize={1}
-                                disabled={replyBusy}
-                                onClick={() => setReplyingId(null)}
-                              />
-                            </Flex>
-                          </Stack>
-                        </Box>
-                      )}
+              return (
+                <Stack key={group.postId ?? 'unknown'} space={3}>
+                  <Flex align="center" gap={2}>
+                    <Text size={1} weight="semibold">
+                      On &ldquo;{group.postTitle ?? 'unknown post'}&rdquo;
+                    </Text>
+                    {groupPending && (
+                      <Badge tone="caution" fontSize={0}>
+                        needs review
+                      </Badge>
+                    )}
+                  </Flex>
 
-                      {replies.map((reply) => (
-                        <Box key={reply._id} marginLeft={4}>
+                  <Stack space={4}>
+                    {topLevel.map((comment) => {
+                      const replies = group.comments
+                        .filter((r) => r.parentComment === comment._id)
+                        .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+
+                      return (
+                        <Stack key={comment._id} space={3}>
                           <CommentCard
-                            comment={reply}
-                            isNew={isNew(reply)}
-                            busy={busyId === reply._id}
-                            onApprove={() => setStatus(reply._id, 'approved')}
-                            onReject={() => setStatus(reply._id, 'rejected')}
-                            onSpam={() => setStatus(reply._id, 'spam')}
-                            onDelete={() => deleteComment(reply._id)}
-                            parentStatus={comment.status}
+                            comment={comment}
+                            isNew={isNew(comment)}
+                            busy={busyId === comment._id}
+                            hasReplies={replies.length > 0}
+                            editing={editingId === comment._id}
+                            editText={editText}
+                            editBusy={editBusy}
+                            onEditTextChange={setEditText}
+                            onApprove={() => setStatus(comment._id, 'approved')}
+                            onReject={() => setStatus(comment._id, 'rejected')}
+                            onSpam={() => setStatus(comment._id, 'spam')}
+                            onTrash={() => trashComment(comment._id)}
+                            onEditClick={() => startEdit(comment)}
+                            onSaveEdit={() => saveEdit(comment._id)}
+                            onCancelEdit={() => setEditingId(null)}
+                            onReplyClick={replyingId === comment._id ? undefined : () => startReply(comment._id)}
                           />
-                        </Box>
-                      ))}
-                    </Stack>
-                  )
-                })}
-              </Stack>
-            </Stack>
-          )
-        })}
+
+                          {replyingId === comment._id && (
+                            <Box marginLeft={4}>
+                              <Stack space={2}>
+                                <TextArea
+                                  fontSize={1}
+                                  rows={3}
+                                  placeholder={`Reply as ${REPLY_AUTHOR_NAME}…`}
+                                  value={replyText}
+                                  onChange={(e) => setReplyText(e.currentTarget.value)}
+                                />
+                                <Flex gap={2}>
+                                  <Button
+                                    text="Post reply"
+                                    tone="primary"
+                                    fontSize={1}
+                                    disabled={replyBusy || !replyText.trim()}
+                                    onClick={() => submitReply(comment)}
+                                  />
+                                  <Button
+                                    text="Cancel"
+                                    mode="ghost"
+                                    fontSize={1}
+                                    disabled={replyBusy}
+                                    onClick={() => setReplyingId(null)}
+                                  />
+                                </Flex>
+                              </Stack>
+                            </Box>
+                          )}
+
+                          {replies.map((reply) => (
+                            <Box key={reply._id} marginLeft={4}>
+                              <CommentCard
+                                comment={reply}
+                                isNew={isNew(reply)}
+                                busy={busyId === reply._id}
+                                editing={editingId === reply._id}
+                                editText={editText}
+                                editBusy={editBusy}
+                                onEditTextChange={setEditText}
+                                onApprove={() => setStatus(reply._id, 'approved')}
+                                onReject={() => setStatus(reply._id, 'rejected')}
+                                onSpam={() => setStatus(reply._id, 'spam')}
+                                onTrash={() => trashComment(reply._id)}
+                                onEditClick={() => startEdit(reply)}
+                                onSaveEdit={() => saveEdit(reply._id)}
+                                onCancelEdit={() => setEditingId(null)}
+                                parentStatus={comment.status}
+                              />
+                            </Box>
+                          ))}
+                        </Stack>
+                      )
+                    })}
+                  </Stack>
+                </Stack>
+              )
+            })}
+          </>
+        )}
       </Stack>
     </Box>
   )
@@ -370,10 +483,17 @@ function CommentCard({
   isNew,
   busy,
   hasReplies,
+  editing,
+  editText,
+  editBusy,
+  onEditTextChange,
   onApprove,
   onReject,
   onSpam,
-  onDelete,
+  onTrash,
+  onEditClick,
+  onSaveEdit,
+  onCancelEdit,
   onReplyClick,
   parentStatus,
 }: {
@@ -381,16 +501,23 @@ function CommentCard({
   isNew: boolean
   busy: boolean
   hasReplies?: boolean
+  editing: boolean
+  editText: string
+  editBusy: boolean
+  onEditTextChange: (value: string) => void
   onApprove: () => void
   onReject: () => void
   onSpam: () => void
-  onDelete: () => void
+  onTrash: () => void
+  onEditClick: () => void
+  onSaveEdit: () => void
+  onCancelEdit: () => void
   onReplyClick?: () => void
   parentStatus?: CommentRow['status']
 }) {
   // Local to this card, not lifted to CommentsTool -- purely a UI
-  // confirmation step before the actually-destructive onDelete fires.
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  // confirmation step before the actually-effectful onTrash fires.
+  const [confirmingTrash, setConfirmingTrash] = useState(false)
 
   return (
     <Card padding={3} radius={2} border tone={comment.isAuthorReply ? 'primary' : undefined}>
@@ -431,18 +558,157 @@ function CommentCard({
             the live site until it is.
           </Text>
         )}
-        <Text size={1}>{comment.message}</Text>
-        <Text size={0} muted>
-          {new Date(comment.createdAt).toLocaleString()}
+
+        {editing ? (
+          <Stack space={2}>
+            <TextArea
+              fontSize={1}
+              rows={4}
+              value={editText}
+              onChange={(e) => onEditTextChange(e.currentTarget.value)}
+            />
+            <Flex gap={2}>
+              <Button
+                text="Save"
+                tone="primary"
+                fontSize={1}
+                disabled={editBusy || !editText.trim()}
+                onClick={onSaveEdit}
+              />
+              <Button text="Cancel" mode="ghost" fontSize={1} disabled={editBusy} onClick={onCancelEdit} />
+            </Flex>
+          </Stack>
+        ) : (
+          <>
+            {/* whiteSpace: pre-wrap -- @sanity/ui's Text collapses newlines
+                by default, which made every multi-paragraph comment look
+                like one run-on block in this tool even though the live
+                site (which does apply this) rendered the same message's
+                line breaks correctly the whole time. The formatting was
+                never actually lost, Studio just wasn't showing it. */}
+            <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
+              {comment.message}
+            </Text>
+            <Flex align="center" gap={2}>
+              <Text size={0} muted>
+                {new Date(comment.createdAt).toLocaleString()}
+              </Text>
+              {comment.editedAt && (
+                <Text size={0} muted>
+                  · edited {new Date(comment.editedAt).toLocaleDateString()}
+                </Text>
+              )}
+            </Flex>
+          </>
+        )}
+
+        {!editing &&
+          (confirmingTrash ? (
+            <Card padding={2} radius={2} tone="critical" border>
+              <Flex align="center" gap={2} wrap="wrap">
+                <Text size={1}>
+                  Move to trash{hasReplies ? ' — its replies will stay but be hidden' : ''}? Recoverable from
+                  Trash for {TRASH_RETENTION_DAYS} days.
+                </Text>
+                <Button text="Yes, trash it" tone="critical" fontSize={1} disabled={busy} onClick={onTrash} />
+                <Button
+                  text="Cancel"
+                  mode="ghost"
+                  fontSize={1}
+                  disabled={busy}
+                  onClick={() => setConfirmingTrash(false)}
+                />
+              </Flex>
+            </Card>
+          ) : (
+            <Flex gap={2} wrap="wrap">
+              {comment.status !== 'approved' && (
+                <Button text="Approve" tone="positive" fontSize={1} disabled={busy} onClick={onApprove} />
+              )}
+              {comment.status !== 'rejected' && (
+                <Button text="Reject" tone="critical" mode="ghost" fontSize={1} disabled={busy} onClick={onReject} />
+              )}
+              {comment.status !== 'spam' && comment.status !== 'approved' && (
+                <Button
+                  text="Mark as Spam"
+                  tone="critical"
+                  mode="ghost"
+                  fontSize={1}
+                  disabled={busy}
+                  onClick={onSpam}
+                />
+              )}
+              {onReplyClick && <Button text="Reply" mode="ghost" fontSize={1} onClick={onReplyClick} />}
+              <Button text="Edit" mode="ghost" fontSize={1} disabled={busy} onClick={onEditClick} />
+              <Button
+                text="Trash"
+                tone="critical"
+                mode="bleed"
+                fontSize={1}
+                disabled={busy}
+                onClick={() => setConfirmingTrash(true)}
+              />
+            </Flex>
+          ))}
+      </Stack>
+    </Card>
+  )
+}
+
+function TrashedCommentCard({
+  comment,
+  busy,
+  onRestore,
+  onDeleteForever,
+}: {
+  comment: CommentRow
+  busy: boolean
+  onRestore: () => void
+  onDeleteForever: () => void
+}) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const purgeDate = comment.trashedAt
+    ? new Date(+new Date(comment.trashedAt) + TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000)
+    : null
+
+  return (
+    <Card padding={3} radius={2} border>
+      <Stack space={3}>
+        <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
+          <Flex align="center" gap={2} wrap="wrap">
+            <Text size={1} weight="medium">
+              {comment.name}
+            </Text>
+            {comment.email && (
+              <Text size={0} muted>
+                {comment.email}
+              </Text>
+            )}
+          </Flex>
+          <Text size={0} muted>
+            On &ldquo;{comment.postTitle ?? 'unknown post'}&rdquo;
+          </Text>
+        </Flex>
+        <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
+          {comment.message}
         </Text>
+        {purgeDate && (
+          <Text size={0} muted>
+            Auto-deletes {purgeDate.toLocaleDateString()} unless restored or deleted now.
+          </Text>
+        )}
 
         {confirmingDelete ? (
           <Card padding={2} radius={2} tone="critical" border>
             <Flex align="center" gap={2} wrap="wrap">
-              <Text size={1}>
-                Delete permanently{hasReplies ? ' — its replies will stay but be hidden' : ''}?
-              </Text>
-              <Button text="Yes, delete" tone="critical" fontSize={1} disabled={busy} onClick={onDelete} />
+              <Text size={1}>Delete forever? This can&rsquo;t be undone.</Text>
+              <Button
+                text="Yes, delete forever"
+                tone="critical"
+                fontSize={1}
+                disabled={busy}
+                onClick={onDeleteForever}
+              />
               <Button
                 text="Cancel"
                 mode="ghost"
@@ -454,20 +720,11 @@ function CommentCard({
           </Card>
         ) : (
           <Flex gap={2} wrap="wrap">
-            {comment.status !== 'approved' && (
-              <Button text="Approve" tone="positive" fontSize={1} disabled={busy} onClick={onApprove} />
-            )}
-            {comment.status !== 'rejected' && (
-              <Button text="Reject" tone="critical" mode="ghost" fontSize={1} disabled={busy} onClick={onReject} />
-            )}
-            {comment.status !== 'spam' && (
-              <Button text="Mark as Spam" tone="critical" mode="ghost" fontSize={1} disabled={busy} onClick={onSpam} />
-            )}
-            {onReplyClick && <Button text="Reply" mode="ghost" fontSize={1} onClick={onReplyClick} />}
+            <Button text="Restore" tone="positive" fontSize={1} disabled={busy} onClick={onRestore} />
             <Button
-              text="Delete"
+              text="Delete Forever"
               tone="critical"
-              mode="bleed"
+              mode="ghost"
               fontSize={1}
               disabled={busy}
               onClick={() => setConfirmingDelete(true)}
