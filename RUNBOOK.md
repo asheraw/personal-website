@@ -463,14 +463,12 @@ Every comment submitted on a post starts as **pending** and shows nowhere on the
 comment with one-click **Approve**/**Reject** buttons, and a count of comments awaiting review at the top of
 the tool. Component: `src/sanity/components/CommentsTool.tsx`.
 
-**The pending count also shows directly on the "Comments" nav icon itself** (shipped 2026-07-30) — a small
-red badge with the number, WordPress-style. Sanity Studio has no dedicated "badge on a tool" API; this works
-because a tool's `icon` config accepts any React component, not just a static icon, so
-`CommentsToolIcon.tsx` renders the normal icon plus a live badge, polling the pending count every 30 seconds.
-Confirmed working (visible in Asher's own screenshot 2026-07-31) — but confirmed **not sufficient on its
-own**: real comments sat unnoticed for days because nothing prompts you to actually open Studio and look at
-the nav bar in the first place. A badge only helps if you're already looking. See the email notification
-below, added specifically because of this.
+**A pending count is also always visible, without opening the Comments tool at all** — a floating "N comments
+need review" badge in the corner of every Studio screen (fixed 2026-07-31 after an earlier attempt, a badge
+on the Comments tool's own nav icon, turned out to never actually render at normal window widths; see "Studio
+→ Comments layout" further below for the full story and why). Still, a badge only helps if you're already
+looking at Studio in the first place — the email notification below is the actual fix for "I didn't know to
+look."
 
 **Email notification (shipped 2026-07-31):** every new comment or reply — from anyone, not just the first
 one on a post — sends a notification to the same inbox the contact form already notifies
@@ -487,6 +485,14 @@ browser, this one is also re-checked server-side in `/api/comments`'s `POST` han
 to the endpoint, skipping the visible form entirely, can't bypass it the way it currently could on
 `/api/contact`. Worth applying the same server-side check to `/api/contact` at some point for consistency,
 though the contact form is lower-risk (not publicly crawlable/spammable the way an open comment section is).
+
+**Getting the math check wrong doesn't lose the comment** (double-checked 2026-07-31, Asher asked directly).
+`CommentForm` (`CommentSection.tsx`) only calls `form.reset()` on a *successful* submit — every field is a
+plain uncontrolled input, and the form never unmounts on a failed attempt, so a wrong answer (or any other
+validation error) just re-renders the same form with everything the visitor already typed still sitting
+there. The one gap was that nothing in the UI actually said so — fixed by adding "your comment hasn't been
+lost" directly to the math-check error message itself (`/api/comments/route.ts`), so a visitor doesn't have
+to just trust that nothing disappeared.
 
 **Two real bugs caught during testing, before this went live:**
 1. The comment-fetching route originally used the normal CDN-cached read client (`src/sanity/lib/client.ts`).

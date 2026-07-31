@@ -66,7 +66,10 @@ export async function POST(request: NextRequest) {
       typeof captchaB !== "number" ||
       parseInt(captchaAnswer, 10) !== captchaA + captchaB
     ) {
-      return NextResponse.json({ success: false, error: "Please solve the math check correctly." }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "Please solve the math check correctly — your comment hasn't been lost, just fix the answer and send again." },
+        { status: 400 }
+      );
     }
 
     if (message.length > 3000) {

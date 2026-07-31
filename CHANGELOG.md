@@ -257,6 +257,16 @@ Phase 3; the pre-publish checklist and "Suggest SEO & Excerpt" AI action already
 defaults" and "missing-field warnings" from the spec — this tab is specifically the "see it before it ships"
 preview piece that was still missing. Asher's read: not core to his current workflow, but useful to have.
 
+### Continued (double-checked: a failed comment doesn't get lost)
+
+Asher asked directly: if someone fails the math check while leaving a comment, is their typed message gone?
+Traced it through — no, it already wasn't: the form only clears on a *successful* submit, and nothing
+unmounts on a failed one, so every field a visitor already typed just sits there untouched. The real gap was
+that the UI never actually said so, leaving a visitor to just guess. Fixed by adding "your comment hasn't
+been lost" straight into the math-check error message itself. Also cleaned up a stale RUNBOOK passage left
+over from the earlier badge fix that still claimed the old (non-working) tool-icon badge was "confirmed
+working."
+
 ---
 
 ## 2026-07-30
