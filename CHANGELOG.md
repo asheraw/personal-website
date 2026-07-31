@@ -341,6 +341,16 @@ to each post's heading in the moderation view, right where Asher's already worki
 open the post document separately. Asher's own replies from Studio still work on a locked post (a deliberate
 choice — locking is about stopping new outside comments, not about Asher having the last word).
 
+### Continued (desktop session — the reading-bar mascot is now Asher's real avatar)
+
+Asher sent his actual 8-bit avatar (an old NFT-era pixel-art self-portrait) and asked for it cropped tighter
+to the head. `WalkingCharacter.tsx` — the little character riding along both the homepage's progress bar and
+the blog's reading bar — no longer draws a generic stick figure; it's now his real portrait, cropped and
+resized with `sharp` (nearest-neighbor, to keep pixel edges crisp rather than blurred), shown as a small
+bouncing circular medallion with an amber border. Verified visually on both the homepage and a real blog
+post before shipping. Closes out the "swap the mascot" entry logged in `IDEAS.md` a few hours earlier — that
+entry's removed now that it's done.
+
 ---
 
 ## 2026-07-30

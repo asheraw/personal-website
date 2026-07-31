@@ -261,6 +261,19 @@ sitting over the title before there's any progress to show. Two things it adds b
 Hidden entirely while previewing a draft (same reasoning as before: no version of "percent through the
 article" to trust while Presentation can rewrite the body underneath it).
 
+**The mascot itself became Asher's real avatar (shipped 2026-07-31, later the same day).**
+`WalkingCharacter.tsx` no longer draws a generic stick figure — it renders `public/asher/avatar-8bit.png`,
+Asher's own 8-bit pixel-art self-portrait (originally an NFT-era piece, pulled from opensea.io/asheraw),
+cropped tighter to just the head per his request, as a small circular "medallion" with an amber border,
+still riding along the bar with the same bounce animation as before. `image-rendering: pixelated` in the
+component's inline style keeps the pixel art crisp rather than letting the browser smooth it at this small
+display size — if the avatar ever looks blurry, that's the first thing to check.
+
+**If the avatar needs updating later** (a new portrait, a different crop, etc.): the source crop was made
+with `sharp` — extract a square region tight around the head, resize down with `kernel: 'nearest'` (not the
+default smooth interpolation, which would blur pixel-art edges), save as PNG to `public/asher/avatar-8bit.png`
+at the same ~176x176 size. No code change needed if the replacement file keeps the same filename/dimensions.
+
 ---
 
 ## RSS feeds: site-wide and per-channel (shipped 2026-07-31)
