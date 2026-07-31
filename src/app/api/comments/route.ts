@@ -76,6 +76,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Message is too long." }, { status: 400 });
     }
 
+    // Also doubles as the postId-exists check -- this route never
+    // validated that before locking existed, since a bad postId just
+    // created an orphaned comment nobody could see. Fetched once and
+    // reused below for the notification email's subject line, instead of
+    // fetching the post a second time.
+    const post = await writeClient.fetch(`*[_id == $postId][0]{title, commentsLocked}`, { postId });
+    if (!post) {
+      return NextResponse.json({ success: false, error: "That post doesn't exist." }, { status: 400 });
+    }
+    if (post.commentsLocked) {
+      return NextResponse.json({ success: false, error: "Comments are closed for this post." }, { status: 400 });
+    }
+
     // Replies nest up to 3 levels deep (comment -> reply -> reply to that
     // reply), then flatten: replying to an already-3rd-level comment
     // attaches the new comment to THAT comment's own parent instead,
@@ -162,7 +175,6 @@ export async function POST(request: NextRequest) {
     // queue.
     if (resend && NOTIFY_EMAIL && !isKnownSpammer) {
       try {
-        const post = await writeClient.fetch(`*[_id == $postId][0]{title}`, { postId });
         await resend.emails.send({
           from: "AsherAw.com/blog Notifications <blogcomment@asheraw.com>",
           to: NOTIFY_EMAIL,

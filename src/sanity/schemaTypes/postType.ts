@@ -133,6 +133,14 @@ export const postType = defineType({
       description: 'Turn on to keep this post out of Google and other search results (it stays visible on your site).',
       initialValue: false,
     }),
+    defineField({
+      name: 'commentsLocked',
+      title: 'Lock comments',
+      type: 'boolean',
+      description:
+        'Turn on to stop new comments and replies on this post -- existing comments stay exactly as they are, just no new ones can be added. Can also be toggled per-post from Studio -> Comments, right where you already moderate.',
+      initialValue: false,
+    }),
   ],
   preview: {
     select: {

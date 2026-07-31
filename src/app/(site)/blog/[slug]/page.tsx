@@ -37,6 +37,7 @@ type Post = {
   seoTitle?: string;
   socialImage?: { asset?: { _ref: string } };
   noIndex?: boolean;
+  commentsLocked?: boolean;
   tags?: string[];
   author?: { name: string; slug: string; image?: unknown } | null;
   categories?: { title: string; slug: string }[];
@@ -281,7 +282,7 @@ export default async function PostPage({ params }: PageProps) {
         </article>
 
         <div className="print:hidden">
-          <CommentSection postId={post._id} />
+          <CommentSection postId={post._id} commentsLocked={post.commentsLocked} />
         </div>
 
         <RelatedPosts posts={relatedPosts} />

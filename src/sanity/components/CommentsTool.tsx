@@ -31,6 +31,7 @@ type CommentRow = {
   postId: string | null
   postTitle: string | null
   postSlug: string | null
+  postCommentsLocked: boolean
   parentComment: string | null
   isAuthorReply: boolean
 }
@@ -38,6 +39,7 @@ type CommentRow = {
 type PostGroup = {
   postId: string | null
   postTitle: string | null
+  commentsLocked: boolean
   comments: CommentRow[]
 }
 
@@ -100,6 +102,7 @@ export function CommentsTool() {
         `*[_type == "comment"] | order(createdAt desc){
           _id, name, email, ip, message, status, createdAt, editedAt, trashedAt, isAuthorReply,
           "postId": post._ref, "postTitle": post->title, "postSlug": post->slug.current,
+          "postCommentsLocked": post->commentsLocked,
           "parentComment": parentComment._ref
         }`,
       )
@@ -194,6 +197,25 @@ export function CommentsTool() {
     }
   }
 
+  // Locks/unlocks new comments on the post itself (commentsLocked on the
+  // post document, not the comment) -- existing comments are untouched
+  // either way, this only stops new ones. Reuses busyId to disable the
+  // button mid-request even though postId and comment _id are different
+  // id spaces that never collide. Patches every comment row sharing this
+  // postId so the group's derived commentsLocked flag (and every card's
+  // Reply button state) updates immediately, without a full reload.
+  async function toggleCommentsLocked(postId: string, locked: boolean) {
+    setBusyId(postId)
+    try {
+      await client.patch(postId).set({commentsLocked: locked}).commit()
+      setComments((prev) =>
+        prev ? prev.map((c) => (c.postId === postId ? {...c, postCommentsLocked: locked} : c)) : prev,
+      )
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   function startReply(id: string) {
     setReplyingId(id)
     setReplyText('')
@@ -271,6 +293,7 @@ export function CommentsTool() {
                 postId: parent.postId,
                 postTitle: parent.postTitle,
                 postSlug: parent.postSlug,
+                postCommentsLocked: parent.postCommentsLocked,
                 parentComment: parentRef,
                 isAuthorReply: true,
               },
@@ -300,7 +323,8 @@ export function CommentsTool() {
     const byPost = new Map<string, PostGroup>()
     for (const c of live) {
       const key = c.postId ?? 'unknown'
-      if (!byPost.has(key)) byPost.set(key, {postId: c.postId, postTitle: c.postTitle, comments: []})
+      if (!byPost.has(key))
+        byPost.set(key, {postId: c.postId, postTitle: c.postTitle, commentsLocked: c.postCommentsLocked, comments: []})
       byPost.get(key)!.comments.push(c)
     }
     return [...byPost.values()].sort((a, b) => {
@@ -392,7 +416,7 @@ export function CommentsTool() {
 
               return (
                 <Stack key={group.postId ?? 'unknown'} space={3}>
-                  <Flex align="center" gap={2}>
+                  <Flex align="center" gap={2} wrap="wrap">
                     <Text size={1} weight="semibold">
                       On &ldquo;{group.postTitle ?? 'unknown post'}&rdquo;
                     </Text>
@@ -400,6 +424,21 @@ export function CommentsTool() {
                       <Badge tone="caution" fontSize={0}>
                         needs review
                       </Badge>
+                    )}
+                    {group.commentsLocked && (
+                      <Badge tone="default" fontSize={0}>
+                        comments locked
+                      </Badge>
+                    )}
+                    {group.postId && (
+                      <Button
+                        text={group.commentsLocked ? 'Unlock comments' : 'Lock comments'}
+                        mode="ghost"
+                        fontSize={0}
+                        padding={2}
+                        disabled={busyId === group.postId}
+                        onClick={() => toggleCommentsLocked(group.postId!, !group.commentsLocked)}
+                      />
                     )}
                   </Flex>
 

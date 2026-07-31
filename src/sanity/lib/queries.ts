@@ -52,6 +52,7 @@ export const POST_BY_SLUG_QUERY = `
     seoTitle,
     socialImage,
     noIndex,
+    commentsLocked,
     tags,
     "author": author->{name, "slug": slug.current, image, bio},
     "categories": categories[]->{title, "slug": slug.current},

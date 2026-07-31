@@ -329,6 +329,18 @@ reply"), all per Asher's feedback:
   so if a recipient replies anyway (the email itself says not to), it still reaches Asher rather than
   disappearing into an unmonitored mailbox.
 
+### Continued (lock comments on a post)
+
+New `commentsLocked` toggle on the post document, same shape as the existing "Hide from search engines"
+checkbox. Turning it on stops new comments and replies on that post going forward — nothing about existing
+comments changes, they stay exactly as visible as before. Enforced server-side in `/api/comments`'s `POST`
+handler (rejects with "Comments are closed for this post," not just hidden in the UI), and the live site's
+comment form and every Reply button disappear on a locked post, replaced by a plain "Comments are closed for
+this post" line. Also toggleable with one click straight from Studio → Comments — a Lock/Unlock button next
+to each post's heading in the moderation view, right where Asher's already working, instead of needing to
+open the post document separately. Asher's own replies from Studio still work on a locked post (a deliberate
+choice — locking is about stopping new outside comments, not about Asher having the last word).
+
 ---
 
 ## 2026-07-30

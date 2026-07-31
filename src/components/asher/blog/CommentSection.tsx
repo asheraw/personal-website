@@ -18,7 +18,7 @@ type Comment = {
   parentComment?: string | null;
 };
 
-export function CommentSection({ postId }: { postId: string }) {
+export function CommentSection({ postId, commentsLocked = false }: { postId: string; commentsLocked?: boolean }) {
   const [comments, setComments] = useState<Comment[] | null>(null);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
 
@@ -57,6 +57,7 @@ export function CommentSection({ postId }: { postId: string }) {
                 replyingToId={replyingToId}
                 setReplyingToId={setReplyingToId}
                 refetch={refetch}
+                locked={commentsLocked}
               />
 
               {comments
@@ -70,6 +71,7 @@ export function CommentSection({ postId }: { postId: string }) {
                       replyingToId={replyingToId}
                       setReplyingToId={setReplyingToId}
                       refetch={refetch}
+                      locked={commentsLocked}
                     />
 
                     {comments
@@ -88,6 +90,7 @@ export function CommentSection({ postId }: { postId: string }) {
                             replyingToId={replyingToId}
                             setReplyingToId={setReplyingToId}
                             refetch={refetch}
+                            locked={commentsLocked}
                           />
                         </div>
                       ))}
@@ -99,7 +102,13 @@ export function CommentSection({ postId }: { postId: string }) {
       )}
 
       <div className="mt-8">
-        <CommentForm postId={postId} variant="main" onPosted={refetch} />
+        {commentsLocked ? (
+          <div className="rounded-2xl border border-amber-faint bg-stage/40 p-6 text-center">
+            <p className="text-sm text-stone/70">Comments are closed for this post.</p>
+          </div>
+        ) : (
+          <CommentForm postId={postId} variant="main" onPosted={refetch} />
+        )}
       </div>
     </div>
   );
@@ -110,19 +119,25 @@ export function CommentSection({ postId }: { postId: string }) {
 // parentComment -- /api/comments decides whether that nests one level
 // deeper or (once already at the 3rd/deepest level) flattens to a sibling
 // instead, so this component never needs to know which case it's in.
+// Renders nothing at all once the post's comments are locked -- existing
+// replies still show, there's just no way to add another.
 function ReplyControl({
   comment,
   postId,
   replyingToId,
   setReplyingToId,
   refetch,
+  locked,
 }: {
   comment: Comment;
   postId: string;
   replyingToId: string | null;
   setReplyingToId: (id: string | null) => void;
   refetch: () => void;
+  locked: boolean;
 }) {
+  if (locked) return null;
+
   return (
     <>
       <button

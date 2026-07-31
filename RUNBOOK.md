@@ -604,6 +604,23 @@ but the moderation tool shows a note that it won't display in proper context on 
 original comment is approved too — the two aren't force-linked, so it's a manual step if you want both
 visible together.
 
+**Locking comments on a post (shipped 2026-07-31):** a `commentsLocked` boolean on the post document
+(`src/sanity/schemaTypes/postType.ts`, same shape as the existing "Hide from search engines" checkbox) stops
+new comments and replies on that post. Existing comments are completely unaffected — locking only blocks new
+ones, it doesn't hide or change anything already there. Two ways to toggle it: directly on the post document,
+or with one click from Studio → Comments itself — a **Lock/Unlock comments** button next to each post's
+heading in the moderation view (`CommentsTool.tsx`), which patches the post document the same way the field
+would from its own editor, then updates every comment row from that post in local state so the UI reflects it
+immediately without a reload. **Enforced server-side**, not just hidden in the UI: `/api/comments`'s `POST`
+handler fetches the post's `commentsLocked` flag (along with its title, replacing what used to be a second,
+separate fetch just for the email subject) and rejects with "Comments are closed for this post" if it's on —
+a hand-crafted request posting directly to the endpoint can't bypass a locked post any more than the visible
+form can. On the live site, a locked post's comment section drops the "leave a comment" form and every Reply
+button (`CommentSection.tsx`), replacing the form with a plain "Comments are closed for this post" line while
+still showing every comment and reply exactly as before. **Deliberately not locked out: Asher's own replies
+from Studio.** `CommentsTool.tsx`'s `submitReply` still works on a locked post — locking is meant to stop new
+outside activity, not prevent Asher from adding a final word of his own after closing a thread.
+
 **Comment counts:** the same small speech-bubble icon + count (`CommentCountBadge.tsx`, shared component)
 shows on any post with at least one approved comment, in two places — the blog listing page (`/blog`,
 `PostCard.tsx`) and, since 2026-07-31, the post page itself, right next to "X min read"
