@@ -12,7 +12,13 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "Blog",
   description: "Essays, stories, and lessons from Asher Aw — actor, coach, and storyteller.",
-  alternates: { canonical: "/blog" },
+  // Metadata objects don't deep-merge across nested layouts -- defining
+  // `alternates` here without `types` would otherwise silently drop the
+  // root layout's rss+xml discovery link on this specific page.
+  alternates: {
+    canonical: "/blog",
+    types: { "application/rss+xml": "https://asheraw.com/rss.xml" },
+  },
 };
 
 export default async function BlogPage() {

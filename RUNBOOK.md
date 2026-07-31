@@ -201,6 +201,28 @@ article" to trust while Presentation can rewrite the body underneath it).
 
 ---
 
+## RSS feeds: site-wide and per-channel (shipped 2026-07-31)
+
+The site-wide feed at `/rss.xml` (`src/app/rss.xml/route.ts`) already existed. Added three more, same shape,
+scoped to one category/tag/author each:
+- `/blog/category/[slug]/rss.xml`
+- `/blog/tag/[tag]/rss.xml`
+- `/blog/author/[slug]/rss.xml`
+
+All four now share one XML-building function, `buildRssFeed()` in `src/lib/rss.ts`, so the item/channel shape
+can't drift between them. A category or author feed 404s for an unknown slug, same as the page it sits next
+to; a tag feed doesn't (an unknown/typo'd tag just gets an empty feed), also matching its page's own
+behavior of showing "no posts tagged X yet" instead of a 404.
+
+Each channel page (`/blog`, a post, a category, a tag, an author) declares its own
+`alternates.types["application/rss+xml"]` in `generateMetadata` so the right feed is auto-discoverable by
+feed readers/browsers — worth knowing if adding a new blog-adjacent page: Next.js metadata does *not*
+deep-merge `alternates` across nested layouts, so defining `alternates` on a page without re-declaring
+`types` will silently drop whatever feed link the layout above it declared. Every page under `/blog` that
+sets its own `alternates` re-declares `types` explicitly for exactly this reason.
+
+---
+
 ## Categories: viewing usage and safe deletion
 
 **"Which posts use this category?"** — open the category in Studio; alongside the normal **Editor** tab

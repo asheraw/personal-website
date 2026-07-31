@@ -101,7 +101,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
-    alternates: { canonical: url },
+    // types.rss+xml re-declared here (not just inherited from the root
+    // layout) -- metadata doesn't deep-merge across nested layouts, so
+    // defining `alternates` at all on this page would otherwise silently
+    // drop the root layout's feed discovery link.
+    alternates: {
+      canonical: url,
+      types: { "application/rss+xml": `${SITE_URL}/rss.xml` },
+    },
     robots: post.noIndex ? { index: false, follow: true } : undefined,
     openGraph: {
       type: "article",

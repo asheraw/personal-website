@@ -5,6 +5,8 @@ import { POSTS_BY_TAG_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { PostCard } from "@/components/asher/blog/PostCard";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 
+const SITE_URL = "https://asheraw.com";
+
 export const revalidate = 60;
 
 type PageProps = {
@@ -17,7 +19,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `#${decoded} — Blog`,
     description: `Posts tagged #${decoded}.`,
-    alternates: { canonical: `/blog/tag/${tag}` },
+    alternates: {
+      canonical: `/blog/tag/${tag}`,
+      types: { "application/rss+xml": `${SITE_URL}/blog/tag/${tag}/rss.xml` },
+    },
   };
 }
 

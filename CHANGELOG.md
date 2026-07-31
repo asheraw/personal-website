@@ -153,6 +153,15 @@ as a fallback — the on-site index only covers titles/summaries/tags, not full 
 finds nothing on-site can still fall through to the old Google-restricted search. Nothing new to host or
 maintain: it's built entirely from data the page was already fetching.
 
+### Continued (per-channel RSS feeds)
+
+Added `/blog/category/[slug]/rss.xml`, `/blog/tag/[tag]/rss.xml`, and `/blog/author/[slug]/rss.xml` alongside
+the existing site-wide `/rss.xml` — a reader who only cares about one category, tag, or author can now
+subscribe to just that. All four share one XML-building helper (`src/lib/rss.ts`) so they can't quietly drift
+apart from each other. Also fixed a related, pre-existing gap while in there: several blog pages define their
+own `alternates` without realizing that silently drops the feed link a parent layout had already set (Next.js
+metadata doesn't deep-merge that field) — every blog page now re-declares its own feed link explicitly.
+
 ---
 
 ## 2026-07-30

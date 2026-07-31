@@ -6,6 +6,8 @@ import { CATEGORY_BY_SLUG_QUERY, POSTS_BY_CATEGORY_QUERY, type PostSummary } fro
 import { PostCard } from "@/components/asher/blog/PostCard";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 
+const SITE_URL = "https://asheraw.com";
+
 export const revalidate = 60;
 
 type PageProps = {
@@ -23,7 +25,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${category.title} — Blog`,
     description: category.description || `Posts filed under ${category.title}.`,
-    alternates: { canonical: `/blog/category/${slug}` },
+    alternates: {
+      canonical: `/blog/category/${slug}`,
+      types: { "application/rss+xml": `${SITE_URL}/blog/category/${slug}/rss.xml` },
+    },
   };
 }
 
