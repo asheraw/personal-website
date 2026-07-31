@@ -33,5 +33,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticPages, ...postPages, ...categoryPages];
+  // Tags are free-text strings on each post (no separate "tag" document to
+  // query), so the distinct list comes from the posts already fetched
+  // above rather than its own Sanity query. Author pages are deliberately
+  // left out here -- they're set to noindex (see AuthorPage's own
+  // generateMetadata) since they'd otherwise duplicate /blog for a
+  // single-author site.
+  const tagSlugs = [...new Set(posts.flatMap((post) => post.tags ?? []))];
+  const tagPages: MetadataRoute.Sitemap = tagSlugs.map((tag) => ({
+    url: `${baseUrl}/blog/tag/${encodeURIComponent(tag)}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.4,
+  }));
+
+  return [...staticPages, ...postPages, ...categoryPages, ...tagPages];
 }

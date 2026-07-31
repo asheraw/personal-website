@@ -31,18 +31,18 @@ const websiteSchema = {
   potentialAction: { "@type": "SearchAction", target: `${SITE_URL}/blog?q={search_term_string}`, "query-input": "required name=search_term_string" },
 };
 
-const breadcrumbSchema = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL }],
-};
-
+// No site-wide BreadcrumbList here on purpose -- a breadcrumb trail is
+// inherently per-page (Home > Blog > Category > Post, etc.), and a single
+// global one can only ever be right for one page at a time. Each page that
+// has a real breadcrumb (see the nav elements on the blog listing, a post,
+// and the category/tag/author pages) renders its own accurate
+// BreadcrumbList via buildBreadcrumbSchema() (src/lib/structuredData.ts)
+// instead.
 export function StructuredData() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     </>
   );
 }

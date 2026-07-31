@@ -223,6 +223,25 @@ sets its own `alternates` re-declares `types` explicitly for exactly this reason
 
 ---
 
+## Sitemap and breadcrumb structured data (shipped 2026-07-31)
+
+**Sitemap** (`src/app/sitemap.ts`) covers the homepage sections, `/blog`, every post, and every category —
+**tag pages were missing** (they're indexable, no `noindex`, but had no way for a crawler to discover them
+without following every post's tag links first). Fixed by deriving the distinct tag list from the same
+`posts` array the sitemap already fetches (tags are free-text strings on each post, not their own document
+type, so there's no separate query for "all tags"). Author pages are deliberately still left out — they're
+set `noindex` (see `AuthorPage`'s `generateMetadata`) since they'd otherwise duplicate `/blog` for a
+single-author site.
+
+**Breadcrumb structured data** used to be one hardcoded, site-wide `BreadcrumbList` in
+`StructuredData.tsx` that only ever said "Home" — wrong on every page except the homepage itself. Replaced
+with `buildBreadcrumbSchema()` (`src/lib/structuredData.ts`), called per-page with that page's real trail:
+`/blog` → Home/Blog, a post → Home/Blog/Category/Post title, and the same pattern for category/tag/author
+pages. `StructuredData.tsx` (mounted once, site-wide, in `(site)/layout.tsx`) now only carries the Person and
+WebSite schema, which really are the same on every page — the breadcrumb never belonged there.
+
+---
+
 ## Categories: viewing usage and safe deletion
 
 **"Which posts use this category?"** — open the category in Studio; alongside the normal **Editor** tab

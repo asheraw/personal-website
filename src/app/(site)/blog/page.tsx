@@ -4,6 +4,9 @@ import { ALL_POSTS_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { PostCard } from "@/components/asher/blog/PostCard";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { BlogSearch, type SearchablePost } from "@/components/asher/blog/BlogSearch";
+import { buildBreadcrumbSchema } from "@/lib/structuredData";
+
+const SITE_URL = "https://asheraw.com";
 
 // Re-check Sanity for new or edited posts at most once per minute,
 // instead of only ever showing what existed at the last deploy.
@@ -37,8 +40,18 @@ export default async function BlogPage() {
     categoryTitles: post.categories?.map((c) => c.title),
   }));
 
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: SITE_URL },
+    { name: "Blog", url: `${SITE_URL}/blog` },
+  ]);
+
   return (
     <BlogChrome>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
         <p className="font-mono-stage text-[10px] uppercase tracking-[0.3em] text-spotlight/70">
           Asher Aw

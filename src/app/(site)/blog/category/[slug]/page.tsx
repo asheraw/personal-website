@@ -5,6 +5,7 @@ import { client } from "@/sanity/lib/client";
 import { CATEGORY_BY_SLUG_QUERY, POSTS_BY_CATEGORY_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { PostCard } from "@/components/asher/blog/PostCard";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
+import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
 
@@ -43,8 +44,19 @@ export default async function CategoryPage({ params }: PageProps) {
     notFound();
   }
 
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: SITE_URL },
+    { name: "Blog", url: `${SITE_URL}/blog` },
+    { name: category.title, url: `${SITE_URL}/blog/category/${slug}` },
+  ]);
+
   return (
     <BlogChrome>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
         <nav className="mb-6 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
           <Link href="/blog" className="transition-colors hover:text-spotlight">

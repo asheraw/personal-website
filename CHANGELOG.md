@@ -171,6 +171,28 @@ revised "Live Streaming for Coaches & Consultants," and eventually "Acting As Je
 posts or sourcing essays. Neither book is ready to go up yet, so both are shelved rather than designed
 against a guess — logged in `IDEAS.md` with the real context so this isn't reinvented from scratch later.
 
+## 2026-07-31 (continued) — auditing what's left in Phase 2, then next-phase prep
+
+Checked the full Phase 2 (STORY Frontend) list against what's actually built. Most of it was done; found and
+fixed a few concrete, low-risk gaps:
+
+- **Tag pages were missing from the sitemap.** They're indexable but had no way for a crawler to discover
+  them without following every post's tag links. Fixed in `sitemap.ts`.
+- **The breadcrumb structured data was a hardcoded stub** — one site-wide `BreadcrumbList` that always said
+  just "Home," wrong on every other page. Replaced with a real per-page breadcrumb trail on `/blog`, a post,
+  and the category/tag/author pages (`buildBreadcrumbSchema()`, `src/lib/structuredData.ts`).
+
+Two other flagged items were discussed and explicitly not built:
+- **Pagination on `/blog`.** Asher's preference is infinite/lazy-loading over classic pagination when the
+  post count actually starts to matter — not urgent yet — with a bigger, explicitly experimental idea (an AI
+  avatar asking readers what they want to read, tying into the spec's "Avatar Door" concept) floated for much
+  later. Logged in `IDEAS.md`.
+- **A web app manifest** (PWA install icon/name) — Asher's read: nobody's installing this site to their home
+  screen, so this isn't worth the effort right now. Not built, not logged as a "later" idea — just skipped.
+
+A third item, a "skip to content" accessibility link, was explained but not yet decided on — pending Asher's
+go-ahead.
+
 ---
 
 ## 2026-07-30

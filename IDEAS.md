@@ -10,6 +10,27 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## Blog pagination — infinite scroll, or an AI avatar asking what to read
+
+**What:** `/blog` currently loads every post on one page (flagged as a real gap: the spec calls for
+"pagination or progressive loading," and it'll become a real page-weight problem as the post count grows).
+Asher's preference, raised 2026-07-31: not classic numbered pagination — readers are more used to scrolling,
+so infinite/lazy-loading feels more natural here. He also floated a bigger, more experimental idea for later:
+an AI avatar (tying into the "Avatar Door" concept in `ACE_MASTER_SPEC.md` Part VI, explicitly scoped to
+Phase 7+ in the spec) that asks a reader what they're in the mood to read and surfaces posts that way, instead
+of a plain scrolling list.
+
+**Why not now:** the post count is low enough right now that loading everything on one page isn't actually
+hurting anyone yet. The AI avatar idea is explicitly experimental and Asher's own framing was "later" — not
+something to design against today, and the spec itself gates the whole Avatar Door concept behind the
+publishing foundation being stable first.
+
+**Worth revisiting when:** the post count grows enough that `/blog`'s page weight becomes a real problem —
+at that point, infinite/lazy-loading is the more scoped near-term fix, with the AI avatar concept staying a
+separate, later, bigger idea rather than something bundled into a basic pagination fix.
+
+---
+
 ## Series/collections & footnotes/citations
 
 **What:** both come from the original spec (`ACE_PRD.md` line 149, `ACE_MASTER_SPEC.md` lines 143/173) as

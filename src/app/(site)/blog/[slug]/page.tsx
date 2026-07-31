@@ -14,6 +14,7 @@ import { CommentSection } from "@/components/asher/blog/CommentSection";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 import { RelatedPosts } from "@/components/asher/blog/RelatedPosts";
 import { estimateReadingTimeMinutes, extractH2Checkpoints } from "@/lib/portableText";
+import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 // No time-based revalidate here anymore -- sanityFetch() (via Sanity's
 // Live Content API) keeps this page fresh on its own, both for normal
@@ -157,6 +158,15 @@ export default async function PostPage({ params }: PageProps) {
     image: imageSource ? urlFor(imageSource).width(1200).height(630).fit("crop").format("jpg").quality(75).url() : undefined,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
+  const breadcrumbCategory = post.primaryCategory ?? post.categories?.[0];
+  const breadcrumbSchema = buildBreadcrumbSchema([
+    { name: "Home", url: SITE_URL },
+    { name: "Blog", url: `${SITE_URL}/blog` },
+    ...(breadcrumbCategory
+      ? [{ name: breadcrumbCategory.title, url: `${SITE_URL}/blog/category/${breadcrumbCategory.slug}` }]
+      : []),
+    { name: post.title, url },
+  ]);
 
   return (
     <BlogChrome>
@@ -182,27 +192,28 @@ export default async function PostPage({ params }: PageProps) {
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        />
 
         <nav className="mb-6 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70 print:hidden">
           <Link href="/blog" className="transition-colors hover:text-spotlight">
             Blog
           </Link>
-          {(() => {
-            const breadcrumbCategory = post.primaryCategory ?? post.categories?.[0];
-            if (!breadcrumbCategory) return null;
-            return (
-              <>
-                {" "}
-                /{" "}
-                <Link
-                  href={`/blog/category/${breadcrumbCategory.slug}`}
-                  className="transition-colors hover:text-spotlight"
-                >
-                  {breadcrumbCategory.title}
-                </Link>
-              </>
-            );
-          })()}
+          {breadcrumbCategory && (
+            <>
+              {" "}
+              /{" "}
+              <Link
+                href={`/blog/category/${breadcrumbCategory.slug}`}
+                className="transition-colors hover:text-spotlight"
+              >
+                {breadcrumbCategory.title}
+              </Link>
+            </>
+          )}
         </nav>
 
         <article id="post-article">
