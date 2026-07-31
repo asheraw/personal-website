@@ -18,7 +18,8 @@ export const POST_SUMMARY_PROJECTION = `{
   mainImage,
   "author": author->{name, "slug": slug.current},
   "categories": categories[]->{title, "slug": slug.current},
-  tags
+  tags,
+  "commentCount": count(*[_type == "comment" && status == "approved" && references(^._id)])
 }`;
 
 export const ALL_POSTS_QUERY = `
@@ -98,4 +99,5 @@ export type PostSummary = {
   author?: { name: string; slug: string } | null;
   categories?: { title: string; slug: string }[];
   tags?: string[];
+  commentCount?: number;
 };

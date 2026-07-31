@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
 
   const comments = await writeClient.fetch(
     `*[_type == "comment" && post._ref == $postId && status == "approved"] | order(createdAt asc){
-      _id, name, message, createdAt
+      _id, name, message, createdAt, isAuthorReply,
+      "parentComment": parentComment._ref
     }`,
     { postId }
   );

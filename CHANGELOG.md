@@ -11,6 +11,44 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-07-31
+
+**Comments, extended.** Built on top of the Sanity-native comment system shipped the day before:
+- **Nested replies + a way for Asher to actually respond.** The Studio moderation tool now has a Reply
+  button on every comment. Typing a reply and posting it creates a linked comment, auto-approved (it's
+  Asher's own words, not visitor content) and styled distinctly on the site — a spotlight-tinted card with
+  an "Author" badge, indented under the comment it replies to. One level of nesting only; a reply to a reply
+  isn't supported, by design.
+- **Better empty state.** A post with no comments now reads "Start the Conversation" instead of a flat,
+  slightly discouraging "0 Comments."
+- **Comment counts on the blog listing.** Any post with at least one approved comment now shows a small
+  speech-bubble icon and count on its card, linking straight to that post's comment section.
+
+**Considered and explicitly deferred, logged here for a future revisit (Asher's own request):** a Figma-style
+alternative was on the table — instead of a comment box at the bottom of the post, let readers highlight a
+specific passage of text and leave a comment anchored right there. Recommended against, for three concrete
+reasons rather than a vague "too complex":
+1. **Mobile.** Selecting text on a phone already triggers the browser's own native selection handles and
+   copy/paste menu — there's no clean, reliable way to also pop up a custom "add a comment" button on top of
+   that without it feeling broken on at least some combination of browser/OS.
+2. **Anchoring drifts.** A highlighted-text comment has to keep pointing at the exact span of text it was
+   left on. Edit that paragraph later — fix a typo, rephrase a line — and the anchor either breaks, jumps to
+   the wrong spot, or needs ongoing fuzzy-matching logic to relocate itself. That's new, permanent complexity
+   for every future edit to older posts, not a one-time build cost.
+3. **Wrong tool for a blog.** Inline annotation earns its keep on documents people are *jointly working on*
+   (Figma, Notion, Google Docs) or crowdsourced annotation (Genius). A blog reader reacting to a finished,
+   published piece is a different, better-served-by-threaded-comments use case — even Medium's own
+   "highlight" feature is closer to private bookmarking/social sharing than a persistent comment thread.
+
+**A lighter middle ground, if the underlying appeal (react to a specific passage) comes back up:**
+"highlight to share" — select text, get a floating button that pre-fills a quote-and-link share (X,
+WhatsApp, copy-link) for that exact passage. No persistent anchoring, no thread infrastructure, no fight with
+mobile's native selection UI, since it's a one-shot action rather than something that has to keep pointing at
+a specific span forever. Worth considering as a separate small feature alongside comments, not instead of
+them, if this is still interesting later.
+
+---
+
 ## 2026-07-30
 
 **Theme system:** Found and fixed a real React hydration bug in `ThemeProvider` — it read the visitor's

@@ -8,7 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { track } from "@/lib/analytics";
 
-type Comment = { _id: string; name: string; message: string; createdAt: string };
+type Comment = {
+  _id: string;
+  name: string;
+  message: string;
+  createdAt: string;
+  isAuthorReply?: boolean;
+  parentComment?: string | null;
+};
 type Status = "idle" | "submitting" | "success" | "error";
 
 export function CommentSection({ postId }: { postId: string }) {
@@ -72,27 +79,34 @@ export function CommentSection({ postId }: { postId: string }) {
   }
 
   return (
-    <div className="mt-16 border-t border-amber-faint pt-10">
+    <div id="comments" className="mt-16 scroll-mt-24 border-t border-amber-faint pt-10">
       <div className="flex items-center gap-2">
         <MessageCircle size={18} className="text-spotlight" />
         <h2 className="font-display text-2xl font-semibold text-ivory">
-          {comments === null ? "Comments" : `${comments.length} Comment${comments.length === 1 ? "" : "s"}`}
+          {comments === null
+            ? "Comments"
+            : comments.length === 0
+            ? "Start the Conversation"
+            : `${comments.length} Comment${comments.length === 1 ? "" : "s"}`}
         </h2>
       </div>
 
       {comments && comments.length > 0 && (
         <div className="mt-8 space-y-6">
-          {comments.map((c) => (
-            <div key={c._id} className="rounded-lg border border-amber-faint bg-stage/40 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-ivory">{c.name}</p>
-                <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/50">
-                  {new Date(c.createdAt).toLocaleDateString()}
-                </p>
+          {comments
+            .filter((c) => !c.parentComment)
+            .map((c) => (
+              <div key={c._id}>
+                <CommentCard comment={c} />
+                {comments
+                  .filter((r) => r.parentComment === c._id)
+                  .map((r) => (
+                    <div key={r._id} className="ml-6 mt-3 sm:ml-10">
+                      <CommentCard comment={r} />
+                    </div>
+                  ))}
               </div>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone/85">{c.message}</p>
-            </div>
-          ))}
+            ))}
         </div>
       )}
 
@@ -185,6 +199,43 @@ export function CommentSection({ postId }: { postId: string }) {
           </form>
         )}
       </div>
+    </div>
+  );
+}
+
+// Asher's own replies (isAuthorReply, set only via the Studio moderation
+// tool's Reply action -- visitors can't create these) render with a
+// spotlight-tinted card and a small badge instead of the neutral style
+// every other comment gets, so a reply is recognizable at a glance.
+function CommentCard({ comment }: { comment: Comment }) {
+  if (comment.isAuthorReply) {
+    return (
+      <div className="rounded-lg border border-spotlight/40 bg-spotlight/[0.06] p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-spotlight">
+            {comment.name}
+            <span className="rounded-full bg-spotlight/15 px-2 py-0.5 font-mono-stage text-[9px] uppercase tracking-[0.14em] text-spotlight">
+              Author
+            </span>
+          </p>
+          <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/50">
+            {new Date(comment.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ivory/90">{comment.message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-amber-faint bg-stage/40 p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-ivory">{comment.name}</p>
+        <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/50">
+          {new Date(comment.createdAt).toLocaleDateString()}
+        </p>
+      </div>
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone/85">{comment.message}</p>
     </div>
   );
 }

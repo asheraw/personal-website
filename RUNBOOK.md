@@ -317,6 +317,37 @@ avoid telling spammers which submissions got through). If it's not there at all,
 accidentally triggered (an autofill browser extension filling every input on the page, for example) or the
 math captcha wasn't miskeyed.
 
+**Replying as Asher (shipped 2026-07-31):** every comment in Studio → Comments now has a **Reply** button
+(except on replies themselves — one level of nesting only, a reply to a reply isn't supported). Typing a
+reply and clicking **Post reply** creates a new comment linked to the original via the `parentComment`
+reference field, with `isAuthorReply: true` and `status: "approved"` set immediately — it's Asher's own
+words, not visitor-submitted content, so it skips the moderation queue entirely and appears live right away.
+On the site it renders in a spotlight-accented card with an "Author" badge, indented under the comment it's
+replying to (`src/components/asher/blog/CommentSection.tsx`'s `CommentCard`). The reply's display name is a
+constant (`REPLY_AUTHOR_NAME` in `CommentsTool.tsx`) — cosmetic only, change that one line if it's ever
+wrong; the actual styling logic keys off `isAuthorReply`, not the name string.
+
+**Replying to a comment that isn't approved yet** works (the reply itself still gets created and approved),
+but the moderation tool shows a note that it won't display in proper context on the live site until the
+original comment is approved too — the two aren't force-linked, so it's a manual step if you want both
+visible together.
+
+**Comment counts:** the blog listing page (`/blog`) shows a small speech-bubble icon + count on any post
+with at least one approved comment (`PostCard.tsx`), linking to `/blog/[slug]#comments`. The count is
+computed fresh in the GROQ query (`"commentCount": count(*[_type == "comment" && status == "approved" &&
+references(^._id)])` in `POST_SUMMARY_PROJECTION`, `src/sanity/lib/queries.ts`) and includes replies, not
+just top-level comments — matches the count shown in the post page's own comment section header.
+
+**Decided against, logged for a possible future revisit:** Figma-style inline commenting (highlight a
+passage of text, leave a comment anchored to that exact span) was considered instead of extending the
+existing system, and deliberately not built. Reasoning: mobile text selection already triggers the browser's
+own native selection UI, which a custom "add comment" popup would have to fight; an anchored comment breaks
+or needs fuzzy re-matching whenever the underlying paragraph is later edited; and it's a UX pattern built for
+collaborative document editing (Figma, Notion, Google Docs), not really how readers engage with a finished,
+published blog post. See `CHANGELOG.md`'s 2026-07-31 entry for the fuller reasoning and a lighter-weight
+alternative ("highlight to share a quote," no persistent anchoring) that was suggested as a middle ground if
+this comes back up.
+
 ---
 
 ## Publishing: "I published a post but it's not showing up"
