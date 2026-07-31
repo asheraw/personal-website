@@ -10,6 +10,27 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## Swap the reading-bar mascot for Asher's own 8-bit avatar
+
+**What:** the homepage's `ProgressionBar` and the blog's `BlogReadingBar` both already show a small walking
+character (`WalkingCharacter.tsx`) that tracks scroll progress, with contextual messages as you read
+("Hope you're enjoying the read" → "You're halfway" → "Almost to the end" → "You've finished it!"), plus a
+separate set of playful call-outs if you scroll suspiciously fast ("Are you a world record speedreader?").
+Asher's original ask (2026-07-29) was almost exactly this — a reading companion with encouraging/teasing
+milestone messages — except starring his own old 8-bit pixel-art self-portrait from the NFT era, not a
+generic drawn character. **The mechanism described here already shipped independently on 2026-07-31; the
+only remaining piece is the image itself.**
+
+**Why not now:** waiting on Asher to actually provide the avatar image — his OpenSea profile is
+**opensea.io/asheraw**, where the original piece lives. Nothing else is blocking this.
+
+**Worth revisiting when:** Asher sends the image. At that point this is a small, scoped swap — replace
+`WalkingCharacter.tsx`'s drawn SVG with his avatar (likely as an `<img>`/sprite instead of inline SVG,
+keeping the same bounce/walk animation wrapper) — not a redesign, since the progress-tracking, checkpoints,
+and message system are already built and live on both the homepage and every blog post.
+
+---
+
 ## A floating badge for unhandled Contact Submissions, like the Comments one
 
 **What:** the same always-visible "N need attention" floating badge just built for pending comments
