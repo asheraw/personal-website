@@ -7,8 +7,35 @@ import { useEffect, useRef } from "react";
 // not a URL string, unlike a normal <img>/next/image. `.complete` is
 // checked before every draw so there's a plain-circle fallback for the one
 // frame or two before it's ready, instead of drawing nothing.
+// Own crop from the reading-bar avatar: tighter around the face (per
+// Asher's "enlarge my face" feedback) and with the source photo's yellow
+// background keyed out to transparent (color-signature match on
+// low-blue/high-green, not just an exact-colour match, so it also catches
+// the yellow-tinted anti-aliased edge pixels that a simple distance
+// threshold left as a visible fringe).
 const avatarImage = typeof window !== "undefined" ? new Image() : null;
-if (avatarImage) avatarImage.src = "/asher/avatar-8bit.png";
+if (avatarImage) avatarImage.src = "/asher/avatar-8bit-face.png";
+
+// The character body is rendered at a fraction of its final size into this
+// small offscreen buffer, then scaled back up with image smoothing off --
+// turns the smoothly-drawn curves (rounded rects, arcs) into chunky,
+// pixel-art-style blocks so the body actually matches the avatar image's
+// own pixel density instead of a smooth cartoon body under a pixelated
+// head. CHAR_PIXEL_BLOCK is how many original drawing units each chunky
+// "pixel" represents -- higher is blockier/more stylized, lower is closer
+// to the original smooth look.
+const CHAR_PIXEL_BLOCK = 2.2;
+const CHAR_BUFFER_SIZE = 64; // buffer pixels -- covers a (64*block)-unit area around the character, generous enough for every prop/accessory at any activity
+let charBuffer: HTMLCanvasElement | null = null;
+function getCharBuffer(): HTMLCanvasElement | null {
+  if (typeof document === "undefined") return null;
+  if (!charBuffer) {
+    charBuffer = document.createElement("canvas");
+    charBuffer.width = CHAR_BUFFER_SIZE;
+    charBuffer.height = CHAR_BUFFER_SIZE;
+  }
+  return charBuffer;
+}
 
 const WORLD_W = 720;
 const WORLD_H = 540;
@@ -217,11 +244,13 @@ function drawProps(ctx: CanvasRenderingContext2D, activity: Activity, time: numb
 function drawStudiousAccessories(ctx: CanvasRenderingContext2D) {
   // Just the mortarboard now -- the reading-glasses shape this used to
   // also draw is gone, since the avatar already wears glasses permanently.
+  // Repositioned/enlarged slightly to sit on the bigger head (was tuned
+  // for the old radius-11 head at y=-20; head is now radius 15 at y=-22).
   ctx.fillStyle = "#1a1208";
-  ctx.beginPath(); ctx.ellipse(0, -30, 10, 3, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-10, -30); ctx.lineTo(-13, -34); ctx.lineTo(13, -34); ctx.lineTo(10, -30); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = "#f0b865"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(13, -34); ctx.lineTo(15, -28); ctx.stroke();
-  ctx.fillStyle = "#f0b865"; ctx.beginPath(); ctx.arc(15, -27, 1.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, -37, 13, 3.5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-13, -37); ctx.lineTo(-17, -41); ctx.lineTo(17, -41); ctx.lineTo(13, -37); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#f0b865"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(17, -41); ctx.lineTo(19, -34); ctx.stroke();
+  ctx.fillStyle = "#f0b865"; ctx.beginPath(); ctx.arc(19, -33, 1.5, 0, Math.PI*2); ctx.fill();
 }
 
 function drawSpeechBubble(ctx: CanvasRenderingContext2D) {
@@ -250,26 +279,32 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
   ctx.fillStyle = "#1a1208"; ctx.beginPath(); ctx.ellipse(-4+legSwing, 22, 3, 1.5, 0, 0, Math.PI*2); ctx.ellipse(4-legSwing, 22, 3, 1.5, 0, 0, Math.PI*2); ctx.fill();
 
   ctx.save(); ctx.translate(0, bob);
-  ctx.fillStyle = "#d99846"; roundRect(ctx, -10, -10, 20, 22, 5); ctx.fill();
-  ctx.fillStyle = "rgba(255, 247, 230, 0.12)"; roundRect(ctx, -10, -10, 20, 8, 5); ctx.fill();
-  ctx.fillStyle = "#c44d3f";
+  // Shirt colour matches the avatar's actual shirt (sampled from the
+  // source photo) instead of the site's generic amber theme colour --
+  // part of making the body read as the same character as the head, not
+  // just a differently-coloured placeholder wearing it.
+  ctx.fillStyle = "#3e3882"; roundRect(ctx, -10, -10, 20, 22, 3); ctx.fill();
+  ctx.fillStyle = "#514496"; roundRect(ctx, -10, -10, 20, 8, 3); ctx.fill();
+  ctx.fillStyle = "#2c2760";
   ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(-2, -7); ctx.lineTo(-6, -5); ctx.closePath(); ctx.moveTo(6, -9); ctx.lineTo(2, -7); ctx.lineTo(6, -5); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = "#1a1208"; ctx.beginPath(); ctx.arc(0, -7, 1, 0, Math.PI*2); ctx.fill();
   drawArms(ctx, activity, armSwing);
-  // The head is Asher's real avatar now, clipped to the same circle the
-  // drawn face used to fill -- replaces the old procedural face, hair,
-  // blush, and blink/expression logic entirely (a static image can't
-  // blink, so there's nothing left for that logic to drive). Ears stay,
-  // drawn after so they still show at the circle's edge.
+  // The head is Asher's real avatar now (own tighter crop, background
+  // keyed out), clipped to the same circle the drawn face used to fill --
+  // replaces the old procedural face, hair, blush, and blink/expression
+  // logic entirely (a static image can't blink, so there's nothing left
+  // for that logic to drive). Ears stay, drawn after so they still show
+  // at the circle's edge. Sized larger than the original drawn face (was
+  // radius 11) per Asher's "enlarge my face" feedback.
+  const headR = 15;
   if (avatarImage && avatarImage.complete && avatarImage.naturalWidth > 0) {
     ctx.save();
-    ctx.beginPath(); ctx.arc(0, -20, 11, 0, Math.PI*2); ctx.clip();
-    ctx.drawImage(avatarImage, -11, -31, 22, 22);
+    ctx.beginPath(); ctx.arc(0, -22, headR, 0, Math.PI*2); ctx.clip();
+    ctx.drawImage(avatarImage, -headR, -22 - headR, headR*2, headR*2);
     ctx.restore();
   } else {
-    ctx.fillStyle = "#f3e9d4"; ctx.beginPath(); ctx.arc(0, -20, 11, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(0, -22, headR, 0, Math.PI*2); ctx.fill();
   }
-  ctx.fillStyle = "#f3e9d4"; ctx.beginPath(); ctx.arc(-11, -19, 2, 0, Math.PI*2); ctx.arc(11, -19, 2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(-headR, -21, 2.4, 0, Math.PI*2); ctx.arc(headR, -21, 2.4, 0, Math.PI*2); ctx.fill();
   // No drawn mouth anymore -- the avatar's own expression is already part
   // of the image, and the old activity-specific mouth shapes (an "O" for
   // singing, a talking oval for phone) would just draw a dark blob over a
@@ -282,7 +317,36 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
 
 function drawCharacter(ctx: CanvasRenderingContext2D, x: number, y: number, activity: Activity, time: number, facing: number, showBubble: boolean) {
   ctx.save(); ctx.translate(x, y);
-  ctx.save(); if (facing < 0) ctx.scale(-1, 1); drawCharacterBody(ctx, activity, time); ctx.restore();
+
+  // Render the body into a small offscreen buffer at a fraction of final
+  // size, then blit it back scaled up with smoothing off -- turns the
+  // smoothly-drawn curves into chunky, pixel-art-style blocks so the body
+  // actually matches the avatar image's own pixel density, instead of a
+  // smooth cartoon body under a pixelated head.
+  const buf = getCharBuffer();
+  if (buf) {
+    const bctx = buf.getContext("2d");
+    if (bctx) {
+      bctx.clearRect(0, 0, buf.width, buf.height);
+      bctx.save();
+      bctx.translate(buf.width / 2, buf.height / 2);
+      bctx.scale(1 / CHAR_PIXEL_BLOCK, 1 / CHAR_PIXEL_BLOCK);
+      if (facing < 0) bctx.scale(-1, 1);
+      drawCharacterBody(bctx, activity, time);
+      bctx.restore();
+
+      const wasSmooth = ctx.imageSmoothingEnabled;
+      ctx.imageSmoothingEnabled = false;
+      const drawSize = buf.width * CHAR_PIXEL_BLOCK;
+      ctx.drawImage(buf, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+      ctx.imageSmoothingEnabled = wasSmooth;
+    }
+  } else {
+    // SSR/no-canvas-support fallback -- shouldn't happen client-side, but
+    // keeps this from silently drawing nothing if getCharBuffer ever fails.
+    ctx.save(); if (facing < 0) ctx.scale(-1, 1); drawCharacterBody(ctx, activity, time); ctx.restore();
+  }
+
   if (showBubble) drawSpeechBubble(ctx);
   ctx.restore();
 }
