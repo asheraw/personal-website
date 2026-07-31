@@ -6,13 +6,14 @@ import { notFound } from "next/navigation";
 import { draftMode } from "next/headers";
 import { PortableText } from "@portabletext/react";
 import { sanityFetch } from "@/sanity/lib/live";
-import { POST_BY_SLUG_QUERY } from "@/sanity/lib/queries";
+import { POST_BY_SLUG_QUERY, RELATED_POSTS_QUERY, type RelatedPost } from "@/sanity/lib/queries";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
-import { ReadingProgressBar } from "@/components/asher/blog/ReadingProgressBar";
-import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
+import { BlogReadingBar } from "@/components/asher/blog/BlogReadingBar";
+import { createPostBodyComponents } from "@/components/asher/blog/portableTextComponents";
 import { CommentSection } from "@/components/asher/blog/CommentSection";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
-import { estimateReadingTimeMinutes } from "@/lib/portableText";
+import { RelatedPosts } from "@/components/asher/blog/RelatedPosts";
+import { estimateReadingTimeMinutes, extractH2Checkpoints } from "@/lib/portableText";
 
 // No time-based revalidate here anymore -- sanityFetch() (via Sanity's
 // Live Content API) keeps this page fresh on its own, both for normal
@@ -49,6 +50,20 @@ type PageProps = {
 async function getPost(slug: string) {
   const { data } = await sanityFetch({ query: POST_BY_SLUG_QUERY, params: { slug } });
   return data as Post | null;
+}
+
+async function getRelatedPosts(post: Post) {
+  const categorySlugs = post.categories?.map((c) => c.slug) ?? [];
+  const tags = post.tags ?? [];
+  // Nothing to relate on -- skip the query rather than send empty arrays
+  // that would just filter out every candidate anyway.
+  if (categorySlugs.length === 0 && tags.length === 0) return [];
+
+  const { data } = await sanityFetch({
+    query: RELATED_POSTS_QUERY,
+    params: { excludeId: post._id, categorySlugs, tags },
+  });
+  return data as RelatedPost[];
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -103,9 +118,13 @@ export default async function PostPage({ params }: PageProps) {
     notFound();
   }
 
+  const relatedPosts = await getRelatedPosts(post);
   const url = `${SITE_URL}/blog/${post.slug}`;
   const imageSource = post.socialImage ?? post.mainImage;
   const readingTime = estimateReadingTimeMinutes(post.body);
+  const headings = extractH2Checkpoints(post.body);
+  const headingIds = new Map(headings.map((h) => [h.key, h.id]));
+  const postBodyComponents = createPostBodyComponents(headingIds);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -121,25 +140,30 @@ export default async function PostPage({ params }: PageProps) {
 
   return (
     <BlogChrome>
-      {/* Skipped while previewing a draft -- it would sit at the exact same
-          top-16 offset as the "previewing a draft" banner below. */}
-      {!isPreviewing && <ReadingProgressBar targetId="post-article" />}
+      {/* Skipped while previewing a draft -- there's no reliable "end of
+          article" scroll math to trust while Presentation can rewrite the
+          body under it, and the "previewing a draft" banner already gives
+          this space its own meaning. */}
+      {!isPreviewing && <BlogReadingBar targetId="post-article" headings={headings} />}
       {isPreviewing && (
-        <div className="sticky top-16 z-40 flex items-center justify-between gap-4 border-y border-spotlight/40 bg-spotlight/10 px-5 py-2 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-spotlight sm:px-8">
+        <div className="sticky top-16 z-40 flex items-center justify-between gap-4 border-y border-spotlight/40 bg-spotlight/10 px-5 py-2 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-spotlight sm:px-8 print:hidden">
           <span>Previewing a draft — this may not be published yet</span>
           <a href="/api/draft-mode/disable" className="underline hover:no-underline">
             Exit preview
           </a>
         </div>
       )}
-      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+      {/* Extra bottom clearance (beyond BlogChrome's own pb-16) so the
+          fixed reading bar above never sits on top of the footer or the
+          tail end of the comment section. */}
+      <div className="mx-auto max-w-3xl px-5 pb-24 sm:px-8">
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
 
-        <nav className="mb-6 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
+        <nav className="mb-6 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70 print:hidden">
           <Link href="/blog" className="transition-colors hover:text-spotlight">
             Blog
           </Link>
@@ -179,7 +203,7 @@ export default async function PostPage({ params }: PageProps) {
               )}
               {post.publishedAt && <span aria-hidden="true">·</span>}
               <span>{readingTime} min read</span>
-              {!!post.commentCount && <span aria-hidden="true">·</span>}
+              {!!post.commentCount && <span aria-hidden="true" className="print:hidden">·</span>}
               <CommentCountBadge slug={post.slug} count={post.commentCount} />
             </div>
           )}
@@ -202,7 +226,7 @@ export default async function PostPage({ params }: PageProps) {
           </div>
 
           {(post.categories?.length || post.tags?.length) ? (
-            <div className="mt-14 flex flex-wrap gap-2 border-t border-amber-faint pt-8">
+            <div className="mt-14 flex flex-wrap gap-2 border-t border-amber-faint pt-8 print:hidden">
               {post.categories?.map((category) => (
                 <Link
                   key={category.slug}
@@ -224,7 +248,9 @@ export default async function PostPage({ params }: PageProps) {
             </div>
           ) : null}
 
-          <div className="mt-14 border-t border-amber-faint pt-8">
+          <RelatedPosts posts={relatedPosts} />
+
+          <div className="mt-14 border-t border-amber-faint pt-8 print:hidden">
             <Link
               href="/blog"
               className="inline-flex items-center gap-1.5 font-mono-stage text-xs uppercase tracking-[0.18em] text-spotlight transition-all hover:gap-2.5"
@@ -234,7 +260,9 @@ export default async function PostPage({ params }: PageProps) {
           </div>
         </article>
 
-        <CommentSection postId={post._id} />
+        <div className="print:hidden">
+          <CommentSection postId={post._id} />
+        </div>
       </div>
     </BlogChrome>
   );

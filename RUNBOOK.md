@@ -136,6 +136,52 @@ a bug. Custom input component: `src/sanity/components/TagsAutocompleteInput.tsx`
 
 ---
 
+## Blog post extras: related posts, print, search, the reading bar (shipped 2026-07-31)
+
+**Related Reading**, shown near the bottom of a post, is any *other* published post sharing at least one
+category or tag with the one being read, ranked by how much overlap there is (shared categories + shared
+tags counted together), up to 3. `RELATED_POSTS_QUERY` in `src/sanity/lib/queries.ts`,
+`src/components/asher/blog/RelatedPosts.tsx`. A post with no categories and no tags has nothing to relate on
+— the section just doesn't render for it, rather than falling back to "recent posts," which would stop
+meaning "related." Nothing to configure; it's automatic from whatever categories/tags a post already has.
+
+**Printing a post** now comes out as a clean article — no header, footer, comments, related reading, or
+"back to blog" link, forced to black-on-white regardless of the site's current dark/light theme, and an
+external link's actual URL gets printed after the link text since "click here" means nothing on paper.
+Structural chrome is hidden per-element with Tailwind's `print:hidden` utility; the color/link rules live in
+one `@media print` block at the bottom of `src/app/globals.css`.
+
+**Search** lives at the top of `/blog`, right under the intro paragraph (`BlogSearch.tsx`). Per the PRD:
+no custom search index to build or host — typing a query and hitting enter opens a new tab with a
+`site:asheraw.com`-restricted Google search. Google already has the whole site indexed via the sitemap, so
+this needed zero new infrastructure.
+
+**The reading progress bar** moved from a thin line under the header to a bottom bar
+(`src/components/asher/blog/BlogReadingBar.tsx`), matching the homepage's own `ProgressionBar.tsx` in style
+— same walking-character mascot (pulled into a shared `src/components/asher/WalkingCharacter.tsx` so the two
+never visually drift apart), same amber track with a spotlight fill. Two things it adds beyond a plain
+progress line:
+- **Checkpoints from the post's own `h2` headings**, clickable, jumping straight to that section — no manual
+  setup, every `h2` gets a stable anchor id automatically (`extractH2Checkpoints` in
+  `src/lib/portableText.ts`, slugified from the heading's own text, de-duplicated if two headings in the same
+  post happen to produce the same slug). A post with no `h2` headings just shows a plain bar with no
+  checkpoints — not an error.
+- **A rotating line of encouragement** above the bar, changing as you actually progress through the post
+  ("Hope you're enjoying the read" → "You're halfway..." → "Almost to the end..." → a "You've finished it!"
+  message that's a clickable link straight to the comments). If you scroll suspiciously fast, this swaps
+  briefly for a playful "slow down" nudge instead — tuned to *not* fire from clicking an anchor link (this
+  bar's own checkpoints, or the "finished" message linking to comments): any click on an on-page `#` link, or
+  any `hashchange`, buys a short grace window where the fast-scroll check is switched off, since
+  `scroll-behavior: smooth` (site-wide, `globals.css`) makes a deliberate anchor jump look identical to fast
+  scrolling by speed alone. The exact speed threshold is a first guess, not rigorously tuned — worth
+  revisiting if it ever feels like it fires too eagerly (or not at all) once there's real reader behavior to
+  check it against.
+
+Hidden entirely while previewing a draft (same reasoning as before: no version of "percent through the
+article" to trust while Presentation can rewrite the body underneath it).
+
+---
+
 ## Categories: viewing usage and safe deletion
 
 **"Which posts use this category?"** — open the category in Studio; alongside the normal **Editor** tab

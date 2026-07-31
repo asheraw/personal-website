@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PortableText, type PortableTextComponents } from "@portabletext/react";
+import { PortableText, type PortableTextComponents, type PortableTextBlockComponent } from "@portabletext/react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
@@ -50,6 +50,11 @@ export const postBodyComponents: PortableTextComponents = {
         {children}
       </h2>
     ),
+    // NOTE: createPostBodyComponents() below overrides this specific
+    // renderer to add an id -- this bare version (no id) stays as the
+    // default for any other Portable Text field that doesn't need one
+    // (e.g. an author bio), so it's never silently missing an id it
+    // never had a reading-progress checkpoint to match anyway.
     h3: ({ children }) => (
       <h3 className="mt-8 font-display text-xl font-semibold tracking-tight text-ivory sm:text-2xl">
         {children}
@@ -214,3 +219,23 @@ export const postBodyComponents: PortableTextComponents = {
     },
   },
 };
+
+// Used only on the post page itself, where the reading progress bar needs
+// every h2 to have a real, stable anchor id to jump to. headingIds maps a
+// heading block's _key to the id extractH2Checkpoints() (src/lib/
+// portableText.ts) already assigned it, so the two never disagree about
+// what a given heading's id is.
+export function createPostBodyComponents(headingIds: Map<string, string>): PortableTextComponents {
+  const block: Record<string, PortableTextBlockComponent> = {
+    ...(postBodyComponents.block as Record<string, PortableTextBlockComponent>),
+    h2: ({ children, value }) => (
+      <h2
+        id={headingIds.get((value as { _key?: string })._key ?? "")}
+        className="mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl scroll-mt-24"
+      >
+        {children}
+      </h2>
+    ),
+  };
+  return { ...postBodyComponents, block };
+}

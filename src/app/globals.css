@@ -219,3 +219,21 @@ body { scrollbar-gutter: stable; }
   background: radial-gradient(circle, rgba(130, 85, 190, 0.15) 0%, rgba(130, 85, 190, 0.06) 35%, transparent 70%);
   mix-blend-mode: multiply;
 }
+
+/* Printing a blog post: force plain black-on-white regardless of the
+   current dark/light theme (nobody wants a dark background eating their
+   printer's ink), drop the decorative cursor glow, and print a link's
+   actual destination after it since "click here" means nothing on paper.
+   Structural chrome (header, footer, nav, progress bar, comments, related
+   reading, etc.) is hidden per-element with Tailwind's own print:hidden
+   utility rather than duplicated here. */
+@media print {
+  html, body { background: #fff !important; }
+  * { color: #111 !important; text-shadow: none !important; box-shadow: none !important; }
+  a { text-decoration: underline; }
+  a[href^="http"]:not([href*="asheraw.com"])::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+  }
+  .cursor-glow { display: none !important; }
+}

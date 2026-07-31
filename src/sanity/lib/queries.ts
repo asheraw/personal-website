@@ -75,6 +75,35 @@ export const POSTS_BY_TAG_QUERY = `
   | order(publishedAt desc) ${POST_SUMMARY_PROJECTION}
 `;
 
+// Related posts: any other published post sharing at least one category or
+// tag with the current one, ranked by how much overlap it has (shared
+// categories + shared tags counted together) rather than just recency, so
+// the closest match shows first even if it's older than a loosely-related
+// recent post. A post with no categories or tags at all simply has nothing
+// to relate on -- the caller should treat an empty result as "don't show
+// the section" rather than falling back to unrelated posts, which would
+// undermine what "related" means here.
+export const RELATED_POSTS_QUERY = `
+  *[
+    _type == "post" && defined(slug.current) && _id != $excludeId &&
+    (
+      count((categories[]->slug.current)[@ in $categorySlugs]) > 0 ||
+      count((tags[])[@ in $tags]) > 0
+    )
+  ] | order(
+    count((categories[]->slug.current)[@ in $categorySlugs]) + count((tags[])[@ in $tags]) desc,
+    publishedAt desc
+  ) [0...3] {
+    _id,
+    title,
+    "slug": slug.current,
+    excerpt,
+    "autoExcerpt": pt::text(body)[0...200],
+    publishedAt,
+    mainImage
+  }
+`;
+
 export const ALL_CATEGORIES_QUERY = `
   *[_type == "category"] | order(title asc) {title, "slug": slug.current}
 `;
@@ -86,6 +115,16 @@ export const CATEGORY_BY_SLUG_QUERY = `
 export const AUTHOR_BY_SLUG_QUERY = `
   *[_type == "author" && slug.current == $slug][0]{name, image, bio}
 `;
+
+export type RelatedPost = {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  autoExcerpt?: string;
+  publishedAt?: string;
+  mainImage?: { asset?: { _ref: string }; alt?: string };
+};
 
 export type PostSummary = {
   _id: string;

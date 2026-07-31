@@ -10,7 +10,7 @@ export function CommentCountBadge({ slug, count }: { slug: string; count?: numbe
   return (
     <Link
       href={`/blog/${slug}#comments`}
-      className="inline-flex items-center gap-1 transition-colors hover:text-spotlight"
+      className="inline-flex items-center gap-1 transition-colors hover:text-spotlight print:hidden"
     >
       <MessageCircle size={12} />
       {count}

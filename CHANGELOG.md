@@ -93,6 +93,29 @@ post directly too, same as a top-level comment. If a badge looks low right after
 near-certain reason is that the reply is still sitting in Studio's moderation queue — the badge, like the
 comment section itself, only ever counts what's actually approved and visible.
 
+### Continued yet again (related posts, print, search, and a redesigned reading bar)
+
+**Related Reading**, at the bottom of a post: up to 3 other posts sharing a category or tag, ranked by how
+much overlap there is rather than just recency. Nothing to configure — automatic from whatever categories
+and tags a post already has, and simply doesn't show for a post that has neither.
+
+**Printing a post** now prints cleanly: no header, footer, comments, related reading, or navigation, forced
+to plain black-on-white no matter which theme the site's currently in, and an external link's actual
+destination prints after the link text.
+
+**Search**, on `/blog`: type a query, it opens a `site:asheraw.com`-restricted Google search in a new tab.
+Per the PRD, no custom search index to build or maintain — Google already has the whole site indexed.
+
+**The reading progress bar, rebuilt.** It was a thin line under the header; now it's a bottom bar in the same
+style as the homepage's own progress bar — same walking-character mascot, same amber track — with
+checkpoints automatically pulled from the post's own section headings (clickable, jump straight there) and a
+small rotating line of encouragement that tracks how far through the post you actually are, ending in a
+"You've finished it! Thanks~ Got any comments?" that links straight to the comments. Scroll suspiciously
+fast and it swaps in a playful "slow down" nudge instead — built specifically not to misfire when *clicking*
+an anchor link (this bar's own checkpoints included) triggers the site's smooth-scroll and covers a lot of
+distance quickly in a way that would otherwise look identical to "reading too fast." Hidden while previewing
+a draft, same as the bar it replaced.
+
 ---
 
 ## 2026-07-30

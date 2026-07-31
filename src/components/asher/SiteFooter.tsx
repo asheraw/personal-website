@@ -36,7 +36,7 @@ export function SiteFooter() {
   if (!footer) return null;
   const navGroups = mode === "play" ? PLAY_NAV : STORY_NAV;
   return (
-    <footer className="relative overflow-hidden border-t border-amber-faint bg-stage px-5 py-16 sm:px-8 lg:px-12">
+    <footer className="relative overflow-hidden border-t border-amber-faint bg-stage px-5 py-16 sm:px-8 lg:px-12 print:hidden">
       <div className="pointer-events-none absolute inset-0" aria-hidden style={{ background: "radial-gradient(ellipse 60% 50% at 50% 100%, rgba(217,152,70,0.08) 0%, transparent 60%)" }} />
       <div className="relative mx-auto max-w-[1500px]">
         <div className="flex flex-col gap-6 border-b border-amber-faint pb-10 lg:flex-row lg:items-end lg:justify-between">
