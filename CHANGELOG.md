@@ -193,6 +193,32 @@ Two other flagged items were discussed and explicitly not built:
 A third item, a "skip to content" accessibility link, was explained but not yet decided on — pending Asher's
 go-ahead.
 
+### Continued (reply-notification subscriptions, heading style cleanup, a scope question answered)
+
+**Reply notifications, rebuilt as opt-in.** The blanket "email everyone when Asher replies" idea was deferred
+back on 2026-07-30 over real spam-deliverability risk. Asher came back with a properly-scoped version instead:
+a small, unchecked-by-default checkbox on every comment form ("email me if there's a reply to this"),
+covering replies from *anyone* in the thread, not just Asher. Auto-expires after 30 days of no new activity
+(extended another 30 days each time a real notification goes out, so an active conversation keeps its
+subscribers subscribed), with a working one-click unsubscribe link in every email. The email itself is a
+small styled HTML card built to push the reader back to the site rather than inviting a reply *to* the email
+(`hello@asheraw.com` doesn't parse inbound mail). Full breakdown in `RUNBOOK.md`. This replaces and removes
+the old "not now" entry in `IDEAS.md` — it's built now, just not the way it was first floated.
+
+**Heading styles cleaned up.** "H1" is no longer offered as a body-text style in Studio — the post title is
+the page's one real H1, multiple H1s per page isn't good practice, and there was never a real need for
+authors to reach for it anyway. The remaining choices got friendlier labels too: **Header** (was H2),
+**Subhead** (was H3), **Minor Heading** (was H4). Purely cosmetic under the hood — the actual stored style
+values didn't change, so this touched zero already-written posts.
+
+**Answered: is Site Settings supposed to only affect the homepage?** Not an error — Site Settings only ever
+controls metadata (tab title, description, share image), never page content, and it *looks* homepage-only
+because every blog page already sets its own specific metadata, leaving Site Settings as an unused fallback
+there. Also answered the bigger question behind it — the homepage's actual content isn't in Sanity at all,
+and that's staying that way on purpose: it's a bespoke, art-directed one-page site, not the kind of
+frequently-changing, structurally-repeatable content a CMS is worth the overhead for. The blog is the
+opposite of that, which is the real reason the two are built so differently.
+
 ---
 
 ## 2026-07-30

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { track } from "@/lib/analytics";
 
 type Comment = {
@@ -156,6 +157,10 @@ function CommentForm({
   const [captcha, setCaptcha] = useState({ a: 2, b: 3 });
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [honeypot, setHoneypot] = useState("");
+  // Opt-in, unchecked by default -- controlled separately from the rest of
+  // the form (a native FormData read, elsewhere in this component) because
+  // the shadcn/Radix Checkbox isn't a plain native checkbox input.
+  const [notifyOnReply, setNotifyOnReply] = useState(false);
 
   useEffect(() => {
     setCaptcha({ a: Math.floor(Math.random() * 8) + 2, b: Math.floor(Math.random() * 8) + 2 });
@@ -187,6 +192,7 @@ function CommentForm({
           captchaA: captcha.a,
           captchaB: captcha.b,
           captchaAnswer,
+          notifyOnReply,
         }),
       });
       const result = await res.json();
@@ -195,6 +201,7 @@ function CommentForm({
         setStatus("success");
         form.reset();
         setCaptchaAnswer("");
+        setNotifyOnReply(false);
         onPosted();
       } else {
         track({ action: "comment_submit", category: "engagement", label: "error" });
@@ -272,6 +279,20 @@ function CommentForm({
             placeholder={isReply ? "Write a reply…" : "What did you think?"}
             className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40 resize-none"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={`c-notify-${parentComment ?? "main"}`}
+            checked={notifyOnReply}
+            onCheckedChange={(checked) => setNotifyOnReply(checked === true)}
+            className="border-amber-faint data-[state=checked]:bg-spotlight data-[state=checked]:border-spotlight data-[state=checked]:text-stage"
+          />
+          <Label
+            htmlFor={`c-notify-${parentComment ?? "main"}`}
+            className="cursor-pointer text-xs font-normal text-stone/70"
+          >
+            Email me if there&rsquo;s a reply to this
+          </Label>
         </div>
         <div className="space-y-2">
           <Label htmlFor={`c-captcha-${parentComment ?? "main"}`} className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">

@@ -56,24 +56,6 @@ written from scratch, versus "Acting As Jesus," which is still at the background
 
 ---
 
-## Notify a commenter by email when Asher replies
-
-**What:** when Asher replies to a comment from Studio, email the original commenter to let them know —
-the other half of the notification loop (Asher already gets emailed when someone comments; commenters get
-nothing back right now).
-
-**Why not now:** raised 2026-07-31 alongside a real concern — an email sent *to a stranger* (not to
-yourself) is exactly where spam-filtering gets strict, and landing in someone's spam folder would be worse
-than not emailing at all. Doing this properly needs its own sending domain with real authentication (SPF/
-DKIM/DMARC set up for it specifically), not just reusing the contact form's `hello@asheraw.com` sender,
-which was only ever verified for mail Asher sends to himself.
-
-**Worth revisiting when:** comment volume is high enough that "did they even see my reply" becomes a real
-question, and there's appetite to set up a properly authenticated sending domain (a real, one-time piece of
-infrastructure work, not just a code change).
-
----
-
 ## Figma-style inline highlight comments
 
 **What:** instead of (or alongside) the comment box at the bottom of a post, let a reader highlight a

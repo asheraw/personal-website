@@ -8,6 +8,7 @@ import { writeClient } from "@/sanity/lib/write-client";
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const NOTIFY_EMAIL = process.env.CONTACT_NOTIFICATION_EMAIL || "";
 const STUDIO_COMMENTS_URL = "https://asheraw.com/studio/comments";
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 // GET /api/comments?postId=<sanity post _id> -- approved comments only,
 // oldest first (a conversation reads top-to-bottom). Never returns email.
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const { postId, name, email, message, captchaA, captchaB, captchaAnswer, parentComment } = body;
+    const { postId, name, email, message, captchaA, captchaB, captchaAnswer, parentComment, notifyOnReply } = body;
     if (!postId || !name || !email || !message) {
       return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
     }
@@ -104,6 +105,15 @@ export async function POST(request: NextRequest) {
       // createdAt: null without this explicit set).
       createdAt: new Date().toISOString(),
       ...(parentRef ? { parentComment: { _type: "reference", _ref: parentRef } } : {}),
+      // Opt-in, unchecked by default -- "email me when someone replies
+      // (to my comment, or to this same thread)". Starts a 30-day clock
+      // immediately, even though the comment itself is still pending: the
+      // subscription is on the commenter's own timeline, not the
+      // moderation queue's. See /api/comments/notify-subscribers for what
+      // actually sends the email, only once a reply is approved/visible.
+      ...(notifyOnReply
+        ? { notifyOnReply: true, notifyExpiresAt: new Date(Date.now() + THIRTY_DAYS_MS).toISOString() }
+        : { notifyOnReply: false }),
     });
 
     // Best-effort notification -- the comment is already safely saved and

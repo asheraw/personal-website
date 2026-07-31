@@ -40,6 +40,11 @@ const snippetBodyComponents: PortableTextComponents = {
 export const postBodyComponents: PortableTextComponents = {
   block: {
     normal: ({ children }) => <p className="leading-8 text-ivory/90">{children}</p>,
+    // "H1" is no longer offered as a style choice in Studio (removed
+    // 2026-07-31 -- the post title is the page's one real H1, so writers
+    // shouldn't be able to add more) -- kept rendering here only so any
+    // post written before that change still displays exactly as it always
+    // has, rather than falling back to Portable Text's unstyled default.
     h1: ({ children }) => (
       <h2 className="mt-12 font-display text-3xl font-semibold tracking-tight text-ivory sm:text-4xl">
         {children}

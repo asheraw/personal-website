@@ -75,6 +75,24 @@ export const commentType = defineType({
       initialValue: false,
       readOnly: true,
     }),
+    defineField({
+      name: 'notifyOnReply',
+      title: 'Notify on reply',
+      type: 'boolean',
+      description:
+        'Set by the commenter, opt-in and unchecked by default -- email this address when a new reply lands anywhere else in this same comment thread. Auto-expires (see notifyExpiresAt) after 30 days with no new activity, or when the commenter unsubscribes from a notification email.',
+      initialValue: false,
+      readOnly: true,
+    }),
+    defineField({
+      name: 'notifyExpiresAt',
+      title: 'Notification expires',
+      type: 'datetime',
+      description:
+        'When this reply-notification subscription lapses if the thread stays quiet. Set on submission (+30 days) and pushed forward another 30 days each time a notification actually goes out, so an active conversation keeps everyone subscribed notified.',
+      readOnly: true,
+      hidden: ({document}) => !document?.notifyOnReply,
+    }),
   ],
   orderings: [
     {

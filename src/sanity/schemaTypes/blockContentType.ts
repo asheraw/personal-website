@@ -39,12 +39,19 @@ export const blockContentType = defineType({
       // set corresponds with HTML tags, but you can set any title or value
       // you want, and decide how you want to deal with it where you want to
       // use your content.
+      // No "H1" choice on purpose -- the post title itself is the page's
+      // one H1 (rendered outside this field entirely, see PostPage's own
+      // <h1>), so offering H1 here would just invite multiple-H1 pages.
+      // Values (h2/h3/h4) are unchanged from before, only the labels are
+      // friendlier -- style *values* are what's actually stored per block
+      // and what src/lib/portableText.ts's extractH2Checkpoints() and the
+      // reading-bar checkpoints key off, so renaming labels here is purely
+      // cosmetic and doesn't touch any already-written post.
       styles: [
         {title: 'Normal', value: 'normal'},
-        {title: 'H1', value: 'h1'},
-        {title: 'H2', value: 'h2'},
-        {title: 'H3', value: 'h3'},
-        {title: 'H4', value: 'h4'},
+        {title: 'Header', value: 'h2'},
+        {title: 'Subhead', value: 'h3'},
+        {title: 'Minor Heading', value: 'h4'},
         {title: 'Quote', value: 'blockquote'},
       ],
       lists: [

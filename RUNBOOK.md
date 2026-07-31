@@ -134,6 +134,17 @@ are. Custom input component: `src/sanity/components/CategoryCheckboxInput.tsx`.
 near-duplicates. If nothing's suggested, that just means the tag you're typing hasn't been used before — not
 a bug. Custom input component: `src/sanity/components/TagsAutocompleteInput.tsx`.
 
+**Heading styles in the body editor** (changed 2026-07-31, `src/sanity/schemaTypes/blockContentType.ts`): "H1"
+is no longer offered as a style choice — the post title itself (typed in its own field, not the body) is the
+page's one real `<h1>`, so this stops multiple-H1 pages from happening by accident. The remaining choices are
+labeled for what they're for rather than raw HTML tag names: **Header** (was "H2"), **Subhead** (was "H3"),
+**Minor Heading** (was "H4"). Only the *labels* changed — the underlying style values are still literally
+`h2`/`h3`/`h4`, so this didn't touch a single already-written post, and nothing else that keys off those
+values (the reading progress bar's checkpoints and each `h2`'s anchor id, both in
+`src/lib/portableText.ts`/`portableTextComponents.tsx`) needed to change either. Any post written before this
+change that already used the old "H1" style still renders exactly as it always did — the choice was removed
+from the editor going forward, not retroactively stripped from existing content.
+
 ---
 
 ## Blog post extras: related posts, print, search, the reading bar (shipped 2026-07-31)
@@ -276,6 +287,17 @@ SEO fields, grouped into two labeled sections in the form:
   page that doesn't set its own (blog posts always use their own title/excerpt/main image instead — this is
   specifically the site-wide fallback). Previously hardcoded consts in `src/app/(site)/layout.tsx`.
 - **Publishing** — Default author, as before.
+
+**Not an error, by design (clarified 2026-07-31):** Site Settings only ever controls *metadata* (tab title,
+meta description, share-preview image) — never actual page *content*. It looks like it's "controlling the
+homepage" because the homepage is the one page that has nothing else overriding those fields; every blog page
+sets its own specific title/description instead, so Site Settings only ever shows up there as an unused
+fallback. The homepage's real content (hero copy, the "stage"/"coaching"/"faith" sections, etc.) is hardcoded
+in React components, not a Sanity document at all, and stays that way on purpose — it's a highly bespoke,
+art-directed one-page site, not the kind of frequently-changing, structurally-repeatable content a CMS
+earns its keep on. The blog is exactly the opposite of that (frequent, text-heavy, benefits from Studio's
+editing/preview/versioning), which is the actual reason the two are built so differently rather than both
+going through Sanity or both being hardcoded.
 
 Schema: `src/sanity/schemaTypes/siteSettingsType.ts`. Wired into `src/app/(site)/layout.tsx`, which changed
 from a static `export const metadata` to `export async function generateMetadata()` fetching this document,
@@ -470,9 +492,44 @@ browser* — tracked via `localStorage`, so it deliberately doesn't sync across 
 different computer/browser won't show what's already been seen elsewhere. That's a real limitation, not a
 bug, and the email notification above is the actual cross-device fix.
 
-**Two things considered and deliberately not built here** — Figma-style inline highlight comments, and
-emailing a commenter when Asher replies — are logged with full reasoning in `IDEAS.md`, the running list of
-"good to have, not now" ideas. Check there before re-proposing either from scratch.
+**One thing considered and deliberately not built here** — Figma-style inline highlight comments — is logged
+with full reasoning in `IDEAS.md`, the running list of "good to have, not now" ideas.
+
+## Reply-notification subscriptions (shipped 2026-07-31)
+
+The other IDEAS.md entry — emailing a commenter when there's a reply — is now built, but not as originally
+floated (emailing *every* commenter automatically, which was deferred over real spam-deliverability risk to
+a stranger's inbox). Built instead as **opt-in, per-comment, self-expiring**:
+
+- **Opt-in, unchecked by default.** Every comment form (top-level and reply) has a small "Email me if
+  there's a reply to this" checkbox (`CommentForm` in `CommentSection.tsx`). Checking it sets `notifyOnReply`
+  and starts a 30-day `notifyExpiresAt` clock on that specific comment document
+  (`src/sanity/schemaTypes/commentType.ts`) — even while the comment itself is still pending moderation, since
+  the subscription runs on the commenter's own timeline, not the queue.
+- **"Reply" means anywhere in the same thread**, not just a direct reply to that exact comment. Subscribing on
+  a top-level comment gets you notified about *any* new reply under it, from Asher or another visitor; a
+  reply itself can also subscribe, to hear about later replies from other people in the same thread.
+- **Only fires once a reply is actually visible.** The trigger is `POST /api/comments/notify-subscribers`
+  (`{replyId}`), called from two places only: `CommentsTool.tsx`'s `submitReply` (an author reply, always
+  auto-approved) and `setStatus()` when a *reply* (has `parentComment`) gets manually approved in the
+  moderation queue. A still-pending reply notifies nobody — nothing to see yet.
+- **Rolling 30-day expiry, not a flat one-time window.** Every time a notification actually goes out, every
+  subscriber just notified gets their own `notifyExpiresAt` pushed forward another 30 days. An active
+  conversation keeps its subscribers subscribed; one that goes quiet for a month lapses on its own, with
+  nothing for anyone to manage.
+- **One-click unsubscribe**, no login: `GET /api/comments/unsubscribe?id=<commentId>` (linked from every
+  notification email) sets that comment's `notifyOnReply` back to false. The comment's own `_id` *is* the
+  token — Sanity ids are long and never shown anywhere public, so a second signed token wasn't worth adding.
+- **The email itself** (`src/lib/emails.ts`, `buildReplyNotificationEmail`) is a small styled HTML card (with
+  a plain-text fallback) built to push the reader back to the site — a "View & Reply on the Blog" button, not
+  an invitation to just hit reply in their email client. That's deliberate: `hello@asheraw.com` isn't set up
+  to receive or parse inbound mail, so the email says so explicitly rather than silently swallowing a reply
+  someone sent back to it.
+
+This reuses the same already-verified `hello@asheraw.com` / Resend setup as every other email this site
+sends — no new domain authentication needed. What actually changed the deliverability calculus from the
+original "email everyone automatically" idea is the opt-in itself: this only ever emails someone who
+explicitly asked, about a thread they're already a real part of, with a working one-click way out.
 
 ---
 

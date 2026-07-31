@@ -102,11 +102,34 @@ export function CommentsTool() {
     }
   }, [comments])
 
+  // Best-effort, fire-and-forget -- the reply is already saved/approved
+  // regardless of whether this succeeds. Notifies everyone else already
+  // subscribed ("notify on reply") elsewhere in the same thread; see
+  // src/app/api/comments/notify-subscribers/route.ts for the actual
+  // eligibility check and email send.
+  function notifySubscribers(replyId: string) {
+    fetch('/api/comments/notify-subscribers', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({replyId}),
+    }).catch(() => {
+      // Nothing actionable to do here -- logged server-side if it's a
+      // real failure, and a missed notification isn't worth surfacing as
+      // an error in the moderation UI.
+    })
+  }
+
   async function setStatus(id: string, status: CommentRow['status']) {
     setBusyId(id)
     try {
       await client.patch(id).set({status}).commit()
       setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, status} : c)) : prev))
+      // A reply only just became visible -- a top-level comment being
+      // approved has no replies-of-its-own to notify anyone about yet.
+      const approvedComment = comments?.find((c) => c._id === id)
+      if (status === 'approved' && approvedComment?.parentComment) {
+        notifySubscribers(id)
+      }
     } finally {
       setBusyId(null)
     }
@@ -158,6 +181,7 @@ export function CommentsTool() {
       )
       setReplyingId(null)
       setReplyText('')
+      notifySubscribers(created._id)
     } finally {
       setReplyBusy(false)
     }
