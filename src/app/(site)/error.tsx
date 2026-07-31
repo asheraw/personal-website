@@ -23,7 +23,7 @@ export default function SiteError({
   }, [error]);
 
   return (
-    <main className="relative flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-5 pt-16 sm:px-8">
+    <main id="main-content" className="relative flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-5 pt-16 sm:px-8">
       <div className="pointer-events-none absolute inset-0 bg-grid-paper opacity-40" aria-hidden />
       <div
         className="pointer-events-none absolute inset-0"

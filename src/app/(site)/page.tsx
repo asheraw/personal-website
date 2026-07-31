@@ -45,7 +45,7 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-stage text-ivory">
       <ConfigureSiteChrome mode={effectiveMode} setMode={handleSetMode} context="home" />
-      <main>
+      <main id="main-content">
         {effectiveMode === "play" ? (
           <PlayMode />
         ) : (

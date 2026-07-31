@@ -12,6 +12,7 @@ import { CursorTracker } from "@/components/asher/CursorTracker";
 import { Analytics } from "@/components/asher/Analytics";
 import { CookieConsent } from "@/components/asher/CookieConsent";
 import { StructuredData } from "@/components/asher/StructuredData";
+import { SkipToContentLink } from "@/components/asher/SkipToContentLink";
 
 const SITE_URL = "https://asheraw.com";
 // Fallbacks only -- used if Site Settings (Studio) has no value set yet,
@@ -74,6 +75,7 @@ export default async function SiteLayout({ children }: Readonly<{ children: Reac
 
   return (
     <>
+      <SkipToContentLink />
       <StructuredData />
       <Analytics />
       <SiteProviders>

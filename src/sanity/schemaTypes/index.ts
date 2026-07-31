@@ -10,7 +10,8 @@ import {notFoundHitType} from './notFoundHitType'
 import {siteSettingsType} from './siteSettingsType'
 import {snippetType} from './snippetType'
 import {commentType} from './commentType'
+import {redirectType} from './redirectType'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType],
+  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType],
 }

@@ -7,7 +7,7 @@ export function BlogChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-stage text-ivory">
       <ConfigureSiteChrome context="blog" />
-      <main className="pt-28 pb-16">{children}</main>
+      <main id="main-content" className="pt-28 pb-16">{children}</main>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/asher/SiteHeader";
 import { SiteFooter } from "@/components/asher/SiteFooter";
 import { SiteProviders } from "@/components/asher/SiteProviders";
 import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
+import { SkipToContentLink } from "@/components/asher/SkipToContentLink";
 import { track } from "@/lib/analytics";
 
 export function NotFoundContent() {
@@ -50,11 +51,13 @@ export function NotFoundContent() {
           live at the true app root (Next.js requires that for the global
           not-found boundary to catch genuinely unmatched URLs), so it can't
           share the (site) layout's providers, but it mounts the identical
-          components rather than a bespoke copy. */}
+          components rather than a bespoke copy. Same reasoning for the skip
+          link -- (site)/layout.tsx's own copy doesn't reach this page. */}
+      <SkipToContentLink />
       <ConfigureSiteChrome context="404" />
       <div className="min-h-screen bg-stage text-ivory">
         <SiteHeader />
-        <main className="relative flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-5 pt-16 sm:px-8">
+        <main id="main-content" className="relative flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center overflow-hidden px-5 pt-16 sm:px-8">
           <div className="pointer-events-none absolute inset-0 bg-grid-paper opacity-40" aria-hidden />
           <div
             className="pointer-events-none absolute inset-0"

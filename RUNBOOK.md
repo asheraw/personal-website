@@ -117,6 +117,57 @@ worse, but can't break the feature. Leave the field blank to fall back to the bu
 `DEFAULT_AI_PROMPT_INSTRUCTIONS` in `src/lib/aiPromptDefaults.ts`, shared with the settings field's starting
 value so the two can't quietly drift apart).
 
+**"SEO Preview" tab** (shipped 2026-07-31): every post's document pane has a second tab next to the normal
+Editor form (`src/sanity/components/SeoPreviewView.tsx`, wired in `structure.tsx`) — an approximate Google
+search-result preview and social-share-card mockup, live character counts against the same 70/160 limits the
+schema fields and "Suggest SEO & Excerpt" already use, and the same "worth a look" checklist the pre-publish
+dialog shows (now also flags a featured image with no alt text, not just a missing image). Updates as the
+draft autosaves via Sanity's own `useEditState` hook — not a fixed snapshot, no separate "refresh" step.
+Complements, doesn't replace, the pre-publish dialog: that one's a last-chance popup right before Publish,
+this one's visible the whole time you're actually writing. Both share one function
+(`getChecklistIssues`, exported from `prepareForPublish.tsx`) for what counts as "worth a look," so the two
+can't quietly disagree with each other.
+
+---
+
+## Redirects: old URL → new URL (shipped 2026-07-31)
+
+**Studio → Redirects** (`src/sanity/schemaTypes/redirectType.ts`): add a "From path" (e.g. `/blog/old-slug`)
+and a "To path or URL" (an internal path or a full URL), and every visitor hitting the old path gets sent to
+the new one automatically — no rebuild, no redeploy. Toggle "Permanent (301)" off for a temporary (302)
+redirect; on (the default) is right for almost every real case here, like a renamed post's old slug or a page
+that's gone for good. A duplicate "From path" is blocked at save time (checked against every other redirect,
+draft or published).
+
+**How it actually works:** `src/middleware.ts` runs on every request, checks the path against the current
+redirect list, and — if there's a match — redirects before Next.js even tries to match a route. The list
+itself is fetched from Sanity's CDN API directly (a plain `fetch`, not the `@sanity/client` SDK, to stay
+definitely compatible with the Edge runtime middleware runs on) and cached in memory for **60 seconds per edge
+instance** — same tradeoff as this site's other `revalidate = 60` pages: a brand-new or just-edited redirect
+can take up to a minute to actually start working, in exchange for not hitting Sanity on every single page
+view. `/studio/**`, `/_next/**`, and `/favicon.ico` are excluded from ever being redirected (`config.matcher`
+in `middleware.ts`) — a redirect should never be able to break access to Studio itself or static assets.
+
+**If a redirect isn't working:** check it's actually saved as *published* in Studio, not just a draft (an
+unpublished redirect document is invisible to `middleware.ts`, which queries the published dataset). If it
+was just added or edited, wait up to a minute for the cache to catch up before assuming it's broken. Also
+double-check "From path" starts with `/` and has no query string — validation should catch this at save time,
+but it's the first thing to check if a redirect that looks right still isn't firing.
+
+---
+
+## Skip-to-content link (shipped 2026-07-31)
+
+An invisible-until-focused "Skip to content" link (`src/components/asher/SkipToContentLink.tsx`), the very
+first focusable element on every page — Tab once, and a keyboard or screen-reader user can jump straight past
+the header (logo, every nav link, the theme toggle) instead of tabbing through all of it on every single page
+load. Mouse/touch visitors never see it; nothing about the page's normal appearance changed. Wired in twice,
+matching the two places `SiteHeader` itself gets mounted independently: `(site)/layout.tsx` (covers the
+homepage, blog, and connect) and `NotFoundContent.tsx` (the 404 page lives outside the `(site)` route group
+entirely, so it needed its own copy). Targets `id="main-content"`, present on every page's main content
+wrapper — if a new top-level page is ever added outside `BlogChrome`, give its own content wrapper that same
+id or the skip link will silently do nothing on that one page.
+
 ---
 
 ## Post metadata: reading time, categories, tags

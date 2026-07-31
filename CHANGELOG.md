@@ -231,6 +231,32 @@ navbar extension point rather than depending on how an individual tool tab happe
 (`CommentsNavbarBadge.tsx` + `StudioNavbar.tsx`, `sanity.config.ts`). Both this and the original tool-icon
 badge now share one polling hook instead of two separate timers hitting the same query.
 
+Also logged: a similar always-visible badge for unhandled Contact Submissions, once there's a real submission
+to build and test it against (`IDEAS.md`).
+
+### Continued (skip link, redirects, and the SEO Preview tab — starting Phase 3)
+
+Closed out the last pending Phase 2 item and started Phase 3 (SEO & Machine Readability):
+
+**Skip-to-content link.** The one accessibility gap flagged in the Phase 2 audit — a keyboard or
+screen-reader user previously had to tab through the entire header on *every page* before reaching actual
+content. Now the first focusable element on every page is an invisible "Skip to content" link that only
+appears when it receives keyboard focus, jumping straight past the header. No visual impact for anyone using
+a mouse or touch. `SkipToContentLink.tsx`.
+
+**Redirect handling.** There was previously no mechanism at all for "old URL → new URL" — a renamed post's
+slug just 404'd. New **Studio → Redirects**: add a from/to path (or full URL), toggle permanent (301) vs
+temporary (302), done — no rebuild or redeploy needed. `src/middleware.ts` checks every request against the
+current redirect list (cached ~60s) and redirects before Next.js even tries to match a route.
+
+**SEO Preview tab.** Every post now has a second tab next to the normal Editor — an approximate Google
+search-result preview and social-share-card mockup, live character-count guidance against the same limits
+already used elsewhere (70/160), and the same "worth a look" checklist the pre-publish dialog shows (now
+also catches a featured image with no alt text). Updates as the draft autosaves. This is the first piece of
+Phase 3; the pre-publish checklist and "Suggest SEO & Excerpt" AI action already covered "intelligent
+defaults" and "missing-field warnings" from the spec — this tab is specifically the "see it before it ships"
+preview piece that was still missing. Asher's read: not core to his current workflow, but useful to have.
+
 ---
 
 ## 2026-07-30

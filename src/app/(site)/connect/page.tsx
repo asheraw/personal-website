@@ -33,7 +33,7 @@ const DIRECT = [
 
 export default function ConnectPage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-stage px-5 pt-28 pb-16 text-ivory sm:px-8 sm:pt-32 sm:pb-24">
+    <main id="main-content" className="relative min-h-screen overflow-hidden bg-stage px-5 pt-28 pb-16 text-ivory sm:px-8 sm:pt-32 sm:pb-24">
       {/* The global SiteHeader/SiteFooter cover the theme toggle, site nav,
           and full footer now -- /connect used to opt out of the shared
           footer in favour of its own minimal one, but keeping the same
@@ -95,6 +95,6 @@ export default function ConnectPage() {
         </div>
 
       </div>
-    </div>
+    </main>
   );
 }

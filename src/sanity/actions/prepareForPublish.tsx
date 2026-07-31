@@ -1,19 +1,26 @@
 import {useState} from 'react'
 import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 
-type PostDraft = {
-  mainImage?: unknown
+export type PostDraft = {
+  mainImage?: {alt?: string} | null
   excerpt?: string
   categories?: unknown[]
   seoTitle?: string
   title?: string
 }
 
-function getChecklistIssues(doc: PostDraft | null): string[] {
+// Shared by the pre-publish confirmation dialog below and SeoPreviewView
+// (the persistent "SEO Preview" document tab) -- one list of "worth a
+// look" issues, not two that could quietly drift apart from each other.
+export function getChecklistIssues(doc: PostDraft | null): string[] {
   if (!doc) return []
   const issues: string[] = []
 
-  if (!doc.mainImage) issues.push('No featured image set')
+  if (!doc.mainImage) {
+    issues.push('No featured image set')
+  } else if (!doc.mainImage.alt) {
+    issues.push('Featured image has no alt text — helps search engines and screen readers alike')
+  }
   if (!doc.excerpt) {
     issues.push('No excerpt written — a preview will be auto-generated from the post text instead')
   }

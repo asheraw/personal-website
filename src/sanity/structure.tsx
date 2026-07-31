@@ -3,13 +3,31 @@ import {CogIcon} from '@sanity/icons/Cog'
 import {ComponentIcon} from '@sanity/icons/Component'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
+import {SeoPreviewView} from './components/SeoPreviewView'
 
 // https://www.sanity.io/docs/structure-builder-cheat-sheet
 export const structure: StructureResolver = (S) =>
   S.list()
     .title('Blog')
     .items([
-      S.documentTypeListItem('post').title('Posts'),
+      // Custom child so every post also gets an "SEO Preview" tab
+      // alongside the normal Editor form -- approximate Google/social
+      // previews, character-count guidance, and the same "worth a look"
+      // checklist the pre-publish dialog shows, but visible the whole
+      // time you're writing instead of only right before Publish.
+      S.listItem()
+        .title('Posts')
+        .schemaType('post')
+        .child(
+          S.documentTypeList('post')
+            .title('Posts')
+            .child((postId) =>
+              S.document()
+                .documentId(postId)
+                .schemaType('post')
+                .views([S.view.form(), S.view.component(SeoPreviewView).title('SEO Preview')]),
+            ),
+        ),
       // Custom child (instead of the plain documentTypeListItem default) so
       // each category gets a second "Posts" tab alongside the normal Editor
       // form -- shows which posts use it before you decide to delete it.
@@ -56,6 +74,7 @@ export const structure: StructureResolver = (S) =>
         ),
       S.divider(),
       S.documentTypeListItem('contactSubmission').title('Contact Submissions'),
+      S.documentTypeListItem('redirect').title('Redirects'),
       // 404 Hits moved to a top-nav tool (see sanity.config.ts) -- a single
       // overview page listing every path, instead of clicking into each
       // one's own document.
@@ -84,6 +103,7 @@ export const structure: StructureResolver = (S) =>
             'siteSettings',
             'snippet',
             'comment',
+            'redirect',
           ].includes(item.getId()!),
       ),
     ])
