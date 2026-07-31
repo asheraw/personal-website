@@ -76,23 +76,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Message is too long." }, { status: 400 });
     }
 
-    // Replies are capped at one level -- you can reply to a top-level
-    // comment, but not to a reply. Re-checked here, not just hidden in the
-    // UI, since a request crafted by hand could otherwise target any
-    // comment ID directly. The parent also has to actually belong to this
-    // same post and already be approved (a visitor can only ever see, and
-    // therefore only ever click "Reply" on, an approved comment in the
-    // first place).
+    // Replies nest up to 3 levels deep (comment -> reply -> reply to that
+    // reply), then flatten: replying to an already-3rd-level comment
+    // attaches the new comment to THAT comment's own parent instead,
+    // making it a sibling at the same (3rd) level rather than nesting a
+    // 4th. Re-checked here, not just handled by the UI always sending
+    // "the comment you clicked Reply on" as parentComment, since a request
+    // crafted by hand could otherwise target any comment ID directly. The
+    // target also has to actually belong to this same post and already be
+    // approved (a visitor can only ever see, and therefore only ever click
+    // "Reply" on, an approved comment in the first place).
     let parentRef: string | undefined;
     if (parentComment) {
-      const parent = await writeClient.fetch(
-        `*[_type == "comment" && _id == $parentComment][0]{post, status, parentComment}`,
+      const target = await writeClient.fetch(
+        `*[_type == "comment" && _id == $parentComment][0]{
+          post, status,
+          "parentComment": parentComment._ref,
+          "grandparentComment": parentComment->parentComment._ref
+        }`,
         { parentComment }
       );
-      if (!parent || parent.post?._ref !== postId || parent.status !== "approved" || parent.parentComment) {
+      if (!target || target.post?._ref !== postId || target.status !== "approved") {
         return NextResponse.json({ success: false, error: "Can't reply to that comment." }, { status: 400 });
       }
-      parentRef = parentComment;
+      // target has a grandparent => target is already the 3rd (deepest)
+      // level => attach to target's own parent instead of target itself.
+      parentRef = target.grandparentComment ? target.parentComment : parentComment;
     }
 
     // Same header the contact form already reads. Not authoritative (a
@@ -155,7 +164,7 @@ export async function POST(request: NextRequest) {
       try {
         const post = await writeClient.fetch(`*[_id == $postId][0]{title}`, { postId });
         await resend.emails.send({
-          from: "AsherAw.com Comments <hello@asheraw.com>",
+          from: "AsherAw.com/blog Notifications <blogcomment@asheraw.com>",
           to: NOTIFY_EMAIL,
           subject: parentRef
             ? `[Site Comment] ${name} replied on "${post?.title ?? "a post"}"`

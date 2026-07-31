@@ -39,7 +39,7 @@ export function buildReplyNotificationEmail({
   unsubscribeUrl: string;
 }): { subject: string; html: string; text: string } {
   const subject = `${replierName} replied on "${postTitle}"`;
-  const preview = escapeHtml(truncate(message, 160));
+  const preview = escapeHtml(truncate(message, 120));
 
   const html = `<!doctype html>
 <html>
@@ -65,7 +65,7 @@ export function buildReplyNotificationEmail({
               <td style="padding:16px 32px 0;">
                 <p style="margin:0;font-size:14px;line-height:1.6;color:rgba(243,233,212,0.75);">
                   <strong style="color:${BRAND_IVORY};">${escapeHtml(replierName)}</strong> replied on
-                  &ldquo;${escapeHtml(postTitle)}&rdquo;:
+                  &ldquo;<a href="${postUrl}" style="color:${BRAND_AMBER};text-decoration:underline;">${escapeHtml(postTitle)}</a>&rdquo;:
                 </p>
                 <p style="margin:14px 0 0;padding:14px 16px;background:rgba(217,152,70,0.06);border-left:2px solid rgba(217,152,70,0.5);border-radius:4px;font-size:14px;line-height:1.6;color:${BRAND_IVORY};font-style:italic;">
                   ${preview}
@@ -98,7 +98,7 @@ export function buildReplyNotificationEmail({
 
   const text = `${replierName} replied on "${postTitle}":
 
-"${truncate(message, 160)}"
+"${truncate(message, 120)}"
 
 View & reply: ${postUrl}
 

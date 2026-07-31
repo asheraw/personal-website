@@ -75,7 +75,7 @@ export const commentType = defineType({
       title: 'Replying to',
       type: 'reference',
       to: [{type: 'comment'}],
-      description: 'Set when this comment is a reply to another one -- either a visitor replying from the live site, or Asher replying from the Comments tool. One level deep: a comment that is itself a reply can\'t be replied to.',
+      description: 'Set when this comment is a reply to another one -- either a visitor replying from the live site, or Asher replying from the Comments tool. Nests up to 3 levels deep (comment -> reply -> reply to that reply); replying to an already-3rd-level comment attaches to that comment\'s own parent instead, flattening to a sibling rather than a 4th level (enforced in /api/comments\'s POST handler, not just the UI).',
       readOnly: true,
     }),
     defineField({

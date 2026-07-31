@@ -51,34 +51,46 @@ export function CommentSection({ postId }: { postId: string }) {
           {topLevel.map((c) => (
             <div key={c._id}>
               <CommentCard comment={c} />
-              <button
-                type="button"
-                onClick={() => setReplyingToId(replyingToId === c._id ? null : c._id)}
-                className="mt-2 inline-flex items-center gap-1.5 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60 transition-colors hover:text-spotlight"
-              >
-                <Reply size={12} /> Reply
-              </button>
-
-              {replyingToId === c._id && (
-                <div className="mt-3 ml-6 sm:ml-10">
-                  <CommentForm
-                    postId={postId}
-                    parentComment={c._id}
-                    variant="reply"
-                    onPosted={() => {
-                      setReplyingToId(null);
-                      refetch();
-                    }}
-                    onCancel={() => setReplyingToId(null)}
-                  />
-                </div>
-              )}
+              <ReplyControl
+                comment={c}
+                postId={postId}
+                replyingToId={replyingToId}
+                setReplyingToId={setReplyingToId}
+                refetch={refetch}
+              />
 
               {comments
                 .filter((r) => r.parentComment === c._id)
                 .map((r) => (
                   <div key={r._id} className="ml-6 mt-3 sm:ml-10">
                     <CommentCard comment={r} />
+                    <ReplyControl
+                      comment={r}
+                      postId={postId}
+                      replyingToId={replyingToId}
+                      setReplyingToId={setReplyingToId}
+                      refetch={refetch}
+                    />
+
+                    {comments
+                      .filter((r3) => r3.parentComment === r._id)
+                      .map((r3) => (
+                        <div key={r3._id} className="ml-6 mt-3 sm:ml-10">
+                          <CommentCard comment={r3} />
+                          {/* Reply here still works, per the design -- it just
+                              doesn't nest a 4th level. /api/comments flattens
+                              it to a sibling of r3, under the same level-2
+                              parent (r), which is exactly where it'll render
+                              once this list refetches. */}
+                          <ReplyControl
+                            comment={r3}
+                            postId={postId}
+                            replyingToId={replyingToId}
+                            setReplyingToId={setReplyingToId}
+                            refetch={refetch}
+                          />
+                        </div>
+                      ))}
                   </div>
                 ))}
             </div>
@@ -90,6 +102,52 @@ export function CommentSection({ postId }: { postId: string }) {
         <CommentForm postId={postId} variant="main" onPosted={refetch} />
       </div>
     </div>
+  );
+}
+
+// The "Reply" toggle + its inline form, shared across all 3 levels a
+// comment can appear at. Always sends the clicked comment's own id as
+// parentComment -- /api/comments decides whether that nests one level
+// deeper or (once already at the 3rd/deepest level) flattens to a sibling
+// instead, so this component never needs to know which case it's in.
+function ReplyControl({
+  comment,
+  postId,
+  replyingToId,
+  setReplyingToId,
+  refetch,
+}: {
+  comment: Comment;
+  postId: string;
+  replyingToId: string | null;
+  setReplyingToId: (id: string | null) => void;
+  refetch: () => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setReplyingToId(replyingToId === comment._id ? null : comment._id)}
+        className="mt-2 inline-flex items-center gap-1.5 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60 transition-colors hover:text-spotlight"
+      >
+        <Reply size={12} /> Reply
+      </button>
+
+      {replyingToId === comment._id && (
+        <div className="mt-3 ml-6 sm:ml-10">
+          <CommentForm
+            postId={postId}
+            parentComment={comment._id}
+            variant="reply"
+            onPosted={() => {
+              setReplyingToId(null);
+              refetch();
+            }}
+            onCancel={() => setReplyingToId(null)}
+          />
+        </div>
+      )}
+    </>
   );
 }
 

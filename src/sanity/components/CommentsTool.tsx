@@ -219,6 +219,22 @@ export function CommentsTool() {
     }
   }
 
+  // Same flatten rule as /api/comments's POST handler, re-derived here
+  // since this creates the document directly with client.create() rather
+  // than going through that route: replies nest up to 3 levels deep, so
+  // replying to an already-3rd-level comment attaches the new comment to
+  // THAT comment's own parent instead, making it a sibling at the same
+  // (3rd) level rather than nesting a 4th.
+  function resolveReplyParentId(parent: CommentRow): string {
+    if (parent.parentComment) {
+      const parentsParent = comments?.find((c) => c._id === parent.parentComment)
+      if (parentsParent?.parentComment) {
+        return parent.parentComment
+      }
+    }
+    return parent._id
+  }
+
   // Replies are created already "approved" -- they're Asher's own words, not
   // visitor-submitted content that needs moderating -- and are never subject
   // to the honeypot/captcha checks the public form goes through, since this
@@ -227,6 +243,7 @@ export function CommentsTool() {
     if (!replyText.trim() || !parent.postId) return
     setReplyBusy(true)
     try {
+      const parentRef = resolveReplyParentId(parent)
       const created = await client.create({
         _type: 'comment',
         post: {_type: 'reference', _ref: parent.postId},
@@ -235,7 +252,7 @@ export function CommentsTool() {
         message: replyText.trim(),
         status: 'approved',
         createdAt: new Date().toISOString(),
-        parentComment: {_type: 'reference', _ref: parent._id},
+        parentComment: {_type: 'reference', _ref: parentRef},
         isAuthorReply: true,
       })
       setComments((prev) =>
@@ -254,7 +271,7 @@ export function CommentsTool() {
                 postId: parent.postId,
                 postTitle: parent.postTitle,
                 postSlug: parent.postSlug,
-                parentComment: parent._id,
+                parentComment: parentRef,
                 isAuthorReply: true,
               },
               ...prev,
@@ -414,56 +431,102 @@ export function CommentsTool() {
                           />
 
                           {replyingId === comment._id && (
-                            <Box marginLeft={4}>
-                              <Stack space={2}>
-                                <TextArea
-                                  fontSize={1}
-                                  rows={3}
-                                  placeholder={`Reply as ${REPLY_AUTHOR_NAME}…`}
-                                  value={replyText}
-                                  onChange={(e) => setReplyText(e.currentTarget.value)}
-                                />
-                                <Flex gap={2}>
-                                  <Button
-                                    text="Post reply"
-                                    tone="primary"
-                                    fontSize={1}
-                                    disabled={replyBusy || !replyText.trim()}
-                                    onClick={() => submitReply(comment)}
-                                  />
-                                  <Button
-                                    text="Cancel"
-                                    mode="ghost"
-                                    fontSize={1}
-                                    disabled={replyBusy}
-                                    onClick={() => setReplyingId(null)}
-                                  />
-                                </Flex>
-                              </Stack>
-                            </Box>
+                            <InlineReplyForm
+                              replyText={replyText}
+                              replyBusy={replyBusy}
+                              onChange={setReplyText}
+                              onSubmit={() => submitReply(comment)}
+                              onCancel={() => setReplyingId(null)}
+                            />
                           )}
 
-                          {replies.map((reply) => (
-                            <Box key={reply._id} marginLeft={4}>
-                              <CommentCard
-                                comment={reply}
-                                isNew={isNew(reply)}
-                                busy={busyId === reply._id}
-                                editing={editingId === reply._id}
-                                editText={editText}
-                                editBusy={editBusy}
-                                onEditTextChange={setEditText}
-                                onApprove={() => setStatus(reply._id, 'approved')}
-                                onReject={() => setStatus(reply._id, 'rejected')}
-                                onSpam={() => setStatus(reply._id, 'spam')}
-                                onTrash={() => trashComment(reply._id)}
-                                onEditClick={() => startEdit(reply)}
-                                onSaveEdit={() => saveEdit(reply._id)}
-                                onCancelEdit={() => setEditingId(null)}
-                                parentStatus={comment.status}
-                              />
-                            </Box>
-                          ))}
+                          {/* Depth 2 (a reply to the original comment). */}
+                          {replies.map((reply) => {
+                            const replies3 = group.comments
+                              .filter((r3) => r3.parentComment === reply._id)
+                              .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+
+                            return (
+                              <Box key={reply._id} marginLeft={4}>
+                                <Stack space={3}>
+                                  <CommentCard
+                                    comment={reply}
+                                    isNew={isNew(reply)}
+                                    busy={busyId === reply._id}
+                                    hasReplies={replies3.length > 0}
+                                    editing={editingId === reply._id}
+                                    editText={editText}
+                                    editBusy={editBusy}
+                                    onEditTextChange={setEditText}
+                                    onApprove={() => setStatus(reply._id, 'approved')}
+                                    onReject={() => setStatus(reply._id, 'rejected')}
+                                    onSpam={() => setStatus(reply._id, 'spam')}
+                                    onTrash={() => trashComment(reply._id)}
+                                    onEditClick={() => startEdit(reply)}
+                                    onSaveEdit={() => saveEdit(reply._id)}
+                                    onCancelEdit={() => setEditingId(null)}
+                                    onReplyClick={replyingId === reply._id ? undefined : () => startReply(reply._id)}
+                                    parentStatus={comment.status}
+                                  />
+
+                                  {replyingId === reply._id && (
+                                    <InlineReplyForm
+                                      replyText={replyText}
+                                      replyBusy={replyBusy}
+                                      onChange={setReplyText}
+                                      onSubmit={() => submitReply(reply)}
+                                      onCancel={() => setReplyingId(null)}
+                                    />
+                                  )}
+
+                                  {/* Depth 3 (a reply to a reply) -- the
+                                      deepest level. Its own Reply action
+                                      stays available (submitReply flattens
+                                      it back here via resolveReplyParentId
+                                      instead of nesting a 4th level), so
+                                      whatever it creates shows up as
+                                      another card in this same list rather
+                                      than nesting further. */}
+                                  {replies3.map((reply3) => (
+                                    <Box key={reply3._id} marginLeft={4}>
+                                      <Stack space={3}>
+                                        <CommentCard
+                                          comment={reply3}
+                                          isNew={isNew(reply3)}
+                                          busy={busyId === reply3._id}
+                                          editing={editingId === reply3._id}
+                                          editText={editText}
+                                          editBusy={editBusy}
+                                          onEditTextChange={setEditText}
+                                          onApprove={() => setStatus(reply3._id, 'approved')}
+                                          onReject={() => setStatus(reply3._id, 'rejected')}
+                                          onSpam={() => setStatus(reply3._id, 'spam')}
+                                          onTrash={() => trashComment(reply3._id)}
+                                          onEditClick={() => startEdit(reply3)}
+                                          onSaveEdit={() => saveEdit(reply3._id)}
+                                          onCancelEdit={() => setEditingId(null)}
+                                          onReplyClick={
+                                            replyingId === reply3._id ? undefined : () => startReply(reply3._id)
+                                          }
+                                          parentStatus={reply.status}
+                                        />
+
+                                        {replyingId === reply3._id && (
+                                          <InlineReplyForm
+                                            replyText={replyText}
+                                            replyBusy={replyBusy}
+                                            onChange={setReplyText}
+                                            onSubmit={() => submitReply(reply3)}
+                                            onCancel={() => setReplyingId(null)}
+                                          />
+                                        )}
+                                      </Stack>
+                                    </Box>
+                                  ))}
+                                </Stack>
+                              </Box>
+                            )
+                          })}
                         </Stack>
                       )
                     })}
@@ -473,6 +536,46 @@ export function CommentsTool() {
             })}
           </>
         )}
+      </Stack>
+    </Box>
+  )
+}
+
+// Shared by all 3 nesting levels -- identical form, just wired to whichever
+// comment's Reply button was clicked.
+function InlineReplyForm({
+  replyText,
+  replyBusy,
+  onChange,
+  onSubmit,
+  onCancel,
+}: {
+  replyText: string
+  replyBusy: boolean
+  onChange: (value: string) => void
+  onSubmit: () => void
+  onCancel: () => void
+}) {
+  return (
+    <Box marginLeft={4}>
+      <Stack space={2}>
+        <TextArea
+          fontSize={1}
+          rows={3}
+          placeholder={`Reply as ${REPLY_AUTHOR_NAME}…`}
+          value={replyText}
+          onChange={(e) => onChange(e.currentTarget.value)}
+        />
+        <Flex gap={2}>
+          <Button
+            text="Post reply"
+            tone="primary"
+            fontSize={1}
+            disabled={replyBusy || !replyText.trim()}
+            onClick={onSubmit}
+          />
+          <Button text="Cancel" mode="ghost" fontSize={1} disabled={replyBusy} onClick={onCancel} />
+        </Flex>
       </Stack>
     </Box>
   )

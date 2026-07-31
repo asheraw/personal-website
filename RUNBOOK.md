@@ -577,16 +577,25 @@ avoid telling spammers which submissions got through). If it's not there at all,
 accidentally triggered (an autofill browser extension filling every input on the page, for example) or the
 math captcha wasn't miskeyed.
 
-**Replies (shipped 2026-07-31, opened up to everyone the same day):** any top-level comment — on the live
-site, not just in Studio — has a **Reply** link. One level of nesting only: a reply can't itself be replied
-to, enforced both in the UI (no Reply link on a reply) and server-side in `/api/comments`'s `POST` handler
-(a hand-crafted request targeting a reply's ID as the parent is rejected). A visitor's reply goes through the
-same moderation queue as any other comment. **Asher's own replies are different only in one way:** the
-**Reply** button inside Studio → Comments creates a comment with `isAuthorReply: true` and
-`status: "approved"` set immediately, skipping moderation since it's Asher's own words, not visitor content
-— and rendering in a spotlight-accented card with an "Author" badge on the site
-(`src/components/asher/blog/CommentSection.tsx`'s `CommentCard`), instead of the neutral style every other
-comment (including a visitor's own reply) gets. The reply's display name from Studio is a constant
+**Replies (shipped 2026-07-31, opened up to everyone the same day; extended to 3 levels deep later that day
+per reader feedback):** any comment — on the live site, not just in Studio — has a **Reply** link. Nesting
+goes 3 levels deep: a comment, a reply to it, and a reply to that reply. The 3rd level still shows a Reply
+link, but posting from there doesn't create a 4th level — it **flattens**, landing as another comment at the
+same 3rd depth (a sibling of the one just replied to), still attached to the same 2nd-level parent. This is
+derived on the fly rather than stored: whichever comment Reply was clicked on gets looked up along with its
+own parent, and if *that* parent itself has a parent too (i.e. the clicked comment is already 3 levels deep),
+the new comment attaches to the clicked comment's parent instead of the comment itself. Enforced **server-side**
+in `/api/comments`'s `POST` handler (`src/app/api/comments/route.ts`) — not just the UI always sending "the
+comment Reply was clicked on," since a hand-crafted request could otherwise target any comment ID directly —
+and duplicated the same way in `CommentsTool.tsx`'s `submitReply` (`resolveReplyParentId`), since a
+Studio-initiated reply creates the document directly with `client.create()` rather than going through that
+API route. No schema field tracks depth explicitly; both places derive it from the existing self-referencing
+`parentComment` reference. A visitor's reply goes through the same moderation queue as any other comment.
+**Asher's own replies are different only in one way:** the **Reply** button inside Studio → Comments creates a
+comment with `isAuthorReply: true` and `status: "approved"` set immediately, skipping moderation since it's
+Asher's own words, not visitor content — and rendering in a spotlight-accented card with an "Author" badge on
+the site (`src/components/asher/blog/CommentSection.tsx`'s `CommentCard`), instead of the neutral style every
+other comment (including a visitor's own reply) gets. The reply's display name from Studio is a constant
 (`REPLY_AUTHOR_NAME` in `CommentsTool.tsx`) — cosmetic only, change that one line if it's ever wrong; the
 actual styling logic keys off `isAuthorReply`, not the name string.
 
@@ -657,14 +666,21 @@ a stranger's inbox). Built instead as **opt-in, per-comment, self-expiring**:
   token — Sanity ids are long and never shown anywhere public, so a second signed token wasn't worth adding.
 - **The email itself** (`src/lib/emails.ts`, `buildReplyNotificationEmail`) is a small styled HTML card (with
   a plain-text fallback) built to push the reader back to the site — a "View & Reply on the Blog" button, not
-  an invitation to just hit reply in their email client. That's deliberate: `hello@asheraw.com` isn't set up
-  to receive or parse inbound mail, so the email says so explicitly rather than silently swallowing a reply
-  someone sent back to it.
+  an invitation to just hit reply in their email client. The quoted message preview truncates at 120
+  characters with an ellipsis (`truncate()` in `emails.ts`), and the post title in the HTML version is a
+  clickable link straight to the post, not plain text.
+- **Sender and reply handling (updated 2026-07-31, per Asher):** sent from `AsherAw.com/blog Notifications
+  <blogcomment@asheraw.com>` (both here and on the new-comment alert in `/api/comments/route.ts` — previously
+  `AsherAw.com Comments <hello@asheraw.com>` on both). `blogcomment@asheraw.com` itself still isn't a mailbox
+  anyone reads, and the email still says so and points back to the site link instead — but the send now also
+  sets `replyTo: CONTACT_NOTIFICATION_EMAIL` (`/api/comments/notify-subscribers/route.ts`, same pattern
+  `/api/contact` already used), so if a recipient replies anyway, Resend routes it to Asher's real inbox
+  instead of into an address nobody checks.
 
-This reuses the same already-verified `hello@asheraw.com` / Resend setup as every other email this site
-sends — no new domain authentication needed. What actually changed the deliverability calculus from the
-original "email everyone automatically" idea is the opt-in itself: this only ever emails someone who
-explicitly asked, about a thread they're already a real part of, with a working one-click way out.
+This reuses the same already-verified Resend setup as every other email this site sends — no new domain
+authentication needed. What actually changed the deliverability calculus from the original "email everyone
+automatically" idea is the opt-in itself: this only ever emails someone who explicitly asked, about a thread
+they're already a real part of, with a working one-click way out.
 
 ---
 

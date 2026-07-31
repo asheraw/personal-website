@@ -307,6 +307,28 @@ Both built:
 
 Small extra, per Asher: "Mark as Spam" no longer shows on a comment that's already been Approved.
 
+### Continued (comments now nest 3 levels deep, and the reply-notification email got three small fixes)
+
+Feedback from a reader: they wanted to respond to Asher's reply to their comment, which the original
+one-level-deep design didn't allow. Extended to 3 levels (comment → reply → reply to that reply) on both the
+live site and in Studio's Comments tool. The 3rd level keeps its own Reply button, but posting from there
+doesn't nest a 4th level — it flattens, landing as another comment alongside the one just replied to, at the
+same (3rd) depth. This is enforced server-side in `/api/comments`'s POST handler (and duplicated the same way
+in Studio's own reply action, since that creates comments directly rather than through the API) — not just a
+UI choice, so a hand-crafted request can't create a deeper chain either. No schema change needed: the flatten
+decision is derived on the fly from the existing `parentComment` reference (checking whether the comment
+being replied to already has a "grandparent") rather than a new stored depth field.
+
+Also, three fixes to the reply-notification email (the one sent to a commenter who opted in to "notify me on
+reply"), all per Asher's feedback:
+- The quoted preview snippet now truncates at 120 characters instead of 160, still with the same
+  ellipsis-and-link pattern.
+- The post title in the email is now a clickable link straight to the post, instead of plain text.
+- The sender changed from `AsherAw.com Comments <hello@asheraw.com>` to `AsherAw.com/blog Notifications
+  <blogcomment@asheraw.com>`, and the email now sets its reply-to address to Asher's own notification inbox —
+  so if a recipient replies anyway (the email itself says not to), it still reaches Asher rather than
+  disappearing into an unmonitored mailbox.
+
 ---
 
 ## 2026-07-30

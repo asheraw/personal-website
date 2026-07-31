@@ -4,6 +4,7 @@ import { writeClient } from "@/sanity/lib/write-client";
 import { buildReplyNotificationEmail } from "@/lib/emails";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const NOTIFY_EMAIL = process.env.CONTACT_NOTIFICATION_EMAIL || "";
 const SITE_URL = "https://asheraw.com";
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -76,8 +77,15 @@ export async function POST(request: NextRequest) {
           });
           try {
             await resend.emails.send({
-              from: "AsherAw.com Comments <hello@asheraw.com>",
+              from: "AsherAw.com/blog Notifications <blogcomment@asheraw.com>",
               to: sub.email,
+              // blogcomment@asheraw.com isn't a mailbox anyone actively
+              // reads -- if a recipient replies anyway despite the
+              // footer's "please use the link instead," Resend routes
+              // that reply here rather than into an address nobody
+              // checks (or a bounce, if it isn't even set up to receive
+              // mail at all).
+              ...(NOTIFY_EMAIL ? { replyTo: NOTIFY_EMAIL } : {}),
               subject,
               html,
               text,
