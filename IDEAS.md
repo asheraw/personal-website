@@ -10,6 +10,22 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## A floating badge for unhandled Contact Submissions, like the Comments one
+
+**What:** the same always-visible "N need attention" floating badge just built for pending comments
+(`CommentsNavbarBadge.tsx`), generalized to also cover Contact Submissions — a count of submissions where
+`handled != true` (`src/sanity/schemaTypes/contactSubmissionType.ts` already has this exact field, tracked by
+hand, "nothing automatic depends on it" per its own schema description).
+
+**Why not now:** raised 2026-07-31, right after confirming the comments badge actually works — Asher's own
+framing was to explore this once there's a real contact submission to test it against and he's actually
+replied to one, rather than build and verify it against nothing.
+
+**Worth revisiting when:** the next real contact form submission comes in and gets marked handled — a natural
+moment to build and check this against real data instead of a guess.
+
+---
+
 ## Blog pagination — infinite scroll, or an AI avatar asking what to read
 
 **What:** `/blog` currently loads every post on one page (flagged as a real gap: the spec calls for
