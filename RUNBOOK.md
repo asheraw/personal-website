@@ -138,7 +138,11 @@ a bug. Custom input component: `src/sanity/components/TagsAutocompleteInput.tsx`
 
 ## Blog post extras: related posts, print, search, the reading bar (shipped 2026-07-31)
 
-**Related Reading**, shown near the bottom of a post, is any *other* published post sharing at least one
+**Page order after the post body:** tags/categories → comments → **Related Reading** → back-to-blog link.
+Related Reading deliberately sits after the comment thread, not before it (moved there 2026-07-31 per Asher's
+feedback after testing) — comments come right after the post itself.
+
+**Related Reading**, shown after the comments, is any *other* published post sharing at least one
 category or tag with the one being read, ranked by how much overlap there is (shared categories + shared
 tags counted together), up to 3. `RELATED_POSTS_QUERY` in `src/sanity/lib/queries.ts`,
 `src/components/asher/blog/RelatedPosts.tsx`. A post with no categories and no tags has nothing to relate on
@@ -166,8 +170,9 @@ this needed zero new infrastructure.
 **The reading progress bar** moved from a thin line under the header to a bottom bar
 (`src/components/asher/blog/BlogReadingBar.tsx`), matching the homepage's own `ProgressionBar.tsx` in style
 — same walking-character mascot (pulled into a shared `src/components/asher/WalkingCharacter.tsx` so the two
-never visually drift apart), same amber track with a spotlight fill. Two things it adds beyond a plain
-progress line:
+never visually drift apart), same amber track with a spotlight fill, same slide-up-from-the-bottom entrance.
+It also stays hidden until the reader has scrolled down about 220px (`VISIBLE_AFTER_SCROLL_PX`), so it's not
+sitting over the title before there's any progress to show. Two things it adds beyond a plain progress line:
 - **Checkpoints from the post's own `h2` headings**, clickable, jumping straight to that section — no manual
   setup, every `h2` gets a stable anchor id automatically (`extractH2Checkpoints` in
   `src/lib/portableText.ts`, slugified from the heading's own text, de-duplicated if two headings in the same

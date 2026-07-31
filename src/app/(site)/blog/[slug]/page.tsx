@@ -260,21 +260,21 @@ export default async function PostPage({ params }: PageProps) {
               ))}
             </div>
           ) : null}
-
-          <RelatedPosts posts={relatedPosts} />
-
-          <div className="mt-14 border-t border-amber-faint pt-8 print:hidden">
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-1.5 font-mono-stage text-xs uppercase tracking-[0.18em] text-spotlight transition-all hover:gap-2.5"
-            >
-              <span aria-hidden="true">←</span> Back to blog
-            </Link>
-          </div>
         </article>
 
         <div className="print:hidden">
           <CommentSection postId={post._id} />
+        </div>
+
+        <RelatedPosts posts={relatedPosts} />
+
+        <div className="mt-14 border-t border-amber-faint pt-8 print:hidden">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-1.5 font-mono-stage text-xs uppercase tracking-[0.18em] text-spotlight transition-all hover:gap-2.5"
+          >
+            <span aria-hidden="true">←</span> Back to blog
+          </Link>
         </div>
       </div>
     </BlogChrome>

@@ -133,6 +133,16 @@ boundary anywhere before this, so any uncaught error on any page fell through to
 screen visitors saw. Now it shows a proper in-theme "Something went wrong" page with a working Try Again
 button instead.
 
+### Continued (reading bar timing + page order, per Asher's feedback after testing)
+
+**The reading bar now waits to appear** until the reader has scrolled down a little (about 220px) instead of
+being visible the instant the page loads, sitting over the title before there's any progress to actually
+show. Same slide-up-from-the-bottom entrance the homepage's own bar already uses.
+
+**Page order, after the post itself:** was body → tags → Related Reading → back-to-blog link → comments.
+Now it's body → tags → **comments** → **Related Reading** → back-to-blog link — comments come right after
+the post, and Related Reading moved to the very end, after the comment thread instead of before it.
+
 ---
 
 ## 2026-07-30

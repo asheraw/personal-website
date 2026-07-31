@@ -35,6 +35,10 @@ const SAMPLE_INTERVAL_MS = 120;
 const PROGRAMMATIC_SCROLL_GRACE_MS = 900;
 const FAST_SCROLL_MESSAGE_DURATION_MS = 2500;
 const FAST_SCROLL_COOLDOWN_MS = 6000;
+// The bar stays off-screen until the reader has actually scrolled down a
+// bit -- showing it immediately at the very top of the page just covers
+// the title/hero image for no reason before there's any progress to show.
+const VISIBLE_AFTER_SCROLL_PX = 220;
 
 function milestoneMessage(progress: number): string {
   return MILESTONE_MESSAGES.find((m) => progress < m.max)?.text ?? "";
@@ -57,6 +61,7 @@ export function BlogReadingBar({
   const [progress, setProgress] = useState(0);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [fastScrollMessage, setFastScrollMessage] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
 
   // Core progress + active-checkpoint tracking -- same start/end formula
   // the old top bar and the homepage's ProgressionBar both use, just
@@ -76,6 +81,7 @@ export function BlogReadingBar({
       const current = scrollY - startTop;
       const p = Math.max(0, Math.min(1, current / Math.max(1, totalRange)));
       setProgress(p);
+      setVisible(scrollY > VISIBLE_AFTER_SCROLL_PX);
 
       const readingLine = window.innerHeight / 3;
       let active = -1;
@@ -150,71 +156,81 @@ export function BlogReadingBar({
   const message = fastScrollMessage ?? milestoneMessage(progress);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-amber-faint bg-stage/90 backdrop-blur-xl print:hidden">
-      <div className="mx-auto max-w-3xl px-5 sm:px-8">
-        <div className="flex min-h-[1.5rem] items-center justify-center pt-1.5">
-          <AnimatePresence mode="wait">
-            {message && (
-              <motion.div
-                key={message}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.25 }}
-              >
-                {finished && !fastScrollMessage ? (
-                  <a
-                    href={`#${commentsId}`}
-                    className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-spotlight underline decoration-spotlight/40 underline-offset-2 hover:decoration-spotlight"
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed bottom-0 left-0 right-0 z-40 border-t border-amber-faint bg-stage/90 backdrop-blur-xl print:hidden"
+        >
+          <div className="mx-auto max-w-3xl px-5 sm:px-8">
+            <div className="flex min-h-[1.5rem] items-center justify-center pt-1.5">
+              <AnimatePresence mode="wait">
+                {message && (
+                  <motion.div
+                    key={message}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.25 }}
                   >
-                    {message}
-                  </a>
-                ) : (
-                  <span
-                    className={`font-mono-stage text-[10px] uppercase tracking-[0.18em] ${
-                      fastScrollMessage ? "text-spotlight" : "text-stone/60"
-                    }`}
-                  >
-                    {message}
-                  </span>
+                    {finished && !fastScrollMessage ? (
+                      <a
+                        href={`#${commentsId}`}
+                        className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-spotlight underline decoration-spotlight/40 underline-offset-2 hover:decoration-spotlight"
+                      >
+                        {message}
+                      </a>
+                    ) : (
+                      <span
+                        className={`font-mono-stage text-[10px] uppercase tracking-[0.18em] ${
+                          fastScrollMessage ? "text-spotlight" : "text-stone/60"
+                        }`}
+                      >
+                        {message}
+                      </span>
+                    )}
+                  </motion.div>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </AnimatePresence>
+            </div>
 
-        <div className="relative flex items-center py-3">
-          <div className="relative flex flex-1 items-center">
-            <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-amber-faint" />
-            <div
-              className="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-spotlight transition-[width] duration-200"
-              style={{ width: `${progress * 100}%` }}
-            />
-            <WalkingCharacter progress={progress} />
-            {headings.length > 0 && (
-              <div className="relative flex w-full items-center justify-between">
-                {headings.map((h, i) => (
-                  <a
-                    key={h.key}
-                    href={`#${h.id}`}
-                    className="group relative z-10 flex items-center justify-center py-1"
-                    aria-label={`Jump to "${h.text}"`}
-                  >
-                    <span
-                      className={`flex h-2.5 w-2.5 items-center justify-center rounded-full border transition-all group-hover:scale-125 ${
-                        i <= activeIndex ? "border-spotlight bg-spotlight" : "border-amber-faint bg-stage"
-                      }`}
-                    />
-                    <span className="pointer-events-none absolute bottom-full mb-2 hidden max-w-[10rem] -translate-x-1/2 whitespace-nowrap rounded border border-amber-faint bg-stage px-2 py-1 font-mono-stage text-[9px] uppercase tracking-[0.14em] text-ivory/80 group-hover:block">
-                      {h.text}
-                    </span>
-                  </a>
-                ))}
+            <div className="relative flex items-center py-3">
+              <div className="relative flex flex-1 items-center">
+                <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-amber-faint" />
+                <div
+                  className="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-spotlight transition-[width] duration-200"
+                  style={{ width: `${progress * 100}%` }}
+                />
+                <WalkingCharacter progress={progress} />
+                {headings.length > 0 && (
+                  <div className="relative flex w-full items-center justify-between">
+                    {headings.map((h, i) => (
+                      <a
+                        key={h.key}
+                        href={`#${h.id}`}
+                        className="group relative z-10 flex items-center justify-center py-1"
+                        aria-label={`Jump to "${h.text}"`}
+                      >
+                        <span
+                          className={`flex h-2.5 w-2.5 items-center justify-center rounded-full border transition-all group-hover:scale-125 ${
+                            i <= activeIndex ? "border-spotlight bg-spotlight" : "border-amber-faint bg-stage"
+                          }`}
+                        />
+                        <span className="pointer-events-none absolute bottom-full mb-2 hidden max-w-[10rem] -translate-x-1/2 whitespace-nowrap rounded border border-amber-faint bg-stage px-2 py-1 font-mono-stage text-[9px] uppercase tracking-[0.14em] text-ivory/80 group-hover:block">
+                          {h.text}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
