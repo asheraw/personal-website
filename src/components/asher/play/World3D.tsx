@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useState, useEffect, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { Html, Sparkles } from "@react-three/drei";
 import * as THREE from "three";
 
 export type Zone3D = {
@@ -174,7 +174,11 @@ function Cathedral({ active }: { active: boolean }) {
   );
 }
 
-// At a Glance — classic trophy
+// At a Glance — classic trophy. Gold parts pushed toward a richer,
+// shinier gold (was reading as dull bronze -- higher metalness, lower
+// roughness for sharper highlights, plus a brighter point light and a
+// scatter of sparkles for the "champion" feel when active) -- the
+// wooden base tiers are untouched, they were never the problem.
 function MagnifierZone({ active }: { active: boolean }) {
   return (
     <group>
@@ -182,16 +186,17 @@ function MagnifierZone({ active }: { active: boolean }) {
       <group>
         <mesh position={[0, 0.08, 0]} castShadow receiveShadow><cylinderGeometry args={[0.55, 0.6, 0.15, 16]} /><meshStandardMaterial color="#3a2a1a" roughness={0.5} /></mesh>
         <mesh position={[0, 0.2, 0]} castShadow><cylinderGeometry args={[0.4, 0.5, 0.1, 16]} /><meshStandardMaterial color="#5a3a1a" roughness={0.5} /></mesh>
-        <mesh position={[0, 0.28, 0]} castShadow><cylinderGeometry args={[0.35, 0.4, 0.06, 16]} /><meshStandardMaterial color="#b8924a" metalness={0.8} roughness={0.2} /></mesh>
-        <mesh position={[0, 0.55, 0]} castShadow><cylinderGeometry args={[0.06, 0.08, 0.5, 12]} /><meshStandardMaterial color="#f0b865" metalness={0.9} roughness={0.1} /></mesh>
-        <mesh position={[0, 1.0, 0]} castShadow scale={[1, 0.7, 1]}><sphereGeometry args={[0.4, 16, 16]} /><meshStandardMaterial color="#f0b865" metalness={0.9} roughness={0.08} emissive={active ? "#f0b865" : "#000000"} emissiveIntensity={active ? 0.25 : 0} /></mesh>
-        <mesh position={[0, 1.25, 0]}><cylinderGeometry args={[0.38, 0.38, 0.04, 24]} /><meshStandardMaterial color="#f0b865" metalness={0.9} roughness={0.08} /></mesh>
+        <mesh position={[0, 0.28, 0]} castShadow><cylinderGeometry args={[0.35, 0.4, 0.06, 16]} /><meshStandardMaterial color="#d4a94f" metalness={0.95} roughness={0.08} /></mesh>
+        <mesh position={[0, 0.55, 0]} castShadow><cylinderGeometry args={[0.06, 0.08, 0.5, 12]} /><meshStandardMaterial color="#ffd447" metalness={1} roughness={0.04} /></mesh>
+        <mesh position={[0, 1.0, 0]} castShadow scale={[1, 0.7, 1]}><sphereGeometry args={[0.4, 16, 16]} /><meshStandardMaterial color="#ffd447" metalness={1} roughness={0.03} emissive={active ? "#ffd447" : "#000000"} emissiveIntensity={active ? 0.5 : 0} /></mesh>
+        <mesh position={[0, 1.25, 0]}><cylinderGeometry args={[0.38, 0.38, 0.04, 24]} /><meshStandardMaterial color="#ffd447" metalness={1} roughness={0.03} /></mesh>
         <mesh position={[0, 1.23, 0]}><cylinderGeometry args={[0.35, 0.35, 0.04, 24]} /><meshStandardMaterial color="#8b5a2b" roughness={0.5} /></mesh>
-        <mesh position={[-0.48, 1.0, 0]} rotation={[0, 0, Math.PI / 2]}><torusGeometry args={[0.22, 0.05, 12, 24, Math.PI * 1.2]} /><meshStandardMaterial color="#f0b865" metalness={0.9} roughness={0.1} /></mesh>
-        <mesh position={[0.48, 1.0, 0]} rotation={[0, 0, -Math.PI / 2]}><torusGeometry args={[0.22, 0.05, 12, 24, Math.PI * 1.2]} /><meshStandardMaterial color="#f0b865" metalness={0.9} roughness={0.1} /></mesh>
+        <mesh position={[-0.48, 1.0, 0]} rotation={[0, 0, Math.PI / 2]}><torusGeometry args={[0.22, 0.05, 12, 24, Math.PI * 1.2]} /><meshStandardMaterial color="#ffd447" metalness={1} roughness={0.05} /></mesh>
+        <mesh position={[0.48, 1.0, 0]} rotation={[0, 0, -Math.PI / 2]}><torusGeometry args={[0.22, 0.05, 12, 24, Math.PI * 1.2]} /><meshStandardMaterial color="#ffd447" metalness={1} roughness={0.05} /></mesh>
         <mesh position={[0, 0.95, 0.38]}><boxGeometry args={[0.08, 0.15, 0.02]} /><meshStandardMaterial color="#c44d3f" metalness={0.7} emissive={active ? "#c44d3f" : "#000000"} emissiveIntensity={active ? 0.4 : 0} /></mesh>
       </group>
-      {active && <pointLight position={[0, 1.5, 0]} intensity={0.4} color="#f0b865" distance={5} />}
+      {active && <pointLight position={[0, 1.5, 0]} intensity={0.9} color="#ffd447" distance={5} />}
+      {active && <Sparkles count={24} scale={[1.4, 1.8, 1.4]} position={[0, 0.9, 0]} size={3} speed={0.3} color="#ffe9a8" />}
     </group>
   );
 }
@@ -356,6 +361,24 @@ function Character3D({ position, activity, isMoving, facing, zoneId }: { positio
   const rightLegRef = useRef<THREE.Mesh>(null);
   const leftArmRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Group>(null);
+  // The cap badge is drawn onto a canvas at runtime and used as a plane
+  // texture -- lets it render "胡" crisply using whatever CJK-capable
+  // font the browser already has, without shipping a font file just for
+  // one glyph the way troika-text or a custom geometry would need.
+  const capBadge = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = 128; canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#f0b865";
+    ctx.font = "700 100px 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("胡", 64, 68);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, []);
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (groupRef.current) groupRef.current.position.y = position[1] + Math.sin(t * 3) * 0.04;
@@ -367,10 +390,15 @@ function Character3D({ position, activity, isMoving, facing, zoneId }: { positio
       resetLeg(leftLegRef); resetLeg(rightLegRef);
       if (zoneId === "coaching") { setArm(leftArmRef, -0.4, 0.2); setArm(rightArmRef, -0.4, -0.2); }
       else if (zoneId === "faith") { setArm(leftArmRef, -0.9, 0.5); setArm(rightArmRef, -0.9, -0.5); }
-      else if (zoneId === "glance") { setArm(rightArmRef, -1.4, -0.2); setArm(leftArmRef, -0.3, 0); }
+      // No more magnifying glass to hold up to -- a relaxed "presenting"
+      // gesture toward the trophy on the ground instead of a raised arm
+      // with nothing in the hand.
+      else if (zoneId === "glance") { setArm(rightArmRef, -0.55, -0.2); setArm(leftArmRef, -0.2, 0.1); }
       else if (zoneId === "hero") { setArm(leftArmRef, 0, 1.0); setArm(rightArmRef, 0, -1.0); }
       else if (zoneId === "contact") { setArm(rightArmRef, -1.6, -0.3); setArm(leftArmRef, 0.2, 0); }
-      else if (zoneId === "philosophy") { setArm(rightArmRef, -1.5, 0.2); setArm(leftArmRef, 0, 0); }
+      // Both hands raised and angled inward, like holding an open book
+      // between them.
+      else if (zoneId === "philosophy") { setArm(leftArmRef, -1.1, 0.35); setArm(rightArmRef, -1.1, -0.35); }
       else { setArm(leftArmRef, 0, 0); setArm(rightArmRef, 0, 0); }
     }
   });
@@ -380,20 +408,72 @@ function Character3D({ position, activity, isMoving, facing, zoneId }: { positio
         <mesh position={[0, 0.5, 0]} castShadow><capsuleGeometry args={[0.25, 0.4, 8, 16]} /><meshStandardMaterial color="#d99846" roughness={0.5} /></mesh>
         <mesh position={[0, 0.7, 0.22]}><boxGeometry args={[0.14, 0.06, 0.04]} /><meshStandardMaterial color="#c44d3f" roughness={0.4} /></mesh>
         <mesh position={[0, 1.05, 0]} castShadow><sphereGeometry args={[0.22, 16, 16]} /><meshStandardMaterial color="#f3e9d4" roughness={0.4} /></mesh>
-        <mesh position={[0, 1.12, -0.02]}><sphereGeometry args={[0.23, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#2a1f15" roughness={0.6} /></mesh>
-        <mesh position={[-0.08, 1.05, 0.2]}><sphereGeometry args={[0.035, 8, 8]} /><meshBasicMaterial color="#1a1208" /></mesh>
-        <mesh position={[0.08, 1.05, 0.2]}><sphereGeometry args={[0.035, 8, 8]} /><meshBasicMaterial color="#1a1208" /></mesh>
+        {/* Cap -- swapped for the mortarboard at Philosophy instead of
+            stacking both on the head at once. The game camera looks down
+            at a steep angle (see CameraRig below), so a badge mounted on
+            the front of the crown facing outward is nearly invisible --
+            it's mounted on TOP, tilted to face up toward that camera,
+            same logic as a real cap logo you'd actually see from above.
+            Crown/brim sized down slightly from the first pass, which was
+            swallowing the glasses from this angle. */}
+        {zoneId !== "philosophy" && (
+          <group>
+            <mesh position={[0, 1.14, -0.01]} castShadow>
+              <sphereGeometry args={[0.225, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.05]} />
+              <meshStandardMaterial color="#1a1208" roughness={0.5} />
+            </mesh>
+            <mesh position={[0, 1.05, 0.19]} rotation={[0.55, 0, 0]} castShadow>
+              <cylinderGeometry args={[0.13, 0.13, 0.016, 20, 1, false, 0, Math.PI]} />
+              <meshStandardMaterial color="#c44d3f" roughness={0.5} side={THREE.DoubleSide} />
+            </mesh>
+            {capBadge && (
+              // Positioned just outside the crown sphere's surface along
+              // its own outward normal -- placed at the sphere's radius
+              // exactly (or anywhere inside it), the plane sits buried in
+              // solid geometry and the crown's own surface hides it
+              // completely, which is what happened on the first pass.
+              <mesh position={[0, 1.34, 0.125]} rotation={[-0.98, 0, 0]}>
+                <planeGeometry args={[0.13, 0.13]} />
+                <meshBasicMaterial map={capBadge} transparent />
+              </mesh>
+            )}
+          </group>
+        )}
+        {/* Rectangular glasses, replacing the old plain eye dots -- the
+            dots are still there as pupils, just smaller and behind the
+            lenses now. */}
+        <group position={[0, 1.06, 0.2]}>
+          <mesh position={[-0.075, 0, 0]}><boxGeometry args={[0.09, 0.055, 0.012]} /><meshStandardMaterial color="#2a2018" roughness={0.3} metalness={0.4} /></mesh>
+          <mesh position={[0.075, 0, 0]}><boxGeometry args={[0.09, 0.055, 0.012]} /><meshStandardMaterial color="#2a2018" roughness={0.3} metalness={0.4} /></mesh>
+          <mesh position={[-0.075, 0, 0.008]}><boxGeometry args={[0.07, 0.038, 0.006]} /><meshPhysicalMaterial color="#9fd0e8" transparent opacity={0.35} roughness={0.1} /></mesh>
+          <mesh position={[0.075, 0, 0.008]}><boxGeometry args={[0.07, 0.038, 0.006]} /><meshPhysicalMaterial color="#9fd0e8" transparent opacity={0.35} roughness={0.1} /></mesh>
+          <mesh position={[0, 0.005, 0]}><boxGeometry args={[0.03, 0.01, 0.008]} /><meshStandardMaterial color="#2a2018" roughness={0.3} metalness={0.4} /></mesh>
+          <mesh position={[-0.075, 0, 0.003]}><sphereGeometry args={[0.02, 8, 8]} /><meshBasicMaterial color="#1a1208" /></mesh>
+          <mesh position={[0.075, 0, 0.003]}><sphereGeometry args={[0.02, 8, 8]} /><meshBasicMaterial color="#1a1208" /></mesh>
+        </group>
         <mesh position={[0, 0.96, 0.2]} rotation={[0, 0, Math.PI]}><torusGeometry args={[0.06, 0.012, 6, 12, Math.PI]} /><meshBasicMaterial color="#1a1208" /></mesh>
         <group ref={leftArmRef} position={[-0.3, 0.7, 0]}><mesh position={[0, -0.2, 0]} castShadow><capsuleGeometry args={[0.06, 0.3, 4, 8]} /><meshStandardMaterial color="#f3e9d4" roughness={0.4} /></mesh></group>
         <group ref={rightArmRef} position={[0.3, 0.7, 0]}>
           <mesh position={[0, -0.2, 0]} castShadow><capsuleGeometry args={[0.06, 0.3, 4, 8]} /><meshStandardMaterial color="#f3e9d4" roughness={0.4} /></mesh>
-          {zoneId === "glance" && !isMoving && (<group position={[0, -0.45, 0.1]} rotation={[0.3, 0, 0]}><mesh><torusGeometry args={[0.22, 0.04, 12, 24]} /><meshStandardMaterial color="#b8924a" metalness={0.8} roughness={0.2} /></mesh><mesh position={[0, 0, 0.02]}><circleGeometry args={[0.19, 24]} /><meshPhysicalMaterial color="#a0c8e0" transparent opacity={0.45} roughness={0.05} transmission={0.5} /></mesh><mesh position={[0, -0.3, 0]}><cylinderGeometry args={[0.04, 0.05, 0.25, 8]} /><meshStandardMaterial color="#5a3a1a" roughness={0.4} metalness={0.3} /></mesh><mesh position={[0, -0.15, 0]}><cylinderGeometry args={[0.03, 0.035, 0.08, 8]} /><meshStandardMaterial color="#b8924a" metalness={0.7} /></mesh></group>)}
           {zoneId === "contact" && !isMoving && (<mesh position={[0, -0.35, 0.05]} rotation={[0.5, 0, 0]}><boxGeometry args={[0.08, 0.15, 0.03]} /><meshStandardMaterial color="#1a1208" /></mesh>)}
         </group>
-        {/* Headset for studio */}
-        {zoneId === "coaching" && (<group><mesh position={[0, 1.05, 0]}><torusGeometry args={[0.24, 0.03, 8, 16, Math.PI]} /><meshStandardMaterial color="#1a1208" metalness={0.6} /></mesh><mesh position={[-0.24, 1.05, 0]}><sphereGeometry args={[0.07, 12, 12]} /><meshStandardMaterial color="#1a1208" roughness={0.4} /></mesh><mesh position={[0.24, 1.05, 0]}><sphereGeometry args={[0.07, 12, 12]} /><meshStandardMaterial color="#1a1208" roughness={0.4} /></mesh><mesh position={[0.15, 0.95, 0.15]} rotation={[0, 0, -0.8]}><cylinderGeometry args={[0.015, 0.015, 0.15, 6]} /><meshStandardMaterial color="#1a1208" metalness={0.6} /></mesh><mesh position={[0.22, 0.88, 0.2]}><sphereGeometry args={[0.03, 8, 8]} /><meshStandardMaterial color="#1a1208" emissive="#d99846" emissiveIntensity={0.5} /></mesh></group>)}
-        {/* Graduation cap */}
+        {/* Headset for studio -- bigger and blue now instead of black on
+            black against the (also black) cap, which was invisible. Mic
+            boom + tip stay black, per Asher's note. */}
+        {zoneId === "coaching" && (<group><mesh position={[0, 1.07, 0]}><torusGeometry args={[0.31, 0.045, 8, 16, Math.PI]} /><meshStandardMaterial color="#2ea8ff" metalness={0.5} roughness={0.3} /></mesh><mesh position={[-0.3, 1.05, 0]}><sphereGeometry args={[0.1, 12, 12]} /><meshStandardMaterial color="#2ea8ff" roughness={0.35} metalness={0.4} /></mesh><mesh position={[0.3, 1.05, 0]}><sphereGeometry args={[0.1, 12, 12]} /><meshStandardMaterial color="#2ea8ff" roughness={0.35} metalness={0.4} /></mesh><mesh position={[0.19, 0.92, 0.16]} rotation={[0, 0, -0.8]}><cylinderGeometry args={[0.018, 0.018, 0.19, 6]} /><meshStandardMaterial color="#1a1208" metalness={0.6} /></mesh><mesh position={[0.27, 0.83, 0.22]}><sphereGeometry args={[0.035, 8, 8]} /><meshStandardMaterial color="#1a1208" emissive="#d99846" emissiveIntensity={0.5} /></mesh></group>)}
+        {/* Graduation cap -- replaces the everyday cap above instead of
+            stacking on top of it (see zoneId !== "philosophy" check). */}
         {zoneId === "philosophy" && (<group position={[0, 1.35, 0]}><mesh castShadow><boxGeometry args={[0.5, 0.04, 0.5]} /><meshStandardMaterial color="#1a1208" roughness={0.3} /></mesh><mesh position={[0, -0.05, 0]}><sphereGeometry args={[0.15, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#1a1208" roughness={0.3} /></mesh><mesh position={[0.24, -0.1, 0]} rotation={[0, 0, 0.3]}><cylinderGeometry args={[0.008, 0.008, 0.2, 4]} /><meshStandardMaterial color="#f0b865" metalness={0.6} /></mesh><mesh position={[0.24, 0.02, 0]}><sphereGeometry args={[0.025, 8, 8]} /><meshStandardMaterial color="#f0b865" metalness={0.6} /></mesh><mesh position={[0.27, -0.2, 0]}><coneGeometry args={[0.04, 0.06, 6]} /><meshStandardMaterial color="#f0b865" metalness={0.6} /></mesh></group>)}
+        {/* Open book, held up in front of the chest -- replaces the old
+            reading pose that had nothing actually in his hands. Raised
+            above the torso's own height (0.5-0.7) rather than tucked at
+            hand-height, so it clears the torso capsule's silhouette and
+            stays visible regardless of which way the character happens
+            to be facing when it stops (it turns to face the direction it
+            was last walking, which the fixed-angle chase camera doesn't
+            always agree with -- lower placements kept ending up hidden
+            behind the character's own body). */}
+        {zoneId === "philosophy" && !isMoving && (<group position={[0, 0.78, 0.22]} rotation={[0.7, 0, 0]}><mesh position={[-0.08, 0, 0]} rotation={[0, 0.18, 0]} castShadow><boxGeometry args={[0.16, 0.02, 0.2]} /><meshStandardMaterial color="#f3e9d4" roughness={0.6} /></mesh><mesh position={[0.08, 0, 0]} rotation={[0, -0.18, 0]} castShadow><boxGeometry args={[0.16, 0.02, 0.2]} /><meshStandardMaterial color="#f3e9d4" roughness={0.6} /></mesh><mesh position={[0, 0.012, 0]}><boxGeometry args={[0.01, 0.006, 0.2]} /><meshStandardMaterial color="#8b5a2b" roughness={0.5} /></mesh></group>)}
         {/* Floating cross for faith */}
         {zoneId === "faith" && !isMoving && (<group position={[0, 2.2, 0]}><mesh><boxGeometry args={[0.1, 0.6, 0.1]} /><meshStandardMaterial color="#f0b865" metalness={0.8} roughness={0.2} emissive="#f0b865" emissiveIntensity={0.7} /></mesh><mesh position={[0, 0.12, 0]}><boxGeometry args={[0.4, 0.1, 0.1]} /><meshStandardMaterial color="#f0b865" metalness={0.8} roughness={0.2} emissive="#f0b865" emissiveIntensity={0.7} /></mesh><pointLight position={[0, 0, 0]} intensity={0.4} color="#f0b865" distance={3} /></group>)}
         <mesh ref={leftLegRef} position={[-0.12, 0.18, 0]} castShadow><capsuleGeometry args={[0.07, 0.25, 4, 8]} /><meshStandardMaterial color="#1a1208" roughness={0.5} /></mesh>
@@ -416,6 +496,18 @@ function Scene({ activeSection, onZoneEnter }: { activeSection: string; onZoneEn
   const [facing, setFacing] = useState(0);
   const [currentZone, setCurrentZone] = useState<string>("hero");
   const [hasMoved, setHasMoved] = useState(false);
+  // Whether the character is *actually* translating this frame -- was
+  // previously read straight off `charTarget !== null`, which is only
+  // ever set for click-to-walk/section-linked auto-walking. Manual
+  // WASD/arrow movement nulls charTarget out on keydown, so it never
+  // counted as "moving": the walk-cycle arm/leg swing never played, and
+  // the arms just sat in whatever the current zone's idle pose was,
+  // popping between poses as you walked through zones instead of
+  // swinging. Tracked here as its own state, updated in the useFrame
+  // loop below from the same condition that actually moves the
+  // character, so both movement paths trigger the walk cycle.
+  const [isMoving, setIsMoving] = useState(false);
+  const isMovingRef = useRef(false);
   const keysRef = useRef<Record<string, boolean>>({});
   const charPosRef = useRef<[number, number, number]>([0, 0, 0]);
   const charTargetRef = useRef<[number, number, number] | null>(null);
@@ -465,6 +557,8 @@ function Scene({ activeSection, onZoneEnter }: { activeSection: string; onZoneEn
       else { setCharTarget(null); charTargetRef.current = null; if (isClickWalking.current) { setTimeout(() => { isClickWalking.current = false; }, 500); } }
     }
     if (hasManual && isClickWalking.current) isClickWalking.current = false;
+    const currentlyMoving = hasManual || charTargetRef.current !== null;
+    if (currentlyMoving !== isMovingRef.current) { isMovingRef.current = currentlyMoving; setIsMoving(currentlyMoving); }
     if (hasManual || charTargetRef.current) {
       if (dx !== 0 && dz !== 0) { const m = Math.sqrt(dx * dx + dz * dz); dx /= m; dz /= m; }
       const newX = Math.max(-8, Math.min(8, charPosRef.current[0] + dx * SPEED * delta)); const newZ = Math.max(-6, Math.min(6, charPosRef.current[2] + dz * SPEED * delta));
@@ -483,8 +577,7 @@ function Scene({ activeSection, onZoneEnter }: { activeSection: string; onZoneEn
 
   const currentZoneData = ZONES_3D.find(z => z.id === currentZone);
   const isDirections = currentZone === "directions";
-  const activity = charTarget !== null ? "walking" : (isDirections ? "Move In A Clockwise Direction" : (currentZoneData?.activity || "idle"));
-  const isMoving = charTarget !== null;
+  const activity = isMoving ? "walking" : (isDirections ? "Move In A Clockwise Direction" : (currentZoneData?.activity || "idle"));
 
   return (
     <>
