@@ -64,6 +64,17 @@ picking up the project cold. For *why* something works the way it does, or what 
   leave a prop partly hidden behind the character's own body. This is how every held prop in this file has
   always worked, not something newly introduced.
 
+**Two more 3D fixes from Asher checking it live:**
+- **The cap brim read as a red dot on the face ("looks like a red nose"), not a cap.** Moved it from the
+  front to the back — a snapback now, and it clears the face entirely instead of needing to be shrunk further.
+- **The floating cross at "The Heart" started disappearing on every step**, not just when leaving the zone —
+  a direct side effect of the arm-swing bug fix above. The cross was gated on the same `!isMoving` condition
+  as the hand-held props (book, phone), which never actually did anything before `isMoving` was fixed (manual
+  movement never set it true, so the cross always showed, bug and all). Once `isMoving` started reflecting
+  real movement, the cross — which isn't a hand prop and shouldn't have had that gate at all — started
+  vanishing mid-stride. Removed the gate; it now shows purely off `zoneId`, same as the mortarboard/cap/
+  headset.
+
 ## 2026-07-31
 
 **Comments, extended.** Built on top of the Sanity-native comment system shipped the day before:
