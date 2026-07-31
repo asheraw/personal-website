@@ -2,6 +2,14 @@
 
 import { useEffect, useRef } from "react";
 
+// Loaded once at module scope (not per-mount) so the browser's own image
+// cache does the work -- canvas drawImage() needs a loaded HTMLImageElement,
+// not a URL string, unlike a normal <img>/next/image. `.complete` is
+// checked before every draw so there's a plain-circle fallback for the one
+// frame or two before it's ready, instead of drawing nothing.
+const avatarImage = typeof window !== "undefined" ? new Image() : null;
+if (avatarImage) avatarImage.src = "/asher/avatar-8bit.png";
+
 const WORLD_W = 720;
 const WORLD_H = 540;
 const SPEED = 200;
@@ -207,14 +215,13 @@ function drawProps(ctx: CanvasRenderingContext2D, activity: Activity, time: numb
 }
 
 function drawStudiousAccessories(ctx: CanvasRenderingContext2D) {
+  // Just the mortarboard now -- the reading-glasses shape this used to
+  // also draw is gone, since the avatar already wears glasses permanently.
   ctx.fillStyle = "#1a1208";
   ctx.beginPath(); ctx.ellipse(0, -30, 10, 3, 0, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.moveTo(-10, -30); ctx.lineTo(-13, -34); ctx.lineTo(13, -34); ctx.lineTo(10, -30); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = "#f0b865"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(13, -34); ctx.lineTo(15, -28); ctx.stroke();
   ctx.fillStyle = "#f0b865"; ctx.beginPath(); ctx.arc(15, -27, 1.5, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = "#1a1208"; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(-4, -20, 3, 0, Math.PI*2); ctx.arc(4, -20, 3, 0, Math.PI*2); ctx.moveTo(-1, -20); ctx.lineTo(1, -20); ctx.moveTo(-7, -20); ctx.lineTo(-9, -21); ctx.moveTo(7, -20); ctx.lineTo(9, -21); ctx.stroke();
-  ctx.fillStyle = "rgba(240,184,101,0.15)"; ctx.beginPath(); ctx.arc(-4, -20, 2.5, 0, Math.PI*2); ctx.arc(4, -20, 2.5, 0, Math.PI*2); ctx.fill();
 }
 
 function drawSpeechBubble(ctx: CanvasRenderingContext2D) {
@@ -249,34 +256,24 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
   ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(-2, -7); ctx.lineTo(-6, -5); ctx.closePath(); ctx.moveTo(6, -9); ctx.lineTo(2, -7); ctx.lineTo(6, -5); ctx.closePath(); ctx.fill();
   ctx.fillStyle = "#1a1208"; ctx.beginPath(); ctx.arc(0, -7, 1, 0, Math.PI*2); ctx.fill();
   drawArms(ctx, activity, armSwing);
-  ctx.fillStyle = "#f3e9d4"; ctx.beginPath(); ctx.arc(0, -20, 11, 0, Math.PI*2); ctx.fill();
-  if (activity !== "studious") {
-    ctx.fillStyle = "#2a1f15"; ctx.beginPath(); ctx.arc(0, -22, 11, Math.PI+0.4, Math.PI*2-0.4, false); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-3, -30); ctx.quadraticCurveTo(0, -34, 3, -30); ctx.fill();
+  // The head is Asher's real avatar now, clipped to the same circle the
+  // drawn face used to fill -- replaces the old procedural face, hair,
+  // blush, and blink/expression logic entirely (a static image can't
+  // blink, so there's nothing left for that logic to drive). Ears stay,
+  // drawn after so they still show at the circle's edge.
+  if (avatarImage && avatarImage.complete && avatarImage.naturalWidth > 0) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, -20, 11, 0, Math.PI*2); ctx.clip();
+    ctx.drawImage(avatarImage, -11, -31, 22, 22);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = "#f3e9d4"; ctx.beginPath(); ctx.arc(0, -20, 11, 0, Math.PI*2); ctx.fill();
   }
   ctx.fillStyle = "#f3e9d4"; ctx.beginPath(); ctx.arc(-11, -19, 2, 0, Math.PI*2); ctx.arc(11, -19, 2, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = "rgba(196, 77, 63, 0.28)"; ctx.beginPath(); ctx.arc(-6, -17, 2, 0, Math.PI*2); ctx.arc(6, -17, 2, 0, Math.PI*2); ctx.fill();
-
-  const blink = Math.sin(time*0.001) > 0.97;
-  const eyesClosedSinging = activity === "singing" && Math.sin(time*0.005) > 0.5;
-  if (activity === "studious") {
-    ctx.fillStyle = "#1a1208";
-    if (blink) { ctx.strokeStyle = "#1a1208"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-5.5,-20); ctx.lineTo(-2.5,-20); ctx.moveTo(2.5,-20); ctx.lineTo(5.5,-20); ctx.stroke(); }
-    else { ctx.beginPath(); ctx.arc(-4, -20, 1.4, 0, Math.PI*2); ctx.arc(4, -20, 1.4, 0, Math.PI*2); ctx.fill(); }
-  } else if (eyesClosedSinging) {
-    ctx.strokeStyle = "#1a1208"; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(-4, -20, 2.5, 0.2, Math.PI-0.2); ctx.arc(4, -20, 2.5, 0.2, Math.PI-0.2); ctx.stroke();
-  } else {
-    ctx.fillStyle = "#1a1208";
-    if (blink) { ctx.lineWidth = 1; ctx.strokeStyle = "#1a1208"; ctx.beginPath(); ctx.moveTo(-5.5,-20); ctx.lineTo(-2.5,-20); ctx.moveTo(2.5,-20); ctx.lineTo(5.5,-20); ctx.stroke(); }
-    else { ctx.beginPath(); ctx.arc(-4, -20, 1.6, 0, Math.PI*2); ctx.arc(4, -20, 1.6, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = "#fff7e6"; ctx.beginPath(); ctx.arc(-3.4, -20.6, 0.6, 0, Math.PI*2); ctx.arc(4.6, -20.6, 0.6, 0, Math.PI*2); ctx.fill(); }
-  }
-
-  ctx.strokeStyle = "#1a1208"; ctx.lineWidth = 1.2;
-  if (activity === "singing") { ctx.fillStyle = "#1a1208"; ctx.beginPath(); ctx.ellipse(0, -16, 2.5, 2, 0, 0, Math.PI*2); ctx.fill(); }
-  else if (activity === "phone") { ctx.fillStyle = "#1a1208"; ctx.beginPath(); ctx.ellipse(0, -16, 1.5, 1.5+Math.sin(time*0.012)*0.5, 0, 0, Math.PI*2); ctx.fill(); }
-  else { ctx.beginPath(); ctx.arc(0, -17, 3, 0.2, Math.PI-0.2); ctx.stroke(); }
+  // No drawn mouth anymore -- the avatar's own expression is already part
+  // of the image, and the old activity-specific mouth shapes (an "O" for
+  // singing, a talking oval for phone) would just draw a dark blob over a
+  // real face instead of reading as an expression change.
 
   if (activity === "studious") drawStudiousAccessories(ctx);
   drawProps(ctx, activity, time);
