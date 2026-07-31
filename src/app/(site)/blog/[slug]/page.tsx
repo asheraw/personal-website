@@ -11,6 +11,7 @@ import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { ReadingProgressBar } from "@/components/asher/blog/ReadingProgressBar";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
 import { CommentSection } from "@/components/asher/blog/CommentSection";
+import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 import { estimateReadingTimeMinutes } from "@/lib/portableText";
 
 // No time-based revalidate here anymore -- sanityFetch() (via Sanity's
@@ -38,6 +39,7 @@ type Post = {
   author?: { name: string; slug: string; image?: unknown } | null;
   categories?: { title: string; slug: string }[];
   primaryCategory?: { title: string; slug: string } | null;
+  commentCount?: number;
 };
 
 type PageProps = {
@@ -177,6 +179,8 @@ export default async function PostPage({ params }: PageProps) {
               )}
               {post.publishedAt && <span aria-hidden="true">·</span>}
               <span>{readingTime} min read</span>
+              {!!post.commentCount && <span aria-hidden="true">·</span>}
+              <CommentCountBadge slug={post.slug} count={post.commentCount} />
             </div>
           )}
 

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle } from "lucide-react";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
 import { estimateReadingTimeFromText } from "@/lib/portableText";
+import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 
 // Matches the excerpt field's own 160-character guidance in Studio, so
 // a manually-written excerpt basically never needs trimming here -- this
@@ -62,15 +62,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
             {category.title}
           </Link>
         ))}
-        {!!post.commentCount && (
-          <Link
-            href={`/blog/${post.slug}#comments`}
-            className="inline-flex items-center gap-1 transition-colors hover:text-spotlight"
-          >
-            <MessageCircle size={12} />
-            {post.commentCount}
-          </Link>
-        )}
+        <CommentCountBadge slug={post.slug} count={post.commentCount} />
       </div>
 
       {blurb && <p className="mt-4 leading-relaxed text-stone/85">{blurb}</p>}

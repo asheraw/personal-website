@@ -81,6 +81,18 @@ a real spam-risk concern, not just "later"), and the Figma-style inline comments
 moved here from a one-off chat mention so it has one durable home instead of being buried in a dated log
 entry.
 
+### Continued once more (comment count badge on the post page itself)
+
+**Comment-count speech bubble, now also on the post page.** It already showed on blog listing cards; now the
+same badge sits right next to "X min read" at the top of the post itself, and clicking it jumps straight down
+to the comments. Pulled out into one shared `CommentCountBadge.tsx` component so both spots always match.
+
+**Double-checked: the count already includes replies, not just top-level comments.** The GROQ query behind it
+counts every *approved* comment that references the post — replies included, since a reply references the
+post directly too, same as a top-level comment. If a badge looks low right after someone replies, the
+near-certain reason is that the reply is still sitting in Studio's moderation queue — the badge, like the
+comment section itself, only ever counts what's actually approved and visible.
+
 ---
 
 ## 2026-07-30

@@ -346,11 +346,16 @@ but the moderation tool shows a note that it won't display in proper context on 
 original comment is approved too — the two aren't force-linked, so it's a manual step if you want both
 visible together.
 
-**Comment counts:** the blog listing page (`/blog`) shows a small speech-bubble icon + count on any post
-with at least one approved comment (`PostCard.tsx`), linking to `/blog/[slug]#comments`. The count is
-computed fresh in the GROQ query (`"commentCount": count(*[_type == "comment" && status == "approved" &&
-references(^._id)])` in `POST_SUMMARY_PROJECTION`, `src/sanity/lib/queries.ts`) and includes replies, not
-just top-level comments — matches the count shown in the post page's own comment section header.
+**Comment counts:** the same small speech-bubble icon + count (`CommentCountBadge.tsx`, shared component)
+shows on any post with at least one approved comment, in two places — the blog listing page (`/blog`,
+`PostCard.tsx`) and, since 2026-07-31, the post page itself, right next to "X min read"
+(`src/app/(site)/blog/[slug]/page.tsx`). Both link to `/blog/[slug]#comments`. The count is computed fresh in
+the GROQ query (`"commentCount": count(*[_type == "comment" && status == "approved" && references(^._id)])`,
+present in both `POST_SUMMARY_PROJECTION` and `POST_BY_SLUG_QUERY` in `src/sanity/lib/queries.ts`) and
+already includes replies, not just top-level comments — matches the count shown in the post page's own
+comment section header. If a count looks low right after a reply comes in, the almost-always reason is that
+the reply is still sitting in Studio's moderation queue: this badge, like the comment section itself, only
+counts *approved* comments, matching exactly what a visitor would see if they clicked through.
 
 **Studio → Comments layout (redesigned 2026-07-31):** grouped by post instead of one long mixed list, posts
 with anything pending sorted first, replies nested directly under the comment they answer instead of a muted
