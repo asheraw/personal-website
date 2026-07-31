@@ -422,7 +422,12 @@ function Character3D({ position, activity, isMoving, facing, zoneId }: { positio
               <sphereGeometry args={[0.225, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2.05]} />
               <meshStandardMaterial color="#1a1208" roughness={0.5} />
             </mesh>
-            <mesh position={[0, 1.05, 0.19]} rotation={[0.55, 0, 0]} castShadow>
+            {/* Brim worn backwards -- at this size and from the steep
+                top-down camera, a brim on the front read as a small red
+                dot on the face (like a nose) rather than as a cap. Moving
+                it to the back reads as an actual snapback and keeps the
+                face clear. */}
+            <mesh position={[0, 1.05, -0.19]} rotation={[-0.55, 0, 0]} castShadow>
               <cylinderGeometry args={[0.13, 0.13, 0.016, 20, 1, false, 0, Math.PI]} />
               <meshStandardMaterial color="#c44d3f" roughness={0.5} side={THREE.DoubleSide} />
             </mesh>
@@ -474,8 +479,18 @@ function Character3D({ position, activity, isMoving, facing, zoneId }: { positio
             always agree with -- lower placements kept ending up hidden
             behind the character's own body). */}
         {zoneId === "philosophy" && !isMoving && (<group position={[0, 0.78, 0.22]} rotation={[0.7, 0, 0]}><mesh position={[-0.08, 0, 0]} rotation={[0, 0.18, 0]} castShadow><boxGeometry args={[0.16, 0.02, 0.2]} /><meshStandardMaterial color="#f3e9d4" roughness={0.6} /></mesh><mesh position={[0.08, 0, 0]} rotation={[0, -0.18, 0]} castShadow><boxGeometry args={[0.16, 0.02, 0.2]} /><meshStandardMaterial color="#f3e9d4" roughness={0.6} /></mesh><mesh position={[0, 0.012, 0]}><boxGeometry args={[0.01, 0.006, 0.2]} /><meshStandardMaterial color="#8b5a2b" roughness={0.5} /></mesh></group>)}
-        {/* Floating cross for faith */}
-        {zoneId === "faith" && !isMoving && (<group position={[0, 2.2, 0]}><mesh><boxGeometry args={[0.1, 0.6, 0.1]} /><meshStandardMaterial color="#f0b865" metalness={0.8} roughness={0.2} emissive="#f0b865" emissiveIntensity={0.7} /></mesh><mesh position={[0, 0.12, 0]}><boxGeometry args={[0.4, 0.1, 0.1]} /><meshStandardMaterial color="#f0b865" metalness={0.8} roughness={0.2} emissive="#f0b865" emissiveIntensity={0.7} /></mesh><pointLight position={[0, 0, 0]} intensity={0.4} color="#f0b865" distance={3} /></group>)}
+        {/* Floating cross for faith -- deliberately NOT gated on
+            !isMoving like the hand-held props (book, phone) are. It's a
+            floating symbol above the character, not something held in a
+            hand that would look wrong mid-stride, and it sits on the
+            rotation axis (x=0, z=0) so it turns with the character's
+            facing for free without needing its own logic. Was
+            accidentally gated on !isMoving before, which (before the
+            isMoving bug fix elsewhere) never actually mattered since
+            manual movement never set isMoving true -- once that bug was
+            fixed, this cross started vanishing on every manual step
+            instead of only when leaving the zone. */}
+        {zoneId === "faith" && (<group position={[0, 2.2, 0]}><mesh><boxGeometry args={[0.1, 0.6, 0.1]} /><meshStandardMaterial color="#f0b865" metalness={0.8} roughness={0.2} emissive="#f0b865" emissiveIntensity={0.7} /></mesh><mesh position={[0, 0.12, 0]}><boxGeometry args={[0.4, 0.1, 0.1]} /><meshStandardMaterial color="#f0b865" metalness={0.8} roughness={0.2} emissive="#f0b865" emissiveIntensity={0.7} /></mesh><pointLight position={[0, 0, 0]} intensity={0.4} color="#f0b865" distance={3} /></group>)}
         <mesh ref={leftLegRef} position={[-0.12, 0.18, 0]} castShadow><capsuleGeometry args={[0.07, 0.25, 4, 8]} /><meshStandardMaterial color="#1a1208" roughness={0.5} /></mesh>
         <mesh ref={rightLegRef} position={[0.12, 0.18, 0]} castShadow><capsuleGeometry args={[0.07, 0.25, 4, 8]} /><meshStandardMaterial color="#1a1208" roughness={0.5} /></mesh>
       </group>
