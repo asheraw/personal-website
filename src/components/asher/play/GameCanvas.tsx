@@ -8,38 +8,18 @@ import { useEffect, useRef } from "react";
 // checked before every draw so there's a plain-circle fallback for the one
 // frame or two before it's ready, instead of drawing nothing.
 // Cropped from one of Asher's own reference photos (already a clean
-// cutout with real alpha transparency, no keying needed). Drawn crisp, at
-// full resolution, on top of the pixelated body -- an earlier version ran
-// this through the same low-res pixel-art buffer as the body and it came
-// out as an unrecognizable blur, since a 15px-radius circle has nowhere
-// near enough buffer pixels to keep facial detail legible.
+// cutout with real alpha transparency, no keying needed). Drawn at full
+// resolution, no pixelation -- an earlier version ran the whole character
+// through a low-res offscreen buffer to get a chunky pixel-art look, but
+// that made everything (face included) read as blurry rather than
+// stylized, so it's gone. The face is a real photo; it was always going
+// to look better sharp than deliberately degraded.
 const avatarImage = typeof window !== "undefined" ? new Image() : null;
 if (avatarImage) avatarImage.src = "/asher/avatar-face.png";
 
 const HEAD_RADIUS = 15;
 function getBob(time: number) {
   return Math.sin(time * 0.003 * 2) * 1.2;
-}
-
-// The character body is rendered at a fraction of its final size into this
-// small offscreen buffer, then scaled back up with image smoothing off --
-// turns the smoothly-drawn curves (rounded rects, arcs) into chunky,
-// pixel-art-style blocks so the body actually matches the avatar image's
-// own pixel density instead of a smooth cartoon body under a pixelated
-// head. CHAR_PIXEL_BLOCK is how many original drawing units each chunky
-// "pixel" represents -- higher is blockier/more stylized, lower is closer
-// to the original smooth look.
-const CHAR_PIXEL_BLOCK = 2.2;
-const CHAR_BUFFER_SIZE = 64; // buffer pixels -- covers a (64*block)-unit area around the character, generous enough for every prop/accessory at any activity
-let charBuffer: HTMLCanvasElement | null = null;
-function getCharBuffer(): HTMLCanvasElement | null {
-  if (typeof document === "undefined") return null;
-  if (!charBuffer) {
-    charBuffer = document.createElement("canvas");
-    charBuffer.width = CHAR_BUFFER_SIZE;
-    charBuffer.height = CHAR_BUFFER_SIZE;
-  }
-  return charBuffer;
 }
 
 const WORLD_W = 720;
@@ -292,13 +272,18 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
   ctx.fillStyle = "#2c2760";
   ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(-2, -7); ctx.lineTo(-6, -5); ctx.closePath(); ctx.moveTo(6, -9); ctx.lineTo(2, -7); ctx.lineTo(6, -5); ctx.closePath(); ctx.fill();
   drawArms(ctx, activity, armSwing);
-  // Head is drawn separately, crisp, by drawCharacter() after this whole
-  // body has been pixelated -- this fallback circle only shows for the
-  // frame or two before the avatar image finishes loading.
-  if (!avatarImage || !avatarImage.complete || avatarImage.naturalWidth === 0) {
+  // Head: Asher's real photo, clipped to a circle, drawn crisp at full
+  // resolution. No ear "nubs" anymore either -- those were leftover from
+  // the drawn-face era (peeking out past a procedural circle) and against
+  // a real photo they just read as two stray dots beside the head.
+  if (avatarImage && avatarImage.complete && avatarImage.naturalWidth > 0) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, -22, HEAD_RADIUS, 0, Math.PI*2); ctx.clip();
+    ctx.drawImage(avatarImage, -HEAD_RADIUS, -22 - HEAD_RADIUS, HEAD_RADIUS*2, HEAD_RADIUS*2);
+    ctx.restore();
+  } else {
     ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(0, -22, HEAD_RADIUS, 0, Math.PI*2); ctx.fill();
   }
-  ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(-HEAD_RADIUS, -21, 2.4, 0, Math.PI*2); ctx.arc(HEAD_RADIUS, -21, 2.4, 0, Math.PI*2); ctx.fill();
   // No drawn mouth anymore -- the avatar's own expression is already part
   // of the image, and the old activity-specific mouth shapes (an "O" for
   // singing, a talking oval for phone) would just draw a dark blob over a
@@ -312,47 +297,13 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
 function drawCharacter(ctx: CanvasRenderingContext2D, x: number, y: number, activity: Activity, time: number, facing: number, showBubble: boolean) {
   ctx.save(); ctx.translate(x, y);
 
-  // Render the body into a small offscreen buffer at a fraction of final
-  // size, then blit it back scaled up with smoothing off -- turns the
-  // smoothly-drawn curves into chunky, pixel-art-style blocks so the body
-  // actually matches the avatar image's own pixel density, instead of a
-  // smooth cartoon body under a pixelated head.
-  const buf = getCharBuffer();
-  if (buf) {
-    const bctx = buf.getContext("2d");
-    if (bctx) {
-      bctx.clearRect(0, 0, buf.width, buf.height);
-      bctx.save();
-      bctx.translate(buf.width / 2, buf.height / 2);
-      bctx.scale(1 / CHAR_PIXEL_BLOCK, 1 / CHAR_PIXEL_BLOCK);
-      if (facing < 0) bctx.scale(-1, 1);
-      drawCharacterBody(bctx, activity, time);
-      bctx.restore();
-
-      const wasSmooth = ctx.imageSmoothingEnabled;
-      ctx.imageSmoothingEnabled = false;
-      const drawSize = buf.width * CHAR_PIXEL_BLOCK;
-      ctx.drawImage(buf, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
-      ctx.imageSmoothingEnabled = wasSmooth;
-    }
-  } else {
-    // SSR/no-canvas-support fallback -- shouldn't happen client-side, but
-    // keeps this from silently drawing nothing if getCharBuffer ever fails.
-    ctx.save(); if (facing < 0) ctx.scale(-1, 1); drawCharacterBody(ctx, activity, time); ctx.restore();
-  }
-
-  // Face drawn crisp on top of the pixelated body, at full resolution --
-  // the head sits at local (0, bob-22) regardless of facing since it's
-  // centered on x=0, so only the flip (for the photo to face the way the
-  // character is walking) needs redoing here, not the position.
-  if (avatarImage && avatarImage.complete && avatarImage.naturalWidth > 0) {
-    const headY = getBob(time) - 22;
-    ctx.save();
-    if (facing < 0) ctx.scale(-1, 1);
-    ctx.beginPath(); ctx.arc(0, headY, HEAD_RADIUS, 0, Math.PI*2); ctx.clip();
-    ctx.drawImage(avatarImage, -HEAD_RADIUS, headY - HEAD_RADIUS, HEAD_RADIUS*2, HEAD_RADIUS*2);
-    ctx.restore();
-  }
+  // Single flip for body and face together, so the photo and the drawn
+  // limbs/props always turn as one instead of needing to be kept in sync
+  // by hand -- facing < 0 while walking left, > 0 while walking right.
+  ctx.save();
+  if (facing < 0) ctx.scale(-1, 1);
+  drawCharacterBody(ctx, activity, time);
+  ctx.restore();
 
   if (showBubble) drawSpeechBubble(ctx);
   ctx.restore();
