@@ -7,14 +7,19 @@ import { useEffect, useRef } from "react";
 // not a URL string, unlike a normal <img>/next/image. `.complete` is
 // checked before every draw so there's a plain-circle fallback for the one
 // frame or two before it's ready, instead of drawing nothing.
-// Own crop from the reading-bar avatar: tighter around the face (per
-// Asher's "enlarge my face" feedback) and with the source photo's yellow
-// background keyed out to transparent (color-signature match on
-// low-blue/high-green, not just an exact-colour match, so it also catches
-// the yellow-tinted anti-aliased edge pixels that a simple distance
-// threshold left as a visible fringe).
+// Cropped from one of Asher's own reference photos (already a clean
+// cutout with real alpha transparency, no keying needed). Drawn crisp, at
+// full resolution, on top of the pixelated body -- an earlier version ran
+// this through the same low-res pixel-art buffer as the body and it came
+// out as an unrecognizable blur, since a 15px-radius circle has nowhere
+// near enough buffer pixels to keep facial detail legible.
 const avatarImage = typeof window !== "undefined" ? new Image() : null;
-if (avatarImage) avatarImage.src = "/asher/avatar-8bit-face.png";
+if (avatarImage) avatarImage.src = "/asher/avatar-face.png";
+
+const HEAD_RADIUS = 15;
+function getBob(time: number) {
+  return Math.sin(time * 0.003 * 2) * 1.2;
+}
 
 // The character body is rendered at a fraction of its final size into this
 // small offscreen buffer, then scaled back up with image smoothing off --
@@ -267,8 +272,7 @@ function drawSpeechBubble(ctx: CanvasRenderingContext2D) {
 }
 
 function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, time: number) {
-  const t = time * 0.003;
-  const bob = Math.sin(t*2)*1.2;
+  const bob = getBob(time);
   const isWalking = activity === "walking";
   const legSwing = isWalking ? Math.sin(time*0.015)*4 : 0;
   const armSwing = isWalking ? Math.sin(time*0.015) : 0;
@@ -288,23 +292,13 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
   ctx.fillStyle = "#2c2760";
   ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(-2, -7); ctx.lineTo(-6, -5); ctx.closePath(); ctx.moveTo(6, -9); ctx.lineTo(2, -7); ctx.lineTo(6, -5); ctx.closePath(); ctx.fill();
   drawArms(ctx, activity, armSwing);
-  // The head is Asher's real avatar now (own tighter crop, background
-  // keyed out), clipped to the same circle the drawn face used to fill --
-  // replaces the old procedural face, hair, blush, and blink/expression
-  // logic entirely (a static image can't blink, so there's nothing left
-  // for that logic to drive). Ears stay, drawn after so they still show
-  // at the circle's edge. Sized larger than the original drawn face (was
-  // radius 11) per Asher's "enlarge my face" feedback.
-  const headR = 15;
-  if (avatarImage && avatarImage.complete && avatarImage.naturalWidth > 0) {
-    ctx.save();
-    ctx.beginPath(); ctx.arc(0, -22, headR, 0, Math.PI*2); ctx.clip();
-    ctx.drawImage(avatarImage, -headR, -22 - headR, headR*2, headR*2);
-    ctx.restore();
-  } else {
-    ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(0, -22, headR, 0, Math.PI*2); ctx.fill();
+  // Head is drawn separately, crisp, by drawCharacter() after this whole
+  // body has been pixelated -- this fallback circle only shows for the
+  // frame or two before the avatar image finishes loading.
+  if (!avatarImage || !avatarImage.complete || avatarImage.naturalWidth === 0) {
+    ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(0, -22, HEAD_RADIUS, 0, Math.PI*2); ctx.fill();
   }
-  ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(-headR, -21, 2.4, 0, Math.PI*2); ctx.arc(headR, -21, 2.4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#ffcdb2"; ctx.beginPath(); ctx.arc(-HEAD_RADIUS, -21, 2.4, 0, Math.PI*2); ctx.arc(HEAD_RADIUS, -21, 2.4, 0, Math.PI*2); ctx.fill();
   // No drawn mouth anymore -- the avatar's own expression is already part
   // of the image, and the old activity-specific mouth shapes (an "O" for
   // singing, a talking oval for phone) would just draw a dark blob over a
@@ -345,6 +339,19 @@ function drawCharacter(ctx: CanvasRenderingContext2D, x: number, y: number, acti
     // SSR/no-canvas-support fallback -- shouldn't happen client-side, but
     // keeps this from silently drawing nothing if getCharBuffer ever fails.
     ctx.save(); if (facing < 0) ctx.scale(-1, 1); drawCharacterBody(ctx, activity, time); ctx.restore();
+  }
+
+  // Face drawn crisp on top of the pixelated body, at full resolution --
+  // the head sits at local (0, bob-22) regardless of facing since it's
+  // centered on x=0, so only the flip (for the photo to face the way the
+  // character is walking) needs redoing here, not the position.
+  if (avatarImage && avatarImage.complete && avatarImage.naturalWidth > 0) {
+    const headY = getBob(time) - 22;
+    ctx.save();
+    if (facing < 0) ctx.scale(-1, 1);
+    ctx.beginPath(); ctx.arc(0, headY, HEAD_RADIUS, 0, Math.PI*2); ctx.clip();
+    ctx.drawImage(avatarImage, -HEAD_RADIUS, headY - HEAD_RADIUS, HEAD_RADIUS*2, HEAD_RADIUS*2);
+    ctx.restore();
   }
 
   if (showBubble) drawSpeechBubble(ctx);
