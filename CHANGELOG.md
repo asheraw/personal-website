@@ -75,6 +75,12 @@ looked like — a preview session with no real expiry, so once draft mode was sw
 just never turned itself back off, showing the banner on every post regardless of whether it actually had
 unpublished changes. Now expires automatically after 4 hours instead of lingering indefinitely.
 
+**Started `IDEAS.md`** — a dedicated, ongoing "good to have, not now" list, separate from the actual phase
+roadmap. First two entries: notifying a commenter by email when Asher replies (raised today — deferred over
+a real spam-risk concern, not just "later"), and the Figma-style inline comments idea from earlier today,
+moved here from a one-off chat mention so it has one durable home instead of being buried in a dated log
+entry.
+
 ---
 
 ## 2026-07-30

@@ -16,6 +16,9 @@ become*. Where they disagree with what's actually deployed, this file wins.
 a session finishes real work, it adds a dated entry there instead of leaving the only record in a chat-only
 summary that other sessions can't see.
 
+**For ideas that came up and were deliberately deferred, read `IDEAS.md`** — a running "good to have, not
+now" list, separate from the actual phase roadmap. Check there before re-proposing something from scratch.
+
 ---
 
 ## How urgent is it? (severity levels)
@@ -356,15 +359,9 @@ browser* — tracked via `localStorage`, so it deliberately doesn't sync across 
 different computer/browser won't show what's already been seen elsewhere. That's a real limitation, not a
 bug, and the email notification above is the actual cross-device fix.
 
-**Decided against, logged for a possible future revisit:** Figma-style inline commenting (highlight a
-passage of text, leave a comment anchored to that exact span) was considered instead of extending the
-existing system, and deliberately not built. Reasoning: mobile text selection already triggers the browser's
-own native selection UI, which a custom "add comment" popup would have to fight; an anchored comment breaks
-or needs fuzzy re-matching whenever the underlying paragraph is later edited; and it's a UX pattern built for
-collaborative document editing (Figma, Notion, Google Docs), not really how readers engage with a finished,
-published blog post. See `CHANGELOG.md`'s 2026-07-31 entry for the fuller reasoning and a lighter-weight
-alternative ("highlight to share a quote," no persistent anchoring) that was suggested as a middle ground if
-this comes back up.
+**Two things considered and deliberately not built here** — Figma-style inline highlight comments, and
+emailing a commenter when Asher replies — are logged with full reasoning in `IDEAS.md`, the running list of
+"good to have, not now" ideas. Check there before re-proposing either from scratch.
 
 ---
 
