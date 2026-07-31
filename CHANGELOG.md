@@ -351,6 +351,17 @@ bouncing circular medallion with an amber border. Verified visually on both the 
 post before shipping. Closes out the "swap the mascot" entry logged in `IDEAS.md` a few hours earlier — that
 entry's removed now that it's done.
 
+### Continued (two follow-ups on the real avatar: faces scroll direction, bar hides past related posts)
+
+**The avatar now faces the direction of travel** — right while scrolling down, left while scrolling back up
+— tracked once inside the shared `WalkingCharacter.tsx`, so both the homepage and blog bars picked it up
+automatically with no changes needed to either.
+
+**The blog reading bar now hides once past Related Reading**, instead of staying pinned at 100% for the rest
+of the page. Uses an always-present marker element right after the comment section so this works reliably
+even for a post with no related reading to show. Both verified end-to-end — scrolled a real post to the
+footer (bar correctly gone) and confirmed the flip in both directions on both bars — before shipping.
+
 ---
 
 ## 2026-07-30

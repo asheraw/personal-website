@@ -274,6 +274,23 @@ with `sharp` — extract a square region tight around the head, resize down with
 default smooth interpolation, which would blur pixel-art edges), save as PNG to `public/asher/avatar-8bit.png`
 at the same ~176x176 size. No code change needed if the replacement file keeps the same filename/dimensions.
 
+**The avatar faces the direction of travel** (shipped 2026-07-31, same day) — right while scrolling down
+(the default), left while scrolling back up, via a `scaleX` flip in `WalkingCharacter.tsx`. This is tracked
+inside `WalkingCharacter` itself, not by either parent bar, so both the homepage `ProgressionBar` and the
+blog's `BlogReadingBar` get it automatically with no per-page wiring. Small scroll deltas (≤2px) are ignored
+so it doesn't flicker between facings from sub-pixel jitter while scrolling is nearly stationary.
+
+**The blog reading bar now hides once the reader scrolls past Related Reading** (shipped 2026-07-31, same
+day) — a fixed progress bar stuck at 100% while browsing unrelated links below the post was clutter, per
+Asher's feedback. Works via a marker element, `<div id="reading-bar-boundary" />` in
+`src/app/(site)/blog/[slug]/page.tsx`, placed right after the comment section and always rendered — even
+when `RelatedPosts` itself renders nothing (no shared category/tag with any other post) — so
+`BlogReadingBar` always has a reliable anchor to check regardless of whether that post actually has related
+reading to show. **If the bar stops hiding correctly:** confirm that marker element is still present in the
+page and its `id` still matches `BlogReadingBar`'s `hideAtId` prop (defaults to `"reading-bar-boundary"`,
+overridable if ever needed) — if the div gets removed or renamed by a future edit, the bar silently falls
+back to never hiding (visible for the rest of the page) rather than erroring.
+
 ---
 
 ## RSS feeds: site-wide and per-channel (shipped 2026-07-31)
