@@ -53,10 +53,12 @@ export function BlogReadingBar({
   targetId,
   headings,
   commentsId = "comments",
+  hideAtId = "reading-bar-boundary",
 }: {
   targetId: string;
   headings: HeadingCheckpoint[];
   commentsId?: string;
+  hideAtId?: string;
 }) {
   const [progress, setProgress] = useState(0);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -81,7 +83,16 @@ export function BlogReadingBar({
       const current = scrollY - startTop;
       const p = Math.max(0, Math.min(1, current / Math.max(1, totalRange)));
       setProgress(p);
-      setVisible(scrollY > VISIBLE_AFTER_SCROLL_PX);
+
+      // Hides once the reader reaches the boundary right after the comment
+      // form (where Related Reading starts, whether or not it actually has
+      // anything to show) -- past that point they're done with "the post,"
+      // and a progress bar stuck at 100% while browsing unrelated links
+      // below it is just clutter. Falls back to the plain scroll-based
+      // show/hide if the boundary element isn't found for some reason.
+      const boundaryEl = document.getElementById(hideAtId);
+      const pastBoundary = boundaryEl ? boundaryEl.getBoundingClientRect().top <= window.innerHeight : false;
+      setVisible(scrollY > VISIBLE_AFTER_SCROLL_PX && !pastBoundary);
 
       const readingLine = window.innerHeight / 3;
       let active = -1;
@@ -99,7 +110,7 @@ export function BlogReadingBar({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
     };
-  }, [targetId, headings]);
+  }, [targetId, headings, hideAtId]);
 
   // Fast-scroll easter egg, deliberately kept in its own effect/loop so
   // its "ignore window after a hash jump" logic never has to interact

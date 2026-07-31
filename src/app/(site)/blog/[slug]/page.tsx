@@ -285,6 +285,10 @@ export default async function PostPage({ params }: PageProps) {
           <CommentSection postId={post._id} commentsLocked={post.commentsLocked} />
         </div>
 
+        {/* Marks where the reading bar should disappear -- always rendered,
+            even if there are no related posts to show, so BlogReadingBar
+            has a reliable anchor regardless of RelatedPosts' own content. */}
+        <div id="reading-bar-boundary" aria-hidden />
         <RelatedPosts posts={relatedPosts} />
 
         <div className="mt-14 border-t border-amber-faint pt-8 print:hidden">
