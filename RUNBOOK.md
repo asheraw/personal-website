@@ -162,10 +162,17 @@ external link's actual URL gets printed after the link text since "click here" m
 Structural chrome is hidden per-element with Tailwind's `print:hidden` utility; the color/link rules live in
 one `@media print` block at the bottom of `src/app/globals.css`.
 
-**Search** lives at the top of `/blog`, right under the intro paragraph (`BlogSearch.tsx`). Per the PRD:
-no custom search index to build or host — typing a query and hitting enter opens a new tab with a
-`site:asheraw.com`-restricted Google search. Google already has the whole site indexed via the sitemap, so
-this needed zero new infrastructure.
+**Search** lives at the top of `/blog`, right under the intro paragraph (`BlogSearch.tsx`). Reworked
+2026-07-31 (originally opened Google in a new tab; Asher asked for something that keeps readers on-site) into
+an instant client-side search: `/blog/page.tsx` already fetches every post for the listing, so a lean
+searchable subset (title, summary, tags, category titles -- no images, no comment counts, no full body text)
+gets passed straight into `BlogSearch` as a prop, no extra fetch or index to host. Typing filters that list
+live (title matches first, then summary/tag/category matches) and shows up to 6 results in a dropdown;
+clicking one is a normal in-site `Link` navigation. Doesn't reach into full post bodies -- a "search the wider
+web" link stays at the bottom of the dropdown, still the old `site:asheraw.com`-restricted Google search, as
+a fallback for anything buried in body text this shallow index can't see. Nothing to maintain: a new post is
+automatically searchable the moment it's in the fetched list, and the payload stays small regardless of post
+count since each post's summary text is already capped short in its own GROQ projection.
 
 **The reading progress bar** moved from a thin line under the header to a bottom bar
 (`src/components/asher/blog/BlogReadingBar.tsx`), matching the homepage's own `ProgressionBar.tsx` in style

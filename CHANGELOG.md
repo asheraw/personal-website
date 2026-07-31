@@ -143,6 +143,16 @@ show. Same slide-up-from-the-bottom entrance the homepage's own bar already uses
 Now it's body → tags → **comments** → **Related Reading** → back-to-blog link — comments come right after
 the post, and Related Reading moved to the very end, after the comment thread instead of before it.
 
+### Continued (search now stays on-site)
+
+**Search, reworked.** Asher pointed out the search box was sending readers to Google in a new tab for even a
+simple title lookup — worse than it needed to be for a blog this size. Now it's instant and on-site: typing
+filters the posts already loaded on `/blog` (by title, summary, tags, categories) and shows matches in a
+dropdown you click straight to, no new tab, no page leave. A "search the wider web" link stays at the bottom
+as a fallback — the on-site index only covers titles/summaries/tags, not full post bodies, so a query that
+finds nothing on-site can still fall through to the old Google-restricted search. Nothing new to host or
+maintain: it's built entirely from data the page was already fetching.
+
 ---
 
 ## 2026-07-30

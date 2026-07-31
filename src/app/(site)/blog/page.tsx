@@ -3,7 +3,7 @@ import { client } from "@/sanity/lib/client";
 import { ALL_POSTS_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { PostCard } from "@/components/asher/blog/PostCard";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
-import { BlogSearch } from "@/components/asher/blog/BlogSearch";
+import { BlogSearch, type SearchablePost } from "@/components/asher/blog/BlogSearch";
 
 // Re-check Sanity for new or edited posts at most once per minute,
 // instead of only ever showing what existed at the last deploy.
@@ -18,6 +18,19 @@ export const metadata: Metadata = {
 export default async function BlogPage() {
   const posts = await client.fetch<PostSummary[]>(ALL_POSTS_QUERY);
 
+  // Lean subset of each post, just for client-side search -- not the full
+  // PostSummary (no mainImage, comment count, etc.), so what actually gets
+  // sent down to BlogSearch stays small regardless of how much other data
+  // each post carries.
+  const searchIndex: SearchablePost[] = posts.map((post) => ({
+    _id: post._id,
+    title: post.title,
+    slug: post.slug,
+    blurb: post.excerpt || post.autoExcerpt,
+    tags: post.tags,
+    categoryTitles: post.categories?.map((c) => c.title),
+  }));
+
   return (
     <BlogChrome>
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
@@ -31,7 +44,7 @@ export default async function BlogPage() {
           Welcome to my blog, I&apos;m currently going through a revamp so there&apos;s many things that are still a Work-In-Progress.
         </p>
 
-        <BlogSearch />
+        <BlogSearch posts={searchIndex} />
 
         {posts.length === 0 && (
           <p className="mt-16 text-stone/70">Nothing published yet — check back soon.</p>
