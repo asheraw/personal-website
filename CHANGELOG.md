@@ -219,6 +219,18 @@ and that's staying that way on purpose: it's a bespoke, art-directed one-page si
 frequently-changing, structurally-repeatable content a CMS is worth the overhead for. The blog is the
 opposite of that, which is the real reason the two are built so differently.
 
+### Hotfix (same day — the pending-comments badge wasn't actually visible)
+
+Asher tested the Comments moderation page after two new comments came in and confirmed there was still no
+visible signal in Studio's nav — he had to click into Comments to find out. Root cause: the badge built
+earlier lived on the Comments tool's *icon*, but Sanity's navbar only renders that icon in narrow/overflow
+contexts — at normal window widths it shows tool names as plain text instead, so the badge was never actually
+shown where it mattered. Fixed with an independent, always-visible signal instead: a floating "N comments
+need review" pill fixed to the bottom-right corner of every Studio screen, wired in through Studio's own
+navbar extension point rather than depending on how an individual tool tab happens to render
+(`CommentsNavbarBadge.tsx` + `StudioNavbar.tsx`, `sanity.config.ts`). Both this and the original tool-icon
+badge now share one polling hook instead of two separate timers hitting the same query.
+
 ---
 
 ## 2026-07-30

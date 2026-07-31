@@ -21,6 +21,7 @@ import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
 import {CommentsToolIcon} from './src/sanity/components/CommentsToolIcon'
+import {StudioNavbar} from './src/sanity/components/StudioNavbar'
 import {NotFoundHitsTool} from './src/sanity/components/NotFoundHitsTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
@@ -31,6 +32,14 @@ export default defineConfig({
   dataset,
   // Add and edit the content schema in the './sanity/schemaTypes' folder
   schema,
+  studio: {
+    components: {
+      // Floating "N comments need review" badge, always visible regardless
+      // of which tool is open -- see StudioNavbar/CommentsNavbarBadge for
+      // why this replaced relying on the Comments tool's own icon slot.
+      navbar: StudioNavbar,
+    },
+  },
   document: {
     actions: (prev, context) => {
       if (context.schemaType === 'category') {
@@ -103,9 +112,12 @@ export default defineConfig({
     {name: 'media-library', title: 'Media', icon: ImageIcon, component: MediaLibraryTool},
     // Comment moderation queue -- one-click approve/reject instead of
     // opening, editing, and saving each comment document individually.
-    // Icon is a live component (polls every 30s) so the pending count shows
-    // right in the persistent nav bar, WordPress-style -- Sanity Studio has
-    // no dedicated "badge on a tool" API, but `icon` accepts any component.
+    // `icon` is a live component (polls every 30s, see
+    // usePendingCommentCount) so a pending count *can* show as a badge on
+    // it -- but Studio's navbar only renders this icon in narrow/overflow
+    // contexts, showing tool names as plain text at normal widths, so it's
+    // not reliably visible. The always-visible signal is the floating
+    // navbar badge (studio.components.navbar -> StudioNavbar, above).
     {name: 'comments', title: 'Comments', icon: CommentsToolIcon, component: CommentsTool},
     // 404 hits, one overview page instead of clicking into each path's own
     // document -- most-hit paths first, with a per-path expandable full hit

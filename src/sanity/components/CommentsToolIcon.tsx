@@ -1,36 +1,17 @@
-import {useEffect, useState} from 'react'
 import {CommentIcon} from '@sanity/icons/Comment'
-import {useClient} from 'sanity'
-
-const POLL_MS = 30_000
+import {usePendingCommentCount} from '../hooks/usePendingCommentCount'
 
 // Sanity Studio's persistent top-nav doesn't have a dedicated "badge on a
-// tool" API, but a tool's `icon` accepts any component -- so the live count
-// is rendered as part of the icon itself instead. Polls every 30s, which is
-// enough for "is there something new to look at" without hammering the API.
+// tool" API, so a tool's `icon` accepts any component -- the live count is
+// rendered as part of the icon itself. Note: at wide viewports Studio's
+// navbar shows tool *names* as plain text, not this icon at all, so this
+// badge is only ever actually visible in narrow/overflow contexts (mobile
+// nav, the "more tools" menu). CommentsNavbarBadge (rendered via
+// studio.components.navbar in sanity.config.ts) is the one guaranteed
+// visible everywhere -- this stays as a belt-and-suspenders extra, not the
+// primary signal.
 export function CommentsToolIcon() {
-  const client = useClient({apiVersion: '2026-07-22'})
-  const [pending, setPending] = useState<number | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    function load() {
-      client
-        .fetch<number>(`count(*[_type == "comment" && status == "pending"])`)
-        .then((count) => {
-          if (!cancelled) setPending(count)
-        })
-        .catch(() => {
-          // A missed poll isn't worth surfacing -- just try again next tick.
-        })
-    }
-    load()
-    const id = setInterval(load, POLL_MS)
-    return () => {
-      cancelled = true
-      clearInterval(id)
-    }
-  }, [client])
+  const pending = usePendingCommentCount()
 
   return (
     <span style={{position: 'relative', display: 'inline-flex'}}>

@@ -492,6 +492,20 @@ browser* — tracked via `localStorage`, so it deliberately doesn't sync across 
 different computer/browser won't show what's already been seen elsewhere. That's a real limitation, not a
 bug, and the email notification above is the actual cross-device fix.
 
+**Pending-comments badge, fixed (2026-07-31).** The Comments tool's nav icon (`CommentsToolIcon.tsx`) polls
+the pending count every 30s and was meant to show it as a small badge right in Studio's persistent top nav —
+except it didn't actually show up there: Sanity's navbar renders tool *names* as plain text at normal window
+widths, not the custom icon component at all, so that badge was only ever visible in narrow-viewport/overflow
+contexts most people never see. Asher flagged this directly after testing (still had to click into Comments
+to find out there was anything new). Fixed with a second, independent signal that doesn't depend on how
+Studio chooses to render a tool tab: `CommentsNavbarBadge.tsx`, a floating "N comments need review" pill fixed
+to the bottom-right corner of the screen, visible on *every* Studio page regardless of which tool is open —
+wired in via Studio's own navbar extension point (`studio.components.navbar` in `sanity.config.ts` ->
+`StudioNavbar.tsx`, which renders the default navbar untouched and adds the badge alongside it). Both the tool
+icon and the new badge now share one polling hook (`usePendingCommentCount.ts`) instead of running two
+separate timers against the same query. The tool icon badge is left in place as a belt-and-suspenders extra,
+not removed — but the floating badge is the one actually doing the job now.
+
 **One thing considered and deliberately not built here** — Figma-style inline highlight comments — is logged
 with full reasoning in `IDEAS.md`, the running list of "good to have, not now" ideas.
 
