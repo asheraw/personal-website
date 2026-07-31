@@ -1,11 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 
-// The little walking figure that tracks progress along a bottom bar --
-// shared between the homepage's ProgressionBar and the blog's reading
-// progress bar so the two stay visually identical instead of drifting
-// apart as separate copies.
+// The little character that tracks progress along a bottom bar -- shared
+// between the homepage's ProgressionBar and the blog's reading progress bar
+// so the two stay visually identical instead of drifting apart as separate
+// copies. Was a generic drawn stick figure; now Asher's own 8-bit pixel-art
+// avatar (cropped tighter to the head, per his request), riding along as a
+// small bouncing medallion rather than a walking sprite -- there's no body
+// to animate a walk cycle with, just the bob, which was already doing most
+// of the "alive" feeling before.
 export function WalkingCharacter({ progress }: { progress: number }) {
   const leftPct = 2 + progress * 96;
   return (
@@ -15,28 +20,20 @@ export function WalkingCharacter({ progress }: { progress: number }) {
       animate={{ y: [0, -3, 0] }}
       transition={{ duration: 0.4, repeat: Infinity, ease: "easeInOut" }}
     >
-      <svg width="22" height="28" viewBox="0 0 22 28" fill="none">
-        <ellipse cx="11" cy="26" rx="6" ry="1.5" fill="rgba(0,0,0,0.4)" />
-        <motion.g
-          animate={{ rotate: [0, 12, 0, -12, 0] }}
-          transition={{ duration: 0.6, repeat: Infinity, ease: "easeInOut" }}
-          style={{ transformOrigin: "11px 18px" }}
-        >
-          <line x1="9" y1="18" x2="9" y2="25" stroke="#1a1208" strokeWidth="2" strokeLinecap="round" />
-          <line x1="13" y1="18" x2="13" y2="25" stroke="#1a1208" strokeWidth="2" strokeLinecap="round" />
-        </motion.g>
-        <rect x="5" y="9" width="12" height="11" rx="3" fill="#d99846" />
-        <polygon points="7,9 10,10.5 7,12" fill="#c44d3f" />
-        <polygon points="15,9 12,10.5 15,12" fill="#c44d3f" />
-        <circle cx="11" cy="10.5" r="0.8" fill="#1a1208" />
-        <circle cx="11" cy="5" r="5" fill="#f3e9d4" />
-        <path d="M6 5 Q11 -1 16 5 Q14 3 11 3 Q8 3 6 5 Z" fill="#2a1f15" />
-        <circle cx="9" cy="5" r="0.9" fill="#1a1208" />
-        <circle cx="13" cy="5" r="0.9" fill="#1a1208" />
-        <path d="M9.5 7 Q11 8.2 12.5 7" stroke="#1a1208" strokeWidth="0.7" strokeLinecap="round" fill="none" />
-        <circle cx="8" cy="6.2" r="0.8" fill="rgba(196,77,63,0.3)" />
-        <circle cx="14" cy="6.2" r="0.8" fill="rgba(196,77,63,0.3)" />
-      </svg>
+      <div
+        className="overflow-hidden rounded-full border-2 border-spotlight shadow-[0_2px_6px_rgba(0,0,0,0.4)]"
+        style={{ width: 26, height: 26 }}
+      >
+        <Image
+          src="/asher/avatar-8bit.png"
+          alt=""
+          width={26}
+          height={26}
+          className="h-full w-full object-cover"
+          style={{ imageRendering: "pixelated" }}
+          priority
+        />
+      </div>
     </motion.div>
   );
 }
