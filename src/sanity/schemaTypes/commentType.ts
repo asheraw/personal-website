@@ -64,7 +64,7 @@ export const commentType = defineType({
       title: 'Replying to',
       type: 'reference',
       to: [{type: 'comment'}],
-      description: 'Set only for Asher\'s own replies, created from the Comments tool -- never set by a visitor. One level deep: a reply to a reply is not supported.',
+      description: 'Set when this comment is a reply to another one -- either a visitor replying from the live site, or Asher replying from the Comments tool. One level deep: a comment that is itself a reply can\'t be replied to.',
       readOnly: true,
     }),
     defineField({
@@ -84,9 +84,15 @@ export const commentType = defineType({
     },
   ],
   preview: {
-    select: {name: 'name', message: 'message', status: 'status', postTitle: 'post.title', isAuthorReply: 'isAuthorReply'},
-    prepare: ({name, message, status, postTitle, isAuthorReply}) => ({
-      title: `${isAuthorReply ? '↳ ' : ''}${name}: ${message?.slice(0, 60) ?? ''}`,
+    select: {
+      name: 'name',
+      message: 'message',
+      status: 'status',
+      postTitle: 'post.title',
+      parentComment: 'parentComment._ref',
+    },
+    prepare: ({name, message, status, postTitle, parentComment}) => ({
+      title: `${parentComment ? '↳ ' : ''}${name}: ${message?.slice(0, 60) ?? ''}`,
       subtitle: `${status} · on "${postTitle ?? 'unknown post'}"`,
     }),
   },

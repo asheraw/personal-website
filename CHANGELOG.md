@@ -47,6 +47,34 @@ mobile's native selection UI, since it's a one-shot action rather than something
 a specific span forever. Worth considering as a separate small feature alongside comments, not instead of
 them, if this is still interesting later.
 
+### Continued (same day — opened replies to everyone, real notifications, redesigned the moderation page)
+
+**Replies, opened up.** Corrected from earlier the same day: replies aren't Asher-only. Anyone can reply to a
+top-level comment now (still one level deep — no reply-to-a-reply, checked server-side too, not just hidden
+in the UI), through the same moderation queue as any other comment. Asher's own replies from Studio are the
+one exception — those still auto-approve and get the distinct spotlight styling, since they're not something
+that needs moderating.
+
+**The actual reason comments got missed: no notification.** Asher found out about real comments because a
+friend told him directly, not because anything in Studio prompted him to look. The pending badge on the
+Comments nav icon works, but only helps if you're already looking at Studio — it can't reach you. Fixed with
+an email notification on every new comment or reply, reusing the exact same setup the contact form already
+had (same inbox, same service) — no new configuration needed. Best-effort: the comment is always saved and
+queued regardless of whether the email actually sends.
+
+**The moderation page itself, redesigned.** Asher's read: functional, but hadn't had real UI/UX thought put
+into it — fair, it hadn't. It was one long list mixing every post's comments together, a reply shown as a
+muted "replying to ..." text reference instead of visually connected to what it replies to, and no way to
+tell what was actually new since the last visit. Now: grouped by post, posts with something pending sorted
+to the top, replies nested directly under the comment they answer, and a "New" tag on anything since the
+last time the page was open *in that browser specifically* (doesn't sync across devices — a real limit,
+noted directly in `RUNBOOK.md` rather than glossed over).
+
+**Also fixed: the "Previewing a draft" banner that wouldn't go away.** Turned out to be exactly what it
+looked like — a preview session with no real expiry, so once draft mode was switched on in a browser it
+just never turned itself back off, showing the banner on every post regardless of whether it actually had
+unpublished changes. Now expires automatically after 4 hours instead of lingering indefinitely.
+
 ---
 
 ## 2026-07-30

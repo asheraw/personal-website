@@ -281,14 +281,22 @@ Every comment submitted on a post starts as **pending** and shows nowhere on the
 comment with one-click **Approve**/**Reject** buttons, and a count of comments awaiting review at the top of
 the tool. Component: `src/sanity/components/CommentsTool.tsx`.
 
-**The pending count also shows directly on the "Comments" nav icon itself** (shipped 2026-07-30, so you don't
-have to click in just to check) — a small red badge with the number, WordPress-style. Sanity Studio has no
-dedicated "badge on a tool" API; this works because a tool's `icon` config accepts any React component, not
-just a static icon, so `CommentsToolIcon.tsx` renders the normal icon plus a live badge, polling the pending
-count every 30 seconds. **Not visually confirmed in this session** (no Studio login available to check
-interactively) — implemented per Sanity's documented `Tool.icon` API and compiles/typechecks cleanly, but if
-the badge doesn't actually appear, that's the first thing to check by inspecting the rendered nav in
-browser devtools.
+**The pending count also shows directly on the "Comments" nav icon itself** (shipped 2026-07-30) — a small
+red badge with the number, WordPress-style. Sanity Studio has no dedicated "badge on a tool" API; this works
+because a tool's `icon` config accepts any React component, not just a static icon, so
+`CommentsToolIcon.tsx` renders the normal icon plus a live badge, polling the pending count every 30 seconds.
+Confirmed working (visible in Asher's own screenshot 2026-07-31) — but confirmed **not sufficient on its
+own**: real comments sat unnoticed for days because nothing prompts you to actually open Studio and look at
+the nav bar in the first place. A badge only helps if you're already looking. See the email notification
+below, added specifically because of this.
+
+**Email notification (shipped 2026-07-31):** every new comment or reply — from anyone, not just the first
+one on a post — sends a notification to the same inbox the contact form already notifies
+(`RESEND_API_KEY` + `CONTACT_NOTIFICATION_EMAIL`, no new setup needed if the contact form already works),
+with the commenter's name, their message, which post, and a direct link to Studio → Comments. Best-effort:
+if Resend isn't configured or the send fails, the comment is still saved and waiting in the moderation queue
+exactly as before — a visitor never sees a failure just because the notification didn't go out.
+`src/app/api/comments/route.ts`.
 
 **Spam protection:** a honeypot field (a hidden `website` input — real visitors never see or fill it; if it's
 filled, the request is silently accepted but nothing is actually saved) plus a simple math challenge (e.g.
@@ -317,15 +325,18 @@ avoid telling spammers which submissions got through). If it's not there at all,
 accidentally triggered (an autofill browser extension filling every input on the page, for example) or the
 math captcha wasn't miskeyed.
 
-**Replying as Asher (shipped 2026-07-31):** every comment in Studio → Comments now has a **Reply** button
-(except on replies themselves — one level of nesting only, a reply to a reply isn't supported). Typing a
-reply and clicking **Post reply** creates a new comment linked to the original via the `parentComment`
-reference field, with `isAuthorReply: true` and `status: "approved"` set immediately — it's Asher's own
-words, not visitor-submitted content, so it skips the moderation queue entirely and appears live right away.
-On the site it renders in a spotlight-accented card with an "Author" badge, indented under the comment it's
-replying to (`src/components/asher/blog/CommentSection.tsx`'s `CommentCard`). The reply's display name is a
-constant (`REPLY_AUTHOR_NAME` in `CommentsTool.tsx`) — cosmetic only, change that one line if it's ever
-wrong; the actual styling logic keys off `isAuthorReply`, not the name string.
+**Replies (shipped 2026-07-31, opened up to everyone the same day):** any top-level comment — on the live
+site, not just in Studio — has a **Reply** link. One level of nesting only: a reply can't itself be replied
+to, enforced both in the UI (no Reply link on a reply) and server-side in `/api/comments`'s `POST` handler
+(a hand-crafted request targeting a reply's ID as the parent is rejected). A visitor's reply goes through the
+same moderation queue as any other comment. **Asher's own replies are different only in one way:** the
+**Reply** button inside Studio → Comments creates a comment with `isAuthorReply: true` and
+`status: "approved"` set immediately, skipping moderation since it's Asher's own words, not visitor content
+— and rendering in a spotlight-accented card with an "Author" badge on the site
+(`src/components/asher/blog/CommentSection.tsx`'s `CommentCard`), instead of the neutral style every other
+comment (including a visitor's own reply) gets. The reply's display name from Studio is a constant
+(`REPLY_AUTHOR_NAME` in `CommentsTool.tsx`) — cosmetic only, change that one line if it's ever wrong; the
+actual styling logic keys off `isAuthorReply`, not the name string.
 
 **Replying to a comment that isn't approved yet** works (the reply itself still gets created and approved),
 but the moderation tool shows a note that it won't display in proper context on the live site until the
@@ -337,6 +348,13 @@ with at least one approved comment (`PostCard.tsx`), linking to `/blog/[slug]#co
 computed fresh in the GROQ query (`"commentCount": count(*[_type == "comment" && status == "approved" &&
 references(^._id)])` in `POST_SUMMARY_PROJECTION`, `src/sanity/lib/queries.ts`) and includes replies, not
 just top-level comments — matches the count shown in the post page's own comment section header.
+
+**Studio → Comments layout (redesigned 2026-07-31):** grouped by post instead of one long mixed list, posts
+with anything pending sorted first, replies nested directly under the comment they answer instead of a muted
+text reference. A **"New"** tag marks anything created since the last time this tool was open *in that same
+browser* — tracked via `localStorage`, so it deliberately doesn't sync across devices; opening Studio on a
+different computer/browser won't show what's already been seen elsewhere. That's a real limitation, not a
+bug, and the email notification above is the actual cross-device fix.
 
 **Decided against, logged for a possible future revisit:** Figma-style inline commenting (highlight a
 passage of text, leave a comment anchored to that exact span) was considered instead of extending the
@@ -389,6 +407,18 @@ was only set for the wrong Vercel environment (Preview/Development vs Production
 not allowed to connect to the Live Content API": this is step 2 above -- the CORS origin is missing or
 doesn't have "Allow credentials" checked. The initial preview view still works even without this (confirmed
 2026-07-28); it's specifically the ongoing real-time connection that fails without it.
+
+**"I keep seeing 'Previewing a draft' on the live site, even on posts I'm not editing":** draft mode is a
+cookie (`__prerender_bypass`), set once when Preview is entered in Studio, and it applies to your *browser*,
+not to any specific post -- once it's on, every blog page you visit in that same browser shows the preview
+banner, published-with-no-pending-edits or not, until you click **Exit preview** on the banner. Reported
+2026-07-31 as showing up "constantly" with no obvious pending draft in Studio to explain it -- that's exactly
+this: draft mode had been enabled at some point (testing Presentation, or a shared preview link) and, because
+the cookie had no expiry, just never turned itself off. **Fixed the same day:** the cookie now expires after
+4 hours (`src/app/api/draft-mode/enable/route.ts`) -- long enough for one real editing session, short enough
+that it can't linger for days. If the banner ever reappears unexpectedly again, it means Preview was entered
+again in the last 4 hours in that browser; click **Exit preview** to clear it immediately rather than waiting
+it out.
 
 ---
 

@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
 import { writeClient } from "@/sanity/lib/write-client";
+
+// Reuses the same Resend setup + destination inbox as the contact form
+// (RESEND_API_KEY, CONTACT_NOTIFICATION_EMAIL) -- both are "tell Asher
+// something needs a look," no reason to configure a second inbox.
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const NOTIFY_EMAIL = process.env.CONTACT_NOTIFICATION_EMAIL || "";
+const STUDIO_COMMENTS_URL = "https://asheraw.com/studio/comments";
 
 // GET /api/comments?postId=<sanity post _id> -- approved comments only,
 // oldest first (a conversation reads top-to-bottom). Never returns email.
@@ -39,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const { postId, name, email, message, captchaA, captchaB, captchaAnswer } = body;
+    const { postId, name, email, message, captchaA, captchaB, captchaAnswer, parentComment } = body;
     if (!postId || !name || !email || !message) {
       return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
     }
@@ -64,6 +72,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Message is too long." }, { status: 400 });
     }
 
+    // Replies are capped at one level -- you can reply to a top-level
+    // comment, but not to a reply. Re-checked here, not just hidden in the
+    // UI, since a request crafted by hand could otherwise target any
+    // comment ID directly. The parent also has to actually belong to this
+    // same post and already be approved (a visitor can only ever see, and
+    // therefore only ever click "Reply" on, an approved comment in the
+    // first place).
+    let parentRef: string | undefined;
+    if (parentComment) {
+      const parent = await writeClient.fetch(
+        `*[_type == "comment" && _id == $parentComment][0]{post, status, parentComment}`,
+        { parentComment }
+      );
+      if (!parent || parent.post?._ref !== postId || parent.status !== "approved" || parent.parentComment) {
+        return NextResponse.json({ success: false, error: "Can't reply to that comment." }, { status: 400 });
+      }
+      parentRef = parentComment;
+    }
+
     await writeClient.create({
       _type: "comment",
       post: { _type: "reference", _ref: postId },
@@ -76,7 +103,32 @@ export async function POST(request: NextRequest) {
       // confirmed by testing (a comment created here came back with
       // createdAt: null without this explicit set).
       createdAt: new Date().toISOString(),
+      ...(parentRef ? { parentComment: { _type: "reference", _ref: parentRef } } : {}),
     });
+
+    // Best-effort notification -- the comment is already safely saved and
+    // waiting in Studio's moderation queue regardless of what happens here,
+    // so a failed or unconfigured email never turns into a failure the
+    // visitor sees. This exists because the in-Studio "pending" badge alone
+    // wasn't enough: Asher missed real comments for days until a reader
+    // told him directly, since nothing prompted him to actually open Studio
+    // and look. Mirrors the contact form's exact Resend setup.
+    if (resend && NOTIFY_EMAIL) {
+      try {
+        const post = await writeClient.fetch(`*[_id == $postId][0]{title}`, { postId });
+        await resend.emails.send({
+          from: "AsherAw.com Comments <hello@asheraw.com>",
+          to: NOTIFY_EMAIL,
+          subject: parentRef
+            ? `[Site Comment] ${name} replied on "${post?.title ?? "a post"}"`
+            : `[Site Comment] ${name} commented on "${post?.title ?? "a post"}"`,
+          text: `${name} <${email}>${parentRef ? " (replying to another comment)" : ""}:\n\n${message}\n\nApprove, reject, or reply: ${STUDIO_COMMENTS_URL}`,
+        });
+      } catch (emailError) {
+        // Logged, not surfaced -- see the comment above.
+        console.error("[comments] Notification email failed:", emailError);
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
