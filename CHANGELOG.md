@@ -11,6 +11,59 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-07-31 (continued) — PLAY mode: Asher's real face on the 2D character, then a modeled 3D head
+
+**2D character: swapped the drawn face for Asher's real photo, then fixed it twice more on feedback.**
+- First pass just clipped his existing 8-bit avatar image into the head circle — Asher's read: "that's not
+  right, that's just swapping in the image." He wanted the yellow background actually removed, the face
+  enlarged, and the body's style to follow the head's.
+- Rebuilt: cropped a proper close-up from one of his reference photos (chroma-keyed to transparent), enlarged
+  the head, and ran the whole body through a low-res offscreen buffer to give it a matching chunky pixel-art
+  look. Asher's read this time: it looked blurry, not stylized — the buffer trick that pixelated the body was
+  also degrading the face, and a 15px-radius circle doesn't have enough buffer pixels to keep a photo legible.
+- Fixed by decoupling the two: the body still renders through the pixel-art buffer, but the face is drawn
+  separately afterward, at full resolution, directly onto the main canvas.
+- Then: **the body itself stopped being pixelated too**, on a third round of feedback — Asher said the whole
+  character used to look sharper, pixelation included. Removed the offscreen-buffer technique entirely; body
+  is smooth full-resolution canvas drawing again, same as before any of this started. Also removed two small
+  "ear" circles that were leftover from the old drawn-face era — against a real photo they just read as two
+  stray dots beside the head.
+- **Fixed a "walking backwards" illusion.** The character was mirroring the whole sprite (face included) to
+  face left/right. A dead-on photo mirrored horizontally still looks like it's staring straight at the
+  viewer either way — there's no profile to turn into — so the face flip contradicted the body's own turn and
+  read as moonwalking. Now only the body/props/shirt mirror with direction of travel; the head stays upright
+  and identical no matter which way the character's walking.
+
+**3D character: tried the same real-photo approach, Asher rejected it, ended up modeling the head instead.**
+- Built an isolated, unlinked preview page (`/dev/3d-face-test`, since removed) billboarding the same photo
+  in front of a 3D head — a flat plane that always turns to face the camera, since a single photo has no
+  back/side to show as a real 3D head rotates. Asher's call after seeing it: "doesn't work for me... can you
+  model it?" — a clean rejection of the photo idea for 3D, not a request to iterate on the billboard.
+- Removed the preview entirely and modeled a real 3D head instead: dark cap with a red brim, a "胡" badge
+  (rendered onto a canvas texture at runtime so the browser's own CJK font renders it — no font asset
+  needed for one glyph), and rectangular glasses replacing the old plain eye dots. The cap swaps for the
+  graduation mortarboard at Philosophy instead of both showing at once ("two hats stacked").
+  Note for whoever touches this next: the game's camera looks down at a steep angle (see `CameraRig`), so
+  anything meant to be seen — like the cap badge — needs to face mostly *up*, not forward; a front-facing
+  badge is invisible from this angle. The badge also has to sit clearly outside the crown sphere's own
+  radius, not embedded in it, or the crown's own surface hides it completely (that was the first-pass bug).
+- **Per-zone gear:** Studio headset enlarged and recoloured blue (was black-on-black against the also-black
+  cap, essentially invisible; mic boom stays black). Magnifying glass hand-prop removed at "At a Glance";
+  the trophy there pushed toward a shinier, more saturated gold with a `<Sparkles>` scatter for the
+  champion-trophy feel (was reading as dull bronze). Open book added at Philosophy, held up in front of the
+  chest, replacing a reading pose that previously had nothing actually in his hands.
+- **Real bug fixed, unrelated to any of the above:** arms weren't swinging while walking manually
+  (WASD/arrow keys) — only during click-to-walk. `isMoving` was being read straight off
+  `charTarget !== null`, which manual movement never sets, so the walk-cycle animation never played for
+  keyboard movement; arms just sat in whatever the current zone's idle pose was, popping between poses as
+  the character passed through zones. Fixed with a proper `isMoving` state updated from the same condition
+  that actually moves the character each frame.
+- **Known, not fully solved:** held props (the new book, and the pre-existing phone at Contact) are
+  positioned relative to the character's own body rotation, which turns to face the last direction of
+  travel — not always toward the fixed-angle chase camera. Approaching a zone from certain directions can
+  leave a prop partly hidden behind the character's own body. This is how every held prop in this file has
+  always worked, not something newly introduced.
+
 ## 2026-07-31
 
 **Comments, extended.** Built on top of the Sanity-native comment system shipped the day before:
