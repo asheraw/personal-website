@@ -116,6 +116,23 @@ an anchor link (this bar's own checkpoints included) triggers the site's smooth-
 distance quickly in a way that would otherwise look identical to "reading too fast." Hidden while previewing
 a draft, same as the bar it replaced.
 
+### Hotfix (same day — blog posts were showing a server error)
+
+Asher reported blog posts failing to load with a generic server error shortly after the batch above shipped.
+Prime suspect: the new Related Reading query used a compound expression (`count(...) + count(...) desc`)
+inside GROQ's `order()` — every *other* pattern in that query had precedent elsewhere in this codebase, that
+one didn't, and it's the kind of thing that's easy to get subtly wrong without a live dataset to test against
+(this sandbox can't reach Sanity's API to verify GROQ before it ships). Rewritten so the query itself only
+filters and fetches up to 12 candidates in plain `order(publishedAt desc)`, and the actual overlap-ranking
+(picking the top 3) now happens in plain JavaScript after the fetch — same end result, nothing left in the
+query that isn't already a proven shape.
+
+Also wrapped the related-posts fetch in a try/catch (a nice-to-have section failing should never take the
+whole post down with it) and, more generally, added `src/app/(site)/error.tsx` — the site had *no* error
+boundary anywhere before this, so any uncaught error on any page fell through to the blank generic crash
+screen visitors saw. Now it shows a proper in-theme "Something went wrong" page with a working Try Again
+button instead.
+
 ---
 
 ## 2026-07-30

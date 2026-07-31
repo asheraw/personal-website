@@ -52,18 +52,31 @@ async function getPost(slug: string) {
   return data as Post | null;
 }
 
-async function getRelatedPosts(post: Post) {
+async function getRelatedPosts(post: Post): Promise<RelatedPost[]> {
   const categorySlugs = post.categories?.map((c) => c.slug) ?? [];
   const tags = post.tags ?? [];
   // Nothing to relate on -- skip the query rather than send empty arrays
   // that would just filter out every candidate anyway.
   if (categorySlugs.length === 0 && tags.length === 0) return [];
 
-  const { data } = await sanityFetch({
-    query: RELATED_POSTS_QUERY,
-    params: { excludeId: post._id, categorySlugs, tags },
-  });
-  return data as RelatedPost[];
+  // Related Reading is a nice-to-have section, not core to the page --
+  // any hiccup fetching it (a Sanity error, an unexpected dataset shape)
+  // should just mean the section doesn't show, never take down the whole
+  // post.
+  try {
+    const { data } = await sanityFetch({
+      query: RELATED_POSTS_QUERY,
+      params: { excludeId: post._id, categorySlugs, tags },
+    });
+    const candidates = (data ?? []) as (RelatedPost & { matchScore: number })[];
+    return candidates
+      .slice()
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 3);
+  } catch (error) {
+    console.error("[related-posts] Failed to fetch:", error);
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

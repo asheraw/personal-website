@@ -76,13 +76,17 @@ export const POSTS_BY_TAG_QUERY = `
 `;
 
 // Related posts: any other published post sharing at least one category or
-// tag with the current one, ranked by how much overlap it has (shared
-// categories + shared tags counted together) rather than just recency, so
-// the closest match shows first even if it's older than a loosely-related
-// recent post. A post with no categories or tags at all simply has nothing
-// to relate on -- the caller should treat an empty result as "don't show
-// the section" rather than falling back to unrelated posts, which would
-// undermine what "related" means here.
+// tag with the current one. Ranking by how much overlap each candidate has
+// (shared categories + shared tags counted together) happens in JS after
+// the fetch, not in this query's own order() -- keeps this GROQ to the
+// same plain-path/function-call shapes already proven elsewhere in this
+// file, rather than leaning on a compound arithmetic expression inside
+// order() that's untested against the real dataset. Capped at 12
+// candidates here; the caller takes the top 3 after ranking. A post with
+// no categories or tags at all simply has nothing to relate on -- the
+// caller should treat an empty result as "don't show the section" rather
+// than falling back to unrelated posts, which would undermine what
+// "related" means here.
 export const RELATED_POSTS_QUERY = `
   *[
     _type == "post" && defined(slug.current) && _id != $excludeId &&
@@ -90,17 +94,15 @@ export const RELATED_POSTS_QUERY = `
       count((categories[]->slug.current)[@ in $categorySlugs]) > 0 ||
       count((tags[])[@ in $tags]) > 0
     )
-  ] | order(
-    count((categories[]->slug.current)[@ in $categorySlugs]) + count((tags[])[@ in $tags]) desc,
-    publishedAt desc
-  ) [0...3] {
+  ] | order(publishedAt desc) [0...12] {
     _id,
     title,
     "slug": slug.current,
     excerpt,
     "autoExcerpt": pt::text(body)[0...200],
     publishedAt,
-    mainImage
+    mainImage,
+    "matchScore": count((categories[]->slug.current)[@ in $categorySlugs]) + count((tags[])[@ in $tags])
   }
 `;
 

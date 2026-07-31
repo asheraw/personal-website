@@ -144,6 +144,13 @@ tags counted together), up to 3. `RELATED_POSTS_QUERY` in `src/sanity/lib/querie
 `src/components/asher/blog/RelatedPosts.tsx`. A post with no categories and no tags has nothing to relate on
 — the section just doesn't render for it, rather than falling back to "recent posts," which would stop
 meaning "related." Nothing to configure; it's automatic from whatever categories/tags a post already has.
+The GROQ query itself only filters candidates and orders by `publishedAt desc`; the actual overlap-ranking
+(picking the top 3) happens in JavaScript in `getRelatedPosts()` (`src/app/(site)/blog/[slug]/page.tsx`) --
+deliberately kept out of GROQ's own `order()` after an early version put the ranking expression there and
+briefly broke every post page in production (see the 2026-07-31 hotfix entry in `CHANGELOG.md`). The fetch is
+also wrapped in a try/catch: a Related Reading failure now just means the section doesn't show, not that the
+whole post fails to load. If a post page ever throws for any *other* reason, `src/app/(site)/error.tsx`
+(added the same day) catches it with a proper in-theme error page instead of a blank crash screen.
 
 **Printing a post** now comes out as a clean article — no header, footer, comments, related reading, or
 "back to blog" link, forced to black-on-white regardless of the site's current dark/light theme, and an
