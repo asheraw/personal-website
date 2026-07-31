@@ -251,7 +251,7 @@ function drawSpeechBubble(ctx: CanvasRenderingContext2D) {
   ctx.restore();
 }
 
-function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, time: number) {
+function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, time: number, facing: number) {
   const bob = getBob(time);
   const isWalking = activity === "walking";
   const legSwing = isWalking ? Math.sin(time*0.015)*4 : 0;
@@ -263,6 +263,15 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
   ctx.fillStyle = "#1a1208"; ctx.beginPath(); ctx.ellipse(-4+legSwing, 22, 3, 1.5, 0, 0, Math.PI*2); ctx.ellipse(4-legSwing, 22, 3, 1.5, 0, 0, Math.PI*2); ctx.fill();
 
   ctx.save(); ctx.translate(0, bob);
+
+  // Shirt + arms + props turn with the direction of travel; the head
+  // doesn't (see below) -- a face-on photo mirrored horizontally still
+  // looks like it's facing straight at the viewer either way (there's no
+  // profile to turn into), so flipping it alongside the body read as
+  // walking backwards instead of turning. Only the body needs to carry
+  // that cue.
+  ctx.save();
+  if (facing < 0) ctx.scale(-1, 1);
   // Shirt colour matches the avatar's actual shirt (sampled from the
   // source photo) instead of the site's generic amber theme colour --
   // part of making the body read as the same character as the head, not
@@ -272,10 +281,15 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
   ctx.fillStyle = "#2c2760";
   ctx.beginPath(); ctx.moveTo(-6, -9); ctx.lineTo(-2, -7); ctx.lineTo(-6, -5); ctx.closePath(); ctx.moveTo(6, -9); ctx.lineTo(2, -7); ctx.lineTo(6, -5); ctx.closePath(); ctx.fill();
   drawArms(ctx, activity, armSwing);
+  if (activity === "studious") drawStudiousAccessories(ctx);
+  drawProps(ctx, activity, time);
+  ctx.restore();
+
   // Head: Asher's real photo, clipped to a circle, drawn crisp at full
-  // resolution. No ear "nubs" anymore either -- those were leftover from
-  // the drawn-face era (peeking out past a procedural circle) and against
-  // a real photo they just read as two stray dots beside the head.
+  // resolution, always upright regardless of facing. No ear "nubs"
+  // anymore either -- those were leftover from the drawn-face era
+  // (peeking out past a procedural circle) and against a real photo they
+  // just read as two stray dots beside the head.
   if (avatarImage && avatarImage.complete && avatarImage.naturalWidth > 0) {
     ctx.save();
     ctx.beginPath(); ctx.arc(0, -22, HEAD_RADIUS, 0, Math.PI*2); ctx.clip();
@@ -289,22 +303,12 @@ function drawCharacterBody(ctx: CanvasRenderingContext2D, activity: Activity, ti
   // singing, a talking oval for phone) would just draw a dark blob over a
   // real face instead of reading as an expression change.
 
-  if (activity === "studious") drawStudiousAccessories(ctx);
-  drawProps(ctx, activity, time);
   ctx.restore();
 }
 
 function drawCharacter(ctx: CanvasRenderingContext2D, x: number, y: number, activity: Activity, time: number, facing: number, showBubble: boolean) {
   ctx.save(); ctx.translate(x, y);
-
-  // Single flip for body and face together, so the photo and the drawn
-  // limbs/props always turn as one instead of needing to be kept in sync
-  // by hand -- facing < 0 while walking left, > 0 while walking right.
-  ctx.save();
-  if (facing < 0) ctx.scale(-1, 1);
-  drawCharacterBody(ctx, activity, time);
-  ctx.restore();
-
+  drawCharacterBody(ctx, activity, time, facing);
   if (showBubble) drawSpeechBubble(ctx);
   ctx.restore();
 }
