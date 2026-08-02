@@ -5,6 +5,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
+import { ImageCarousel } from "@/components/asher/blog/ImageCarousel";
 
 function getYouTubeId(url: string): string | null {
   const match = url.match(
@@ -144,6 +145,12 @@ export const postBodyComponents: PortableTextComponents = {
         </figure>
       );
     },
+    imageGallery: ({ value }) => (
+      <ImageCarousel
+        images={value?.images ?? []}
+        mode={value?.layout === "slideshow" ? "slideshow" : "carousel"}
+      />
+    ),
     divider: () => <hr className="my-10 border-amber-faint" />,
     codeBlock: ({ value }) => (
       <div className="my-8 overflow-hidden rounded-lg border border-amber-faint text-sm">

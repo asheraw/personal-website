@@ -11,6 +11,26 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-02 — Image carousels/slideshows in post bodies, and a Share bar
+
+**Image Carousel / Slideshow block.** A new insertable block in the post editor, alongside the existing plain
+Image block: pick 2+ photos and a layout —
+- **Carousel:** sits still, the reader clicks arrows or dots (or swipes on mobile) to move through it.
+- **Slideshow:** the same controls, plus an auto-advance timer (5s) that pauses the moment a reader hovers or
+  touches it, so it never yanks an image away mid-look.
+
+Same alt text + optional caption per image as the regular Image block. Renders as `ImageCarousel.tsx`, wired
+into the Portable Text renderer as a new `imageGallery` type (`blockContentType.ts` / `portableTextComponents.tsx`)
+— no changes needed to the post GROQ query, since the body field is already fetched as a full spread.
+
+**Share bar.** Every post page now has a "Share this post" row (above the comment section): X, Facebook,
+LinkedIn, WhatsApp, and Email links (each opens that platform's own share dialog with the post's title and
+URL prefilled), a Copy Link button with a checkmark confirmation, and — on devices that support it (mostly
+mobile) — a native Share button that opens the OS's own share sheet. No third-party embed or SDK; every link
+is just that platform's own public share-intent URL. New component: `ShareBar.tsx`.
+
+---
+
 ## 2026-07-31 (continued) — PLAY mode: Asher's real face on the 2D character, then a modeled 3D head
 
 **2D character: swapped the drawn face for Asher's real photo, then fixed it twice more on feedback.**

@@ -13,6 +13,7 @@ import { createPostBodyComponents } from "@/components/asher/blog/portableTextCo
 import { CommentSection } from "@/components/asher/blog/CommentSection";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 import { RelatedPosts } from "@/components/asher/blog/RelatedPosts";
+import { ShareBar } from "@/components/asher/blog/ShareBar";
 import { estimateReadingTimeMinutes, extractH2Checkpoints } from "@/lib/portableText";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
@@ -279,6 +280,10 @@ export default async function PostPage({ params }: PageProps) {
               ))}
             </div>
           ) : null}
+
+          <div className="mt-10">
+            <ShareBar url={url} title={post.title} />
+          </div>
         </article>
 
         <div className="print:hidden">

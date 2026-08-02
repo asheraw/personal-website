@@ -1,5 +1,6 @@
 import {defineType, defineArrayMember, defineField} from 'sanity'
 import {ImageIcon} from '@sanity/icons/Image'
+import {ImagesIcon} from '@sanity/icons/Images'
 import {CodeBlockIcon} from '@sanity/icons/CodeBlock'
 import {UlistIcon} from '@sanity/icons/Ulist'
 import {PlayIcon} from '@sanity/icons/Play'
@@ -131,6 +132,68 @@ export const blockContentType = defineType({
           description: 'Shown beneath the image.',
         }),
       ],
+    }),
+    // Multiple images shown one at a time, not stacked -- either
+    // visitor-controlled (Carousel: arrows/dots/swipe, sits still until
+    // clicked) or self-advancing (Slideshow: same controls, plus an
+    // auto-advance timer that pauses on hover). Both share one block type
+    // and one image list, since "how it advances" is the only real
+    // difference -- rendered by ImageCarousel.tsx, keyed off `layout`.
+    defineArrayMember({
+      type: 'object',
+      name: 'imageGallery',
+      title: 'Image Carousel / Slideshow',
+      icon: ImagesIcon,
+      fields: [
+        defineField({
+          name: 'layout',
+          title: 'Layout',
+          type: 'string',
+          options: {
+            list: [
+              {title: 'Carousel (reader clicks through)', value: 'carousel'},
+              {title: 'Slideshow (auto-advances on its own)', value: 'slideshow'},
+            ],
+          },
+          initialValue: 'carousel',
+        }),
+        defineField({
+          name: 'images',
+          title: 'Images',
+          type: 'array',
+          of: [
+            defineArrayMember({
+              type: 'image',
+              options: {hotspot: true},
+              fields: [
+                defineField({
+                  name: 'alt',
+                  type: 'string',
+                  title: 'Alternative text',
+                  description: 'Describe the image for screen readers and search engines.',
+                }),
+                defineField({
+                  name: 'caption',
+                  type: 'string',
+                  title: 'Caption (optional)',
+                  description: 'Shown beneath the image while it\'s the one showing.',
+                }),
+              ],
+            }),
+          ],
+          validation: (rule) =>
+            rule
+              .min(2)
+              .error('Add at least 2 images -- for just one, use the plain Image block instead.'),
+        }),
+      ],
+      preview: {
+        select: {images: 'images', layout: 'layout'},
+        prepare: ({images, layout}) => ({
+          title: `Image ${layout === 'slideshow' ? 'Slideshow' : 'Carousel'} (${images?.length ?? 0} photos)`,
+          media: images?.[0],
+        }),
+      },
     }),
     defineArrayMember({
       type: 'object',

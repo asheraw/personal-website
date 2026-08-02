@@ -293,6 +293,46 @@ back to never hiding (visible for the rest of the page) rather than erroring.
 
 ---
 
+## Image Carousel / Slideshow block (shipped 2026-08-02)
+
+A new block type in the post body editor, alongside the plain Image block: **Image Carousel / Slideshow**
+(`imageGallery` in `src/sanity/schemaTypes/blockContentType.ts`). Pick 2 or more images (each with the same
+optional alt text / caption fields the single Image block already has) and a **Layout**:
+
+- **Carousel** — sits still until the reader clicks the arrow buttons, clicks a dot, or swipes on mobile.
+- **Slideshow** — the same controls, plus a 5-second auto-advance timer. The timer pauses the instant a reader
+  hovers over it (mouse) or touches it (mobile), and stays paused until they move away — an auto-advancing
+  image that changes out from under someone mid-look or mid-swipe would be actively annoying, not helpful.
+
+Requires at least 2 images (enforced by the schema's own validation, with a message pointing back to the
+plain Image block for a single photo) — this is deliberately a *different* block from the regular Image
+block, not a variant of it, so inserting one photo never accidentally creates a pointless one-image carousel.
+
+Rendered by `src/components/asher/blog/ImageCarousel.tsx` (one shared component for both layouts — `mode`
+prop is the only thing that changes), registered as the `imageGallery` type in `postBodyComponents`
+(`portableTextComponents.tsx`). No GROQ query changes were needed to ship this — `POST_BY_SLUG_QUERY`
+already fetches the whole `body[]` array as a spread (`{ ... }`), so a new block type just flows through
+automatically the same way `callout`, `accordion`, etc. already do.
+
+---
+
+## Share bar: resharing a post to other platforms (shipped 2026-08-02)
+
+Every post page has a **Share this post** row (`src/components/asher/blog/ShareBar.tsx`), placed after the
+post body/tags and before the comment section. Buttons for X, Facebook, LinkedIn, WhatsApp, and Email each
+open that platform's own public share-intent URL with the post's title and URL prefilled — no SDK, no
+third-party embed, nothing that loads or phones home before a reader actually clicks one. A **Copy Link**
+button copies the URL to the clipboard and shows a checkmark for 2 seconds as confirmation. On a device that
+supports the browser's native Web Share API (most mobile browsers, essentially no desktop browsers), an
+extra **Share** button appears first and opens the OS's own share sheet — feature-detected client-side
+*after mount* specifically (not during the initial render) so server-rendered HTML and the client's first
+render always agree; checking `"share" in navigator` directly during render would make Next.js's hydration
+pass disagree with the server output, since `navigator` doesn't exist during server rendering at all. Every
+button fires a `share_click` analytics event (`src/lib/analytics.ts`, same `track()` helper used elsewhere on
+the site) labeled with which platform was used.
+
+---
+
 ## RSS feeds: site-wide and per-channel (shipped 2026-07-31)
 
 The site-wide feed at `/rss.xml` (`src/app/rss.xml/route.ts`) already existed. Added three more, same shape,
