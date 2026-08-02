@@ -26,6 +26,7 @@ const TLDR = [
   "We never sell your data, and there are no ad trackers or retargeting pixels on this site.",
   "Your IP address is logged briefly on submissions, only to catch spam — not to track what you do on the site.",
   "We use a small number of trusted services (listed below) to run the site — never to profit from your data.",
+  "There's no email newsletter yet, but if one launches: joining is opt-in only, and a sponsor paying to be mentioned in an email is not the same as us selling your email address to anyone — we don't do the second one, ever.",
   "Want anything deleted? Email us and we’ll remove it — no forms, no runaround.",
 ];
 
@@ -126,6 +127,40 @@ export default function PrivacyPage() {
             <p className="mt-3">
               Nothing here is ever sold, rented, or shared with advertisers, and there&rsquo;s no cross-site ad
               tracking or retargeting on this site.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">
+              If a newsletter launches
+            </h2>
+            <p className="mt-3">
+              There&rsquo;s no email newsletter on asheraw.com today, but it&rsquo;s a real possibility down the
+              line &mdash; so this is written ahead of time rather than after the fact:
+            </p>
+            <ul className="mt-3 list-disc space-y-2 pl-6">
+              <li>
+                Joining would always be opt-in. You&rsquo;d type your own email into a dedicated subscribe form
+                &mdash; leaving a comment or using the contact form would never add you to it.
+              </li>
+              <li>
+                Every issue would carry a one-click unsubscribe link, honored immediately, no login or account
+                needed.
+              </li>
+              <li>
+                <strong className="text-ivory">Sponsoring the newsletter is not the same as selling your data,
+                and this site will never confuse the two.</strong>{" "}
+                If an issue is ever sponsored, that means a
+                sponsor paid to have their own message included in an email Asher writes and sends himself
+                &mdash; it does not mean they receive your email address, or anything else about you. You&rsquo;d
+                always be hearing from asheraw.com, never directly from a sponsor. Your email address is not
+                sold, rented, or handed over to anyone, sponsored issue or not.
+              </li>
+            </ul>
+            <p className="mt-3">
+              Once a newsletter actually exists, this section (and the &ldquo;Third-party services&rdquo; list
+              below, if a dedicated email-marketing tool ends up handling it) will be updated with the real
+              details &mdash; not left as a placeholder.
             </p>
           </section>
 
