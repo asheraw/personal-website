@@ -5,6 +5,7 @@ import {CodeBlockIcon} from '@sanity/icons/CodeBlock'
 import {UlistIcon} from '@sanity/icons/Ulist'
 import {PlayIcon} from '@sanity/icons/Play'
 import {ComponentIcon} from '@sanity/icons/Component'
+import {TEXT_COLORS} from '../../lib/textColors'
 
 /**
  * This is the schema type for block content used in the post document type
@@ -106,6 +107,29 @@ export const blockContentType = defineType({
             preview: {
               select: {title: 'reference.title'},
               prepare: ({title}) => ({title: title ? `→ ${title}` : 'Internal link'}),
+            },
+          },
+          // Named colors only -- deliberately not a hex/RGB picker. Each
+          // name maps (see textColors.ts + globals.css) to one shade tuned
+          // for dark mode and a separately-chosen shade for light mode, so
+          // there's no hex value here for a writer to accidentally pick
+          // that reads fine in one theme and vanishes in the other.
+          {
+            title: 'Text color',
+            name: 'textColor',
+            type: 'object',
+            fields: [
+              defineField({
+                name: 'color',
+                title: 'Color',
+                type: 'string',
+                options: {list: [...TEXT_COLORS]},
+                validation: (rule) => rule.required(),
+              }),
+            ],
+            preview: {
+              select: {color: 'color'},
+              prepare: ({color}) => ({title: `Color: ${color ?? 'none'}`}),
             },
           },
         ],

@@ -48,6 +48,14 @@
   --color-rose-gold: var(--rose-gold);
   --color-ivory: var(--ivory);
   --color-stone: var(--stone);
+  --color-tc-red: var(--tc-red);
+  --color-tc-orange: var(--tc-orange);
+  --color-tc-yellow: var(--tc-yellow);
+  --color-tc-green: var(--tc-green);
+  --color-tc-teal: var(--tc-teal);
+  --color-tc-blue: var(--tc-blue);
+  --color-tc-purple: var(--tc-purple);
+  --color-tc-pink: var(--tc-pink);
 }
 
 :root,
@@ -77,6 +85,20 @@
   --rose-gold: #e0a96d;
   --ivory: #f5efe4;
   --stone: #9a8d78;
+  /* Text-color mark palette (post body rich text) -- named colors only,
+     never a raw hex picker. Each name maps to a dark-mode-safe shade
+     here and a separately-tuned light-mode-safe shade below in .light,
+     so a writer picking "Yellow" can't accidentally produce the
+     bright-yellow-on-white illegibility problem that a free hex picker
+     would allow -- there's no hex to pick in the first place. */
+  --tc-red: #e2685c;
+  --tc-orange: #e0965a;
+  --tc-yellow: #e8c468;
+  --tc-green: #7fb389;
+  --tc-teal: #5cc2c9;
+  --tc-blue: #6b9bd8;
+  --tc-purple: #a888d8;
+  --tc-pink: #d888b0;
   --chart-1: #f0b865;
   --chart-2: #e0a96d;
   --chart-3: #b8924a;
@@ -118,6 +140,23 @@
   --rose-gold: #c89968;
   --ivory: #2a1f15;
   --stone: #6b5d48;
+  /* Darker, more saturated counterparts of the dark-mode text-color
+     palette above -- same named colors, tuned to stay legible against
+     this theme's cream/white background instead of the near-black one.
+     This is the actual fix for "yellow works in dark mode but is
+     illegible in light mode": a writer never touches these values
+     directly, so there's nothing for them to get wrong -- picking
+     "Yellow" here means a dark mustard gold, not the bright yellow
+     dark mode gets, because that's what it takes to stay readable on
+     a light background. */
+  --tc-red: #b5443a;
+  --tc-orange: #a8641a;
+  --tc-yellow: #8a6d1a;
+  --tc-green: #3f7a4a;
+  --tc-teal: #1f7a80;
+  --tc-blue: #2f5f9e;
+  --tc-purple: #6a4a9e;
+  --tc-pink: #a34a78;
   --chart-1: #b8842e;
   --chart-2: #c89968;
   --chart-3: #a8742a;

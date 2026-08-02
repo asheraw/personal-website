@@ -6,6 +6,7 @@ import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
 import { ImageCarousel } from "@/components/asher/blog/ImageCarousel";
+import { isTextColorValue } from "@/lib/textColors";
 
 function getYouTubeId(url: string): string | null {
   const match = url.match(
@@ -88,6 +89,15 @@ export const postBodyComponents: PortableTextComponents = {
     em: ({ children }) => <em className="italic">{children}</em>,
     underline: ({ children }) => <span className="underline underline-offset-2">{children}</span>,
     "strike-through": ({ children }) => <span className="line-through">{children}</span>,
+    // Named color only, resolved to a CSS custom property with separate
+    // dark-mode and light-mode values (globals.css) -- never a raw hex
+    // from the CMS, so there's no way for a chosen color to land as
+    // illegible in one theme just because it looked fine in the other.
+    textColor: ({ value, children }) => {
+      const color = (value as { color?: unknown })?.color;
+      if (!isTextColorValue(color)) return <>{children}</>;
+      return <span style={{ color: `var(--tc-${color})` }}>{children}</span>;
+    },
     code: ({ children }) => (
       <code className="rounded bg-secondary px-1.5 py-0.5 font-mono-stage text-[0.9em] text-spotlight">
         {children}
