@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 const TLDR = [
   "We only collect your name, email, or message when you type them in yourself -- through the contact form or a comment. Nothing is collected before that.",
   "A comment's email address is never shown publicly. Only Asher can see it.",
-  "Analytics tracking is off by default. It only turns on if you click “Accept” on the cookie banner, and you can decline it entirely.",
+  "Analytics tracking is off by default, including heatmaps and session recordings. It only turns on if you click “Accept” on the cookie banner, and you can decline it entirely.",
   "We never sell your data, and there are no ad trackers or retargeting pixels on this site.",
   "Your IP address is logged briefly on submissions, only to catch spam — not to track what you do on the site.",
   "We use a small number of trusted services (listed below) to run the site — never to profit from your data.",
@@ -105,6 +105,14 @@ export default function PrivacyPage() {
                 stays off entirely if you click &ldquo;Decline,&rdquo; or if you never respond to the banner.
               </li>
               <li>
+                <strong className="text-ivory">Heatmaps &amp; session recordings (only with your consent):</strong>{" "}
+                also gated by the same cookie banner, Microsoft Clarity records how visitors move through and click
+                on the site &mdash; used to spot where a page is confusing or a feature is hard to find, not to
+                identify who&rsquo;s visiting. Clarity masks the contents of text fields (like the comment or
+                contact form) by default, so what you type isn&rsquo;t captured in a recording even while it&rsquo;s
+                on.
+              </li>
+              <li>
                 <strong className="text-ivory">Broken-link tracking:</strong> if you land on a 404 page, the URL you
                 tried to reach and the page that linked you there get logged, so Asher can fix broken links. This
                 isn&rsquo;t tied to you personally in any way &mdash; no IP address, no identifying information.
@@ -169,8 +177,9 @@ export default function PrivacyPage() {
             <p className="mt-3">
               This site uses a small note saved in your browser to remember whether you accepted or declined
               analytics &mdash; that choice is respected until you clear your browser data or change your mind. If
-              you accept, Google Analytics sets its own standard cookies to do its job. If you decline (or never
-              answer), no analytics cookies are set at all. No cookies are used for advertising.
+              you accept, Google Analytics and Microsoft Clarity each set their own standard cookies to do their
+              job. If you decline (or never answer), neither loads and no analytics cookies are set at all. No
+              cookies are used for advertising.
             </p>
           </section>
 
@@ -198,6 +207,10 @@ export default function PrivacyPage() {
               <li>
                 <strong className="text-ivory">Google Analytics / Google Tag Manager</strong> &mdash; only loads if
                 you accept the cookie banner. See &ldquo;Cookies&rdquo; above.
+              </li>
+              <li>
+                <strong className="text-ivory">Microsoft Clarity</strong> &mdash; heatmaps and session recordings,
+                also only loads if you accept the cookie banner. See &ldquo;Cookies&rdquo; above.
               </li>
             </ul>
           </section>

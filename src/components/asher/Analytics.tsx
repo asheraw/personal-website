@@ -5,6 +5,11 @@ import Script from "next/script";
 import { CONSENT_EVENT, getConsent } from "@/lib/consent";
 
 const GTM_ID = "GTM-PVCX5DQ";
+// Microsoft Clarity (heatmaps + session recordings) -- clarity.microsoft.com
+// -> Settings -> Setup -> Install tracking code, once a project exists for
+// asheraw.com. Leave blank to keep Clarity off entirely; nothing below
+// renders a script tag for it until this is filled in.
+const CLARITY_PROJECT_ID = "";
 
 export function Analytics() {
   const [allowed, setAllowed] = useState(false);
@@ -43,6 +48,21 @@ export function Analytics() {
           title="gtm"
         />
       </noscript>
+      {/* Same consent gate as GTM above -- this whole component already
+          returns null until "allowed" is true, so Clarity never loads
+          before analytics is accepted either. Single small async script,
+          same shape/weight as GTM's own loader snippet. */}
+      {CLARITY_PROJECT_ID && (
+        <Script id="clarity-init" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
+          `}
+        </Script>
+      )}
     </>
   );
 }

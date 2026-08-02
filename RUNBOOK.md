@@ -886,6 +886,31 @@ blog content.
 - The visitor's choice is remembered in their browser (`localStorage`), not sent anywhere else. There's currently no way for *you* to see aggregate consent accept/decline rates — that would be a future addition if it becomes useful.
 - If analytics numbers look unexpectedly low, the most likely explanation is simply that visitors are declining or not yet answering the consent banner (expected/normal), not a tracking bug.
 
+## Microsoft Clarity: heatmaps & session recordings (code shipped 2026-08-02, needs a project ID to go live)
+
+Added to `src/components/asher/Analytics.tsx` right alongside GTM, behind the exact same consent gate — it
+loads only after a visitor clicks "Accept," never before, same as Google Analytics. One extra small async
+script (`clarity.ms/tag/...`), same shape and weight as GTM's own loader.
+
+**Not live yet.** The `CLARITY_PROJECT_ID` constant at the top of `Analytics.tsx` is currently blank, and the
+Clarity script simply doesn't render at all while it is — nothing breaks, it just silently stays off. **To turn
+it on:**
+
+1. Sign up free at [clarity.microsoft.com](https://clarity.microsoft.com) and create a project for
+   `asheraw.com`.
+2. Copy the Project ID from Settings → Setup (a short alphanumeric string, e.g. `abc123xyz0`).
+3. Paste it into `CLARITY_PROJECT_ID` in `Analytics.tsx` and deploy.
+
+This ID isn't a secret (it's sent to every visitor's browser either way, same as the GTM container ID right
+above it), so it's hardcoded directly in the file rather than an environment variable — consistent with how
+`GTM_ID` is already handled in this same file.
+
+**Privacy note:** Clarity masks the contents of text/number input fields by default (comment box, contact
+form, etc. never show up in a recording), and this is already reflected in `/privacy` (both the cookie banner
+text and the Privacy Policy page's analytics + third-party-services sections). **If Clarity's default masking
+is ever changed** (e.g. deliberately unmasking a specific field to debug a form issue), update `/privacy` in
+the same change — its wording currently promises input fields stay masked.
+
 ---
 
 ## Privacy Policy (shipped 2026-08-02)

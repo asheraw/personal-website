@@ -11,6 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-02 (continued once more) — Microsoft Clarity wiring (heatmaps/session recordings), not live yet
+
+Added the Clarity loader script to `Analytics.tsx`, right alongside Google Tag Manager and behind the exact
+same consent gate -- it never loads before a visitor clicks "Accept" on the cookie banner. **Not actually
+turned on yet**: it needs a real Clarity Project ID (free, from clarity.microsoft.com), and stays silently off
+until one is filled in. See RUNBOOK.md's new "Microsoft Clarity" section for the 3-step setup once Asher has
+an ID.
+
+Also updated `/privacy` and the cookie-consent banner to mention Clarity by name, ahead of it actually going
+live -- same as the newsletter section added earlier today, written in advance rather than after the fact.
+Clarity masks the contents of text fields (comment box, contact form) by default, which the policy now says
+explicitly.
+
+---
+
 ## 2026-08-02 (continued) — Privacy policy covers a future newsletter; rich text gets a theme-safe color mark
 
 **Privacy policy: added a section for a newsletter that doesn't exist yet.** Asher's concern: he might build
