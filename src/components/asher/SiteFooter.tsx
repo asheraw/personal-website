@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2 } from "lucide-react";
 import { useSiteChromeConfig } from "./SiteChromeConfig";
 import { CONTACT_INFO } from "./data";
@@ -88,7 +89,12 @@ export function SiteFooter() {
           </div>
         )}
         <div className="flex flex-col gap-4 border-t border-amber-faint pt-8 font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2009 - {new Date().getFullYear()} Asher Aw · All rights reserved</p>
+          <p>
+            © 2009 - {new Date().getFullYear()} Asher Aw · All rights reserved ·{" "}
+            <Link href="/privacy" className="transition-colors hover:text-spotlight">
+              Privacy Policy
+            </Link>
+          </p>
           <p>Crafted in Singapore · <span className="text-spotlight/60">Stories connect people</span></p>
         </div>
       </div>

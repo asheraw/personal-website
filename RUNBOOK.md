@@ -888,6 +888,34 @@ blog content.
 
 ---
 
+## Privacy Policy (shipped 2026-08-02)
+
+`/privacy` (`src/app/(site)/privacy/page.tsx`), linked from the site footer's copyright line (every page) and
+from the cookie-consent banner. Two-part layout, per Asher's request: a "30-second version" — plain-English
+bullet points, no legalese — at the top, then the full detailed policy underneath for anyone who actually
+wants it.
+
+**Hand-written in code, not a Sanity document.** Unlike post content, this isn't meant to be freely editable
+from Studio without review — legal text is exactly the kind of thing that benefits from the same scrutiny as
+any other code change (a PR/diff, not a quick edit that goes live instantly). It also changes rarely enough
+that this isn't a real workflow cost.
+
+**Written to describe what the site actually does, not generic boilerplate** — cross-checked against the real
+code paths at the time it was written: what `/api/contact` and `/api/comments` actually store (name, email,
+optional phone, message, IP — IP explicitly for spam detection only, see both routes' own comments), that
+404 tracking (`notFoundHitType`) never captures IP or anything else identifying, that analytics
+(`Analytics.tsx`) only loads after explicit consent, and the real list of third-party services in use (Sanity,
+Resend, Vercel, Google Analytics/Tag Manager) — no newsletter provider was in that list as of this writing;
+add one when a newsletter tool actually gets integrated, and update the policy's third-party list and cookie
+section together in the same change, since email-capture tools almost always come with either a tracking
+script or their own cookies.
+
+**If any of the underlying facts above change** — new third-party service added, new kind of data captured,
+retention behavior changes — the `/privacy` page needs a matching edit and its `LAST_UPDATED` constant bumped
+in the same change. It's not automatically kept in sync with the code it describes.
+
+---
+
 ## Before any schema change, bulk edit, or deploy
 
 1. Check the daily backup ran successfully recently (GitHub → Actions → Daily Content Backup).

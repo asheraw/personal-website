@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getConsent, setConsent } from "@/lib/consent";
 
@@ -22,7 +23,11 @@ export function CookieConsent() {
       <div className="mx-auto flex max-w-3xl flex-col items-start gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           This site uses cookies to understand how it&apos;s used. Analytics only load if you say yes —
-          nothing is tracked otherwise.
+          nothing is tracked otherwise. See the{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:no-underline">
+            Privacy Policy
+          </Link>
+          .
         </p>
         <div className="flex shrink-0 gap-2">
           <Button

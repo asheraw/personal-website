@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-02 (continued) — Privacy Policy page
+
+New `/privacy` page, linked from the site footer (every page) and the cookie-consent banner. Per Asher's
+request: a "30-second version" of bullet points at the top (since realistically nobody reads a full privacy
+policy), then the complete, detailed version below it. Covers, accurately, what this site actually does today
+— what's collected through the contact form and comments, what IP addresses are used for (spam detection
+only), that analytics stays off until the cookie banner is explicitly accepted, and every third-party service
+involved (Sanity, Resend, Vercel, Google Analytics/Tag Manager). Hand-written and versioned in code rather
+than editable from Studio — legal text changing without a second pair of eyes reviewing it first isn't a risk
+worth taking for how rarely it needs to change. Added to the sitemap at low priority; not excluded from search
+indexing.
+
+---
+
 ## 2026-08-02 — Image carousels/slideshows in post bodies, and a Share bar
 
 **Image Carousel / Slideshow block.** A new insertable block in the post editor, alongside the existing plain
