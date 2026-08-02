@@ -6,10 +6,8 @@ import { CONSENT_EVENT, getConsent } from "@/lib/consent";
 
 const GTM_ID = "GTM-PVCX5DQ";
 // Microsoft Clarity (heatmaps + session recordings) -- clarity.microsoft.com
-// -> Settings -> Setup -> Install tracking code, once a project exists for
-// asheraw.com. Leave blank to keep Clarity off entirely; nothing below
-// renders a script tag for it until this is filled in.
-const CLARITY_PROJECT_ID = "";
+// -> Settings -> Setup -> Install tracking code. Project ID for asheraw.com.
+const CLARITY_PROJECT_ID = "xw9besolc9";
 
 export function Analytics() {
   const [allowed, setAllowed] = useState(false);

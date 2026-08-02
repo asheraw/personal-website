@@ -886,20 +886,16 @@ blog content.
 - The visitor's choice is remembered in their browser (`localStorage`), not sent anywhere else. There's currently no way for *you* to see aggregate consent accept/decline rates — that would be a future addition if it becomes useful.
 - If analytics numbers look unexpectedly low, the most likely explanation is simply that visitors are declining or not yet answering the consent banner (expected/normal), not a tracking bug.
 
-## Microsoft Clarity: heatmaps & session recordings (code shipped 2026-08-02, needs a project ID to go live)
+## Microsoft Clarity: heatmaps & session recordings (live since 2026-08-02)
 
 Added to `src/components/asher/Analytics.tsx` right alongside GTM, behind the exact same consent gate — it
 loads only after a visitor clicks "Accept," never before, same as Google Analytics. One extra small async
 script (`clarity.ms/tag/...`), same shape and weight as GTM's own loader.
 
-**Not live yet.** The `CLARITY_PROJECT_ID` constant at the top of `Analytics.tsx` is currently blank, and the
-Clarity script simply doesn't render at all while it is — nothing breaks, it just silently stays off. **To turn
-it on:**
-
-1. Sign up free at [clarity.microsoft.com](https://clarity.microsoft.com) and create a project for
-   `asheraw.com`.
-2. Copy the Project ID from Settings → Setup (a short alphanumeric string, e.g. `abc123xyz0`).
-3. Paste it into `CLARITY_PROJECT_ID` in `Analytics.tsx` and deploy.
+**Live.** `CLARITY_PROJECT_ID` in `Analytics.tsx` is set to Asher's real project ID (from
+[clarity.microsoft.com](https://clarity.microsoft.com) → Settings → Setup), copied verbatim from Clarity's own
+manual install snippet to make sure it matched exactly. To ever turn it off again, blank out
+`CLARITY_PROJECT_ID` — the script simply stops rendering, nothing else to undo.
 
 This ID isn't a secret (it's sent to every visitor's browser either way, same as the GTM container ID right
 above it), so it's hardcoded directly in the file rather than an environment variable — consistent with how
