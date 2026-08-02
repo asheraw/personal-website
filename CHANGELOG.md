@@ -11,6 +11,35 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-02 (continued) — Privacy policy covers a future newsletter; rich text gets a theme-safe color mark
+
+**Privacy policy: added a section for a newsletter that doesn't exist yet.** Asher's concern: he might build
+an email list down the line, and there's a common misconception worth heading off in writing before it comes
+up for real — a sponsor paying to have their message included in an email is not the same thing as selling
+subscribers' personal information, and people conflate the two constantly. New "If a newsletter launches"
+section, written in future tense: joining would be opt-in only (never auto-added from a comment or the
+contact form), every issue would carry a one-click unsubscribe, and the sponsorship/data-selling distinction
+is spelled out plainly. Matching bullet added to the top TL;DR. Written now so the policy doesn't need a
+rewrite the day a newsletter actually ships.
+
+**Rich text: a color mark that can't produce illegible text.** Asher's ask, with the trap named up front: a
+color that reads fine in dark mode (his example — yellow) can go illegible the moment a reader switches to
+light mode, and an ordinary hex/RGB color picker hands a writer exactly that footgun. The fix isn't a
+smarter picker — it's not offering a hex value in the first place. New "Text color" option in the post
+editor: a closed set of 8 named colors (red, orange, yellow, green, teal, blue, purple, pink), each name
+resolving to a CSS variable with one shade tuned for dark mode and a separately-chosen shade for light mode.
+Picking "Yellow" means a bright yellow at night and a dark mustard gold in daylight, automatically — the
+site controls both shades, the writer only ever picks a name. Same pattern the theme already used for its
+own colors (spotlight, destructive, etc.), just extended with 8 more names. The color list lives in one
+place (`src/lib/textColors.ts`) shared by the Studio dropdown and the frontend renderer, so they can't drift
+out of sync with each other.
+
+**Also confirmed, not built:** strikethrough, bullet/numbered lists, blockquotes, inline code, bold, italic, and
+underline were all already in place on both the editor and the live site — checked the actual schema and
+renderer directly rather than assuming, since Asher wasn't sure offhand what was already there.
+
+---
+
 ## 2026-08-02 (continued) — Privacy Policy page
 
 New `/privacy` page, linked from the site footer (every page) and the cookie-consent banner. Per Asher's
