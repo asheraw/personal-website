@@ -20,14 +20,14 @@ export const metadata: Metadata = {
 };
 
 const TLDR = [
-  "We only collect your name, email, or message when you type them in yourself -- through the contact form or a comment. Nothing is collected before that.",
-  "A comment's email address is never shown publicly. Only Asher can see it.",
+  "I only collect your name, email, or message when you type them in yourself -- through the contact form or a comment. Nothing is collected before that.",
+  "A comment's email address is never shown publicly. Only I can see it.",
   "Analytics tracking is off by default, including heatmaps and session recordings. It only turns on if you click “Accept” on the cookie banner, and you can decline it entirely.",
-  "We never sell your data, and there are no ad trackers or retargeting pixels on this site.",
+  "I never sell your data, and there are no ad trackers or retargeting pixels on this site.",
   "Your IP address is logged briefly on submissions, only to catch spam — not to track what you do on the site.",
-  "We use a small number of trusted services (listed below) to run the site — never to profit from your data.",
-  "There's no email newsletter yet, but if one launches: joining is opt-in only, and a sponsor paying to be mentioned in an email is not the same as us selling your email address to anyone — we don't do the second one, ever.",
-  "Want anything deleted? Email us and we’ll remove it — no forms, no runaround.",
+  "I use a small number of trusted services (listed below) to run the site — never to profit from your data.",
+  "There's no email newsletter yet, but if one launches: joining is opt-in only, and a sponsor paying to be mentioned in an email is not the same as me selling your email address to anyone — I don't do the second one, ever.",
+  "Want anything deleted? Email me and I’ll remove it — no forms, no runaround.",
 ];
 
 export default function PrivacyPage() {
@@ -66,8 +66,8 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">Who this is</h2>
             <p className="mt-3">
-              asheraw.com is Asher Aw&rsquo;s personal site &mdash; a blog and portfolio, not a company collecting
-              data at scale. This policy covers everything the site itself collects. It doesn&rsquo;t cover other
+              asheraw.com is my personal site &mdash; a blog and portfolio, not a company collecting data at
+              scale. This policy covers everything the site itself collects. It doesn&rsquo;t cover other
               websites it might link to.
             </p>
           </section>
@@ -77,15 +77,17 @@ export default function PrivacyPage() {
             <h3 className="mt-6 font-display text-lg font-semibold text-ivory">What you type in yourself</h3>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
-                <strong className="text-ivory">Contact form:</strong> your name, email, phone number (optional), and
-                message.
+                <strong className="text-ivory">Contact form:</strong>{" "}
+                your name, email, phone number (optional), and message.
               </li>
               <li>
-                <strong className="text-ivory">Comments:</strong> your name, email, and comment text. The email is
-                stored so Asher can reply if needed &mdash; it&rsquo;s never displayed publicly.
+                <strong className="text-ivory">Comments:</strong>{" "}
+                your name, email, and comment text. I store the email so I can reply if needed &mdash; it&rsquo;s
+                never displayed publicly.
               </li>
               <li>
-                <strong className="text-ivory">Reply notifications (optional):</strong> if you check &ldquo;email me
+                <strong className="text-ivory">Reply notifications (optional):</strong>{" "}
+                if you check &ldquo;email me
                 if there&rsquo;s a reply&rdquo; on a comment, that email is used only to send you that one
                 notification, and the subscription automatically expires after 30 days of inactivity. You can
                 unsubscribe with one click from any notification email.
@@ -94,27 +96,29 @@ export default function PrivacyPage() {
             <h3 className="mt-6 font-display text-lg font-semibold text-ivory">What&rsquo;s collected automatically</h3>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
-                <strong className="text-ivory">IP address:</strong> logged when you submit the contact form or a
+                <strong className="text-ivory">IP address:</strong>{" "}
+                logged when you submit the contact form or a
                 comment, purely to catch spam and abuse (e.g. blocking repeat submissions from an address already
                 marked as spam). It isn&rsquo;t used to track your activity on the site.
               </li>
               <li>
-                <strong className="text-ivory">Analytics (only with your consent):</strong> if you click
+                <strong className="text-ivory">Analytics (only with your consent):</strong>{" "}
+                if you click
                 &ldquo;Accept&rdquo; on the cookie banner, Google Analytics (via Google Tag Manager) collects
                 standard usage data &mdash; pages visited, general location (country/city level), device type. This
                 stays off entirely if you click &ldquo;Decline,&rdquo; or if you never respond to the banner.
               </li>
               <li>
                 <strong className="text-ivory">Heatmaps &amp; session recordings (only with your consent):</strong>{" "}
-                also gated by the same cookie banner, Microsoft Clarity records how visitors move through and click
-                on the site &mdash; used to spot where a page is confusing or a feature is hard to find, not to
-                identify who&rsquo;s visiting. Clarity masks the contents of text fields (like the comment or
-                contact form) by default, so what you type isn&rsquo;t captured in a recording even while it&rsquo;s
-                on.
+                also gated by the same cookie banner. Microsoft Clarity records how visitors move through and
+                click on the site &mdash; used to spot where a page is confusing or a feature is hard to find,
+                not to identify who&rsquo;s visiting. Clarity masks the contents of text fields (like the comment
+                or contact form) by default, so what you type isn&rsquo;t captured in a recording even while it&rsquo;s on.
               </li>
               <li>
-                <strong className="text-ivory">Broken-link tracking:</strong> if you land on a 404 page, the URL you
-                tried to reach and the page that linked you there get logged, so Asher can fix broken links. This
+                <strong className="text-ivory">Broken-link tracking:</strong>{" "}
+                if you land on a 404 page, the URL you
+                tried to reach and the page that linked you there get logged, so I can fix broken links. This
                 isn&rsquo;t tied to you personally in any way &mdash; no IP address, no identifying information.
               </li>
             </ul>
@@ -124,7 +128,7 @@ export default function PrivacyPage() {
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">
               How this information is used
             </h2>
-            <p className="mt-3">Only for the reason you gave it to us in the first place:</p>
+            <p className="mt-3">Only for the reason you gave it to me in the first place:</p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>Responding to a message sent through the contact form.</li>
               <li>Moderating and, where relevant, replying to a comment.</li>
@@ -144,7 +148,7 @@ export default function PrivacyPage() {
             </h2>
             <p className="mt-3">
               There&rsquo;s no email newsletter on asheraw.com today, but it&rsquo;s a real possibility down the
-              line &mdash; so this is written ahead of time rather than after the fact:
+              line &mdash; so here&rsquo;s the commitment ahead of time:
             </p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
@@ -157,9 +161,9 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong className="text-ivory">Sponsoring the newsletter is not the same as selling your data,
-                and this site will never confuse the two.</strong>{" "}
+                and I will never confuse the two.</strong>{" "}
                 If an issue is ever sponsored, that means a
-                sponsor paid to have their own message included in an email Asher writes and sends himself
+                sponsor paid to have their own message included in an email I write and send myself
                 &mdash; it does not mean they receive your email address, or anything else about you. You&rsquo;d
                 always be hearing from asheraw.com, never directly from a sponsor. Your email address is not
                 sold, rented, or handed over to anyone, sponsored issue or not.
@@ -193,23 +197,26 @@ export default function PrivacyPage() {
             </p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
-                <strong className="text-ivory">Sanity</strong> &mdash; stores everything submitted through the
-                contact form and comments.
+                <strong className="text-ivory">Sanity</strong>{" "}
+                &mdash; stores everything submitted through the contact form and comments.
               </li>
               <li>
-                <strong className="text-ivory">Resend</strong> &mdash; delivers the emails this site sends (a contact
-                form notification to Asher, a reply notification to you if you opted in). Doesn&rsquo;t see anything
+                <strong className="text-ivory">Resend</strong>{" "}
+                &mdash; delivers the emails this site sends (a contact
+                form notification to me, a reply notification to you if you opted in). Doesn&rsquo;t see anything
                 beyond the content of that one email.
               </li>
               <li>
-                <strong className="text-ivory">Vercel</strong> &mdash; hosts the site itself.
+                <strong className="text-ivory">Vercel</strong>{" "}&mdash; hosts the site itself.
               </li>
               <li>
-                <strong className="text-ivory">Google Analytics / Google Tag Manager</strong> &mdash; only loads if
+                <strong className="text-ivory">Google Analytics / Google Tag Manager</strong>{" "}
+                &mdash; only loads if
                 you accept the cookie banner. See &ldquo;Cookies&rdquo; above.
               </li>
               <li>
-                <strong className="text-ivory">Microsoft Clarity</strong> &mdash; heatmaps and session recordings,
+                <strong className="text-ivory">Microsoft Clarity</strong>{" "}
+                &mdash; heatmaps and session recordings,
                 also only loads if you accept the cookie banner. See &ldquo;Cookies&rdquo; above.
               </li>
             </ul>
@@ -218,21 +225,27 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">How long we keep it</h2>
             <p className="mt-3">
-              Contact messages and comments are kept so Asher can respond to and moderate them, and aren&rsquo;t
-              deleted on any fixed schedule. A comment moved to Trash is permanently deleted after 30 days if not
-              restored. If you&rsquo;d like something removed sooner, see below &mdash; it&rsquo;s a quick request,
-              not a formal process.
+              I keep messages and comments so I can reply to you or moderate spam. They&rsquo;re not automatically
+              deleted unless you ask me to remove them. A comment moved to Trash is permanently deleted after 30
+              days if not restored. If you&rsquo;d like something removed sooner, it&rsquo;s a quick ask &mdash; no
+              forms, just email me.
             </p>
           </section>
 
           <section>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">Your choices</h2>
             <ul className="mt-3 list-disc space-y-2 pl-6">
-              <li>Decline analytics cookies at any time from the consent banner.</li>
-              <li>Unsubscribe from a reply notification with one click, from any notification email.</li>
               <li>
-                Ask for a comment, contact submission, or any other data tied to you to be corrected or deleted, by
-                emailing{" "}
+                <strong className="text-ivory">Turn off analytics:</strong>{" "}
+                the cookie banner lets you do that anytime.
+              </li>
+              <li>
+                <strong className="text-ivory">Unsubscribe from reply notifications:</strong>{" "}
+                one click from any email unsubscribes you.
+              </li>
+              <li>
+                <strong className="text-ivory">Want something deleted or corrected:</strong>{" "}
+                email me &mdash; it&rsquo;s done. Reach me at{" "}
                 <a href={`mailto:${CONTACT_INFO.email}`} className="text-spotlight underline underline-offset-2 hover:decoration-spotlight">
                   {CONTACT_INFO.email}
                 </a>
@@ -244,17 +257,16 @@ export default function PrivacyPage() {
           <section>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">Children&rsquo;s privacy</h2>
             <p className="mt-3">
-              This site isn&rsquo;t directed at children, and no information is knowingly collected from anyone under
-              13. If you believe a child has submitted information here, contact us and it&rsquo;ll be removed.
+              This site isn&rsquo;t for kids. If a child under 13 submits something, let me know and I&rsquo;ll
+              delete it.
             </p>
           </section>
 
           <section>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">Changes to this policy</h2>
             <p className="mt-3">
-              If this page changes in any meaningful way, the &ldquo;Last updated&rdquo; date at the top will change
-              with it. Worth a glance every so often, but there&rsquo;s no separate notification system for policy
-              updates.
+              If something actually changes here, the date at the top will update. No notification system &mdash;
+              just check back if you&rsquo;re curious.
             </p>
           </section>
 

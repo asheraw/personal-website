@@ -22,12 +22,12 @@ export function CookieConsent() {
     >
       <div className="mx-auto flex max-w-3xl flex-col items-start gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          This site uses cookies to understand how it&apos;s used, including heatmaps and session recordings.
-          Analytics only load if you say yes — nothing is tracked otherwise. See the{" "}
+          I&apos;m making this site better. I just need to see what you click and how long you stick
+          around—but nothing identifies you.{" "}
           <Link href="/privacy" className="underline underline-offset-2 hover:no-underline">
             Privacy Policy
-          </Link>
-          .
+          </Link>{" "}
+          here. Click Accept to help me out, thanks!
         </p>
         <div className="flex shrink-0 gap-2">
           <Button
