@@ -11,6 +11,28 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Found and fixed the real cause of a "duplicate" contact submission
+
+Asher spotted two identical Contact Submissions with the same content and, once the table started showing
+time too, the same minute — asked why, wanting to know if it was a true double-entry.
+
+It was, and the cause was a real bug: the contact form saves to Sanity *before* attempting the notification
+email, but if that email step failed (or Resend just wasn't configured), the response still told the
+*visitor* `success: false`. That showed a genuine "Message failed to send" screen with a "Try the form again"
+button — and clicking it resubmitted a message that had already gone through, creating an actual duplicate.
+The test message content itself ("Testing this form to see if it captures all fields") matches this exactly.
+
+Fixed at the source: `/api/contact` now only reports failure to the visitor if their message genuinely wasn't
+captured. An email-notification gap is Asher's own concern, already visible per-submission in Studio →
+Contact Submissions (`emailSent`/`emailError`) — not something a real visitor should ever be prompted to
+"fix" by resubmitting.
+
+Also checked and ruled out along the way: the send button disables correctly while submitting, and the
+browser's own implicit-Enter-submission is blocked by that same disabled state — so this wasn't a
+double-click/double-Enter issue, it was specifically the false "failure" inviting a real, intentional retry.
+
+---
+
 ## 2026-08-04 (continued) — Legacy `.html` URLs now redirect automatically, site-wide
 
 Asher spotted `/blog/how-i-lost-my-writing-home-for-13-years.html` 404ing right next to the real, working

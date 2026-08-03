@@ -861,6 +861,12 @@ See **BACKUP_AND_RECOVERY_GUIDE.md** for the full explanation and the one-time s
   form but you got no email, check Studio → Contact Submissions before assuming it's lost.
 - Submissions have no draft/publish step (the schema uses `liveEdit`) — ticking the **Handled** checkbox in
   that table saves immediately, and **Delete** is permanent (two-step confirm, no trash/recovery).
+- **Fixed 2026-08-04:** an email-notification failure (or Resend simply not being configured) used to make
+  the *visitor* see "Message failed to send," even though their message was already safely saved in Sanity —
+  clicking the form's "Try again" button in that state resubmitted it, creating a real duplicate document.
+  The form now only tells a visitor it failed if the message genuinely wasn't captured at all; a
+  notification-email gap is something you catch here in Contact Submissions (`emailSent`/`emailError` on that
+  row), not something a visitor is asked to work around by resubmitting.
 - Required for the notification email to work: `RESEND_API_KEY` and `CONTACT_NOTIFICATION_EMAIL` environment
   variables must be set in Vercel's project settings (not just a local `.env` file, which never reaches
   production).
