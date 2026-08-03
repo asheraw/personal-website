@@ -1125,8 +1125,18 @@ alone for `title` in this specific file. If a future Next.js upgrade fixes this 
 
 **Studio → 404 Hits** (top nav) redesigned 2026-07-30 from a plain document list (click into each path's own
 form) into a single overview page, most-hit paths first — same pattern as Media and Comments. Each row shows
-the path, total hit count, first/last seen, and an **Actioned** checkbox (toggle directly in the list, no
-need to open the document). Component: `src/sanity/components/NotFoundHitsTool.tsx`.
+the path, total hit count, first/last seen, and a status control (toggle directly in the list, no need to
+open the document). Component: `src/sanity/components/NotFoundHitsTool.tsx`.
+
+**Pending / Ignored / Actioned, in three accordions (shipped 2026-08-04):** `notFoundHitType.ts`'s `status`
+field replaced the old `actioned` boolean — `pending` (default, set by `/api/track-404/route.ts` on
+creation), `ignored` (looked at, deliberately left alone), or `actioned` (dealt with — a redirect, a new
+post, whatever). The tool groups rows into three collapsible sections by status instead of one flat list;
+Pending starts open, Ignored/Actioned start collapsed. Each row's status is a small dropdown. Creating a
+redirect from a row (see the Redirects section above) still sets it to `actioned` automatically. Existing
+data was migrated once by hand at ship time (`actioned: true` → `"actioned"`, everything else → `"pending"`)
+— nothing to do for that retroactively, only relevant if a very old backup/export is ever restored, in which
+case check for `notFoundHit` docs with an `actioned` field but no `status` and run the same mapping again.
 
 **Full hit log, not just first/last seen:** every individual hit is now recorded (`hits` array on
 `notFoundHitType.ts` — timestamp + referrer per hit), expandable per-row in the tool. Asked for directly by

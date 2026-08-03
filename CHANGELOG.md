@@ -11,6 +11,39 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — 404 Hits: Pending / Ignored / Actioned accordions
+
+Asher wanted the 404 list grouped instead of flat — a section for new/pending paths, a separate one for
+paths he's deliberately decided to leave alone, and one for paths he's already dealt with.
+
+The single "Actioned" checkbox is now a 3-way **status** (pending/ignored/actioned) on `notFoundHitType`, and
+the tool groups rows into three collapsible sections instead of one flat list. Pending starts open (it's the
+one that actually needs a look); Ignored and Actioned start collapsed. "Ignored" didn't exist before — there
+was no way to record "I looked and decided it's not worth doing anything about" separately from "I dealt
+with it," so both got lumped into the same checkbox. Each row's status is now a small dropdown; creating a
+redirect from a row still moves it straight to Actioned automatically.
+
+Migrated all 10 existing live 404 hit documents from the old `actioned` boolean to the new `status` field
+before shipping — `actioned: true` became `"actioned"`, everything else became `"pending"` — and verified
+every one read back correctly afterward.
+
+---
+
+## 2026-08-04 (continued) — Contact Submissions: fixed clipped text, added a message preview
+
+The "unreadable" text Asher reported turned out to be real, just not a strikethrough — the Name/Email/Subject
+cells were only showing the *bottom half* of each letter. Cause: `overflow`/`text-overflow`/`white-space`
+were applied directly on Sanity UI's `Text` component, which clipped its own internal line box rather than
+just truncating sideways. Fixed by moving that truncation onto a plain wrapping `<div>` instead, letting
+`Text` render at its natural, unclipped height inside it.
+
+Also asked for: a preview of the message body under each row (250 characters) so reading through submissions
+needs fewer clicks — previously the message was hidden entirely until a row was expanded. Now a preview
+always shows; the full message (and phone/notification-email status) is still one click away for anything
+longer.
+
+---
+
 ## 2026-08-04 (continued) — Found and fixed the real cause of a "duplicate" contact submission
 
 Asher spotted two identical Contact Submissions with the same content and, once the table started showing
