@@ -11,6 +11,32 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — 404 Hits: turn a broken link into a redirect inline
+
+Asher noticed fixing a 404 meant leaving **Studio → 404 Hits**, copying the broken path over to **Structure →
+Redirects** by hand, and switching back — asked if that could happen without the back-and-forth, plus a way
+to search for the right destination instead of typing it from memory.
+
+**Create redirect, right on the row.** Each 404 hit now has a **Create redirect** button that opens an inline
+form: the broken path pre-filled as "From," a destination search box, and the existing Permanent (301)
+toggle — no navigating away from 404 Hits at all. Creating it writes a real `redirect` document, so it shows
+up under Structure → Redirects exactly like one created by hand, and the 404 hit is automatically marked
+Actioned.
+
+**Search, not memory.** The destination field searches every existing post, category, author page, and the
+site's static pages (Home, Blog, Connect, Privacy) as you type — picking one fills in the exact real path, so
+a typo can't quietly create a *second* broken link. Typing a path or full URL directly still works too, for
+anything not in that list (an external link, or a path that doesn't exist as a page). Also checks for an
+already-existing redirect from that same path before creating a new one, so two redirects can't silently
+collide.
+
+Verified against the live dataset before shipping: real posts/categories/authors all appeared as searchable
+options, a real 404 hit was turned into a real redirect (showed up correctly filtered under Structure →
+Redirects), the hit was auto-marked actioned, and the duplicate-from check correctly blocked a second attempt
+— then all test documents were deleted.
+
+---
+
 ## 2026-08-04 (continued) — Contact Submissions: table view, live edit, delete
 
 Asher asked for the Contact Submissions list in Studio to become a proper table, with a Handled checkbox and

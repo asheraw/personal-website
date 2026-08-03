@@ -154,6 +154,12 @@ was just added or edited, wait up to a minute for the cache to catch up before a
 double-check "From path" starts with `/` and has no query string — validation should catch this at save time,
 but it's the first thing to check if a redirect that looks right still isn't firing.
 
+**Creating one from a 404 (shipped 2026-08-04):** the faster path for most real redirects — go to **Studio →
+404 Hits** instead, click **Create redirect** on the broken path, and search for the right destination
+(`src/sanity/components/CreateRedirectForm.tsx`) rather than adding a document by hand and typing both sides
+of it. Same underlying `redirect` document either way, and the 404 hit gets marked Actioned automatically
+once it's created.
+
 ---
 
 ## Skip-to-content link (shipped 2026-07-31)
@@ -1123,6 +1129,12 @@ be reconstructed retroactively. Only hits from this point forward have the full 
 **If the hit log looks wrong or missing for a path that should have one:** check `/api/track-404/route.ts`
 still does a read-modify-write (fetch existing `hits`, append, `.slice(-500)`, then `.set()`) rather than a
 blind `.append()` — the read step is what makes the 500-cap possible; without it there's no way to trim.
+
+**Create redirect, inline (shipped 2026-08-04):** each row also has a **Create redirect** button
+(`src/sanity/components/CreateRedirectForm.tsx`) that writes a real `redirect` document without leaving this
+tool — see the Redirects section above for the full behavior. The destination field searches existing
+posts/categories/authors/static pages as you type; picking one fills in the real path instead of it being
+typed by hand.
 
 ---
 
