@@ -5,12 +5,27 @@ import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {portableTextToPlainText} from '../../lib/portableText'
 
-type Suggestions = {seoTitles: string[]; excerpts: string[]; tags: string[]}
+type Suggestions = {seoTitles: string[]; excerpts: string[]; tags: string[]; logId?: string | null}
 
 type PostDraft = {
   title?: string
   body?: unknown
   tags?: string[]
+  slug?: {current?: string}
+}
+
+// Fire-and-forget -- a failed log-usage call shouldn't interrupt or delay
+// applying a suggestion, it's purely a record of it. No-ops if this
+// suggestion batch never got a logId (e.g. the log write itself failed
+// server-side), rather than sending a request that could never resolve to
+// anything.
+function logUsage(logId: string | null | undefined, action: string) {
+  if (!logId) return
+  fetch('/api/ai/log-usage', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({logId, action}),
+  }).catch(() => {})
 }
 
 function TitleOption({text, onUse}: {text: string; onUse: () => void}) {
@@ -139,6 +154,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
       const merged = Array.from(new Set([...currentTags, ...selected]))
       patch.execute([{set: {tags: merged}}])
       setCurrentTags(merged)
+      logUsage(suggestions?.logId, `Added tags: ${selected.join(', ')}`)
     }
 
     async function runSuggestion() {
@@ -149,7 +165,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
         const res = await fetch('/api/ai/suggest-seo', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({title: source?.title, bodyText}),
+          body: JSON.stringify({title: source?.title, bodyText, slug: source?.slug?.current}),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Something went wrong')
@@ -195,7 +211,10 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                         <TitleOption
                           key={titleOption}
                           text={titleOption}
-                          onUse={() => patch.execute([{set: {seoTitle: titleOption}}])}
+                          onUse={() => {
+                            patch.execute([{set: {seoTitle: titleOption}}])
+                            logUsage(suggestions.logId, `Used SEO title: "${titleOption}"`)
+                          }}
                         />
                       ))}
                     </Stack>
@@ -205,7 +224,10 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                         <ExcerptOption
                           key={excerptOption}
                           text={excerptOption}
-                          onUse={() => patch.execute([{set: {excerpt: excerptOption}}])}
+                          onUse={() => {
+                            patch.execute([{set: {excerpt: excerptOption}}])
+                            logUsage(suggestions.logId, `Used excerpt: "${excerptOption}"`)
+                          }}
                         />
                       ))}
                     </Stack>

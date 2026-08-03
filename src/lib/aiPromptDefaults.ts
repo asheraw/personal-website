@@ -15,3 +15,18 @@ Excerpts: 160 characters or fewer each (this doubles as the meta description AND
 2. Write to create curiosity that earns the click -- an open loop, a specific tension, or a concrete detail -- never a flat, generic summary that already gives everything away.
 
 Tags: 3-5 short topic labels (1-3 words each, lowercase unless reusing an existing tag's own casing) that describe what this post is actually about.`
+
+// Shared across every AI-suggestion feature (SEO, social copy, and
+// whatever gets added later) -- deliberately a separate field from
+// DEFAULT_AI_PROMPT_INSTRUCTIONS above, which is specific to the SEO
+// feature's own task (title/excerpt/tag format and length rules). This one
+// is just "what does Asher's voice actually sound like," so editing it
+// once adjusts every feature at the same time instead of needing the same
+// tweak copied into two or three different task-specific prompts. Kept as
+// plain free text on purpose, same reasoning as the field above: no fixed
+// technical wording buried in here that's unsafe to touch, so there's
+// nothing to break by rewriting it, only suggestions that get better or
+// worse depending on how well it actually describes the voice.
+export const DEFAULT_VOICE_GUIDANCE = `Write like a real person talking, not a brand. Direct, warm, a little wry -- not corporate, not hype-y ("Exciting news!!", "Game-changing", excessive exclamation points), not stuffed with hashtags or buzzwords. Short sentences are fine. It's okay to sound like you're talking to one specific person, not "an audience."
+
+Never invent facts, quotes, numbers, or specifics that aren't actually in the source content -- when in doubt, stay general rather than making something up.`

@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
 import { truncateText } from "@/lib/text";
 import { writeClient } from "@/sanity/lib/write-client";
-import { DEFAULT_AI_PROMPT_INSTRUCTIONS } from "@/lib/aiPromptDefaults";
+import { DEFAULT_AI_PROMPT_INSTRUCTIONS, DEFAULT_VOICE_GUIDANCE } from "@/lib/aiPromptDefaults";
 
 // Called from Studio's "Suggest SEO & Excerpt" button (see
 // src/sanity/actions/suggestSeo.tsx). Never called for regular site
-// visitors, and never writes anything on its own -- it only returns
-// suggestions for the editor to review and choose from.
+// visitors, and never writes a post's own content on its own -- it only
+// returns suggestions for the editor to review and choose from. It does
+// write one thing unconditionally: an aiOutputLog entry (see
+// aiOutputLogType.ts), the "review queue" record of what was suggested --
+// separate from whether any of it gets used, which log-usage/route.ts
+// updates later if the editor actually applies something.
 export async function POST(request: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json(
@@ -16,7 +20,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { title, bodyText } = await request.json();
+  const { title, bodyText, slug } = await request.json();
 
   if (!title || !bodyText || typeof title !== "string" || typeof bodyText !== "string") {
     return NextResponse.json(
@@ -42,16 +46,20 @@ export async function POST(request: NextRequest) {
 
     // Editable in Studio under "AI Suggestion Settings" -- lets Asher tweak
     // tone, phrasing, and requirements without needing a code change. Falls
-    // back to the same default shown as that field's starting value if the
-    // document doesn't exist yet or the field was cleared.
-    const settings: {promptInstructions?: string} | null = await writeClient.fetch(
-      `*[_type == "aiPromptSettings"][0]{promptInstructions}`
+    // back to the same defaults shown as each field's starting value if the
+    // document doesn't exist yet or a field was cleared. voiceGuidance is
+    // shared with suggest-social's own prompt too -- see aiPromptDefaults.ts.
+    const settings: {promptInstructions?: string; voiceGuidance?: string} | null = await writeClient.fetch(
+      `*[_type == "aiPromptSettings"][0]{promptInstructions, voiceGuidance}`
     );
     const instructions = settings?.promptInstructions?.trim() || DEFAULT_AI_PROMPT_INSTRUCTIONS;
+    const voice = settings?.voiceGuidance?.trim() || DEFAULT_VOICE_GUIDANCE;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.6-flash",
-      contents: `${instructions}${existingTagsBlock}
+      contents: `${voice}
+
+${instructions}${existingTagsBlock}
 
 Title: ${title}
 
@@ -107,7 +115,28 @@ ${bodyText.slice(0, 6000)}`,
       throw new Error("Suggestion was incomplete");
     }
 
-    return NextResponse.json({ seoTitles, excerpts, tags });
+    // Fire-and-forget in spirit but awaited (not backgrounded) so `logId`
+    // is available to return -- the Studio dialog needs it to later tell
+    // log-usage/route.ts which suggestion batch a "Use this" click belongs
+    // to. A failure here shouldn't sink the actual suggestions the editor
+    // is waiting on, so it's wrapped separately from the try/catch above.
+    let logId: string | null = null;
+    try {
+      const created = await writeClient.create({
+        _type: "aiOutputLog",
+        feature: "seo",
+        postTitle: typeof title === "string" ? title.slice(0, 300) : "",
+        postSlug: typeof slug === "string" ? slug.slice(0, 200) : undefined,
+        output: JSON.stringify({ seoTitles, excerpts, tags }, null, 2),
+        used: false,
+        usedActions: [],
+      });
+      logId = created._id;
+    } catch (logError) {
+      console.error("[ai/suggest-seo] output log failed:", logError);
+    }
+
+    return NextResponse.json({ seoTitles, excerpts, tags, logId });
   } catch (error) {
     console.error("[ai/suggest-seo] failed:", error);
     return NextResponse.json(

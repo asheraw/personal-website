@@ -980,11 +980,13 @@ preview card from a pasted URL, so baking the link into the caption text itself 
 X's character budget for nothing. Asher pastes the caption, then the link, separately.
 
 New route: `src/app/api/ai/suggest-social/route.ts`, same `gemini-3.6-flash` + `responseSchema` structured-
-JSON pattern as `suggest-seo`. Its prompt instructions are hardcoded in the route itself, not exposed as a
-Studio-editable field the way `aiPromptSettingsType.ts` is for SEO suggestions — deliberately, to keep this
-slice scoped to drafting rather than drifting into the separate "tone/voice controls" item still on the
-roadmap. New action: `src/sanity/actions/suggestSocialCopy.tsx`, registered in `sanity.config.ts` right next
-to `createSuggestSeoAction()`.
+JSON pattern as `suggest-seo`. New action: `src/sanity/actions/suggestSocialCopy.tsx`, registered in
+`sanity.config.ts` right next to `createSuggestSeoAction()`.
+
+*(Update, same day: this section originally said the prompt instructions were hardcoded here specifically
+to avoid drifting into "tone/voice controls" — that item shipped a few hours later, see below. The
+task-specific instructions in this route are still hardcoded (what to produce, per-platform rules), but
+voice now comes from the same shared, Studio-editable field `suggest-seo` also reads.)*
 
 Verified against the live Gemini API before shipping — real title/body from an existing post produced two
 genuinely usable, on-voice options per platform, correctly under X's 240-character cap, no hashtags, no
@@ -994,6 +996,44 @@ invented details, no raw URL in any of them.
 error-message `<Text tone="critical">` (a `@sanity/ui` prop-type mismatch) before this file existed;
 `suggestSocialCopy.tsx` uses the identical pattern and inherits the identical error. Doesn't block the build
 either way — noting it here so it doesn't look like something new broke.
+
+---
+
+## AI Workspace: shared voice guidance + review queue (shipped 2026-08-04)
+
+The other two-thirds of "AI Workspace, expanded" — asked to build both after Draft Social Copy landed
+earlier the same day.
+
+**Shared voice, not duplicated per feature.** New field, **Studio → AI Suggestion Settings → "Voice & tone
+(used by every AI feature)"** (`aiPromptSettingsType.ts`'s `voiceGuidance`) — plain free text, same
+"nothing unsafe to break" philosophy as the existing `promptInstructions` field. Both `suggest-seo` and
+`suggest-social` now fetch this one field and prepend it to their own task-specific instructions, so editing
+Asher's voice once adjusts every AI feature instead of needing the same tweak copied into two or three
+different prompts. `promptInstructions` (renamed in Studio to "SEO suggestion instructions" for clarity) stays
+scoped to the SEO task specifically — length limits, what to produce — not voice. Default value:
+`DEFAULT_VOICE_GUIDANCE` in `aiPromptDefaults.ts`.
+
+**Review queue: `aiOutputLog`, one document per generation.** Every call to `suggest-seo` or `suggest-social`
+now also creates an `aiOutputLog` document (schema: `aiOutputLogType.ts`) — which feature, which post, the
+raw suggestions returned, and whether any of it actually got used. Browsable in **Studio → AI Output Log**,
+sorted most-recent-first. Not a queue that blocks or requires action — a plain, honest record, matching how
+Asher actually works (solo, reviews every suggestion live in the dialog already).
+
+"Used" tracking is genuinely granular, not just a single yes/no: `usedActions` is a timestamped array, one
+entry per apply/copy click (e.g. `Used SEO title: "..."`, `Copied X caption (option 2)`, `Added tags: x, y`).
+New route `src/app/api/ai/log-usage/route.ts` handles this — called from both `suggestSeo.tsx` and
+`suggestSocialCopy.tsx` the moment an editor clicks "Use this" or "Copy," fire-and-forget (never blocks or
+delays the actual apply/copy action, and a failed log call is silently swallowed rather than surfaced).
+
+Both `suggest-*` routes now return a `logId` in their response (used only to tell `log-usage` which
+generation a later click belongs to) — awaited server-side so it's available to return, but wrapped in its
+own try/catch separate from the actual suggestion generation, so a logging failure can never sink the
+suggestions the editor is actually waiting on.
+
+Verified against the real Gemini API and the live dataset before shipping, both features: called each
+`suggest-*` route with real content, confirmed a real `logId` came back and the `aiOutputLog` document was
+created correctly, called `log-usage` against that real `logId`, confirmed `used` flipped to `true` and
+`usedActions` recorded the action with a timestamp. Deleted both test documents afterward.
 
 ---
 

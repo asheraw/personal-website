@@ -3,6 +3,7 @@ import {CogIcon} from '@sanity/icons/Cog'
 import {ComponentIcon} from '@sanity/icons/Component'
 import {BarChartIcon} from '@sanity/icons/BarChart'
 import {ShareIcon} from '@sanity/icons/Share'
+import {DocumentsIcon} from '@sanity/icons/Documents'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
@@ -103,6 +104,18 @@ export const structure: StructureResolver = (S) =>
         .title('AI Suggestion Settings')
         .icon(SparklesIcon)
         .child(S.document().schemaType('aiPromptSettings').documentId('aiPromptSettings')),
+      // Review queue for AI Workspace -- every suggestion either AI feature
+      // has made, and whether it was actually used. Not a queue that
+      // blocks anything, purely a browsable record.
+      S.listItem()
+        .title('AI Output Log')
+        .icon(DocumentsIcon)
+        .schemaType('aiOutputLog')
+        .child(
+          S.documentTypeList('aiOutputLog')
+            .title('AI Output Log')
+            .defaultOrdering([{field: '_createdAt', direction: 'desc'}]),
+        ),
       S.listItem()
         .title('Cookie Consent Log')
         .icon(BarChartIcon)
@@ -124,6 +137,7 @@ export const structure: StructureResolver = (S) =>
             'redirect',
             'consentLog',
             'shareLog',
+            'aiOutputLog',
           ].includes(item.getId()!),
       ),
     ])

@@ -11,6 +11,28 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — AI Workspace, expanded: shared voice + review queue
+
+The other two-thirds of "AI Workspace, expanded" — Asher asked for both after Draft Social Copy landed
+earlier the same day.
+
+**One voice, not three copies of it.** New "Voice & tone" field in Studio → AI Suggestion Settings, shared by
+every AI feature (SEO suggestions and social copy so far, anything added later too) — edit it once, every
+feature sounds more consistently like Asher instead of needing the same tweak pasted into two or three
+separate prompts. The existing SEO instructions field stays, renamed for clarity to make clear it's the
+task rules (lengths, what to produce), not the voice.
+
+**Review queue.** Every AI suggestion — SEO or social — now leaves a record in **Studio → AI Output Log**:
+which feature, which post, exactly what was suggested, and whether any of it actually got used. Not a queue
+that blocks anything, just visibility — "used" tracking is genuinely granular (a timestamped log of each
+individual thing applied or copied, not just yes/no).
+
+Verified against the real API and the live dataset before shipping: real suggestion calls confirmed to
+create a log entry correctly, real "mark as used" calls confirmed to update it — then deleted the test
+entries.
+
+---
+
 ## 2026-08-04 — AI Workspace, expanded: social copy drafting
 
 "AI Workspace, expanded" was marked Large effort on the roadmap and genuinely covers a few different things

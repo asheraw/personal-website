@@ -4,20 +4,33 @@ import {ShareIcon} from '@sanity/icons/Share'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {portableTextToPlainText} from '../../lib/portableText'
 
-type Suggestions = {x: string[]; linkedin: string[]; facebook: string[]}
+type Suggestions = {x: string[]; linkedin: string[]; facebook: string[]; logId?: string | null}
 
 type PostDraft = {
   title?: string
   body?: unknown
+  slug?: {current?: string}
 }
 
-function CopyOption({text}: {text: string}) {
+// Same reasoning as suggestSeo.tsx's own logUsage -- fire-and-forget, no-op
+// without a logId, never blocks the actual copy-to-clipboard action.
+function logUsage(logId: string | null | undefined, action: string) {
+  if (!logId) return
+  fetch('/api/ai/log-usage', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({logId, action}),
+  }).catch(() => {})
+}
+
+function CopyOption({text, onCopy}: {text: string; onCopy: () => void}) {
   const [copied, setCopied] = useState(false)
 
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
+      onCopy()
       setTimeout(() => setCopied(false), 1800)
     } catch {
       // Clipboard permission denied/unavailable -- nothing to recover into,
@@ -71,7 +84,7 @@ export function createSuggestSocialCopyAction(): DocumentActionComponent {
         const res = await fetch('/api/ai/suggest-social', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({title: source?.title, bodyText}),
+          body: JSON.stringify({title: source?.title, bodyText, slug: source?.slug?.current}),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Something went wrong')
@@ -113,20 +126,32 @@ export function createSuggestSocialCopyAction(): DocumentActionComponent {
                   <Stack space={5}>
                     <Stack space={3}>
                       <Heading size={1}>X (Twitter)</Heading>
-                      {suggestions.x.map((text) => (
-                        <CopyOption key={text} text={text} />
+                      {suggestions.x.map((text, i) => (
+                        <CopyOption
+                          key={text}
+                          text={text}
+                          onCopy={() => logUsage(suggestions.logId, `Copied X caption (option ${i + 1})`)}
+                        />
                       ))}
                     </Stack>
                     <Stack space={3}>
                       <Heading size={1}>LinkedIn</Heading>
-                      {suggestions.linkedin.map((text) => (
-                        <CopyOption key={text} text={text} />
+                      {suggestions.linkedin.map((text, i) => (
+                        <CopyOption
+                          key={text}
+                          text={text}
+                          onCopy={() => logUsage(suggestions.logId, `Copied LinkedIn caption (option ${i + 1})`)}
+                        />
                       ))}
                     </Stack>
                     <Stack space={3}>
                       <Heading size={1}>Facebook</Heading>
-                      {suggestions.facebook.map((text) => (
-                        <CopyOption key={text} text={text} />
+                      {suggestions.facebook.map((text, i) => (
+                        <CopyOption
+                          key={text}
+                          text={text}
+                          onCopy={() => logUsage(suggestions.logId, `Copied Facebook caption (option ${i + 1})`)}
+                        />
                       ))}
                     </Stack>
                     <Text size={1} muted>
