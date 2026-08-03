@@ -49,11 +49,19 @@ export const notFoundHitType = defineType({
       ],
     }),
     defineField({
-      name: 'actioned',
-      title: 'Actioned',
-      type: 'boolean',
-      description: 'Tick this off once you’ve dealt with this one -- set up a redirect, turned it into a post, or decided it’s not worth doing anything about. Just for your own tracking.',
-      initialValue: false,
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      options: {
+        list: [
+          {title: 'Pending', value: 'pending'},
+          {title: 'Ignored', value: 'ignored'},
+          {title: 'Actioned', value: 'actioned'},
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'pending',
+      description: 'Pending = not looked at yet. Ignored = you looked and decided it’s not worth doing anything about. Actioned = you set up a redirect, turned it into a post, or otherwise dealt with it. Just for your own tracking.',
     }),
   ],
   orderings: [
@@ -69,11 +77,12 @@ export const notFoundHitType = defineType({
     },
   ],
   preview: {
-    select: {path: 'path', hitCount: 'hitCount', actioned: 'actioned'},
-    prepare({path, hitCount, actioned}) {
+    select: {path: 'path', hitCount: 'hitCount', status: 'status'},
+    prepare({path, hitCount, status}) {
+      const statusLabel = status === 'actioned' ? ' · ✓ actioned' : status === 'ignored' ? ' · ignored' : ''
       return {
         title: path || '(unknown path)',
-        subtitle: `${hitCount || 1}× hit${actioned ? ' · ✓ actioned' : ''}`,
+        subtitle: `${hitCount || 1}× hit${statusLabel}`,
       }
     },
   },

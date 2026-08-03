@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
       hitCount: 0,
       firstSeenAt: now,
       hits: [],
+      status: "pending",
     });
 
     // Read-modify-write rather than a blind append: keeps the stored log
