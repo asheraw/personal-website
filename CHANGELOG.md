@@ -11,6 +11,18 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Internal post links were already built — just invisible
+
+Asher asked whether blog post links could search for another post instead of only taking a raw URL. Turns
+out that was already built (2026-07-30) — a second "Internal link (post)" option sits right next to the
+plain URL one in the link toolbar. It just wasn't visible: neither annotation had an icon set, so Sanity's
+editor fell back to the same generic link icon for both, making two buttons look like one.
+
+Fixed by giving each its own icon (`External URL` / `Internal link (post)`), so the option Asher was looking
+for is now actually discoverable instead of silently hiding next to the one he already knew about.
+
+---
+
 ## 2026-08-04 (continued) — 404 Hits: Pending / Ignored / Actioned accordions
 
 Asher wanted the 404 list grouped instead of flat — a section for new/pending paths, a separate one for

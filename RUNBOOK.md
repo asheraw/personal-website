@@ -500,11 +500,17 @@ above) — without it, the block renders with only `_ref`, no actual content to 
 
 ## Internal links: linking to another post without a raw URL
 
-In the rich-text toolbar, alongside the existing **URL** link, there's now **Internal link (post)** — search
-and pick a post (Sanity's own built-in reference search, type to filter by title) instead of typing or
-pasting its URL. The link stores a reference to the post's stable `_id`, not its slug, so if you rename that
-post's slug later, every internal link to it keeps working automatically — the current slug is resolved
-fresh every time the linking post is rendered (`POST_BY_SLUG_QUERY`), never baked in at write time.
+In the rich-text toolbar, alongside **External URL**, there's **Internal link (post)** — search and pick a
+post (Sanity's own built-in reference search, type to filter by title) instead of typing or pasting its URL.
+The link stores a reference to the post's stable `_id`, not its slug, so if you rename that post's slug
+later, every internal link to it keeps working automatically — the current slug is resolved fresh every time
+the linking post is rendered (`POST_BY_SLUG_QUERY`), never baked in at write time.
+
+**Fixed 2026-08-04 — it was there but invisible:** neither annotation had an `icon` set, so Sanity's editor
+fell back to the same generic link icon for both, making the two toolbar buttons look like one. Asher had
+been using the tool for days without ever noticing the second button. Both now have distinct icons
+(`LinkIcon` / `DocumentIcon`) — if a future annotation is ever added here, give it its own icon too, or it'll
+disappear into the same trap.
 
 **How it works, for troubleshooting:** the annotation lives in `blockContentType.ts`'s `marks.annotations`
 as `internalLink` (an object field wrapping a `reference` to `post`). The query dereferences it inside
