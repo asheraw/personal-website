@@ -840,10 +840,13 @@ See **BACKUP_AND_RECOVERY_GUIDE.md** for the full explanation and the one-time s
 
 ## Contact form: "A visitor said the form didn't work" / "I'm not getting notification emails"
 
-- The form saves every submission as a **Contact Submission** document in Sanity (visible in Studio's left
-  sidebar) *and* tries to send you a notification email via Resend. If Resend isn't configured, the
+- The form saves every submission as a **Contact Submission** document in Sanity, visible as a table in
+  Studio's top nav under **Contact Submissions** (its own tool, not a document list — click a row to expand
+  the full message) *and* tries to send you a notification email via Resend. If Resend isn't configured, the
   submission is still saved — you just don't get an email about it. So: if someone says they submitted the
   form but you got no email, check Studio → Contact Submissions before assuming it's lost.
+- Submissions have no draft/publish step (the schema uses `liveEdit`) — ticking the **Handled** checkbox in
+  that table saves immediately, and **Delete** is permanent (two-step confirm, no trash/recovery).
 - Required for the notification email to work: `RESEND_API_KEY` and `CONTACT_NOTIFICATION_EMAIL` environment
   variables must be set in Vercel's project settings (not just a local `.env` file, which never reaches
   production).

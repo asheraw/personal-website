@@ -11,6 +11,34 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Contact Submissions: table view, live edit, delete
+
+Asher asked for the Contact Submissions list in Studio to become a proper table, with a Handled checkbox and
+a way to delete, and pointed out it doesn't need a draft/publish step since replies never happen from inside
+Studio itself.
+
+**Table, not a document list.** New top-nav Studio tool (**Studio → Contact Submissions**, replacing the old
+sidebar entry) showing every submission as a real table — date, name, email, subject, a Handled checkbox,
+and a delete button as columns. Click a row to expand the full message, phone number, and notification-email
+status inline, instead of opening a separate document.
+
+**No more draft/publish.** The schema now uses Sanity's `liveEdit` option, so ticking Handled saves instantly
+— no separate Publish step, since there was never anything here worth reviewing before it "goes live."
+First use of `liveEdit` in this codebase; a good fit specifically because this data is operational record-
+keeping, not editorial content.
+
+**Delete, with a confirmation step.** A two-step "Delete → Yes, delete forever" pattern (same one Comments
+moderation already uses) — no accidental one-click deletes, and no soft-delete/trash system either, since
+nothing here needs to be recovered later.
+
+The floating "N contact messages need a reply" badge now links straight to the new tool.
+
+Verified against the live dataset before shipping: created a real submission, confirmed no `drafts.` copy
+was created (liveEdit working), patched Handled, ran the table's exact query, ran the badge's pending-count
+query, then deleted it — all as expected — before removing the test document.
+
+---
+
 ## 2026-08-04 (continued) — AI Workspace, expanded: shared voice + review queue
 
 The other two-thirds of "AI Workspace, expanded" — Asher asked for both after Draft Social Copy landed
