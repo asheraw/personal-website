@@ -5,6 +5,8 @@ import {CodeBlockIcon} from '@sanity/icons/CodeBlock'
 import {UlistIcon} from '@sanity/icons/Ulist'
 import {PlayIcon} from '@sanity/icons/Play'
 import {ComponentIcon} from '@sanity/icons/Component'
+import {LinkIcon} from '@sanity/icons/Link'
+import {DocumentIcon} from '@sanity/icons/Document'
 import {TEXT_COLORS} from '../../lib/textColors'
 
 /**
@@ -73,10 +75,16 @@ export const blockContentType = defineType({
         ],
         // Annotations can be any object structure – e.g. a link or a footnote.
         annotations: [
+          // Two separate, distinctly-iconed toolbar buttons on purpose --
+          // without an explicit icon on each, Sanity falls back to the same
+          // generic link icon for both, so they're easy to mistake for one
+          // single button (this is why the internal-link option below was
+          // hard to discover even though it already existed).
           {
-            title: 'URL',
+            title: 'External URL',
             name: 'link',
             type: 'object',
+            icon: LinkIcon,
             fields: [
               {
                 title: 'URL',
@@ -96,6 +104,7 @@ export const blockContentType = defineType({
             title: 'Internal link (post)',
             name: 'internalLink',
             type: 'object',
+            icon: DocumentIcon,
             fields: [
               defineField({
                 name: 'reference',
