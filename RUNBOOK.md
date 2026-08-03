@@ -160,6 +160,14 @@ but it's the first thing to check if a redirect that looks right still isn't fir
 of it. Same underlying `redirect` document either way, and the 404 hit gets marked Actioned automatically
 once it's created.
 
+**Legacy `.html` URLs (shipped 2026-08-04):** handled separately from the Sanity-managed redirect list above
+— `middleware.ts` unconditionally strips a trailing `.html` from any path and 301s to the same path without
+it, *before* falling through to normal routing. This app has no `.html` routes, so it's always safe: the
+trimmed path either resolves to a real page or 404s exactly like the `.html` version would have. Fixes every
+old `.html` link from the pre-migration site at once (e.g. `/blog/some-post.html` → `/blog/some-post`) without
+needing a Redirect document per post. No Studio setup involved — nothing to check here if a `.html` link isn't
+redirecting except that the deployed `middleware.ts` actually includes this rule.
+
 ---
 
 ## Skip-to-content link (shipped 2026-07-31)

@@ -11,6 +11,22 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Legacy `.html` URLs now redirect automatically, site-wide
+
+Asher spotted `/blog/how-i-lost-my-writing-home-for-13-years.html` 404ing right next to the real, working
+post at the same path minus `.html` — a leftover from the pre-migration site's URL structure.
+
+Since this app never serves any route ending in `.html`, `middleware.ts` now strips a trailing `.html` from
+any path and 301-redirects to the same path without it, unconditionally — one rule instead of a Redirect
+document per old post. Covers this one and every other `.html` link still floating around from the old site
+(old bookmarks, old search results, old backlinks), not just the one that happened to get reported.
+
+Verified locally with real requests before shipping: the reported `.html` URL 301s to the correct working
+post (confirmed 200 on the target), an unrelated path that was never real still 404s untouched, and a
+made-up `.html` path correctly redirects then 404s rather than silently fabricating a page.
+
+---
+
 ## 2026-08-04 (continued) — 404 Hits: turn a broken link into a redirect inline
 
 Asher noticed fixing a 404 meant leaving **Studio → 404 Hits**, copying the broken path over to **Structure →
