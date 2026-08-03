@@ -1,7 +1,8 @@
 import {useCallback, useEffect, useState} from 'react'
-import type {ReactNode} from 'react'
+import type {CSSProperties, ReactNode} from 'react'
 import {Badge, Box, Button, Card, Checkbox, Flex, Grid, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
+import {TrashIcon} from '@sanity/icons/Trash'
 
 type SubmissionRow = {
   _id: string
@@ -19,18 +20,29 @@ type SubmissionRow = {
 
 const COLUMNS = '1fr 1.2fr 1.4fr 1.6fr auto auto'
 const PREVIEW_LENGTH = 250
+const ROW_CLASS = 'contact-submissions-row'
 
-// A plain wrapping <div> owns the truncation (overflow/ellipsis/nowrap),
-// with Text rendering unconstrained inside it -- applying those styles
-// directly on Text itself clipped the *height* of the line (only the
-// bottom half of each letter showed), since Text's own internal box
-// doesn't expect to also be told to hide overflow.
+// A plain native element, not Sanity UI's <Text>, owns the truncation
+// (overflow/ellipsis/nowrap) directly on itself -- putting those styles on
+// Text, or on a div wrapping Text, both clipped the *height* of the line
+// (only half of each letter showed). Text renders its children inside its
+// own nested box, so a parent's overflow:hidden doesn't reliably ellipsize
+// a grandchild's text; only a single element that owns both the text node
+// and the overflow style is guaranteed correct.
 function TruncatedCell({muted, children}: {muted?: boolean; children: ReactNode}) {
   return (
-    <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}>
-      <Text size={1} muted={muted}>
-        {children}
-      </Text>
+    <div
+      style={{
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        minWidth: 0,
+        fontSize: 13,
+        lineHeight: 1.4,
+        color: muted ? 'var(--card-muted-fg-color)' : 'var(--card-fg-color)',
+      }}
+    >
+      {children}
     </div>
   )
 }
@@ -103,6 +115,9 @@ export function ContactSubmissionsTool() {
 
   return (
     <Box padding={4}>
+      <style>{`
+        .${ROW_CLASS}:hover { background: var(--card-muted-bg-color); }
+      `}</style>
       <Stack space={4}>
         <Stack space={2}>
           <Flex align="center" gap={3}>
@@ -153,18 +168,16 @@ export function ContactSubmissionsTool() {
               {rows.map((row, i) => {
                 const isOpen = expanded.has(row._id)
                 const isConfirming = confirmingDeleteId === row._id
+                // A left border accent, not a full background wash, flags
+                // an unhandled row -- clear at a glance without tinting the
+                // whole row a strong caution color.
+                const rowStyle: CSSProperties = {
+                  borderBottom: i === rows.length - 1 ? undefined : '1px solid var(--card-border-color)',
+                  borderLeft: row.handled ? '3px solid transparent' : '3px solid var(--card-badge-caution-dot-color)',
+                }
                 return (
-                  <Box
-                    key={row._id}
-                    style={{
-                      borderBottom: i === rows.length - 1 ? undefined : '1px solid var(--card-border-color)',
-                    }}
-                  >
-                    <Box
-                      padding={3}
-                      style={{cursor: 'pointer'}}
-                      onClick={() => toggleExpanded(row._id)}
-                    >
+                  <Box key={row._id} className={ROW_CLASS} style={rowStyle}>
+                    <Box padding={3} style={{cursor: 'pointer'}} onClick={() => toggleExpanded(row._id)}>
                       <Stack space={2}>
                         <Grid columns={6} gap={3} style={{gridTemplateColumns: COLUMNS, alignItems: 'center'}}>
                           <Text size={1} muted style={{whiteSpace: 'nowrap'}}>
@@ -185,11 +198,12 @@ export function ContactSubmissionsTool() {
                           </Box>
                           <Box onClick={(e) => e.stopPropagation()}>
                             <Button
-                              text="Delete"
+                              icon={TrashIcon}
                               tone="critical"
-                              mode="ghost"
-                              fontSize={1}
+                              mode="bleed"
                               padding={2}
+                              title="Delete this submission"
+                              aria-label="Delete this submission"
                               onClick={() => setConfirmingDeleteId(row._id)}
                             />
                           </Box>
