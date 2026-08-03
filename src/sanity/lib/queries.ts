@@ -26,6 +26,33 @@ export const ALL_POSTS_QUERY = `
   *[_type == "post" && defined(slug.current)] | order(publishedAt desc) ${POST_SUMMARY_PROJECTION}
 `;
 
+// Paginated variant of ALL_POSTS_QUERY -- used only by the /blog listing
+// page (via /api/blog/posts for pages after the first), so the initial
+// page load and every subsequent "Load more" only pull as many full
+// summaries (image, comment count, etc.) as are actually about to be
+// shown. RSS/sitemap/category/author/tag pages all still want every post
+// at once, so they keep using the queries above unchanged.
+export const PAGINATED_POSTS_QUERY = `
+  *[_type == "post" && defined(slug.current)] | order(publishedAt desc) [$start...$end] ${POST_SUMMARY_PROJECTION}
+`;
+
+export const POSTS_COUNT_QUERY = `count(*[_type == "post" && defined(slug.current)])`;
+
+// Lightweight index for BlogSearch -- title/blurb/tags/categories only, no
+// image or comment count, and (unlike the paginated query above)
+// deliberately *not* paginated: search has to be able to find a post
+// regardless of whether its card has been scrolled/loaded into view yet.
+export const SEARCH_INDEX_QUERY = `
+  *[_type == "post" && defined(slug.current)] | order(publishedAt desc) {
+    _id,
+    title,
+    "slug": slug.current,
+    "blurb": coalesce(excerpt, pt::text(body)[0...400]),
+    tags,
+    "categoryTitles": categories[]->title
+  }
+`;
+
 export const POST_BY_SLUG_QUERY = `
   *[_type == "post" && slug.current == $slug][0]{
     _id,

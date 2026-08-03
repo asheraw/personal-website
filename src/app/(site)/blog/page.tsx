@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import { client } from "@/sanity/lib/client";
-import { ALL_POSTS_QUERY, type PostSummary } from "@/sanity/lib/queries";
-import { PostCard } from "@/components/asher/blog/PostCard";
+import { PAGINATED_POSTS_QUERY, POSTS_COUNT_QUERY, SEARCH_INDEX_QUERY, type PostSummary } from "@/sanity/lib/queries";
+import { BlogPostList } from "@/components/asher/blog/BlogPostList";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { BlogSearch, type SearchablePost } from "@/components/asher/blog/BlogSearch";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
+// Matches BlogPostList's own PAGE_SIZE -- kept as a separate constant here
+// (rather than importing a client component's internals into a server
+// component) since it's only used once, for the very first page.
+const FIRST_PAGE_SIZE = 8;
 
 // Re-check Sanity for new or edited posts at most once per minute,
 // instead of only ever showing what existed at the last deploy.
@@ -25,20 +29,17 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogPage() {
-  const posts = await client.fetch<PostSummary[]>(ALL_POSTS_QUERY);
-
-  // Lean subset of each post, just for client-side search -- not the full
-  // PostSummary (no mainImage, comment count, etc.), so what actually gets
-  // sent down to BlogSearch stays small regardless of how much other data
-  // each post carries.
-  const searchIndex: SearchablePost[] = posts.map((post) => ({
-    _id: post._id,
-    title: post.title,
-    slug: post.slug,
-    blurb: post.excerpt || post.autoExcerpt,
-    tags: post.tags,
-    categoryTitles: post.categories?.map((c) => c.title),
-  }));
+  // Only the first page of full summaries (image, comment count, etc.) is
+  // fetched here -- BlogPostList fetches the rest itself, on demand, as
+  // the reader scrolls or clicks "Load more". The search index is a
+  // separate, deliberately unpaginated, much lighter query (see
+  // SEARCH_INDEX_QUERY) so search can still find a post that hasn't been
+  // scrolled into view yet.
+  const [initialPosts, totalCount, searchIndex] = await Promise.all([
+    client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start: 0, end: FIRST_PAGE_SIZE }),
+    client.fetch<number>(POSTS_COUNT_QUERY),
+    client.fetch<SearchablePost[]>(SEARCH_INDEX_QUERY),
+  ]);
 
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", url: SITE_URL },
@@ -65,15 +66,11 @@ export default async function BlogPage() {
 
         <BlogSearch posts={searchIndex} />
 
-        {posts.length === 0 && (
+        {totalCount === 0 ? (
           <p className="mt-16 text-stone/70">Nothing published yet — check back soon.</p>
+        ) : (
+          <BlogPostList initialPosts={initialPosts} totalCount={totalCount} />
         )}
-
-        <div className="mt-16 space-y-16">
-          {posts.map((post, index) => (
-            <PostCard key={post._id} post={post} priority={index === 0} />
-          ))}
-        </div>
       </div>
     </BlogChrome>
   );
