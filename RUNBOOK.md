@@ -939,6 +939,30 @@ event would silently vanish every single time.
 
 ---
 
+## Social Shares: which posts get shared where (shipped 2026-08-03)
+
+Asked for as a "social distribution dashboard." Scoped deliberately: this tracks *outbound* share-button
+clicks on `ShareBar.tsx` (X, Facebook, LinkedIn, WhatsApp, Email, Copy Link, native share sheet) — it does
+**not** pull replies, likes, or engagement back from X/Facebook/LinkedIn's own APIs. `ACE_MASTER_SPEC.md` is
+explicit that automated multi-platform engagement tracking isn't worth the ongoing API fees, OAuth, and
+platform churn for a solo creator; this is the scoped, actually-useful half.
+
+**One document per post** (`shareLog`, `_id: "share-<slug>"`, schema in `shareLogType.ts`), created/
+incremented by `/api/track-share`, called from `ShareBar.tsx` alongside its existing `track()` GA event —
+same "works regardless of consent" reasoning as `/api/track-consent`: GA/GTM only exists for visitors who
+already accepted analytics, so a first-party count is what makes this accurate for everyone. Counts total
+shares plus a per-platform breakdown (`xCount`, `facebookCount`, etc.), no IP address, no visitor-identifying
+data — just tallies against a post.
+
+**View it in Studio → Social Shares**, sorted "Most shared first" by default — each row previews as e.g.
+"12 shares — X 4 · FB 3 · LinkedIn 2 · WhatsApp 3", open one to see the exact breakdown including Email/Copy
+Link/native counts.
+
+Verified against the live dataset before shipping (clicked X-share and Copy Link on a real post through the
+actual page, confirmed the Sanity document updated with the right counts), then deleted that test document.
+
+---
+
 ## Privacy Policy (shipped 2026-08-02)
 
 `/privacy` (`src/app/(site)/privacy/page.tsx`), linked from the site footer's copyright line (every page) and

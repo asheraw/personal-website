@@ -282,7 +282,7 @@ export default async function PostPage({ params }: PageProps) {
           ) : null}
 
           <div className="mt-10">
-            <ShareBar url={url} title={post.title} />
+            <ShareBar url={url} title={post.title} slug={post.slug} />
           </div>
         </article>
 

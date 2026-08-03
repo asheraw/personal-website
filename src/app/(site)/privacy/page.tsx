@@ -128,6 +128,14 @@ export default function PrivacyPage() {
                 outside Google Analytics entirely, since Analytics doesn&rsquo;t load at all for a Decline
                 click. No IP address, no identifying information, just a tally.
               </li>
+              <li>
+                <strong className="text-ivory">Which posts get shared, and to where:</strong>{" "}
+                clicking a share button (X, Facebook, LinkedIn, WhatsApp, Email, Copy Link, or the native
+                share sheet) logs a count against that post and that platform, so I can see what&rsquo;s
+                actually getting shared. Same reasoning as the accept/decline count above &mdash; it works
+                regardless of your analytics choice. No IP address, no identifying information, just a tally
+                per post per platform.
+              </li>
             </ul>
           </section>
 

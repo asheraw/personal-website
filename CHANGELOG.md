@@ -11,6 +11,43 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-03 (continued) — Three items off the roadmap: contact badge, blog pagination, social shares
+
+Working down the effort/value list from the previous session in order: fastest first, then the two Asher
+picked next. Newsletter/Kit stays parked until there's a lead magnet, per Asher's own call.
+
+**Contact Submissions badge.** Same always-visible floating pill already built for pending comments,
+generalized to Contact Submissions — counts `handled != true` (the field `contactSubmissionType.ts` already
+tracked by hand). Stacked above the comments badge so both can show at once without overlapping. Verified
+the GROQ query directly against live data (2 pending) before shipping. Removed from `IDEAS.md` — it was
+logged there as "revisit once there's a real submission to test against," and now there was one.
+
+**Blog pagination, infinite-scroll style.** `/blog` no longer loads all 15 published posts at once — first
+page shows 8, a "Load more" button (also auto-triggered by scroll via IntersectionObserver, so it feels
+seamless without losing a real keyboard-focusable control) fetches the rest from a new `/api/blog/posts`.
+Search stays unaffected: it already ran off its own lightweight index, now made deliberately independent of
+pagination too, so it can still find a post that hasn't been scrolled into view yet — verified by searching
+for post #14 of 15 without ever clicking "Load more." RSS/sitemap/category/author/tag pages untouched, they
+still want every post at once. Removed the pagination half of its `IDEAS.md` entry; kept the separate,
+still-deferred "AI avatar recommends what to read" idea it was filed alongside.
+
+**Social Shares.** Asher's ask was a "social distribution dashboard" — scoped deliberately to what's
+actually achievable and worth building for a solo site: which posts get shared, and to which platform.
+Every `ShareBar.tsx` click now also POSTs to `/api/track-share`, incrementing a per-post, per-platform tally
+in Sanity (no IP, no visitor-identifying data) — same "has to work regardless of analytics consent"
+reasoning as the cookie-consent counts, since GA only sees clicks from visitors who already accepted. View
+it in **Studio → Social Shares**, sorted most-shared-first. Deliberately does *not* pull replies/likes back
+from X/Facebook/LinkedIn's own APIs — `ACE_MASTER_SPEC.md` explicitly flags that kind of automated
+multi-platform engagement tracking as not worth the ongoing API/OAuth overhead for a solo creator, and this
+sticks to that guidance rather than quietly overriding it. Verified against the live dataset (real X-share
+and Copy Link clicks through an actual post page, confirmed the document updated correctly), then deleted
+the test document.
+
+`/privacy` gets two more disclosure lines for the two new anonymous tallies (accept/decline counts, share
+counts) — same treatment as everything else automatically collected on that page.
+
+---
+
 ## 2026-08-03 — Cookie consent accept/decline counts
 
 Asher asked for this "via GA" — the honest half-answer: Google Analytics structurally can't see a Decline

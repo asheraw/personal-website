@@ -12,7 +12,8 @@ import {snippetType} from './snippetType'
 import {commentType} from './commentType'
 import {redirectType} from './redirectType'
 import {consentLogType} from './consentLogType'
+import {shareLogType} from './shareLogType'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType],
+  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType, shareLogType],
 }

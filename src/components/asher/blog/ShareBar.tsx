@@ -27,7 +27,7 @@ function buildTargets(url: string, title: string): LinkTarget[] {
   ];
 }
 
-export function ShareBar({ url, title }: { url: string; title: string }) {
+export function ShareBar({ url, title, slug }: { url: string; title: string; slug: string }) {
   const [copied, setCopied] = useState(false);
   // Checked only after mount, not inline during render -- navigator.share
   // exists on the client but not during server rendering, so testing it
@@ -41,11 +41,27 @@ export function ShareBar({ url, title }: { url: string; title: string }) {
     setCanNativeShare(typeof navigator !== "undefined" && "share" in navigator);
   }, []);
 
+  // Two tracking channels, same reasoning as the cookie-consent buttons:
+  // track() only reaches GA for visitors who already accepted analytics
+  // (GTM never loads otherwise), so the first-party POST to
+  // /api/track-share is what makes "which posts get shared where" show up
+  // in Studio regardless of consent -- track() stays too, as a bonus for
+  // the visitors GA can see.
+  function recordShare(platform: string) {
+    track({ action: "share_click", category: "engagement", label: platform });
+    fetch("/api/track-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, title, platform }),
+      keepalive: true,
+    }).catch(() => {});
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      track({ action: "share_click", category: "engagement", label: "copy_link" });
+      recordShare("copy_link");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard permission denied or unavailable (some in-app browsers) --
@@ -62,7 +78,7 @@ export function ShareBar({ url, title }: { url: string; title: string }) {
     if (!navigator.share) return;
     try {
       await navigator.share({ url, title });
-      track({ action: "share_click", category: "engagement", label: "native" });
+      recordShare("native");
     } catch {
       // AbortError when the reader just closes the native sheet without
       // picking anything -- not a real failure, nothing to show for it.
@@ -92,7 +108,7 @@ export function ShareBar({ url, title }: { url: string; title: string }) {
             rel="noreferrer"
             aria-label={`Share on ${t.label}`}
             title={`Share on ${t.label}`}
-            onClick={() => track({ action: "share_click", category: "engagement", label: t.label.toLowerCase() })}
+            onClick={() => recordShare(t.label.toLowerCase())}
             className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:bg-spotlight/5 hover:text-spotlight"
           >
             <t.icon size={16} />
