@@ -148,14 +148,29 @@ export function ContactSubmissionsTool() {
                       onClick={() => toggleExpanded(row._id)}
                     >
                       <Grid columns={6} gap={3} style={{gridTemplateColumns: COLUMNS, alignItems: 'center'}}>
-                        <Text size={1} muted>
-                          {new Date(row._createdAt).toLocaleDateString()}
+                        <Text size={1} muted style={{whiteSpace: 'nowrap'}}>
+                          {new Date(row._createdAt).toLocaleString(undefined, {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })}
                         </Text>
-                        <Text size={1}>{row.name || 'Unknown'}</Text>
-                        <Text size={1} muted style={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                        <Text
+                          size={1}
+                          style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}
+                        >
+                          {row.name || 'Unknown'}
+                        </Text>
+                        <Text
+                          size={1}
+                          muted
+                          style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}
+                        >
                           {row.email}
                         </Text>
-                        <Text size={1} style={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                        <Text
+                          size={1}
+                          style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}
+                        >
                           {row.subject || '—'}
                         </Text>
                         <Box onClick={(e) => e.stopPropagation()}>
