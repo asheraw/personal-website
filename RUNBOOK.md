@@ -963,6 +963,40 @@ actual page, confirmed the Sanity document updated with the right counts), then 
 
 ---
 
+## AI Workspace: social copy drafting (shipped 2026-08-04)
+
+First slice of "AI Workspace, expanded" from the roadmap — asked which of tone controls / a review queue /
+more drafting help mattered most, Asher picked drafting help. Same "AI proposes, human decides" shape as the
+existing **Suggest SEO & Excerpt** action: a new **Draft Social Copy** button on any post, drafts 2 caption
+options each for X, LinkedIn, and Facebook from the post's own title/content via Gemini, shown in a dialog
+with a Copy button per option — nothing is posted anywhere or written to the document automatically.
+
+**Deliberately author-facing, not reader-facing** — separate concept from `ShareBar.tsx` (which lets a
+*reader* reshare a post that already exists). This is for when Asher himself is about to announce a new post
+on his own X/LinkedIn/Facebook accounts and wants a drafted starting point rather than a blank composer.
+
+**The generated text never includes the actual URL** — X/LinkedIn/Facebook all generate their own link
+preview card from a pasted URL, so baking the link into the caption text itself is redundant and eats into
+X's character budget for nothing. Asher pastes the caption, then the link, separately.
+
+New route: `src/app/api/ai/suggest-social/route.ts`, same `gemini-3.6-flash` + `responseSchema` structured-
+JSON pattern as `suggest-seo`. Its prompt instructions are hardcoded in the route itself, not exposed as a
+Studio-editable field the way `aiPromptSettingsType.ts` is for SEO suggestions — deliberately, to keep this
+slice scoped to drafting rather than drifting into the separate "tone/voice controls" item still on the
+roadmap. New action: `src/sanity/actions/suggestSocialCopy.tsx`, registered in `sanity.config.ts` right next
+to `createSuggestSeoAction()`.
+
+Verified against the live Gemini API before shipping — real title/body from an existing post produced two
+genuinely usable, on-voice options per platform, correctly under X's 240-character cap, no hashtags, no
+invented details, no raw URL in any of them.
+
+**Known pre-existing issue, not introduced here:** `suggestSeo.tsx` already had a TypeScript error on its
+error-message `<Text tone="critical">` (a `@sanity/ui` prop-type mismatch) before this file existed;
+`suggestSocialCopy.tsx` uses the identical pattern and inherits the identical error. Doesn't block the build
+either way — noting it here so it doesn't look like something new broke.
+
+---
+
 ## Privacy Policy (shipped 2026-08-02)
 
 `/privacy` (`src/app/(site)/privacy/page.tsx`), linked from the site footer's copyright line (every page) and

@@ -17,6 +17,7 @@ import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
 import {withPrePublishChecklist} from './src/sanity/actions/prepareForPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
+import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
@@ -60,6 +61,7 @@ export default defineConfig({
         withDateAction[0],
         openInPresentationAction,
         createSuggestSeoAction(),
+        createSuggestSocialCopyAction(),
         ...withDateAction.slice(1),
       ]
     },

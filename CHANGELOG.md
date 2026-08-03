@@ -11,6 +11,28 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 — AI Workspace, expanded: social copy drafting
+
+"AI Workspace, expanded" was marked Large effort on the roadmap and genuinely covers a few different things
+(tone controls, a review queue, more drafting help) — asked which mattered most before building blind.
+Asher picked drafting help.
+
+**Draft Social Copy**, a new button on any post right next to the existing "Suggest SEO & Excerpt," same
+shape: drafts 2 caption options each for X, LinkedIn, and Facebook from the post's own content via Gemini,
+shown for review with a one-click Copy per option — nothing posts anywhere or writes to the document on its
+own. Deliberately author-facing (drafting Asher's *own* announcement post) rather than reader-facing (the
+existing `ShareBar` is for readers resharing something that already exists) — two different jobs that
+happened to sound similar. The generated captions never include the raw URL, since X/LinkedIn/Facebook all
+build their own link-preview card from a pasted link anyway.
+
+Verified against the real Gemini API before shipping: a real post's title/content produced two genuinely
+usable, on-voice drafts per platform, correctly under X's character cap, no hashtags, no invented details.
+
+Tone/voice controls and a review/output log stay on the roadmap as separate, still-unbuilt items — this was
+one deliberate slice of "AI Workspace," not the whole thing.
+
+---
+
 ## 2026-08-03 (continued) — Three items off the roadmap: contact badge, blog pagination, social shares
 
 Working down the effort/value list from the previous session in order: fastest first, then the two Asher
