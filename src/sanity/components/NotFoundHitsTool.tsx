@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useState} from 'react'
-import {Badge, Box, Card, Checkbox, Flex, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Box, Button, Card, Checkbox, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
+import {ArrowRightIcon} from '@sanity/icons/ArrowRight'
+import {CreateRedirectForm} from './CreateRedirectForm'
 
 type Hit = {timestamp: string; referrer?: string}
 type NotFoundRow = {
@@ -23,6 +25,7 @@ export function NotFoundHitsTool() {
   const [rows, setRows] = useState<NotFoundRow[] | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [creatingRedirectId, setCreatingRedirectId] = useState<string | null>(null)
 
   const load = useCallback(() => {
     client
@@ -46,6 +49,14 @@ export function NotFoundHitsTool() {
     } finally {
       setBusyId(null)
     }
+  }
+
+  // A freshly-created redirect always counts as dealt with, regardless of
+  // whatever the checkbox already said -- unlike toggleActioned, this never
+  // flips an already-actioned row back off.
+  async function markActioned(id: string) {
+    await client.patch(id).set({actioned: true}).commit()
+    setRows((prev) => (prev ? prev.map((r) => (r._id === id ? {...r, actioned: true} : r)) : prev))
   }
 
   function toggleExpanded(id: string) {
@@ -106,6 +117,16 @@ export function NotFoundHitsTool() {
                     <Badge tone={row.hitCount > 5 ? 'critical' : 'default'} fontSize={0}>
                       {row.hitCount}× hit{row.hitCount === 1 ? '' : 's'}
                     </Badge>
+                    <Button
+                      text="Create redirect"
+                      icon={ArrowRightIcon}
+                      mode="ghost"
+                      fontSize={1}
+                      padding={2}
+                      onClick={() =>
+                        setCreatingRedirectId((current) => (current === row._id ? null : row._id))
+                      }
+                    />
                     <Flex align="center" gap={2}>
                       <Checkbox
                         checked={row.actioned}
@@ -116,6 +137,16 @@ export function NotFoundHitsTool() {
                     </Flex>
                   </Flex>
                 </Flex>
+                {creatingRedirectId === row._id && (
+                  <CreateRedirectForm
+                    fromPath={row.path}
+                    onCancel={() => setCreatingRedirectId(null)}
+                    onCreated={() => {
+                      markActioned(row._id)
+                      setCreatingRedirectId(null)
+                    }}
+                  />
+                )}
                 <Text size={0} muted>
                   First seen {new Date(row.firstSeenAt).toLocaleString()} · Last seen{' '}
                   {new Date(row.lastSeenAt).toLocaleString()}
