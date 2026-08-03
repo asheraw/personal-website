@@ -48,12 +48,22 @@ export async function middleware(request: NextRequest) {
   const map = await getRedirectMap();
   const entry = map.get(pathname);
 
-  if (!entry) {
-    return NextResponse.next();
+  if (entry) {
+    const destination = entry.to.startsWith("http") ? entry.to : new URL(entry.to, request.url);
+    return NextResponse.redirect(destination, entry.permanent ? 301 : 302);
   }
 
-  const destination = entry.to.startsWith("http") ? entry.to : new URL(entry.to, request.url);
-  return NextResponse.redirect(destination, entry.permanent ? 301 : 302);
+  // Legacy ".html" URLs from the pre-migration site (e.g.
+  // /blog/some-post.html) -- this app never serves a route ending in
+  // .html, so stripping it and redirecting is always safe: either the
+  // trimmed path is a real page, or it 404s exactly the way the .html
+  // version would have anyway. Covers every old .html link at once,
+  // instead of needing a one-by-one Redirect entry per post.
+  if (pathname.endsWith(".html")) {
+    return NextResponse.redirect(new URL(pathname.slice(0, -".html".length) || "/", request.url), 301);
+  }
+
+  return NextResponse.next();
 }
 
 // Excludes static assets, image optimization, and Studio itself -- a
