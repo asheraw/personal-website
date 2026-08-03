@@ -1,4 +1,5 @@
 import {useCallback, useEffect, useState} from 'react'
+import type {ReactNode} from 'react'
 import {Badge, Box, Button, Card, Checkbox, Flex, Grid, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 
@@ -17,6 +18,22 @@ type SubmissionRow = {
 }
 
 const COLUMNS = '1fr 1.2fr 1.4fr 1.6fr auto auto'
+const PREVIEW_LENGTH = 250
+
+// A plain wrapping <div> owns the truncation (overflow/ellipsis/nowrap),
+// with Text rendering unconstrained inside it -- applying those styles
+// directly on Text itself clipped the *height* of the line (only the
+// bottom half of each letter showed), since Text's own internal box
+// doesn't expect to also be told to hide overflow.
+function TruncatedCell({muted, children}: {muted?: boolean; children: ReactNode}) {
+  return (
+    <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}>
+      <Text size={1} muted={muted}>
+        {children}
+      </Text>
+    </div>
+  )
+}
 
 // A genuine table view of every contact form submission -- replacing the
 // previous "click into each submission's own document" pattern, same
@@ -99,7 +116,8 @@ export function ContactSubmissionsTool() {
             )}
           </Flex>
           <Text size={1} muted>
-            Every message sent through the contact form, newest first. Click a row to read the full message.
+            Every message sent through the contact form, newest first — a preview shows below each row; click
+            one to read the full message if it runs longer.
           </Text>
         </Stack>
 
@@ -147,50 +165,43 @@ export function ContactSubmissionsTool() {
                       style={{cursor: 'pointer'}}
                       onClick={() => toggleExpanded(row._id)}
                     >
-                      <Grid columns={6} gap={3} style={{gridTemplateColumns: COLUMNS, alignItems: 'center'}}>
-                        <Text size={1} muted style={{whiteSpace: 'nowrap'}}>
-                          {new Date(row._createdAt).toLocaleString(undefined, {
-                            dateStyle: 'short',
-                            timeStyle: 'short',
-                          })}
-                        </Text>
-                        <Text
-                          size={1}
-                          style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}
-                        >
-                          {row.name || 'Unknown'}
-                        </Text>
-                        <Text
-                          size={1}
-                          muted
-                          style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}
-                        >
-                          {row.email}
-                        </Text>
-                        <Text
-                          size={1}
-                          style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}
-                        >
-                          {row.subject || '—'}
-                        </Text>
-                        <Box onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={row.handled}
-                            disabled={busyId === row._id}
-                            onChange={() => toggleHandled(row._id, row.handled)}
-                          />
-                        </Box>
-                        <Box onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            text="Delete"
-                            tone="critical"
-                            mode="ghost"
-                            fontSize={1}
-                            padding={2}
-                            onClick={() => setConfirmingDeleteId(row._id)}
-                          />
-                        </Box>
-                      </Grid>
+                      <Stack space={2}>
+                        <Grid columns={6} gap={3} style={{gridTemplateColumns: COLUMNS, alignItems: 'center'}}>
+                          <Text size={1} muted style={{whiteSpace: 'nowrap'}}>
+                            {new Date(row._createdAt).toLocaleString(undefined, {
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            })}
+                          </Text>
+                          <TruncatedCell>{row.name || 'Unknown'}</TruncatedCell>
+                          <TruncatedCell muted>{row.email}</TruncatedCell>
+                          <TruncatedCell>{row.subject || '—'}</TruncatedCell>
+                          <Box onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={row.handled}
+                              disabled={busyId === row._id}
+                              onChange={() => toggleHandled(row._id, row.handled)}
+                            />
+                          </Box>
+                          <Box onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              text="Delete"
+                              tone="critical"
+                              mode="ghost"
+                              fontSize={1}
+                              padding={2}
+                              onClick={() => setConfirmingDeleteId(row._id)}
+                            />
+                          </Box>
+                        </Grid>
+                        {!isOpen && row.message && (
+                          <Text size={1} muted style={{whiteSpace: 'pre-wrap'}}>
+                            {row.message.length > PREVIEW_LENGTH
+                              ? `${row.message.slice(0, PREVIEW_LENGTH)}…`
+                              : row.message}
+                          </Text>
+                        )}
+                      </Stack>
                     </Box>
                     {isOpen && (
                       <Box paddingX={3} paddingBottom={3}>
