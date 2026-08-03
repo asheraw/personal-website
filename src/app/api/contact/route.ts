@@ -54,13 +54,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Step 2: attempt the actual email send.
+    // Step 2: attempt the actual email send. Whatever happens from here on
+    // out, the submission is already safely saved in Sanity -- so the
+    // client always gets success:true past this point. Returning
+    // success:false for an email-only failure previously showed a real
+    // visitor a "Message failed to send" screen with a "Try again" button,
+    // which just created a second, duplicate submission of a message that
+    // had already gone through. Asher sees the gap (emailSent/emailError)
+    // directly in Studio -> Contact Submissions instead -- no need for the
+    // visitor to know or act on it.
     if (!resend || !NOTIFY_EMAIL) {
       console.error("[contact] Resend not configured — RESEND_API_KEY or CONTACT_NOTIFICATION_EMAIL missing.");
-      return NextResponse.json({
-        success: false,
-        error: "Message saved, but the notification email couldn't be sent. Please use the email link below as backup.",
-      });
+      return NextResponse.json({ success: true, message: "Submission received." });
     }
 
     try {
@@ -81,12 +86,7 @@ export async function POST(request: NextRequest) {
 
       await writeClient.patch(submission._id).set({ emailError: errMsg }).commit();
 
-      // The message IS saved in Sanity — but Asher won't see it until
-      // he checks manually, so tell the visitor honestly and offer the fallback.
-      return NextResponse.json({
-        success: false,
-        error: "Your message was saved, but the notification email failed to send. Please use the email link below as backup.",
-      });
+      return NextResponse.json({ success: true, message: "Submission received." });
     }
   } catch (error) {
     console.error("[contact] Unexpected error:", error);
