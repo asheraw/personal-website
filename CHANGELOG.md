@@ -11,6 +11,23 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Contact Submissions: text clipping actually fixed, table polished
+
+The earlier fix for clipped Name/Email/Subject text (wrapping Sanity UI's `Text` in an `overflow:hidden` div)
+turned out not to actually work — Asher's follow-up screenshot still showed dots missing from i's and
+descenders cut off g's. Root cause: `Text` renders its children inside its own nested box, so a *parent's*
+`overflow:hidden` doesn't reliably ellipsize a grandchild's text — it just clips a few pixels off the top and
+bottom of the glyphs instead of truncating sideways. Fixed for real this time by dropping `Text` entirely for
+those three cells and using a plain element that owns both the text and the overflow style directly, which is
+the only way this is reliably correct in CSS.
+
+Also asked for: general UI polish, since the table felt clunky. Unhandled rows now get a subtle left-border
+accent instead of blending in with handled ones, rows highlight on hover for better click affordance, and the
+loud red "Delete" text button became a small icon-only trash button so it doesn't visually compete with the
+Handled checkbox for attention.
+
+---
+
 ## 2026-08-04 (continued) — Internal post links were already built — just invisible
 
 Asher asked whether blog post links could search for another post instead of only taking a raw URL. Turns

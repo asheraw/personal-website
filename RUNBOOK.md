@@ -867,6 +867,14 @@ See **BACKUP_AND_RECOVERY_GUIDE.md** for the full explanation and the one-time s
   form but you got no email, check Studio → Contact Submissions before assuming it's lost.
 - Submissions have no draft/publish step (the schema uses `liveEdit`) — ticking the **Handled** checkbox in
   that table saves immediately, and **Delete** is permanent (two-step confirm, no trash/recovery).
+- **Truncating text next to a Sanity UI `<Text>` component:** don't put `overflow`/`text-overflow`/
+  `white-space` directly on `<Text>`, or on a `<div>` that wraps it — both were tried here and both clipped a
+  few pixels off the top and bottom of the glyphs (missing dots on i's, cut-off descenders on g's) rather than
+  truncating sideways, since `Text` renders its own children inside a nested box that a parent's
+  `overflow:hidden` doesn't reliably ellipsize. The only reliable fix: skip `Text` for that specific piece of
+  content and use a plain native element that owns the text node and the overflow style on the *same*
+  element — see `TruncatedCell` in `ContactSubmissionsTool.tsx` for the pattern to copy if this comes up
+  again in another tool.
 - **Fixed 2026-08-04:** an email-notification failure (or Resend simply not being configured) used to make
   the *visitor* see "Message failed to send," even though their message was already safely saved in Sanity —
   clicking the form's "Try again" button in that state resubmitted it, creating a real duplicate document.
