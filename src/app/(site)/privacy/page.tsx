@@ -121,6 +121,13 @@ export default function PrivacyPage() {
                 tried to reach and the page that linked you there get logged, so I can fix broken links. This
                 isn&rsquo;t tied to you personally in any way &mdash; no IP address, no identifying information.
               </li>
+              <li>
+                <strong className="text-ivory">Whether you accept or decline analytics:</strong>{" "}
+                clicking either button on the cookie banner logs a plain count of that choice, so I can see the
+                accept/decline split. This happens either way, including on Decline &mdash; it has to work
+                outside Google Analytics entirely, since Analytics doesn&rsquo;t load at all for a Decline
+                click. No IP address, no identifying information, just a tally.
+              </li>
             </ul>
           </section>
 

@@ -1,6 +1,7 @@
 import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {CogIcon} from '@sanity/icons/Cog'
 import {ComponentIcon} from '@sanity/icons/Component'
+import {BarChartIcon} from '@sanity/icons/BarChart'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
@@ -89,6 +90,10 @@ export const structure: StructureResolver = (S) =>
         .title('AI Suggestion Settings')
         .icon(SparklesIcon)
         .child(S.document().schemaType('aiPromptSettings').documentId('aiPromptSettings')),
+      S.listItem()
+        .title('Cookie Consent Log')
+        .icon(BarChartIcon)
+        .child(S.document().schemaType('consentLog').documentId('consentLog')),
       S.divider(),
       ...S.documentTypeListItems().filter(
         (item) =>
@@ -104,6 +109,7 @@ export const structure: StructureResolver = (S) =>
             'snippet',
             'comment',
             'redirect',
+            'consentLog',
           ].includes(item.getId()!),
       ),
     ])

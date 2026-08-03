@@ -909,6 +909,36 @@ the same change — its wording currently promises input fields stay masked.
 
 ---
 
+## Cookie consent accept/decline counts (shipped 2026-08-03)
+
+Asher asked for accept/decline tracking "via GA" — worth understanding why half of that has to work outside
+GA entirely. **Google Analytics/GTM cannot see a Decline click, structurally, not as an oversight**: GTM only
+loads after "Accept" (see the consent gate in `Analytics.tsx`), so a visitor who declines never loads GTM or
+GA at all — there is no tag anywhere inside Google Analytics that a decline click could ever reach. Sending a
+decline event to GA specifically would mean loading GA for someone who just said not to, which is exactly the
+promise `/privacy` and the cookie banner make not to do.
+
+**The actual answer: a first-party count, same shape as 404 tracking.** Both Accept and Decline now POST to
+`/api/track-consent`, which increments a running total on one singleton Sanity document (`consentLog`,
+schema in `consentLogType.ts`) — no IP address, no cookie, nothing that identifies who clicked, just
+`acceptedCount` / `declinedCount` plus a capped log of recent choices (same 1000-entry cap pattern as
+`notFoundHit`'s 500-hit log). **View it in Studio → Cookie Consent Log** — shows something like "142
+accepted · 38 declined · 79% accept rate" at a glance.
+
+**Accept also gets a bonus GA event**, `cookie_consent` (category `privacy`, label `accepted`), pushed to
+`dataLayer` via the existing `track()` helper in `src/lib/analytics.ts` — this is real GA data, but only ever
+the accept half, for the structural reason above. It arrives in GA4 as a raw dataLayer event; if Asher wants
+it as a proper GA4 conversion/event report, that needs a Trigger + Tag added in Tag Manager itself (variable:
+Event equals `cookie_consent`) — nothing further to do in code for that part.
+
+`window.dataLayer` is deliberately seeded (`window.dataLayer = window.dataLayer || []`) right before calling
+`track()` on Accept, not left to `track()` alone — at the exact moment of the click, GTM's own script hasn't
+loaded yet (that only starts once React re-renders from the consent-change event), so `dataLayer` doesn't
+exist yet either. `track()` only pushes if the array already exists; without seeding it first, this specific
+event would silently vanish every single time.
+
+---
+
 ## Privacy Policy (shipped 2026-08-02)
 
 `/privacy` (`src/app/(site)/privacy/page.tsx`), linked from the site footer's copyright line (every page) and

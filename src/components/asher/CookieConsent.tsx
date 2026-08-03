@@ -4,6 +4,32 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getConsent, setConsent } from "@/lib/consent";
+import { track } from "@/lib/analytics";
+
+// Records the accept/decline click itself -- separate from whether
+// analytics is later allowed to run afterward. Two channels, because
+// GA/GTM can only ever tell half the story: it doesn't load at all for a
+// visitor who declines (see Analytics.tsx), so there's no tag inside
+// Google Analytics that could ever see a decline. The first-party POST
+// (Sanity-backed, see /api/track-consent) is the reliable total for both
+// choices; the dataLayer event is a bonus for Accept specifically, in
+// case Asher wants to see it alongside other GA behavior for people who
+// opted in -- track() itself only pushes if `window.dataLayer` already
+// exists, which it won't yet at the exact moment of this click (GTM's own
+// script hasn't loaded), so the array is seeded here first.
+function trackConsentChoice(choice: "accepted" | "declined") {
+  fetch("/api/track-consent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ choice }),
+    keepalive: true,
+  }).catch(() => {});
+
+  if (choice === "accepted") {
+    window.dataLayer = window.dataLayer || [];
+    track({ action: "cookie_consent", category: "privacy", label: "accepted" });
+  }
+}
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -34,6 +60,7 @@ export function CookieConsent() {
             variant="outline"
             size="sm"
             onClick={() => {
+              trackConsentChoice("declined");
               setConsent("denied");
               setVisible(false);
             }}
@@ -43,6 +70,7 @@ export function CookieConsent() {
           <Button
             size="sm"
             onClick={() => {
+              trackConsentChoice("accepted");
               setConsent("granted");
               setVisible(false);
             }}

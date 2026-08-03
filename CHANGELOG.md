@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-03 — Cookie consent accept/decline counts
+
+Asher asked for this "via GA" — the honest half-answer: Google Analytics structurally can't see a Decline
+click. GTM only loads after a visitor clicks Accept (that's the whole point of the consent gate in
+`Analytics.tsx`), so there is no tag anywhere inside GA that a Decline click could ever reach — sending it to
+GA specifically would mean loading GA for someone who just said not to.
+
+Built the actual answer instead: a first-party count, same shape as the existing 404-hit tracking. Both
+Accept and Decline now log to a new Sanity singleton (`consentLog`) via `/api/track-consent` — no IP, no
+cookie, just a running tally plus a capped recent-choices log, visible in **Studio → Cookie Consent Log** as
+"142 accepted · 38 declined · 79% accept rate." Accept also gets a bonus real GA event (`cookie_consent`) via
+the existing `track()` dataLayer helper, for the half of this that GA actually can see. `/privacy` updated
+with one more line disclosing the anonymous tally, for the same reason every other automatically-collected
+data point on that page is spelled out rather than glossed over.
+
+Verified end-to-end against the live dataset before shipping (one real accept, one real decline through the
+actual banner, confirmed the Sanity document updated correctly), then reset the counts back to zero so the
+log starts clean from real visitors instead of that test.
+
+---
+
 ## 2026-08-02 (continued once more) — Microsoft Clarity wiring (heatmaps/session recordings), not live yet
 
 Added the Clarity loader script to `Analytics.tsx`, right alongside Google Tag Manager and behind the exact
