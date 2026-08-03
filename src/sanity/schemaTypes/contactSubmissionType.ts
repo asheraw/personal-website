@@ -10,6 +10,10 @@ export const contactSubmissionType = defineType({
   title: 'Contact Submission',
   type: 'document',
   icon: EnvelopeIcon,
+  // Operational data, not editorial content -- there's nothing here that
+  // benefits from a draft/review step before it "goes live," so skip the
+  // publish workflow entirely and let the Handled checkbox save immediately.
+  liveEdit: true,
   fields: [
     defineField({name: 'name', type: 'string', readOnly: true}),
     defineField({name: 'email', type: 'string', readOnly: true}),

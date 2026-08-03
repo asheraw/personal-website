@@ -76,7 +76,9 @@ export const structure: StructureResolver = (S) =>
             ),
         ),
       S.divider(),
-      S.documentTypeListItem('contactSubmission').title('Contact Submissions'),
+      // Contact Submissions moved to a top-nav tool (see sanity.config.ts) --
+      // a genuine table view with a Handled checkbox and delete, instead of
+      // clicking into each submission's own document.
       S.documentTypeListItem('redirect').title('Redirects'),
       // Default-sorted by total shares (most-shared post first) rather
       // than creation date -- that's the actually useful question here

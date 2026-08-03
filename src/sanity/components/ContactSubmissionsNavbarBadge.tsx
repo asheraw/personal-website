@@ -7,13 +7,8 @@ import {usePendingContactCount} from '../hooks/usePendingContactCount'
 // 20) rather than sharing one spot, so both can be visible at once without
 // overlapping when there's a backlog of both kinds.
 //
-// Links to /studio/structure/contactSubmission -- Contact Submissions
-// isn't a dedicated top-nav tool with its own route the way Comments is,
-// it's a plain document-type list item inside Studio's default Structure
-// tool, addressed by Sanity's own `/structure/<list-item-id>` deep-link
-// convention. Worth a quick click-through to confirm once this is live;
-// worst case if the id ever changes is landing on the Structure tool's
-// root instead of this list pre-selected, not a broken link.
+// Links to /studio/contact-submissions -- the dedicated top-nav tool (see
+// sanity.config.ts) that replaced the old Structure list-item view.
 export function ContactSubmissionsNavbarBadge() {
   const pending = usePendingContactCount()
 
@@ -21,7 +16,7 @@ export function ContactSubmissionsNavbarBadge() {
 
   return (
     <a
-      href="/studio/structure/contactSubmission"
+      href="/studio/contact-submissions"
       style={{
         position: 'fixed',
         bottom: 66,

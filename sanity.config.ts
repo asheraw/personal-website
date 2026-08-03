@@ -24,8 +24,10 @@ import {CommentsTool} from './src/sanity/components/CommentsTool'
 import {CommentsToolIcon} from './src/sanity/components/CommentsToolIcon'
 import {StudioNavbar} from './src/sanity/components/StudioNavbar'
 import {NotFoundHitsTool} from './src/sanity/components/NotFoundHitsTool'
+import {ContactSubmissionsTool} from './src/sanity/components/ContactSubmissionsTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
+import {EnvelopeIcon} from '@sanity/icons/Envelope'
 
 export default defineConfig({
   basePath: '/studio',
@@ -126,5 +128,14 @@ export default defineConfig({
     // log (every timestamp + referrer) for spotting scanning/bruteforcing
     // patterns rather than just first/last seen.
     {name: 'not-found-hits', title: '404 Hits', icon: LinkRemovedIcon, component: NotFoundHitsTool},
+    // Contact form submissions, table view -- one overview page with a
+    // Handled checkbox and delete, instead of clicking into each
+    // submission's own document.
+    {
+      name: 'contact-submissions',
+      title: 'Contact Submissions',
+      icon: EnvelopeIcon,
+      component: ContactSubmissionsTool,
+    },
   ],
 })
