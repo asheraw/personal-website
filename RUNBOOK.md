@@ -211,6 +211,47 @@ annotation instead of "Affiliate link" by mistake — check which one was actual
 
 ---
 
+## Social Images: focal-point crops, branded cards, DreamLab prompts (shipped 2026-08-04)
+
+**Focal point actually matters now.** Every image field (`mainImage`, `socialImage`, author photo) has had
+hotspot/focal-point controls in Studio's own image editor from the start — click into the image, drag the
+circle to mark what matters. Until this shipped, that data was collected but never actually *used*: every
+crop site-wide called `.fit("crop")` without `.crop("focalpoint")`, so Sanity silently fell back to plain
+center-cropping everywhere. Fixed at every call site (`src/sanity/lib/image.ts` usages in `[slug]/page.tsx`,
+`layout.tsx`, `PostCard.tsx`, `RelatedPosts.tsx`, `author/[slug]/page.tsx`, `SeoPreviewView.tsx`). If a crop
+still looks off after setting a focal point, check the specific `.fit("crop")` call in question actually has
+`.crop("focalpoint")` chained after it — a new call site added later that forgets it will silently regress to
+center-cropping again.
+
+**Crop previews.** The existing SEO Preview tab (per-post, alongside the normal Editor form) now shows Square
+(1:1) and Vertical (4:5) previews in addition to the landscape OG-style one — purely a manual reference for
+pasting into another platform's own composer by hand; nothing auto-publishes to Instagram/TikTok/etc.
+
+**Branded social card.** `useBrandedSocialCard` boolean on `postType.ts`, off by default. When on,
+`generateMetadata()` in `[slug]/page.tsx` points `openGraph.images`/`twitter.images`/JSON-LD's `image` at
+`/api/og/[slug]` instead of the real photo. That route (`src/app/api/og/[slug]/route.tsx`, edge runtime) uses
+Next.js's `ImageResponse` to render a title/category/author card in the site's own brand colors, fetching a
+real Playfair Display webfont at request time (Google Fonts CSS2 API, scoped to just the characters needed).
+If the branded card ever renders with a fallback serif instead of Playfair Display, the font fetch failed
+silently (the route degrades gracefully rather than erroring) — check Google Fonts is actually reachable from
+wherever this is deployed.
+
+**DreamLab image prompts.** "Suggest Image Prompt" action on posts (`src/sanity/actions/suggestImagePrompt.tsx`
++ `/api/ai/suggest-image-prompt`) — same "AI proposes, human copies" shape as Draft Social Copy. Drafts two
+visual concepts from the post's own content; Asher copies one into Canva DreamLab (or any image generator) by
+hand, then uploads the result back into the post's Featured Image or Social Sharing Image field himself. Not
+an automated Canva integration on purpose — the ACE spec explicitly says not to automate a workflow that
+takes well under a minute manually unless a stable official API exists with clear long-term value.
+
+**A caching note for anyone testing content changes locally:** raw Sanity writes made outside of Studio's own
+editing session (e.g. a script using `@sanity/client` directly, the way this feature's own verification was
+done) don't reliably show up through the dev server's `sanityFetch` (`next-sanity/live`) within the same
+session — even across a full server restart with the cache cleared. This isn't specific to any one field; it
+reproduces identically with long-standing fields too. Editing through Studio itself doesn't have this problem
+(Studio maintains a live connection that revalidates properly) — it only bites raw-script testing.
+
+---
+
 ## Skip-to-content link (shipped 2026-07-31)
 
 An invisible-until-focused "Skip to content" link (`src/components/asher/SkipToContentLink.tsx`), the very

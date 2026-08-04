@@ -11,6 +11,40 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Social Images (Phase 7): focal-point crops, platform previews, branded cards, DreamLab prompts
+
+Ran a fresh audit of `ACE_PRD.md`/`ACE_MASTER_SPEC.md` against everything actually shipped, to find genuinely
+open work beyond the informal roadmap. Asher picked Social Images from what turned up.
+
+**A real, previously-invisible bug, found first.** Every image crop site-wide (OG images, post cards, related
+posts, author avatars, structured data) used Sanity's default center-crop mode — even though every image
+field has had focal-point/hotspot controls in Studio's editor all along. `.crop("focalpoint")` was never
+actually called anywhere, so any focal point Asher set was silently ignored. Fixed everywhere at once.
+
+**Crop previews.** Studio's SEO Preview tab now also shows Square (1:1) and Vertical (4:5) previews next to
+the existing landscape one — nothing publishes to those automatically, but they're there to check a crop
+before pasting an image manually into another platform's own composer.
+
+**Branded social cards.** New "Use branded social card" toggle per post, off by default. When on,
+`/api/og/[slug]` generates a title/category/author card (real brand type and colors, not the photo) used for
+sharing instead — a small, controlled template, not a design editor.
+
+**DreamLab workflow.** New "Suggest Image Prompt" action on posts — drafts two AI image-generation concepts
+from the post's own content to paste into Canva DreamLab (or any generator) by hand. Deliberately not an
+automated Canva integration, per the spec's own explicit guidance not to automate a sub-one-minute manual
+step without a stable official API.
+
+Verified against live production content: the focal-point fix confirmed via the real rendered `og:image` URL
+now carrying `crop=focalpoint`. The branded card was checked against two real posts (with and without a
+category) — correct title, author, and real Playfair Display rendering both times. The image-prompt action
+ran against real post content end to end, producing two real usable prompts and a correct log entry, then
+cleaned up. Also surfaced and confirmed (not new, not a regression): raw script-driven Sanity writes don't
+reliably show up live through the dev server's own caching within the same session — reproduced identically
+with an unrelated, long-standing field, so it's a pre-existing dev-only characteristic, not something this
+work introduced. The underlying data and toggle logic were confirmed correct independently of it.
+
+---
+
 ## 2026-08-04 (continued) — Link Management: broken-link checker, monitoring, affiliate registry
 
 Closes out the last open piece of Phase 3 (SEO & Machine Readability) — three related roadmap items (a
