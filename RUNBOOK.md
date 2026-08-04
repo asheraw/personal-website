@@ -759,6 +759,15 @@ a matching reply never shows divorced from the comment it's replying to.
 **Post titles link to the live post,** in both the main view's group header and the Trash view's per-card
 reference — `https://asheraw.com/blog/<slug>` in a new tab, using each row's already-fetched `postSlug`.
 
+**Group headers use a fixed-column `Grid`, not a `Flex`** (`GROUP_HEADER_COLUMNS`) — Asher flagged that longer
+post titles and the "Unlock comments" vs "Lock comments" label length were shoving the count badge and buttons
+to a different spot on every row. Since each group is its own separate `Grid` instance (one per post, not one
+shared table), the fix is the same one `ContactSubmissionsTool.tsx` already uses: fixed `fr`/`rem` column
+widths, never `auto` — a variable-width column only stays aligned across independent Grid instances if every
+instance is handed the exact same fixed template, since `auto` sizes to that row's own content alone. The
+title column absorbs whatever's left via `minmax(0, 1fr)` and truncates with `textOverflow="ellipsis"` rather
+than pushing later columns out of line.
+
 **The per-comment info line was rebuilt as one joined string** (`metaLine` in `CommentCard`) instead of
 several separate `Flex` children with hand-glued `"· "` prefixes — those looked fine until something long
 (a restored comment's placeholder `name@restored.invalid` email, in particular) forced a wrap, at which point

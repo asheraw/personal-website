@@ -34,6 +34,12 @@ rows with hand-glued "· " string prefixes that misaligned once they wrapped, es
 comments' longer placeholder email addresses. Now one joined line (`Array.filter(Boolean).join(' · ')`)
 directly under the name — always spaces consistently regardless of width.
 
+**Follow-up same day:** Asher flagged that the collapsed group headers still looked ragged — different post
+title lengths (and "Lock" vs "Unlock comments") pushed the count badge and buttons to a different spot on
+every row. Rebuilt on a fixed-column `Grid` (same pattern `ContactSubmissionsTool.tsx` already uses) instead
+of a `Flex` — title truncates with an ellipsis into whatever space is left; every column after it now lands
+at the same fixed position on every row, regardless of content.
+
 ---
 
 ## 2026-08-04 (continued) — Restored two old posts' comments from the Wayback Machine
