@@ -87,6 +87,31 @@ ${bodyText.slice(0, 6000)}`,
               description:
                 "3-5 topic tags for the post, reusing an existing tag's exact spelling when one genuinely fits.",
             },
+            altHeadlines: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description:
+                "Exactly 3 alternative options for the post's actual displayed title (not the SEO meta title) -- different angles or framings of the same post, not just rewordings.",
+            },
+            pullQuotes: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description:
+                "Exactly 2 short quotes taken word-for-word from the post's own content, each striking enough to pull out and highlight on its own. Never invented -- must be an exact substring of the content given.",
+            },
+            faqs: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  question: { type: Type.STRING },
+                  answer: { type: Type.STRING },
+                },
+                required: ["question", "answer"],
+              },
+              description:
+                "Exactly 3 FAQ-style question/answer pairs a reader of this post might genuinely search for, answerable from the post's own content -- never invented facts.",
+            },
           },
           required: ["seoTitles", "excerpts", "tags"],
         },
@@ -96,7 +121,14 @@ ${bodyText.slice(0, 6000)}`,
     const raw = response.text;
     if (!raw) throw new Error("Empty response from model");
 
-    const parsed = JSON.parse(raw) as { seoTitles?: string[]; excerpts?: string[]; tags?: string[] };
+    const parsed = JSON.parse(raw) as {
+      seoTitles?: string[];
+      excerpts?: string[];
+      tags?: string[];
+      altHeadlines?: string[];
+      pullQuotes?: string[];
+      faqs?: { question?: string; answer?: string }[];
+    };
 
     const seoTitles = (parsed.seoTitles || [])
       .map((t) => truncateText(t.trim(), 70))
@@ -110,6 +142,12 @@ ${bodyText.slice(0, 6000)}`,
       .map((t) => t.trim())
       .filter(Boolean)
       .slice(0, 5);
+    const altHeadlines = (parsed.altHeadlines || []).map((t) => t.trim()).filter(Boolean).slice(0, 3);
+    const pullQuotes = (parsed.pullQuotes || []).map((t) => t.trim()).filter(Boolean).slice(0, 2);
+    const faqs = (parsed.faqs || [])
+      .map((f) => ({ question: f.question?.trim() || "", answer: f.answer?.trim() || "" }))
+      .filter((f) => f.question && f.answer)
+      .slice(0, 3);
 
     if (seoTitles.length === 0 || excerpts.length === 0) {
       throw new Error("Suggestion was incomplete");
@@ -127,7 +165,7 @@ ${bodyText.slice(0, 6000)}`,
         feature: "seo",
         postTitle: typeof title === "string" ? title.slice(0, 300) : "",
         postSlug: typeof slug === "string" ? slug.slice(0, 200) : undefined,
-        output: JSON.stringify({ seoTitles, excerpts, tags }, null, 2),
+        output: JSON.stringify({ seoTitles, excerpts, tags, altHeadlines, pullQuotes, faqs }, null, 2),
         used: false,
         usedActions: [],
       });
@@ -136,7 +174,7 @@ ${bodyText.slice(0, 6000)}`,
       console.error("[ai/suggest-seo] output log failed:", logError);
     }
 
-    return NextResponse.json({ seoTitles, excerpts, tags, logId });
+    return NextResponse.json({ seoTitles, excerpts, tags, altHeadlines, pullQuotes, faqs, logId });
   } catch (error) {
     console.error("[ai/suggest-seo] failed:", error);
     return NextResponse.json(

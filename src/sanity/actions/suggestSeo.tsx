@@ -5,7 +5,16 @@ import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {portableTextToPlainText} from '../../lib/portableText'
 
-type Suggestions = {seoTitles: string[]; excerpts: string[]; tags: string[]; logId?: string | null}
+type Faq = {question: string; answer: string}
+type Suggestions = {
+  seoTitles: string[]
+  excerpts: string[]
+  tags: string[]
+  altHeadlines: string[]
+  pullQuotes: string[]
+  faqs: Faq[]
+  logId?: string | null
+}
 
 type PostDraft = {
   title?: string
@@ -61,6 +70,49 @@ function ExcerptOption({text, onUse}: {text: string; onUse: () => void}) {
           {text.length}/160 characters · first 120 shown above the muted part
         </Text>
         <Button text="Use this" tone="positive" mode="ghost" onClick={onUse} />
+      </Flex>
+    </Card>
+  )
+}
+
+// Same shape as TitleOption, but for the post's actual displayed title
+// (uncapped) rather than the 70-char-limited SEO meta title -- no
+// character-count annotation, since there's no limit to show progress
+// against.
+function HeadlineOption({text, onUse}: {text: string; onUse: () => void}) {
+  return (
+    <Card padding={3} radius={2} tone="primary" border>
+      <Flex align="center" justify="space-between" gap={3}>
+        <Text>{text}</Text>
+        <Button text="Use this" tone="positive" mode="ghost" onClick={onUse} />
+      </Flex>
+    </Card>
+  )
+}
+
+// Pull quotes and FAQs don't map to a single field to patch -- a pull
+// quote goes wherever the writer decides in the body (as a Quote block or
+// pull-quote snippet), and there's no FAQ section on posts yet. Same
+// "copy it yourself" shape as suggestSocialCopy.tsx's CopyOption.
+function CopyTextOption({text, onCopy}: {text: string; onCopy: () => void}) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      onCopy()
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // Nothing to recover into -- the text is still visible and selectable by hand.
+    }
+  }
+
+  return (
+    <Card padding={3} radius={2} tone="primary" border>
+      <Text style={{whiteSpace: 'pre-wrap'}}>{text}</Text>
+      <Flex justify="flex-end" marginTop={3}>
+        <Button text={copied ? 'Copied!' : 'Copy'} tone={copied ? 'positive' : 'primary'} mode="ghost" onClick={handleCopy} />
       </Flex>
     </Card>
   )
@@ -127,10 +179,16 @@ function TagsSuggestion({
 }
 
 /**
- * "Suggest SEO & Excerpt" -- drafts 3 options each for SEO title and excerpt
- * from the post's own content via Gemini, shown for review. Never writes
- * anything without the editor explicitly picking one -- matches the ACE
- * spec's "AI proposes, humans decide" rule.
+ * "Suggest SEO & Excerpt" -- drafts SEO title/excerpt/tag options from the
+ * post's own content via Gemini, plus a few more content ideas in the same
+ * dialog (alternative headlines, pull quotes, FAQ suggestions) since they're
+ * all the same shape of thing -- AI-drafted options shown for review, never
+ * written anywhere without the editor explicitly picking one, matching the
+ * ACE spec's "AI proposes, humans decide" rule. Alternative headlines patch
+ * the post's real title directly (same as SEO title/excerpt); pull quotes
+ * and FAQs copy to the clipboard instead, since neither maps to a single
+ * field -- a pull quote goes wherever the writer decides in the body, and
+ * there's no FAQ section on posts (yet) to write into.
  */
 export function createSuggestSeoAction(): DocumentActionComponent {
   const SuggestSeoAction: DocumentActionComponent = (props: DocumentActionProps) => {
@@ -187,7 +245,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
       dialog: dialogOpen
         ? {
             type: 'dialog',
-            header: 'AI-suggested SEO title, excerpt & tags',
+            header: 'AI-suggested SEO title, excerpt, tags & more',
             onClose: () => setDialogOpen(false),
             content: (
               <Box padding={4}>
@@ -241,10 +299,50 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                         />
                       </Stack>
                     )}
+                    {suggestions.altHeadlines?.length > 0 && (
+                      <Stack space={3}>
+                        <Heading size={1}>Alternative headlines — different angles on the same post</Heading>
+                        {suggestions.altHeadlines.map((headline) => (
+                          <HeadlineOption
+                            key={headline}
+                            text={headline}
+                            onUse={() => {
+                              patch.execute([{set: {title: headline}}])
+                              logUsage(suggestions.logId, `Used alternative headline: "${headline}"`)
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                    )}
+                    {suggestions.pullQuotes?.length > 0 && (
+                      <Stack space={3}>
+                        <Heading size={1}>Pull quotes — copy one to highlight in the post body</Heading>
+                        {suggestions.pullQuotes.map((quote) => (
+                          <CopyTextOption
+                            key={quote}
+                            text={quote}
+                            onCopy={() => logUsage(suggestions.logId, `Copied pull quote: "${quote}"`)}
+                          />
+                        ))}
+                      </Stack>
+                    )}
+                    {suggestions.faqs?.length > 0 && (
+                      <Stack space={3}>
+                        <Heading size={1}>FAQ suggestions — copy any to add as a Q&amp;A in the post</Heading>
+                        {suggestions.faqs.map((faq) => (
+                          <CopyTextOption
+                            key={faq.question}
+                            text={`Q: ${faq.question}\nA: ${faq.answer}`}
+                            onCopy={() => logUsage(suggestions.logId, `Copied FAQ: "${faq.question}"`)}
+                          />
+                        ))}
+                      </Stack>
+                    )}
                     <Text size={1} muted>
                       Picking a title or excerpt replaces whatever&rsquo;s currently there; tags get added
-                      to whatever&rsquo;s already set, not replaced. You can still edit any of it afterward —
-                      these are starting points, not final copy.
+                      to whatever&rsquo;s already set, not replaced. Pull quotes and FAQs copy to your
+                      clipboard — paste them into the post body yourself, wherever they fit best. You can
+                      still edit any of it afterward — these are starting points, not final copy.
                     </Text>
                     <Flex justify="flex-end">
                       <Button text="Close" mode="ghost" onClick={() => setDialogOpen(false)} />
