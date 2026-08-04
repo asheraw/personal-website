@@ -82,7 +82,7 @@ export default async function AuthorPage({ params }: PageProps) {
         <div className="flex items-center gap-5">
           {author.image && (
             <Image
-              src={urlFor(author.image).width(96).height(96).fit("crop").url()}
+              src={urlFor(author.image).width(96).height(96).fit("crop").crop("focalpoint").url()}
               alt={author.name}
               width={96}
               height={96}

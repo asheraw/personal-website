@@ -21,7 +21,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
       {post.mainImage && (
         <Link href={`/blog/${post.slug}`} className="block mb-5">
           <Image
-            src={urlFor(post.mainImage).width(1200).height(630).fit("crop").format("jpg").quality(75).url()}
+            src={urlFor(post.mainImage).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()}
             alt={post.mainImage.alt ?? post.title}
             width={1200}
             height={630}

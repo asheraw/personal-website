@@ -28,7 +28,7 @@ export function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
               {post.mainImage && (
                 <div className="mb-3 overflow-hidden rounded-lg">
                   <Image
-                    src={urlFor(post.mainImage).width(500).height(300).fit("crop").format("jpg").quality(75).url()}
+                    src={urlFor(post.mainImage).width(500).height(300).fit("crop").crop("focalpoint").format("jpg").quality(75).url()}
                     alt={post.mainImage.alt ?? post.title}
                     width={500}
                     height={300}

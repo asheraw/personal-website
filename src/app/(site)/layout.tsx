@@ -42,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = settings?.siteTitle || FALLBACK_TITLE;
   const description = settings?.siteDescription || FALLBACK_DESCRIPTION;
   const ogImage = settings?.defaultSocialImage
-    ? urlFor(settings.defaultSocialImage).width(1344).height(768).fit("crop").format("jpg").quality(75).url()
+    ? urlFor(settings.defaultSocialImage).width(1344).height(768).fit("crop").crop("focalpoint").format("jpg").quality(75).url()
     : FALLBACK_OG_IMAGE;
 
   return {

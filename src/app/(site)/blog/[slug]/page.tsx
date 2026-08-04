@@ -38,6 +38,7 @@ type Post = {
   mainImage?: { asset?: { _ref: string }; alt?: string };
   seoTitle?: string;
   socialImage?: { asset?: { _ref: string } };
+  useBrandedSocialCard?: boolean;
   noIndex?: boolean;
   commentsLocked?: boolean;
   tags?: string[];
@@ -97,9 +98,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // -- a source PNG can come out at 1-2MB+ at this crop size, well past
   // what WhatsApp reliably handles. JPG at this quality looks the same for
   // a photo-style crop and comes out at a fraction of the size.
-  const image = imageSource
-    ? urlFor(imageSource).width(1200).height(630).fit("crop").format("jpg").quality(75).url()
-    : undefined;
+  //
+  // useBrandedSocialCard skips the photo entirely in favor of a generated
+  // title/category/author card (src/app/api/og/[slug]/route.tsx) -- opt-in
+  // per post, off by default, so every existing post keeps using its real
+  // photo unless this is deliberately turned on.
+  const image = post.useBrandedSocialCard
+    ? `${SITE_URL}/api/og/${post.slug}`
+    : imageSource
+      ? urlFor(imageSource).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()
+      : undefined;
   const url = `${SITE_URL}/blog/${post.slug}`;
 
   return {
@@ -158,7 +166,11 @@ export default async function PostPage({ params }: PageProps) {
     datePublished: post.publishedAt,
     dateModified: post._updatedAt,
     author: post.author ? { "@type": "Person", name: post.author.name } : undefined,
-    image: imageSource ? urlFor(imageSource).width(1200).height(630).fit("crop").format("jpg").quality(75).url() : undefined,
+    image: post.useBrandedSocialCard
+      ? `${SITE_URL}/api/og/${post.slug}`
+      : imageSource
+        ? urlFor(imageSource).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()
+        : undefined,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };
   const breadcrumbCategory = post.primaryCategory ?? post.categories?.[0];

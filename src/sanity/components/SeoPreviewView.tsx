@@ -7,6 +7,7 @@ import {getChecklistIssues, type PostDraft} from '../actions/prepareForPublish'
 type PostForPreview = PostDraft & {
   slug?: {current?: string}
   socialImage?: unknown
+  useBrandedSocialCard?: boolean
   noIndex?: boolean
 }
 
@@ -42,6 +43,7 @@ export function SeoPreviewView(props: {documentId: string}) {
   const description = doc?.excerpt || ''
   const slug = doc?.slug?.current
   const socialImage = doc?.socialImage ?? doc?.mainImage
+  const brandedCardUrl = doc?.useBrandedSocialCard && slug ? `/api/og/${slug}` : null
   const issues = useMemo(() => getChecklistIssues(doc ?? null), [doc])
 
   if (!ready) {
@@ -114,9 +116,16 @@ export function SeoPreviewView(props: {documentId: string}) {
         <Stack space={3}>
           <Heading size={1}>Social share card</Heading>
           <Card radius={2} border style={{maxWidth: 380, overflow: 'hidden'}}>
-            {socialImage ? (
+            {brandedCardUrl ? (
               <img
-                src={urlFor(socialImage).width(600).height(315).fit('crop').url()}
+                key={brandedCardUrl}
+                src={brandedCardUrl}
+                alt=""
+                style={{width: '100%', display: 'block', aspectRatio: '1.91 / 1', objectFit: 'cover'}}
+              />
+            ) : socialImage ? (
+              <img
+                src={urlFor(socialImage).width(600).height(315).fit('crop').crop('focalpoint').url()}
                 alt=""
                 style={{width: '100%', display: 'block', aspectRatio: '1.91 / 1', objectFit: 'cover'}}
               />
@@ -143,6 +152,62 @@ export function SeoPreviewView(props: {documentId: string}) {
               </Box>
             </Box>
           </Card>
+          <Text size={0} muted>
+            This is the crop used for OG/X/LinkedIn/WhatsApp previews (1.91:1) — the one that actually ships.
+          </Text>
+        </Stack>
+
+        <Stack space={3}>
+          <Heading size={1}>Other platform crops</Heading>
+          <Text size={0} muted>
+            Not currently used anywhere on the site (nothing publishes to Instagram/TikTok automatically) —
+            here purely so a crop can be checked before pasting this image manually into another platform&rsquo;s
+            own composer. All three use the same focal point set on the image itself (Studio&rsquo;s image editor
+            → click the image → drag the circle) — dragging it updates every crop below and above together, not
+            just one.
+          </Text>
+          <Flex gap={3} wrap="wrap">
+            <Stack space={2} style={{width: 160}}>
+              <Card radius={2} border style={{overflow: 'hidden'}}>
+                {socialImage ? (
+                  <img
+                    src={urlFor(socialImage).width(320).height(320).fit('crop').crop('focalpoint').url()}
+                    alt=""
+                    style={{width: '100%', display: 'block', aspectRatio: '1 / 1', objectFit: 'cover'}}
+                  />
+                ) : (
+                  <Flex align="center" justify="center" style={{aspectRatio: '1 / 1', background: '#e4e6eb'}}>
+                    <Text size={0} muted>
+                      No image
+                    </Text>
+                  </Flex>
+                )}
+              </Card>
+              <Text size={0} muted style={{textAlign: 'center'}}>
+                Square (1:1)
+              </Text>
+            </Stack>
+            <Stack space={2} style={{width: 160}}>
+              <Card radius={2} border style={{overflow: 'hidden'}}>
+                {socialImage ? (
+                  <img
+                    src={urlFor(socialImage).width(320).height(400).fit('crop').crop('focalpoint').url()}
+                    alt=""
+                    style={{width: '100%', display: 'block', aspectRatio: '4 / 5', objectFit: 'cover'}}
+                  />
+                ) : (
+                  <Flex align="center" justify="center" style={{aspectRatio: '4 / 5', background: '#e4e6eb'}}>
+                    <Text size={0} muted>
+                      No image
+                    </Text>
+                  </Flex>
+                )}
+              </Card>
+              <Text size={0} muted style={{textAlign: 'center'}}>
+                Vertical (4:5)
+              </Text>
+            </Stack>
+          </Flex>
         </Stack>
       </Stack>
     </Box>

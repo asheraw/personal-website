@@ -78,6 +78,7 @@ export const POST_BY_SLUG_QUERY = `
     mainImage,
     seoTitle,
     socialImage,
+    useBrandedSocialCard,
     noIndex,
     commentsLocked,
     tags,

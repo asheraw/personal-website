@@ -127,6 +127,14 @@ export const postType = defineType({
       },
     }),
     defineField({
+      name: 'useBrandedSocialCard',
+      title: 'Use branded social card instead of the photo',
+      type: 'boolean',
+      description:
+        'Turn on to show a generated title/category/author card (site colors and type) when this post is shared, instead of the featured photo — useful for posts without a strong photo, or ones you’d rather represent with text. Off by default; existing behavior (the photo) is unaffected unless you turn this on.',
+      initialValue: false,
+    }),
+    defineField({
       name: 'noIndex',
       title: 'Hide from search engines',
       type: 'boolean',
