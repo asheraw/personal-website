@@ -552,6 +552,17 @@ specific document. Component: `src/sanity/components/MediaLibraryTool.tsx`, regi
 lets other document types (e.g. author bios) hold images too, this tool's query needs `_type == "post"`
 widened to match — currently by design, since posts are the only place images live today.
 
+**Default alt text per image (shipped 2026-08-04):** each image tile now has an editable "Default alt text"
+field, saved to a companion `imageAssetAlt` document (`src/sanity/schemaTypes/imageAssetAltType.ts`) —
+Sanity's own `sanity.imageAsset` system type can't be extended with custom fields directly, hence the separate
+document rather than a field on the asset itself. This is a *fallback*, not an override: `mainImageAlt` in
+`POST_SUMMARY_PROJECTION`/`POST_BY_SLUG_QUERY`/`RELATED_POSTS_QUERY` uses `coalesce(mainImage.alt, ...)`, so a
+post's own written alt text always wins — the library default only fills in when a post's Featured Image alt
+text was left blank. Deliberately scoped to the Featured Image specifically, not every image inserted into a
+post's body — covering every image-consuming field with the same fallback would be a much larger change than
+this one. Clearing the field back to blank deletes the companion document entirely rather than leaving an
+empty-string override behind.
+
 ---
 
 ## Reusable snippets
@@ -578,6 +589,12 @@ above) — without it, the block renders with only `_ref`, no actual content to 
 `null` since it has nothing to display. Verified end-to-end 2026-07-30 with a throwaway test snippet/post
 (created and deleted via script, never touched real content) before trusting it.
 
+**Undoing a bad edit (confirmed 2026-08-04):** every document in this project — snippets included — has full
+version history retained back to the project's earliest documents (confirmed directly via Sanity's
+history/transactions API). Open the snippet, use Studio's own history/timeline panel (the clock icon in the
+document header) to see every past version and restore one — this is a built-in Sanity Studio feature, not
+something specific to this codebase, and needs no custom code to work.
+
 ---
 
 ## Internal links: linking to another post without a raw URL
@@ -603,6 +620,12 @@ as `internalLink` (an object field wrapping a `reference` to `post`). The query 
 projection above got removed/changed — `value?.slug` comes back `undefined` and the renderer falls back to
 plain `<span>` text rather than a link to nowhere. Verified end-to-end 2026-07-30 with a throwaway test post
 linking to a real post, confirming the resolved slug matched exactly.
+
+**Same-tab override (shipped 2026-08-04):** External URL links open in a new tab by default (unchanged,
+already the behavior) — the annotation now also has an "Open in the same tab instead" checkbox for the rare
+case a writer wants one specific link to replace the current page. `link` mark's `openInSameTab` field on
+`blockContentType.ts`; the renderer's `openInNewTab` check in `portableTextComponents.tsx` is `isExternal &&
+!value?.openInSameTab`, so leaving it off preserves the existing default exactly.
 
 ---
 

@@ -11,6 +11,30 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Three small ACE-spec gaps: library alt text, link-target override, snippet versioning
+
+**Media library alt text.** New `imageAssetAlt` companion document — Sanity's own image asset type can't be
+extended with custom fields, so this is a separate one, one per image, editable right in Studio → Media. A
+post's own alt text always wins when it's actually written; the library default only fills the gap when a
+post's Featured Image has none. Scoped deliberately to Featured Image, not every image inserted into a post
+body — true inheritance everywhere would mean touching every image-consuming field across the whole schema,
+well past what "small" meant.
+
+**Link-target override.** External links already opened in a new tab by default (confirmed, not new) — added
+the missing per-link "open in the same tab instead" override, off by default, for the rare case a writer
+wants one to replace the current page.
+
+**Snippet versioning/rollback.** Checked Sanity's history/transactions API directly and confirmed full
+document history is retained back to the project's earliest documents — Sanity's own built-in Studio history
+panel already covers this for every document type, snippets included. No custom code needed; documented in
+RUNBOOK.md instead of building redundant infrastructure.
+
+Verified the alt-text fallback against real live data: confirmed a post's own alt text takes priority when
+set, and the library default only activates when a post's alt is genuinely absent — tested both states
+explicitly against a real post, then cleaned up.
+
+---
+
 ## 2026-08-04 (continued) — Social Images (Phase 7): focal-point crops, platform previews, branded cards, DreamLab prompts
 
 Ran a fresh audit of `ACE_PRD.md`/`ACE_MASTER_SPEC.md` against everything actually shipped, to find genuinely
