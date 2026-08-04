@@ -10,6 +10,26 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## Audio narration (auto TTS per post)
+
+**What:** from `ACE_MASTER_SPEC.md`'s Phase 10 list — automatic text-to-speech narration per post,
+Substack-style, so a post can be listened to as well as read.
+
+**Why not now:** researched pricing 2026-08-04 assuming Google Cloud TTS's WaveNet voices had a genuine
+ongoing free tier — Asher corrected this directly (Google no longer offers free text-to-speech). A follow-up
+check against Google's own pricing page didn't return usable content to confirm the current state either way,
+so this is going on Asher's word rather than a re-verified source. Every other option checked has real,
+non-trivial cost at any real usage (Amazon Polly's free tier is a 12-month trial, then $16/million
+characters; Gemini's native TTS is priced per output token with no clearly documented free allowance).
+Shelved specifically because there's no honestly-free option right now, not because the feature itself lacks
+value.
+
+**Worth revisiting when:** a genuinely free (not trial-limited) TTS option with reasonable voice quality
+becomes available, or Asher decides the cost of a paid option (Polly/Gemini/ElevenLabs) is worth it for what
+it'd actually get used.
+
+---
+
 ## An AI avatar asking readers what they're in the mood to read
 
 **What:** instead of (or alongside) a plain scrolling list of posts, an AI avatar that asks a reader what

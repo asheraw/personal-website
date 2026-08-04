@@ -28,11 +28,13 @@ import {NotFoundHitsTool} from './src/sanity/components/NotFoundHitsTool'
 import {ContactSubmissionsTool} from './src/sanity/components/ContactSubmissionsTool'
 import {LinkCheckerTool} from './src/sanity/components/LinkCheckerTool'
 import {DistributionDashboardTool} from './src/sanity/components/DistributionDashboardTool'
+import {EditorialCalendarTool} from './src/sanity/components/EditorialCalendarTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {LinkIcon} from '@sanity/icons/Link'
 import {ShareIcon} from '@sanity/icons/Share'
+import {CalendarIcon} from '@sanity/icons/Calendar'
 
 export default defineConfig({
   basePath: '/studio',
@@ -156,5 +158,11 @@ export default defineConfig({
       icon: ShareIcon,
       component: DistributionDashboardTool,
     },
+    // Drag-and-drop month view -- published posts by publishedAt,
+    // scheduled-but-unpublished drafts by scheduledPublishAt (auto-
+    // published daily by /api/cron/publish-scheduled). Free: a plain
+    // Studio tool patching a normal field, not Sanity's paid Schedule
+    // Publishing feature.
+    {name: 'editorial-calendar', title: 'Calendar', icon: CalendarIcon, component: EditorialCalendarTool},
   ],
 })

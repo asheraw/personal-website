@@ -102,6 +102,13 @@ export const postType = defineType({
       initialValue: () => new Date().toISOString(),
     }),
     defineField({
+      name: 'scheduledPublishAt',
+      title: 'Schedule for later (optional)',
+      type: 'datetime',
+      description:
+        'Set a date on an unpublished draft and it publishes itself automatically -- no need to come back and click Publish by hand. Checked once a day, so treat this as "goes live sometime that day," not an exact time (a Vercel Hobby-plan limit, not a choice). Has no effect on an already-published post -- only unpublished drafts get auto-published.',
+    }),
+    defineField({
       name: 'excerpt',
       title: 'Excerpt / SEO description',
       type: 'text',
