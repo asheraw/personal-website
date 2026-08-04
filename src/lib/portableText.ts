@@ -43,6 +43,16 @@ export function estimateReadingTimeMinutes(body: unknown): number {
   return estimateReadingTimeFromText(portableTextToPlainText(body));
 }
 
+type MarkDefsBlock = { markDefs?: { _type?: string }[] };
+
+/** True if any block in the body has an affiliateLink annotation -- drives whether AffiliateDisclosure shows. */
+export function bodyHasAffiliateLinks(body: unknown): boolean {
+  if (!Array.isArray(body)) return false;
+  return (body as MarkDefsBlock[]).some((block) =>
+    (block?.markDefs ?? []).some((mark) => mark?._type === "affiliateLink")
+  );
+}
+
 export type HeadingCheckpoint = { id: string; text: string; key: string };
 
 type HeadingBlock = {

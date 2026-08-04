@@ -14,7 +14,8 @@ import { CommentSection } from "@/components/asher/blog/CommentSection";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 import { RelatedPosts } from "@/components/asher/blog/RelatedPosts";
 import { ShareBar } from "@/components/asher/blog/ShareBar";
-import { estimateReadingTimeMinutes, extractH2Checkpoints } from "@/lib/portableText";
+import { AffiliateDisclosure } from "@/components/asher/blog/AffiliateDisclosure";
+import { bodyHasAffiliateLinks, estimateReadingTimeMinutes, extractH2Checkpoints } from "@/lib/portableText";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 // No time-based revalidate here anymore -- sanityFetch() (via Sanity's
@@ -253,6 +254,8 @@ export default async function PostPage({ params }: PageProps) {
               />
             </div>
           )}
+
+          {bodyHasAffiliateLinks(post.body) && <AffiliateDisclosure />}
 
           <div className="mt-10 space-y-6 text-lg">
             <PortableText value={post.body as never} components={postBodyComponents} />

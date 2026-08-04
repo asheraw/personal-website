@@ -133,6 +133,25 @@ export const postBodyComponents: PortableTextComponents = {
         </Link>
       );
     },
+    // rel="sponsored" (Google's recommended rel for paid/affiliate links,
+    // separate from a plain nofollow) is set automatically here -- a writer
+    // picking this annotation instead of the plain URL one is the only
+    // thing that has to happen by hand; the compliance detail follows for
+    // free. See AffiliateDisclosure.tsx for the accompanying page-level
+    // banner, shown whenever a post contains at least one of these.
+    affiliateLink: ({ value, children }) => {
+      const href = (value?.href as string) ?? "#";
+      return (
+        <Link
+          href={href}
+          className="text-spotlight underline decoration-spotlight/40 underline-offset-2 transition-colors hover:decoration-spotlight"
+          target="_blank"
+          rel="sponsored noreferrer"
+        >
+          {children}
+        </Link>
+      );
+    },
   },
   types: {
     image: ({ value }) => {

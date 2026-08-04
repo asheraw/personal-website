@@ -25,9 +25,11 @@ import {CommentsToolIcon} from './src/sanity/components/CommentsToolIcon'
 import {StudioNavbar} from './src/sanity/components/StudioNavbar'
 import {NotFoundHitsTool} from './src/sanity/components/NotFoundHitsTool'
 import {ContactSubmissionsTool} from './src/sanity/components/ContactSubmissionsTool'
+import {LinkCheckerTool} from './src/sanity/components/LinkCheckerTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
+import {LinkIcon} from '@sanity/icons/Link'
 
 export default defineConfig({
   basePath: '/studio',
@@ -137,5 +139,9 @@ export default defineConfig({
       icon: EnvelopeIcon,
       component: ContactSubmissionsTool,
     },
+    // Broken-link checker, external-link monitor, and affiliate-link
+    // registry in one tool -- every link inside a post/snippet's own text,
+    // checked live and re-checked weekly (vercel.json cron).
+    {name: 'link-checker', title: 'Link Checker', icon: LinkIcon, component: LinkCheckerTool},
   ],
 })

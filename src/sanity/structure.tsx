@@ -140,6 +140,7 @@ export const structure: StructureResolver = (S) =>
             'consentLog',
             'shareLog',
             'aiOutputLog',
+            'linkCheck',
           ].includes(item.getId()!),
       ),
     ])

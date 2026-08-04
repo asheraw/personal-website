@@ -7,6 +7,7 @@ import {PlayIcon} from '@sanity/icons/Play'
 import {ComponentIcon} from '@sanity/icons/Component'
 import {LinkIcon} from '@sanity/icons/Link'
 import {DocumentIcon} from '@sanity/icons/Document'
+import {TagIcon} from '@sanity/icons/Tag'
 import {TEXT_COLORS} from '../../lib/textColors'
 
 /**
@@ -117,6 +118,26 @@ export const blockContentType = defineType({
               select: {title: 'reference.title'},
               prepare: ({title}) => ({title: title ? `→ ${title}` : 'Internal link'}),
             },
+          },
+          // A separate annotation from the plain URL one, not a checkbox on
+          // it -- distinct so it's obvious at a glance while writing which
+          // links are affiliate links, so the link checker can tell them
+          // apart in its registry, and so the rendered post can render
+          // `rel="sponsored"` and show a disclosure banner automatically
+          // (bodyHasAffiliateLinks in src/lib/portableText.ts) without a
+          // writer ever needing to remember to add one by hand.
+          {
+            title: 'Affiliate link',
+            name: 'affiliateLink',
+            type: 'object',
+            icon: TagIcon,
+            fields: [
+              {
+                title: 'URL',
+                name: 'href',
+                type: 'url',
+              },
+            ],
           },
           // Named colors only -- deliberately not a hex/RGB picker. Each
           // name maps (see textColors.ts + globals.css) to one shade tuned
