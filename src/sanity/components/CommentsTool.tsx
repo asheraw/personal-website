@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from 'react'
-import {Badge, Box, Button, Card, Flex, Spinner, Stack, Text, TextArea} from '@sanity/ui'
+import {Badge, Box, Button, Card, Flex, Spinner, Stack, Text, TextArea, TextInput} from '@sanity/ui'
 import {useClient} from 'sanity'
 
 // Shown as the name on every reply created from this tool. Cosmetic only --
@@ -17,6 +17,17 @@ const LAST_SEEN_KEY = 'asheraw-comments-last-seen'
 // Matches THIRTY_DAYS_MS in /api/cron/purge-trash -- only used here for the
 // "auto-deletes on ..." display, the actual purge happens server-side.
 const TRASH_RETENTION_DAYS = 30
+
+// <input type="datetime-local"> works in the browser's own local time, with
+// no timezone suffix -- `new Date(isoString)` already handles turning that
+// back into the right instant on save, but going the other way (showing an
+// existing UTC createdAt correctly pre-filled) needs the timezone offset
+// subtracted by hand, or toISOString() below would show it shifted to UTC.
+function isoToLocalInputValue(iso: string): string {
+  const date = new Date(iso)
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return local.toISOString().slice(0, 16)
+}
 
 type CommentRow = {
   _id: string
@@ -81,6 +92,7 @@ export function CommentsTool() {
   const [replyBusy, setReplyBusy] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  const [editDate, setEditDate] = useState('')
   const [editBusy, setEditBusy] = useState(false)
   const [viewingTrash, setViewingTrash] = useState(false)
 
@@ -224,16 +236,18 @@ export function CommentsTool() {
   function startEdit(comment: CommentRow) {
     setEditingId(comment._id)
     setEditText(comment.message)
+    setEditDate(isoToLocalInputValue(comment.createdAt))
   }
 
   async function saveEdit(id: string) {
-    if (!editText.trim()) return
+    if (!editText.trim() || !editDate) return
     setEditBusy(true)
     try {
       const editedAt = new Date().toISOString()
-      await client.patch(id).set({message: editText.trim(), editedAt}).commit()
+      const createdAt = new Date(editDate).toISOString()
+      await client.patch(id).set({message: editText.trim(), createdAt, editedAt}).commit()
       setComments((prev) =>
-        prev ? prev.map((c) => (c._id === id ? {...c, message: editText.trim(), editedAt} : c)) : prev,
+        prev ? prev.map((c) => (c._id === id ? {...c, message: editText.trim(), createdAt, editedAt} : c)) : prev,
       )
       setEditingId(null)
     } finally {
@@ -457,8 +471,10 @@ export function CommentsTool() {
                             hasReplies={replies.length > 0}
                             editing={editingId === comment._id}
                             editText={editText}
+                            editDate={editDate}
                             editBusy={editBusy}
                             onEditTextChange={setEditText}
+                            onEditDateChange={setEditDate}
                             onApprove={() => setStatus(comment._id, 'approved')}
                             onReject={() => setStatus(comment._id, 'rejected')}
                             onSpam={() => setStatus(comment._id, 'spam')}
@@ -495,8 +511,10 @@ export function CommentsTool() {
                                     hasReplies={replies3.length > 0}
                                     editing={editingId === reply._id}
                                     editText={editText}
+                                    editDate={editDate}
                                     editBusy={editBusy}
                                     onEditTextChange={setEditText}
+                                    onEditDateChange={setEditDate}
                                     onApprove={() => setStatus(reply._id, 'approved')}
                                     onReject={() => setStatus(reply._id, 'rejected')}
                                     onSpam={() => setStatus(reply._id, 'spam')}
@@ -535,8 +553,10 @@ export function CommentsTool() {
                                           busy={busyId === reply3._id}
                                           editing={editingId === reply3._id}
                                           editText={editText}
+                                          editDate={editDate}
                                           editBusy={editBusy}
                                           onEditTextChange={setEditText}
+                                          onEditDateChange={setEditDate}
                                           onApprove={() => setStatus(reply3._id, 'approved')}
                                           onReject={() => setStatus(reply3._id, 'rejected')}
                                           onSpam={() => setStatus(reply3._id, 'spam')}
@@ -627,8 +647,10 @@ function CommentCard({
   hasReplies,
   editing,
   editText,
+  editDate,
   editBusy,
   onEditTextChange,
+  onEditDateChange,
   onApprove,
   onReject,
   onSpam,
@@ -645,8 +667,10 @@ function CommentCard({
   hasReplies?: boolean
   editing: boolean
   editText: string
+  editDate: string
   editBusy: boolean
   onEditTextChange: (value: string) => void
+  onEditDateChange: (value: string) => void
   onApprove: () => void
   onReject: () => void
   onSpam: () => void
@@ -709,12 +733,26 @@ function CommentCard({
               value={editText}
               onChange={(e) => onEditTextChange(e.currentTarget.value)}
             />
+            {/* Lets a restored, backdated comment (e.g. one recovered from
+                the Wayback Machine for an old post) show its real original
+                date instead of whenever it happened to be re-entered. */}
+            <Stack space={1}>
+              <Text size={0} muted>
+                Submitted
+              </Text>
+              <TextInput
+                type="datetime-local"
+                fontSize={1}
+                value={editDate}
+                onChange={(e) => onEditDateChange(e.currentTarget.value)}
+              />
+            </Stack>
             <Flex gap={2}>
               <Button
                 text="Save"
                 tone="primary"
                 fontSize={1}
-                disabled={editBusy || !editText.trim()}
+                disabled={editBusy || !editText.trim() || !editDate}
                 onClick={onSaveEdit}
               />
               <Button text="Cancel" mode="ghost" fontSize={1} disabled={editBusy} onClick={onCancelEdit} />
