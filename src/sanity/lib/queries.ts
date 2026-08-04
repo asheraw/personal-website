@@ -86,11 +86,23 @@ export const POST_BY_SLUG_QUERY = `
     useBrandedSocialCard,
     noIndex,
     commentsLocked,
+    play,
     tags,
     "author": author->{name, "slug": slug.current, image, bio},
     "categories": categories[]->{title, "slug": slug.current},
     "primaryCategory": primaryCategory->{title, "slug": slug.current},
     "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && references(^._id)])
+  }
+`;
+
+// Lean, purpose-specific query for the PLAY page (src/app/(site)/blog/
+// [slug]/play/page.tsx) -- doesn't need the post's full body/comments/etc,
+// just enough to render the PLAY presentation and link back to STORY.
+export const POST_PLAY_QUERY = `
+  *[_type == "post" && slug.current == $slug][0]{
+    title,
+    "slug": slug.current,
+    play
   }
 `;
 

@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { urlFor } from "@/sanity/lib/image";
 import { notFound } from "next/navigation";
-import { draftMode } from "next/headers";
+import { draftMode, headers } from "next/headers";
+import { isMobileUserAgent } from "@/lib/device";
 import { PortableText } from "@portabletext/react";
 import { sanityFetch } from "@/sanity/lib/live";
 import { POST_BY_SLUG_QUERY, RELATED_POSTS_QUERY, type RelatedPost } from "@/sanity/lib/queries";
@@ -42,6 +43,11 @@ type Post = {
   useBrandedSocialCard?: boolean;
   noIndex?: boolean;
   commentsLocked?: boolean;
+  play?: {
+    enabled?: boolean;
+    mobileEnabled?: boolean;
+    presentation?: unknown[];
+  };
   tags?: string[];
   author?: { name: string; slug: string; image?: unknown } | null;
   categories?: { title: string; slug: string }[];
@@ -153,6 +159,12 @@ export default async function PostPage({ params }: PageProps) {
 
   const relatedPosts = await getRelatedPosts(post);
   const url = `${SITE_URL}/blog/${post.slug}`;
+  // Server-aware, matching the PLAY page's own check -- don't show an
+  // entry point that would just redirect a mobile visitor straight back
+  // here anyway.
+  const hasPlay = Boolean(post.play?.enabled && post.play.presentation?.length);
+  const showPlayLink =
+    hasPlay && (post.play?.mobileEnabled !== false || !isMobileUserAgent((await headers()).get("user-agent")));
   const imageSource = post.socialImage ?? post.mainImage;
   const readingTime = estimateReadingTimeMinutes(post.body);
   const headings = extractH2Checkpoints(post.body);
@@ -253,6 +265,15 @@ export default async function PostPage({ params }: PageProps) {
               {!!post.commentCount && <span aria-hidden="true" className="print:hidden">·</span>}
               <CommentCountBadge slug={post.slug} count={post.commentCount} />
             </div>
+          )}
+
+          {showPlayLink && (
+            <Link
+              href={`/blog/${post.slug}/play`}
+              className="mt-5 inline-flex items-center gap-2 rounded-full border border-spotlight/40 bg-spotlight/5 px-4 py-2 font-mono-stage text-[10px] uppercase tracking-[0.2em] text-spotlight transition-colors hover:bg-spotlight/10 print:hidden"
+            >
+              ▶ Key Moments — an interactive way through this post
+            </Link>
           )}
 
           {post.mainImage && (

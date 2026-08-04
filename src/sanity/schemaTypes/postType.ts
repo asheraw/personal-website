@@ -149,6 +149,87 @@ export const postType = defineType({
         'Turn on to stop new comments and replies on this post -- existing comments stay exactly as they are, just no new ones can be added. Can also be toggled per-post from Studio -> Comments, right where you already moderate.',
       initialValue: false,
     }),
+    // PLAY: an optional, interactive alternative way to experience this
+    // post -- separate from the normal reading view (STORY), never
+    // required, off by default. `presentation` is deliberately an array
+    // capped at one item rather than a plain object: this is the "approved
+    // registry" pattern -- Key Moments is the only presentation type that
+    // exists today, but adding a second type later (e.g. a before/after
+    // slider) means adding another array member here, not restructuring
+    // this field. No arbitrary code lives in Sanity either way -- each
+    // registered type is a fixed, developer-built component with
+    // structured configuration data only.
+    defineField({
+      name: 'play',
+      title: 'PLAY mode',
+      type: 'object',
+      description: 'An optional, interactive alternative way to experience this post. Off by default -- every post works perfectly well without it.',
+      fields: [
+        defineField({name: 'enabled', title: 'Enabled', type: 'boolean', initialValue: false}),
+        defineField({
+          name: 'mobileEnabled',
+          title: 'Available on mobile',
+          type: 'boolean',
+          initialValue: true,
+          description: 'Turn off if this presentation genuinely needs a bigger screen -- visitors on mobile see the normal post instead, automatically.',
+        }),
+        defineField({
+          name: 'presentation',
+          title: 'Presentation',
+          type: 'array',
+          description: 'Pick one interactive presentation for this post. Only one kind exists today (Key Moments); more may be added later.',
+          of: [
+            defineArrayMember({
+              type: 'object',
+              name: 'keyMoments',
+              title: 'Key Moments (click-through quote carousel)',
+              fields: [
+                defineField({
+                  name: 'introText',
+                  title: 'Intro (optional)',
+                  type: 'text',
+                  rows: 2,
+                  description: 'Shown before the first moment -- a line or two setting up what\'s about to follow.',
+                }),
+                defineField({
+                  name: 'moments',
+                  title: 'Moments',
+                  type: 'array',
+                  description: 'The pull quotes / key lines a reader clicks through, one at a time. "Suggest SEO & Excerpt" on this post can draft pull-quote options to paste in here.',
+                  of: [
+                    defineArrayMember({
+                      type: 'object',
+                      name: 'moment',
+                      fields: [
+                        defineField({
+                          name: 'quote',
+                          title: 'Quote / key line',
+                          type: 'text',
+                          rows: 3,
+                          validation: (rule) => rule.required(),
+                        }),
+                        defineField({name: 'caption', title: 'Context (optional)', type: 'string'}),
+                      ],
+                      preview: {
+                        select: {quote: 'quote'},
+                        prepare: ({quote}) => ({title: quote}),
+                      },
+                    }),
+                  ],
+                  validation: (rule) =>
+                    rule.min(2).error('Add at least 2 moments -- one alone isn\'t much of a click-through.'),
+                }),
+              ],
+              preview: {
+                select: {moments: 'moments'},
+                prepare: ({moments}) => ({title: `Key Moments (${moments?.length ?? 0})`}),
+              },
+            }),
+          ],
+          validation: (rule) => rule.max(1),
+        }),
+      ],
+    }),
   ],
   preview: {
     select: {
