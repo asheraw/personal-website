@@ -745,6 +745,41 @@ one on a post — sends a notification to the same inbox the contact form alread
 with the commenter's name, their message, which post, and a direct link to Studio → Comments. Best-effort:
 if Resend isn't configured or the send fails, the comment is still saved and waiting in the moderation queue
 exactly as before — a visitor never sees a failure just because the notification didn't go out.
+
+**Settled groups collapse by default (shipped 2026-08-04).** As more old comments get restored (see the
+Wayback-restoration section further below), the tool started feeling heavy — every post's full thread stayed
+expanded forever, whether it needed a look or not. Now a group with nothing pending shows collapsed, one line
+("On 'X' · N comments"), expandable with a Show/Hide button whose state is kept in `expandOverrides` (in-memory,
+resets on reload — deliberately not persisted, since what needs attention changes every visit anyway). A group
+with anything pending still auto-expands. The **search box** above the list (name/message text) always forces
+full expansion of whatever matches, since collapsing during a search would defeat the purpose — it also pulls
+in a matched comment's *whole thread*, not just the single card containing the term, via `threadFamily()`, so
+a matching reply never shows divorced from the comment it's replying to.
+
+**Post titles link to the live post,** in both the main view's group header and the Trash view's per-card
+reference — `https://asheraw.com/blog/<slug>` in a new tab, using each row's already-fetched `postSlug`.
+
+**The per-comment info line was rebuilt as one joined string** (`metaLine` in `CommentCard`) instead of
+several separate `Flex` children with hand-glued `"· "` prefixes — those looked fine until something long
+(a restored comment's placeholder `name@restored.invalid` email, in particular) forced a wrap, at which point
+the manual separators misaligned. `[...].filter(Boolean).join(' · ')` into a single `<Text>` always wraps as
+plain prose, so the spacing holds regardless of width. If another per-comment detail ever needs adding, put it
+in this array rather than reaching for another separate `Flex` row.
+
+**Restoring old comments from the Wayback Machine (an established pattern as of 2026-08-04):** Asher sends
+screenshots of an archived post's comment thread; comment documents get created directly via a throwaway
+script using `SANITY_API_WRITE_TOKEN` (not through `/api/comments`, since these are already-public historical
+comments, not new pending submissions) — `status: 'approved'`, `isAuthorReply: true` on Asher's own replies,
+a placeholder `name@restored.invalid` email (real ones are never visible in a public comment view, WordPress
+included, so there's nothing to actually recover), and `createdAt` set to the real original timestamp
+converted from the screenshot's local time (Asher is in Singapore, UTC+8) to UTC. Threading uses the exact
+same 3-level flatten rule `resolveReplyParentId` already applies to real replies today — worked out by hand
+per thread rather than trusting the screenshot's visual nesting alone, since a theme's own display cap can
+visually flatten a deeper reply in a way that doesn't tell you where the *data* should actually point.
+**If a screenshot has no visible timestamps at all** (happens with some archived recap/widget views, as
+opposed to the full dated thread view) — ask Asher directly how to date those rather than guessing silently;
+his call so far has been to estimate from the list's own apparent order, clearly flagged as estimated in the
+commit rather than presented as exact. Fixable later per-comment via the date-edit field covered above.
 `src/app/api/comments/route.ts`.
 
 **Spam protection:** a honeypot field (a hidden `website` input — real visitors never see or fill it; if it's

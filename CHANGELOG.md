@@ -11,6 +11,58 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Comments tool: clickable post titles, cleaner info line, less clutter
+
+Two follow-ups from Asher restoring a growing number of old comments (see below): the tool was getting
+visually heavy, and there was no quick way to jump from a comment to the actual post it's on.
+
+**Settled threads collapse by default.** A post's comment group now shows a one-line "On 'X' · N comments"
+header once nothing in it is pending, expandable with one click — remembered per post for the session. Groups
+with something pending still open automatically, same as before. Modeled on how WordPress/Disqus/YouTube all
+lead moderation with status rather than raw chronology; the direct fix for restoring dozens of settled 2014/
+2015 comments making the page longer forever with nothing left to actually review.
+
+**New search box** filters by name or message text — matching a comment's whole thread (not just the one card
+containing the term, which would read as context-free out of its reply chain), always shown in full while
+searching regardless of collapse state.
+
+**Post titles are now links.** "On 'X'" — both the main grouped view's header and the Trash view's per-card
+reference — opens the live post in a new tab.
+
+**Per-comment info line cleaned up.** Name/email/IP/date/edited-date used to be split across two separate
+rows with hand-glued "· " string prefixes that misaligned once they wrapped, especially with restored
+comments' longer placeholder email addresses. Now one joined line (`Array.filter(Boolean).join(' · ')`)
+directly under the name — always spaces consistently regardless of width.
+
+---
+
+## 2026-08-04 (continued) — Restored two old posts' comments from the Wayback Machine
+
+Asher found archived comment threads for two pre-migration posts and asked to have them re-entered with their
+original dates rather than today's. 24 comments added across "My Confession: 5 Minutes As Judas" (12) and "The
+Journey To Become The Son" (12), all created directly as `approved` (already public originally) with
+`isAuthorReply: true` on Asher's own replies.
+
+Threading followed the exact same 3-level flatten rule `CommentsTool.tsx`'s own reply button already applies
+(a reply to an already-3rd-level comment attaches to that comment's *parent* instead of nesting a 4th level) —
+worked out by hand for one thread on the Judas post that was genuinely 4 conversational turns deep in the
+original screenshots.
+
+**Not every comment had a real date.** A later-found archive page for the Son post used a plain undated
+recap format for 4 of its threads (Carol Marsh, Myrna Wang, a second Edmund comment, Lyon) — asked Asher how
+to handle it rather than guessing; his call was to estimate dates from the list's own apparent order rather
+than wait for a better source or default to today. Those four are flagged as estimated in the restoration
+commit message, not exact — fixable later via the comment date-editing feature from earlier today if a real
+timestamp ever turns up.
+
+Placeholder `name@restored.invalid` emails were used throughout (WordPress never showed real ones publicly,
+so none were ever visible to recover) — harmless, since that field is never shown publicly anyway.
+
+Verified live after every batch: correct nesting, correct dates, and no collision with each post's existing
+2026 comments, checked directly against the rendered page before moving on.
+
+---
+
 ## 2026-08-04 (continued) — 404 page: three illustrations, new copy, and a Featured Image lightbox gap closed
 
 Asher sent three custom illustrations (a flustered stage actor, the Time Squirrel, Timo the Time Hamster) and
