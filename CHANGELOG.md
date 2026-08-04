@@ -11,6 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Hotfix: broken Studio schema (imageAssetAlt)
+
+Asher reported live Studio (asheraw.com/studio) failing to compile entirely — a real regression from the
+media-library alt-text work shipped earlier today. `imageAssetAlt`'s `asset` field was a `reference` typed
+`to: [{type: 'sanity.imageAsset'}]`, but a reference's `to` array has to name a type from this project's own
+schema; `sanity.imageAsset` is a system type, not a valid target there.
+
+Fixed by switching `asset` (a reference) to `assetId` (a plain string storing the asset's own `_id`) — the
+field is `readOnly` and only ever set programmatically by `MediaLibraryTool.tsx`, never through Sanity's own
+reference-picker UI, so a real reference was never actually needed. Updated the one write site and the three
+GROQ queries that read it to match. Pushed immediately as its own commit, ahead of the in-progress editorial
+calendar work, since a broken Studio blocks all content editing.
+
+---
+
 ## 2026-08-04 (continued) — PLAY architecture (Phase 4): per-post interactive presentation
 
 The biggest remaining phase from the ACE spec — and a genuinely different thing from what "PLAY" already
