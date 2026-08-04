@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from 'react'
-import {Badge, Box, Button, Card, Flex, Spinner, Stack, Text, TextArea, TextInput} from '@sanity/ui'
+import {Badge, Box, Button, Card, Flex, Grid, Spinner, Stack, Text, TextArea, TextInput} from '@sanity/ui'
 import {useClient} from 'sanity'
 
 // Shown as the name on every reply created from this tool. Cosmetic only --
@@ -56,6 +56,15 @@ type PostGroup = {
 }
 
 const SITE_HOST = 'asheraw.com'
+
+// Fixed widths for every column after the title, same idea as
+// ContactSubmissionsTool's own COLUMNS constant -- each group header is its
+// own separate Grid instance (one per post), so only fixed fr/rem values,
+// never `auto`, keep the count/lock/show columns lined up row to row
+// regardless of how long any one post's title or Lock/Unlock label is.
+// The title column absorbs whatever's left and truncates with an ellipsis
+// instead of pushing the others out of alignment.
+const GROUP_HEADER_COLUMNS = 'minmax(0, 1fr) 6rem 8.5rem 4rem'
 
 const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critical'> = {
   pending: 'caution',
@@ -503,37 +512,39 @@ export function CommentsTool() {
 
               return (
                 <Stack key={key} space={3}>
-                  <Flex align="center" gap={2} wrap="wrap">
-                    <Text size={1} weight="semibold">
-                      On &ldquo;
-                      {group.postSlug ? (
-                        <a
-                          href={`https://${SITE_HOST}/blog/${group.postSlug}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{color: 'inherit', textDecoration: 'underline'}}
-                        >
-                          {group.postTitle ?? 'unknown post'}
-                        </a>
-                      ) : (
-                        group.postTitle ?? 'unknown post'
+                  <Grid columns={4} gap={2} style={{gridTemplateColumns: GROUP_HEADER_COLUMNS, alignItems: 'center'}}>
+                    <Flex align="center" gap={2} style={{minWidth: 0}}>
+                      <Text size={1} weight="semibold" textOverflow="ellipsis" style={{minWidth: 0}}>
+                        On &ldquo;
+                        {group.postSlug ? (
+                          <a
+                            href={`https://${SITE_HOST}/blog/${group.postSlug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{color: 'inherit', textDecoration: 'underline'}}
+                          >
+                            {group.postTitle ?? 'unknown post'}
+                          </a>
+                        ) : (
+                          group.postTitle ?? 'unknown post'
+                        )}
+                        &rdquo;
+                      </Text>
+                      {groupPending && (
+                        <Badge tone="caution" fontSize={0}>
+                          needs review
+                        </Badge>
                       )}
-                      &rdquo;
-                    </Text>
+                      {group.commentsLocked && (
+                        <Badge tone="default" fontSize={0}>
+                          locked
+                        </Badge>
+                      )}
+                    </Flex>
                     <Badge tone="default" fontSize={0}>
                       {totalCount} {totalCount === 1 ? 'comment' : 'comments'}
                     </Badge>
-                    {groupPending && (
-                      <Badge tone="caution" fontSize={0}>
-                        needs review
-                      </Badge>
-                    )}
-                    {group.commentsLocked && (
-                      <Badge tone="default" fontSize={0}>
-                        comments locked
-                      </Badge>
-                    )}
-                    {group.postId && (
+                    {group.postId ? (
                       <Button
                         text={group.commentsLocked ? 'Unlock comments' : 'Lock comments'}
                         mode="ghost"
@@ -542,8 +553,10 @@ export function CommentsTool() {
                         disabled={busyId === group.postId}
                         onClick={() => toggleCommentsLocked(group.postId!, !group.commentsLocked)}
                       />
+                    ) : (
+                      <span />
                     )}
-                    {!searchTerm && (
+                    {!searchTerm ? (
                       <Button
                         text={isExpanded ? 'Hide' : 'Show'}
                         mode="ghost"
@@ -551,8 +564,10 @@ export function CommentsTool() {
                         padding={2}
                         onClick={() => setExpandOverrides((prev) => ({...prev, [key]: !isExpanded}))}
                       />
+                    ) : (
+                      <span />
                     )}
-                  </Flex>
+                  </Grid>
 
                   {isExpanded && (
                   <Stack space={4}>
