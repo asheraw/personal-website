@@ -11,6 +11,37 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Editorial calendar: free drag-and-drop scheduling
+
+Asher asked for a drag-and-drop editorial calendar but flagged upfront that Sanity's own scheduling might be
+a paid feature — confirmed before building anything: Sanity's native Schedule Publishing is indeed gated
+behind their paid Growth plan ($15/seat/month). Sidestepped entirely by building it the same way as every
+other tool this session — a plain custom Studio tool patching a normal field, free on every tier.
+
+**Studio → Calendar** — a drag-and-drop month grid. Published posts show on their `publishedAt` date;
+unpublished drafts with a new `scheduledPublishAt` field show (differently styled) on that date instead.
+Dragging a card to a new day patches the relevant date, keeping the original time-of-day. Native HTML5
+drag-and-drop, no new dependency.
+
+**Auto-publishing is also free** — a daily Vercel Cron, same pattern as the two existing crons. Vercel's
+Hobby plan caps cron frequency at once per day and doesn't guarantee an exact minute within that hour
+(checked against Vercel's own docs) — so "scheduled for the 5th" genuinely means "goes live sometime that
+day," documented directly on the field rather than promising precision the free tier can't deliver.
+
+**A real bug surfaced along the way, unrelated to anything just built:** this Sanity API version's default
+query perspective silently excludes `drafts.*` documents from results entirely, even an exact `_id` match —
+found because the cron's first live test found and published nothing despite a genuinely due draft existing.
+Fixed with an explicit `perspective: 'raw'` option on just the specific queries that need to see drafts,
+passed per-call rather than changed on the shared client, so nothing else in the project is affected by it.
+
+Verified end to end against live data: a real unpublished draft with a past-due `scheduledPublishAt` was
+genuinely auto-published by the real cron endpoint — draft deleted, published document created, `publishedAt`
+correctly backdated to the scheduled time. The calendar's own queries and drag-move logic were verified
+separately, including moving a real published post's date by exactly one day and reverting it. All test data
+cleaned up afterward.
+
+---
+
 ## 2026-08-04 (continued) — Hotfix: broken Studio schema (imageAssetAlt)
 
 Asher reported live Studio (asheraw.com/studio) failing to compile entirely — a real regression from the

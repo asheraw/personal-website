@@ -563,6 +563,14 @@ post's body — covering every image-consuming field with the same fallback woul
 this one. Clearing the field back to blank deletes the companion document entirely rather than leaving an
 empty-string override behind.
 
+**Fixed same day — a real broken-Studio bug:** the document links to its asset via a plain string field,
+`assetId` (the asset's own `_id`), not a `reference` field. The first version used `type: 'reference', to:
+[{type: 'sanity.imageAsset'}]`, which failed Studio's schema compilation entirely (`sanity.imageAsset` is a
+system type, not a valid reference target) and took the whole live Studio down until fixed. If a future field
+ever needs to point at an image asset directly (not via the normal `image` field type, which most things
+should just use), don't reference `sanity.imageAsset` by name — use a plain string ID instead, the way this
+field does.
+
 ---
 
 ## Reusable snippets
@@ -1264,6 +1272,44 @@ Verified with a real Playwright browser against the live site (not just curl): e
 screen, click-through navigation between real moments with correct captions and progress-dot state, the
 mobile-UA redirect firing in an actual browser navigation, and noindex/canonical tags — all against a real
 test post, deleted afterward.
+
+---
+
+## Editorial Calendar (shipped 2026-08-04)
+
+**Studio → Calendar** — a drag-and-drop month view, `src/sanity/components/EditorialCalendarTool.tsx`. Not
+Sanity's own Schedule Publishing (confirmed gated behind their paid Growth plan, $15/seat/month, before
+building anything) — a plain custom Studio tool patching a normal field, free on every tier, same pattern as
+every other tool in this project.
+
+**Two kinds of card:** published posts (solid, keyed off `publishedAt`) and unpublished drafts with a
+`scheduledPublishAt` field set (dashed, `postType.ts`). Dragging either to a new day patches that field,
+keeping the original time-of-day and only changing the date. A draft that's already been published once
+(has a real published counterpart) never shows here even if `scheduledPublishAt` is still set on an in-
+progress edit — that field only means something before a post's first publish.
+
+**Auto-publishing:** `src/app/api/cron/publish-scheduled/route.ts`, a daily Vercel Cron (`vercel.json`, same
+`CRON_SECRET` auth as the other two crons). Publishes any unpublished draft whose `scheduledPublishAt` has
+passed — a real `createOrReplace` + `delete` transaction (draft → published document), not Sanity's own
+publish action. **Precision limit, by design, not a bug:** Vercel's Hobby plan caps cron frequency at once
+per day and doesn't guarantee an exact minute within the scheduled hour — so a post scheduled for a given
+day goes live *sometime* that day, not at a specific time. This is stated directly in the field's own
+description in Studio so it's never a surprise; if precise-time scheduling is ever needed, that requires
+either Vercel's Pro plan (more frequent crons) or Sanity's paid Schedule Publishing.
+
+**Important gotcha, found the hard way:** this Sanity API version's default query *perspective* excludes
+`drafts.*` documents from results entirely — even an exact `_id ==` match returns nothing unless the query
+explicitly passes `{perspective: 'raw'}` as a third argument to `.fetch()`. `getDocument()` doesn't accept a
+perspective option at all, so anywhere a draft's full content needs reading, use `.fetch('*[_id == $id][0]',
+{id}, {perspective: 'raw'})` instead. This is scoped to the *specific queries* that need to see drafts, not
+set on the shared `writeClient`/`useClient()` instances, so it can't silently change behavior anywhere else
+in the project. If a future feature needs to read a draft document and mysteriously gets `null`/empty
+results despite the document definitely existing, check for this first before assuming something's broken.
+
+Verified against live data: a real unpublished draft with a past-due `scheduledPublishAt` was genuinely
+auto-published by the real cron endpoint (draft deleted, published document created, `publishedAt` correctly
+backdated to the scheduled time). The calendar's queries and drag-move patch logic were verified separately,
+including moving a real published post's date by exactly one day and reverting it immediately afterward.
 
 ---
 
