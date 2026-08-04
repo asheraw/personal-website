@@ -785,6 +785,14 @@ though the contact form is lower-risk (not publicly crawlable/spammable the way 
    timestamp *in Studio only*. Not shown on the live site — worth a conscious decision later if public
    edit-transparency ever matters, but wasn't asked for and wasn't added unprompted.
 
+   **The same Edit form also has a "Submitted" date field (added 2026-08-04)**, for backdating a comment
+   that's being manually restored (e.g. one recovered from the Wayback Machine while bringing an old
+   pre-migration post back). `createdAt` on the `comment` schema type is `readOnly: true` — that only gates
+   Sanity's own generic document form, which comments never go through (there's no comment entry in
+   Structure's document list at all), so it doesn't block this tool's own direct `client.patch()` calls, same
+   as `editedAt`/`isAuthorReply` already being set the same way. If a future feature ever needs `createdAt`
+   editable somewhere else, remember this readOnly flag is cosmetic here, not a real guard.
+
 3. **The paragraph-break display bug Asher spotted via screenshot was real, and now fixed.** A commenter's
    line breaks were always being *saved* correctly (proof: the live site rendered them fine, since
    `CommentSection.tsx`'s `CommentCard` already used `whiteSpace: pre-wrap`) — Studio's Comments tool just

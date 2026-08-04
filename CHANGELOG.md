@@ -11,6 +11,25 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Comments can now have their submitted date edited
+
+Asher is restoring old pre-migration posts and has been tracking down their original comments via the Wayback
+Machine — he wants to re-enter them with their real original dates rather than whatever date re-entering them
+happens to land on.
+
+The **Comments** tool's existing edit-message flow now has a "Submitted" date field right alongside the
+message text box, same Save/Cancel. `createdAt` on the `comment` schema type has been `readOnly: true` since
+the type was written — worth noting that *only* matters for Sanity Studio's own generic document form, which
+comments never go through anyway (there's no comment entry in Structure's document list at all, by design, to
+keep the whole flow inside this one tool). Since this tool has always written directly via the API
+(`editedAt`, `isAuthorReply`, etc. are all set the same way already), no schema change was needed at all.
+
+Verified with a real, throwaway comment document: created with today's date, patched with the exact same
+`{message, createdAt, editedAt}` shape the tool's Save button now sends, read back to confirm the backdated
+date landed exactly as set, then deleted.
+
+---
+
 ## 2026-08-04 (continued) — Image display sizes (small/medium/original) and a click-to-lightbox
 
 Asher asked for a way to size down images that don't need to dominate the page, with the full-size original
