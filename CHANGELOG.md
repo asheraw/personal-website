@@ -11,6 +11,31 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — AI Workspace: Distribution dashboard (Tier 1 + Tier 2)
+
+Closes out most of Phase 8. Ties together three things that were each already tracked separately — whether a
+post has drafted social copy (AI Output Log), how many times it's actually been shared (`shareLog`), and now
+a place to log engagement by hand — into one per-post view: **Studio → Distribution**, replacing the plain
+Social Shares list rather than sitting alongside it.
+
+This is the ACE spec's own two-tier "distribution dashboard": **Tier 1** (drafted-copy status + share counts
++ open-post, together in one place) and **Tier 2** (a manual engagement log). Deliberately not automated
+engagement pulled from X/Facebook/LinkedIn's own APIs — `ACE_MASTER_SPEC.md` is explicit that isn't worth the
+ongoing fees/OAuth/platform churn for a solo creator, so Tier 2 here is exactly what the spec actually asks
+for: a manual note ("got 3 replies on LinkedIn"), not a platform integration. Notes live on a new
+`engagementNotes` array on `shareLogType.ts`, created on demand the first time a note's added for a post
+that's never been shared yet.
+
+Also surfaces basic AI usage visibility (calls this month, all-time by feature) right in the same dashboard's
+header — the spec's cost/usage-controls item, scoped to what actually matters on Gemini's free tier: call
+counts, not a dollar figure.
+
+Verified against live data: the "add note" flow tested against a real post with no prior share record,
+confirmed it saved correctly, and the drafted-social-copy correlation checked against real AI Output Log
+data — then the test note was removed.
+
+---
+
 ## 2026-08-04 (continued) — Three small ACE-spec gaps: library alt text, link-target override, snippet versioning
 
 **Media library alt text.** New `imageAssetAlt` companion document — Sanity's own image asset type can't be

@@ -1081,7 +1081,7 @@ event would silently vanish every single time.
 
 ---
 
-## Social Shares: which posts get shared where (shipped 2026-08-03)
+## Social Shares / Distribution dashboard: which posts get shared where (shipped 2026-08-03, folded into Distribution 2026-08-04)
 
 Asked for as a "social distribution dashboard." Scoped deliberately: this tracks *outbound* share-button
 clicks on `ShareBar.tsx` (X, Facebook, LinkedIn, WhatsApp, Email, Copy Link, native share sheet) — it does
@@ -1096,12 +1096,20 @@ already accepted analytics, so a first-party count is what makes this accurate f
 shares plus a per-platform breakdown (`xCount`, `facebookCount`, etc.), no IP address, no visitor-identifying
 data — just tallies against a post.
 
-**View it in Studio → Social Shares**, sorted "Most shared first" by default — each row previews as e.g.
-"12 shares — X 4 · FB 3 · LinkedIn 2 · WhatsApp 3", open one to see the exact breakdown including Email/Copy
-Link/native counts.
+**View it in Studio → Distribution** (was its own "Social Shares" list until 2026-08-04, now folded into the
+dashboard below — the standalone list item was removed from Structure). Component:
+`src/sanity/components/DistributionDashboardTool.tsx`.
 
-Verified against the live dataset before shipping (clicked X-share and Copy Link on a real post through the
-actual page, confirmed the Sanity document updated with the right counts), then deleted that test document.
+**Manual engagement notes (added 2026-08-04):** `shareLogType.ts`'s `engagementNotes` array — a free-text
+note plus optional platform and timestamp, addable per post right from the dashboard. This is the spec's
+"Tier 2" of the distribution dashboard concept: a manual log ("got 3 replies on LinkedIn"), not an automated
+integration, for the same reason engagement-pulling was never built in the first place. Adding a note for a
+post that's never been shared yet `createIfNotExists`'s a fresh `shareLog` document first, so there's always
+somewhere for the note to live.
+
+Verified against the live dataset: the original share-count tracking (clicked X-share and Copy Link on a real
+post, confirmed counts updated correctly) 2026-08-03; the "add note" flow (`createIfNotExists` + append)
+tested against a real post with no prior share record 2026-08-04. Test data removed both times.
 
 ---
 
@@ -1176,6 +1184,13 @@ Verified against the real Gemini API and the live dataset before shipping, both 
 `suggest-*` route with real content, confirmed a real `logId` came back and the `aiOutputLog` document was
 created correctly, called `log-usage` against that real `logId`, confirmed `used` flipped to `true` and
 `usedActions` recorded the action with a timestamp. Deleted both test documents afterward.
+
+**AI usage visibility (added 2026-08-04):** the ACE spec's "cost/usage controls" item, scoped to what's
+actually meaningful while Gemini calls sit on the free tier — call counts, not a dollar figure, since there's
+no real cost to show. Surfaced in **Studio → Distribution**'s header: total AI suggestions this month, and an
+all-time breakdown by feature (SEO/Social/Image prompt), computed directly from `aiOutputLog` — no separate
+tracking needed since every call already creates one of those documents. If Gemini usage ever moves to a paid
+tier, this is the place to add real cost figures, not a new system.
 
 ---
 
