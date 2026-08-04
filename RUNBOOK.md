@@ -1194,6 +1194,35 @@ tier, this is the place to add real cost figures, not a new system.
 
 ---
 
+## AI Workspace: alternative headlines, pull quotes, FAQ suggestions (shipped 2026-08-04)
+
+The last named gap in Phase 8 (AI Workspace) from the ACE spec — closed by extending the existing **Suggest
+SEO & Excerpt** dialog rather than adding a fourth button next to it, since these are the same shape of thing
+(AI-drafted options, reviewed before anything happens) as SEO title/excerpt/tags already are.
+
+**Alternative headlines** patch the post's real `title` field directly — same one-click "Use this" pattern as
+SEO title, just uncapped (no 70-character limit to show progress against, since the post title itself has no
+length cap). **Pull quotes** and **FAQ suggestions** copy to the clipboard instead of patching a field —
+neither maps to one: a pull quote goes wherever the writer decides to place it in the body (as a Quote block
+or a pull-quote snippet), and there's no FAQ section on posts to write into.
+
+**Pull quotes are constrained to be exact substrings of the post's own content** — the prompt explicitly
+requires it, and it was verified against a real response (both quotes returned were confirmed present
+word-for-word in the source text). This matters specifically because a "pull quote" that isn't actually in
+the post would be a fabricated quote attributed to the post — a different failure mode than a slightly-off
+SEO title suggestion, worth the extra verification step.
+
+All three new output types live in the same `responseSchema` on `src/app/api/ai/suggest-seo/route.ts` and the
+same `aiOutputLog` entry (feature: `"seo"`) as the existing SEO suggestions — no new route, no new schema
+type. UI additions in `src/sanity/actions/suggestSeo.tsx`: `HeadlineOption` (title patch) and
+`CopyTextOption` (clipboard, shared by pull quotes and FAQs).
+
+Verified against the real Gemini API before shipping: real post content produced sensible alternative
+headlines and FAQ pairs, both pull quotes confirmed as exact substrings of the source text, and the
+`aiOutputLog` entry confirmed to store all three new fields correctly — then the test log entry was deleted.
+
+---
+
 ## Privacy Policy (shipped 2026-08-02)
 
 `/privacy` (`src/app/(site)/privacy/page.tsx`), linked from the site footer's copyright line (every page) and

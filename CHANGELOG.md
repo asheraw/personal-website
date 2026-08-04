@@ -11,6 +11,26 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — AI Workspace: alternative headlines, pull quotes, FAQ suggestions — Phase 8 closed
+
+The last named gap in Phase 8. Extends the existing **Suggest SEO & Excerpt** dialog rather than adding
+another button — these are the same shape of thing (AI-drafted options, reviewed before anything happens) as
+what's already there.
+
+**Alternative headlines** patch the post's real title directly, same one-click pattern as SEO title/excerpt.
+**Pull quotes** and **FAQ suggestions** copy to the clipboard instead — neither maps to a single field: a pull
+quote goes wherever the writer decides to place it in the body, and there's no FAQ section on posts to write
+into. Pull quotes are constrained to be exact substrings of the post's own content, never invented — a "pull
+quote" that isn't actually in the post would be a fabricated quote attributed to it.
+
+With this, image-prompt drafting (Social Images), the Distribution dashboard, and this all together close out
+Phase 8 (AI Workspace) from the ACE spec.
+
+Verified against the real Gemini API: real post content produced sensible alternative headlines and FAQs, and
+confirmed both generated pull quotes were exact substrings of the source content before cleaning up.
+
+---
+
 ## 2026-08-04 (continued) — AI Workspace: Distribution dashboard (Tier 1 + Tier 2)
 
 Closes out most of Phase 8. Ties together three things that were each already tracked separately — whether a
