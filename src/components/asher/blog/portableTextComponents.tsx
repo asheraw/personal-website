@@ -6,6 +6,7 @@ import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
 import { ImageCarousel } from "@/components/asher/blog/ImageCarousel";
+import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { isTextColorValue } from "@/lib/textColors";
 
 function getYouTubeId(url: string): string | null {
@@ -261,6 +262,11 @@ export const postBodyComponents: PortableTextComponents = {
           />
         </div>
       );
+    },
+    instagramEmbed: ({ value }) => {
+      const url = value?.url as string | undefined;
+      if (!url) return null;
+      return <InstagramEmbed url={url} />;
     },
   },
 };

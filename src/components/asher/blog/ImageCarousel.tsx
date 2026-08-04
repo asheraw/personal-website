@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { urlFor } from "@/sanity/lib/image";
 
@@ -15,73 +17,69 @@ type GalleryImage = {
 };
 
 // Renders both the "Carousel" and "Slideshow" imageGallery block types --
-// same markup and controls either way, the only difference is whether an
-// interval auto-advances the index. Deliberately shows one image at a time
-// (not a horizontal strip) so it reads the same as a single Image block
-// visually, just with next/prev navigation added.
+// same markup and controls either way, the only difference is whether
+// Embla's Autoplay plugin is attached. Built on embla-carousel-react
+// (https://github.com/davidjerleke/embla-carousel), which also gives touch
+// swipe and drag for free -- no manual touch handlers needed here.
 export function ImageCarousel({ images, mode }: { images: GalleryImage[]; mode: "carousel" | "slideshow" }) {
-  const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const touchStartX = useRef<number | null>(null);
   const count = images?.length ?? 0;
 
-  const goTo = useCallback((i: number) => setIndex(((i % count) + count) % count), [count]);
-  const next = useCallback(() => goTo(index + 1), [goTo, index]);
-  const prev = useCallback(() => goTo(index - 1), [goTo, index]);
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: count > 1 },
+    mode === "slideshow"
+      ? [Autoplay({ delay: SLIDESHOW_INTERVAL_MS, stopOnInteraction: false, stopOnMouseEnter: true })]
+      : []
+  );
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Paused on hover (mouse) and while a touch drag is in progress -- an
-  // auto-advancing slideshow that yanks the image out from under a reader
-  // mid-swipe, or mid-look, is worse than one that just holds still until
-  // they move on.
+  const onSelect = useCallback(() => {
+    if (emblaApi) setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
   useEffect(() => {
-    if (mode !== "slideshow" || paused || count < 2) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % count), SLIDESHOW_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [mode, paused, count]);
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi, onSelect]);
 
-  function onTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-    setPaused(true);
-  }
-  function onTouchEnd(e: React.TouchEvent) {
-    if (touchStartX.current !== null) {
-      const delta = e.changedTouches[0].clientX - touchStartX.current;
-      if (Math.abs(delta) > 40) (delta > 0 ? prev : next)();
-    }
-    touchStartX.current = null;
-    setPaused(false);
-  }
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+  const scrollTo = useCallback((i: number) => emblaApi?.scrollTo(i), [emblaApi]);
 
   if (count === 0) return null;
-  const current = images[index];
+  const current = images[selectedIndex] ?? images[0];
 
   return (
     <figure className="my-8">
-      <div
-        className="group relative overflow-hidden rounded-lg border border-amber-faint bg-stage/40"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        <div className="relative aspect-[3/2] w-full">
-          {current.asset && (
-            <Image
-              key={current._key}
-              src={urlFor(current).width(1400).url()}
-              alt={current.alt ?? ""}
-              fill
-              loading="lazy"
-              className="object-contain"
-            />
-          )}
+      <div className="group relative overflow-hidden rounded-lg border border-amber-faint bg-stage/40">
+        <div className="overflow-hidden" ref={emblaRef}>
+          <div className="flex">
+            {images.map((img) => (
+              <div key={img._key} className="relative aspect-[3/2] w-full shrink-0 grow-0 basis-full">
+                {img.asset && (
+                  <Image
+                    src={urlFor(img).width(1400).url()}
+                    alt={img.alt ?? ""}
+                    fill
+                    loading="lazy"
+                    className="object-contain"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {count > 1 && (
           <>
             <button
               type="button"
-              onClick={prev}
+              onClick={scrollPrev}
               aria-label="Previous image"
               className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-stage/70 p-1.5 text-ivory opacity-0 transition-opacity hover:bg-stage focus-visible:opacity-100 group-hover:opacity-100"
             >
@@ -89,7 +87,7 @@ export function ImageCarousel({ images, mode }: { images: GalleryImage[]; mode: 
             </button>
             <button
               type="button"
-              onClick={next}
+              onClick={scrollNext}
               aria-label="Next image"
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-stage/70 p-1.5 text-ivory opacity-0 transition-opacity hover:bg-stage focus-visible:opacity-100 group-hover:opacity-100"
             >
@@ -100,11 +98,11 @@ export function ImageCarousel({ images, mode }: { images: GalleryImage[]; mode: 
                 <button
                   key={img._key}
                   type="button"
-                  onClick={() => goTo(i)}
+                  onClick={() => scrollTo(i)}
                   aria-label={`Go to image ${i + 1} of ${count}`}
-                  aria-current={i === index}
+                  aria-current={i === selectedIndex}
                   className={`h-1.5 w-1.5 rounded-full transition-colors ${
-                    i === index ? "bg-spotlight" : "bg-ivory/40 hover:bg-ivory/70"
+                    i === selectedIndex ? "bg-spotlight" : "bg-ivory/40 hover:bg-ivory/70"
                   }`}
                 />
               ))}

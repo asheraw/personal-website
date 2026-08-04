@@ -8,6 +8,7 @@ import {ComponentIcon} from '@sanity/icons/Component'
 import {LinkIcon} from '@sanity/icons/Link'
 import {DocumentIcon} from '@sanity/icons/Document'
 import {TagIcon} from '@sanity/icons/Tag'
+import {HeartFilledIcon} from '@sanity/icons/HeartFilled'
 import {TEXT_COLORS} from '../../lib/textColors'
 
 /**
@@ -363,6 +364,30 @@ export const blockContentType = defineType({
       preview: {
         select: {url: 'url'},
         prepare: ({url}) => ({title: 'YouTube embed', subtitle: url}),
+      },
+    }),
+    // Instagram's own free, official embed (blockquote + embed.js) --
+    // shows the real photo, caption, account, and like count, with a
+    // "View this post on Instagram" link. Not the same as pulling actual
+    // comment replies inline -- that needs Meta's token-gated Graph API
+    // oEmbed endpoint and app review, a much bigger lift for a feature
+    // that isn't asked for often enough to justify it yet.
+    defineArrayMember({
+      type: 'object',
+      name: 'instagramEmbed',
+      title: 'Instagram embed',
+      icon: HeartFilledIcon,
+      fields: [
+        defineField({
+          name: 'url',
+          title: 'Instagram post URL',
+          type: 'url',
+          description: 'Paste the full post URL, e.g. https://www.instagram.com/p/XXXXXXXXXXX/',
+        }),
+      ],
+      preview: {
+        select: {url: 'url'},
+        prepare: ({url}) => ({title: 'Instagram embed', subtitle: url}),
       },
     }),
   ],
