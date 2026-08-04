@@ -389,35 +389,55 @@ back to never hiding (visible for the rest of the page) rather than erroring.
 
 ---
 
-## Image Carousel / Slideshow block (shipped 2026-08-02, rebuilt on Embla 2026-08-04)
+## Image block: single photo, or a carousel/slideshow/scrolling strip (merged into one 2026-08-04)
 
-A new block type in the post body editor, alongside the plain Image block: **Image Carousel / Slideshow**
-(`imageGallery` in `src/sanity/schemaTypes/blockContentType.ts`). Pick 2 or more images (each with the same
-optional alt text / caption fields the single Image block already has) and a **Layout**:
+One block type in the post body editor covers both cases now — `image` in
+`src/sanity/schemaTypes/blockContentType.ts`. Add a photo and nothing else: it's a plain single image, exactly
+as it's always rendered. Also add one or more photos under **More photos (optional -- turns this into a
+carousel)**: the block becomes a multi-photo gallery, and a **Display style** field appears (hidden until
+there's at least one additional photo) with three choices:
 
 - **Carousel** — sits still until the reader clicks the arrow buttons, clicks a dot, or swipes on mobile.
-- **Slideshow** — the same controls, plus a 5-second auto-advance timer. The timer pauses the instant a reader
-  hovers over it (mouse) or touches it (mobile), and stays paused until they move away — an auto-advancing
-  image that changes out from under someone mid-look or mid-swipe would be actively annoying, not helpful.
+- **Slideshow** — the same controls, plus a 5-second auto-advance timer that pauses the instant a reader
+  hovers (mouse) or touches it (mobile), and stays paused until they move away.
+- **Scrolling strip** — every photo shown at once, each at its own natural aspect ratio (not locked to a
+  uniform box), continuously auto-scrolling on its own, pausing on hover/touch. The style from
+  [Embla's own predefined examples](https://www.embla-carousel.com/docs/examples/predefined/) Asher pointed at
+  directly. Built on the `embla-carousel-auto-scroll` plugin (`speed`, `stopOnMouseEnter`,
+  `stopOnInteraction` options) — a separate plugin from `embla-carousel-autoplay`, which only powers the
+  discrete one-at-a-time Slideshow timer.
 
-Requires at least 2 images (enforced by the schema's own validation, with a message pointing back to the
-plain Image block for a single photo) — this is deliberately a *different* block from the regular Image
-block, not a variant of it, so inserting one photo never accidentally creates a pointless one-image carousel.
+Carousel/Slideshow are rendered by `SlideCarousel` and Scrolling strip by `ScrollStrip`, both in
+`src/components/asher/blog/ImageCarousel.tsx` (exported together as `ImageCarousel`), invoked from the single
+`types.image` renderer in `portableTextComponents.tsx` whenever `additionalImages` is non-empty — a block with
+no additional photos never touches this path at all. No GROQ query changes were needed — `POST_BY_SLUG_QUERY`
+already fetches the whole `body[]` array as a spread.
 
-Rendered by `src/components/asher/blog/ImageCarousel.tsx` (one shared component for both layouts — `mode`
-prop is the only thing that changes), registered as the `imageGallery` type in `postBodyComponents`
-(`portableTextComponents.tsx`). No GROQ query changes were needed to ship this — `POST_BY_SLUG_QUERY`
-already fetches the whole `body[]` array as a spread (`{ ... }`), so a new block type just flows through
-automatically the same way `callout`, `accordion`, etc. already do.
+**This used to be two separate block types** (a plain Image, and a standalone `imageGallery` requiring 2+
+photos) until Asher asked whether they could become one field instead of two. The merge is additive and fully
+backward compatible — `additionalImages`/`displayStyle` are optional fields on the *same* `image` type that's
+always existed, so every other post's plain single-image blocks needed zero changes. The one post that *did*
+use the old `imageGallery` type ("Christmas 2015: The Quest") got a one-time migration script rewriting its
+one gallery block into the new shape (same 6 photos, same order, same Slideshow setting) — after that, the old
+`imageGallery` type was deleted from the schema outright. That migration script wrote directly to production
+content, so it ran only after Asher explicitly said yes (the auto-mode safety classifier blocked the first,
+unattended attempt, correctly).
 
-**Rebuilt on [Embla Carousel](https://github.com/davidjerleke/embla-carousel) (2026-08-04)** — Asher asked
-for it by name. `embla-carousel-react` was already installed transitively (via shadcn/ui's own unused
-`src/components/ui/carousel.tsx` wrapper, which this does *not* use — that wrapper lays out a horizontal
-multi-item strip, not the single-image-at-a-time display this block needs, so `ImageCarousel.tsx` calls
-`useEmblaCarousel` directly instead). Added one new package, `embla-carousel-autoplay`, for the slideshow's
-timer — its `stopOnMouseEnter` option replaces the old manual hover/touch `paused` state, and native
-Embla drag/swipe replaces the old 40px touch-delta threshold logic. Same visual result (dots, chevrons,
-captions), simpler implementation.
+**Divider still opens an empty edit dialog on insert, even though it has nothing to configure.** Looked for a
+documented, reliable way to make a zero-content Portable Text object block skip that dialog — found nothing in
+Sanity's own docs or changelog, and wasn't willing to ship a guessed custom-component fix for Studio's editor
+chrome unverified (this is exactly the category of change that broke Studio outright earlier the same day —
+see the `imageAssetAlt` incident above). Left as a known, minor annoyance; worth a proper look if Asher wants
+it enough to accept the "I can't fully verify this without you checking Studio live" risk.
+
+**Gotcha, found the hard way: a stale `.next` build cache can outlive a content change.** Right after the
+migration script ran, the live post kept rendering the *old* gallery shape for several minutes, even though
+the API confirmed the write went through immediately (checked directly, bypassing the CDN). Cause: an earlier
+`npm run build` in the same session had already cached that exact page's fetch result on disk; `next dev`
+reads the same on-disk cache `npm run build` writes to, so it kept serving the pre-migration result regardless
+of restarting the dev server process. Deleting just `.next/cache` didn't clear it — only removing the whole
+`.next` directory and restarting did. If a content change looks like it "isn't taking" locally right after a
+build ran in the same session, this is the first thing to check.
 
 ---
 

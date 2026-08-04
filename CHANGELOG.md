@@ -11,6 +11,44 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Image and Carousel merged into one block, plus a scroll-strip style
+
+Follow-up to the Embla rebuild above, from feedback on the same day: Asher asked whether the plain **Image**
+block and **Image Carousel / Slideshow** block could become one field instead of two, and separately pointed
+at Embla's own [predefined examples](https://www.embla-carousel.com/docs/examples/predefined/) — specifically
+the variable-width, auto-scrolling style — as something he wanted an option for.
+
+**Merged into one block.** The `image` schema type (`blockContentType.ts`) gained an optional
+`additionalImages` array field and a `displayStyle` field (hidden until at least one additional photo exists).
+A block with no additional photos renders exactly as a plain image always has — fully backward compatible
+with every other post's existing single-image blocks, no migration needed for those. The old standalone
+`imageGallery` type is gone from the schema entirely now, so there's one toolbar button, not two.
+
+**One real migration was required**, not zero: the single post that used the old `imageGallery` shape
+("Christmas 2015: The Quest") had its one gallery block rewritten via a one-time script into the new shape —
+same 6 photos, same order, same Slideshow setting, just reshaped. This was a live write to production content,
+so it went through Asher directly rather than running unattended (the auto-mode safety classifier correctly
+flagged the first unattended attempt as the kind of action that needed a human yes). Verified afterward against
+the live page: renders identically, Next/dot navigation still advances correctly.
+
+**New "Scrolling strip" display style** — photos shown at their natural aspect ratio side by side (not locked
+to one uniform box), continuously auto-scrolling via `embla-carousel-auto-scroll`, pausing on hover/touch via
+its own `stopOnMouseEnter`/`stopOnInteraction` options. Verified live with a real temporary toggle on the
+Christmas 2015 post (reverted back to Slideshow immediately after): two screenshots a second and a half apart
+show the strip having visibly advanced.
+
+**Also reordered the toolbar** so **YouTube embed** — used often — sits right after Accordion instead of
+buried behind "...". (Divider still opens an empty edit dialog on insert even though it has nothing to
+configure; looked for a clean documented fix and didn't find one worth shipping blind — see `RUNBOOK.md`.)
+
+**Real snag hit along the way, not a code bug:** after the migration, the live post kept showing the *old*
+gallery shape for several minutes despite the write having genuinely gone through (confirmed directly against
+the API). Traced to `.next`'s on-disk fetch cache surviving a `next build` run from earlier in the session —
+deleting the whole `.next` directory (not just `.next/cache`) and restarting fixed it immediately. Worth
+knowing for next time this happens.
+
+---
+
 ## 2026-08-04 (continued) — Instagram embeds, and the carousel rebuilt on Embla
 
 Two requests handled together: an Instagram post embed block for the post editor, and a rebuild of the
