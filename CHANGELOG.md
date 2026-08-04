@@ -11,6 +11,59 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Image display sizes (small/medium/original) and a click-to-lightbox
+
+Asher asked for a way to size down images that don't need to dominate the page, with the full-size original
+still reachable on click/tap.
+
+New **Display size** field on the Image block (`blockContentType.ts`): **Small** (max 420px), **Medium** (max
+720px), or **Original** (fills the post column, today's existing behavior — the default, so nothing about any
+existing post changed). Applies to a plain image and to every carousel/slideshow/scrolling-strip mode alike.
+
+**Every image, everywhere, now opens a lightbox on click** showing the untouched full-size original —
+`src/components/asher/blog/ImageLightbox.tsx`, a small portal-rendered overlay (Escape, click-outside, or a
+close button dismiss it). Display size only ever changes the inline preview; a reader can always get to the
+real full-resolution photo. Wired into `SizedImage.tsx` (new, replaces the plain-image render path) and into
+`ImageCarousel.tsx`'s existing slide/thumbnail buttons.
+
+**One real interaction bug caught before shipping:** clicking a carousel slide to open the lightbox also fired
+after dragging to the next photo, since a drag ends with a `pointerup` that looks like a click. Fixed by
+checking Embla's own `internalEngine().dragHandler.pointerDown()` inside the click handler and ignoring the
+click if a drag was in progress — the same guard Embla's own docs recommend for exactly this case.
+
+Verified live end-to-end: opened and closed the lightbox on a plain image and inside a slideshow (confirmed
+the full-size image actually loads, not a placeholder), confirmed dragging through the carousel doesn't
+misfire it, and confirmed Small actually renders at a real capped, centered width via a temporary toggle on a
+real post (reverted immediately after).
+
+---
+
+## 2026-08-04 (continued) — Found and fixed the real cause of every failed deploy today
+
+Asher reported not seeing any of today's work live, and separately noticed the Vercel dashboard showing
+repeated "resource provisioning failed" errors — his own hunch was Supabase, since he'd seen a
+"supabase-teal-clock" indicator and doesn't want to depend on it (it can pause itself from inactivity).
+
+He was right. This project ran on Supabase/Postgres for the contact form long before migrating to Sanity —
+the code hasn't touched it in months, but the **Vercel integration itself was never disconnected**, and it was
+marked *required for every deployment*. Supabase's free tier had auto-paused the underlying project from
+inactivity; Vercel tried to provision that dead, paused resource on every single deploy from that point on and
+failed before the app's own code ever got a chance to matter. Every "Error" in the deployment history — 5 in a
+row, starting exactly at the Instagram/Embla commit purely by coincidence of timing — shares this one cause,
+confirmed directly via the Vercel API (`errorCode: "BUILD_FAILED"`, `errorMessage: "Resource provisioning
+failed"` on every one, with the actual Next.js build step itself always reporting success).
+
+Fixed in two steps, both explicitly confirmed with Asher first since they touch live infrastructure, not just
+code: disconnected the Supabase resource from the project (`vercel integration resource disconnect`), then
+fully deleted it (`vercel integration resource remove`) once confirmed nothing else used it. A manual
+`vercel deploy --prod` right after came back `Ready` immediately, and the very next real git push (the image
+lightbox work above) deployed cleanly on its own — confirming the fix holds, not a one-off.
+
+No code was ever the problem here — worth remembering the next time a deploy fails right after a normal
+commit: check whether the *build* step itself actually succeeded before assuming the new code is at fault.
+
+---
+
 ## 2026-08-04 (continued) — Image and Carousel merged into one block, plus a scroll-strip style
 
 Follow-up to the Embla rebuild above, from feedback on the same day: Asher asked whether the plain **Image**

@@ -439,6 +439,16 @@ of restarting the dev server process. Deleting just `.next/cache` didn't clear i
 `.next` directory and restarting did. If a content change looks like it "isn't taking" locally right after a
 build ran in the same session, this is the first thing to check.
 
+**Display size + lightbox (2026-08-04).** Every Image block also has a **Display size** field: Small (max
+420px), Medium (max 720px), or Original (fills the column, the default — matches every pre-existing post
+exactly). This is purely cosmetic on the page; clicking or tapping *any* image, in every display style, opens
+`ImageLightbox.tsx` — a full-size, untouched view of the original, dismissible via Escape, clicking outside, or
+its close button. `SizedImage.tsx` handles the plain-image case; `ImageCarousel.tsx`'s own slide/thumbnail
+buttons handle the gallery cases. One thing worth knowing if a carousel's click-to-lightbox ever seems to
+misfire after this: the click handler checks `emblaApi.internalEngine().dragHandler.pointerDown()` and bails
+out if a drag is still in progress — without that guard, dragging to the next slide also pops the lightbox
+open, since a drag ends in a pointerup that looks just like a click.
+
 ---
 
 ## Instagram embed block (shipped 2026-08-04)
@@ -964,6 +974,44 @@ they're already a real part of, with a working one-click way out.
 5. **If none of that explains it,** the site's connection to Sanity itself may be misconfigured (this happened once — see "History" below). That needs a developer to check the Sanity project ID/dataset environment variables on Vercel.
 
 **History:** On 2026-07-28, the live site was frozen on whatever content existed at the last deploy — new posts added in Sanity simply never appeared, because the blog pages had no instruction to ever re-check Sanity. Fixed by adding a 60-second revalidation window to `/blog` and `/blog/[slug]`. If this exact symptom reappears (posts genuinely never show, not even after minutes), check that `export const revalidate = 60` is still present near the top of `src/app/blog/page.tsx` and `src/app/blog/[slug]/page.tsx` — it may have been accidentally removed in a later edit.
+
+---
+
+## Deploys failing with "resource provisioning failed" (real incident, 2026-08-04)
+
+**Symptoms:** Every deploy in Vercel's dashboard shows a red **Error** status, even for a commit that builds
+and typechecks fine locally. The Vercel dashboard shows a **suspended** integration (look for a teal-clock
+icon, or any third-party name you don't recognize) attached to the project.
+
+**This is almost never a code problem.** Check the failing deployment's actual build step before assuming the
+new commit broke something: `npx vercel inspect <deployment-url> --json` and look at `builds[0].readyState` —
+if that says `READY`, the code compiled fine and the failure happened *after*, during Vercel's own resource
+provisioning. A generic `errorMessage: "Resource provisioning failed"` alongside a successful build almost
+always means a connected marketplace integration (Supabase, a database, etc.) is unreachable or paused, and
+Vercel is refusing to deploy until it can provision/verify that resource — regardless of whether the app's code
+actually uses it anymore.
+
+**What actually happened this time:** this project ran on Supabase/Postgres for the contact form long before
+migrating to Sanity. The code stopped using it months ago, but the Vercel **integration** itself was never
+disconnected, and it was marked *required for every deployment* on the project. Supabase's free tier had
+auto-paused the underlying project from inactivity ("suspended"). Every deploy from that point tried to
+provision the dead resource and failed before the app's own code ever ran.
+
+**Fix:**
+```
+npx vercel login                                                    # if not already authenticated
+npx vercel link --yes --project personal-website
+npx vercel integration resource disconnect <resource-name> personal-website --yes
+npx vercel deploy --prod --yes                                      # confirms the fix immediately
+```
+Find `<resource-name>` from `npx vercel ls` on the failing deployment's dashboard, or via
+`GET https://api.vercel.com/v1/storage/stores?teamId=...` — it's the `name` field of the store with
+`"status": "suspended"`. `disconnect` unlinks it from this project without touching the underlying resource;
+follow up with `npx vercel integration resource remove <resource-name> --yes` only once you're sure nothing
+else needs it (this one genuinely deletes it).
+
+**Both of those specific commands touch live infrastructure, not just code** — confirmed with Asher directly
+before running either, same as any other action with real, hard-to-reverse consequences.
 
 ---
 
