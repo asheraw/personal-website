@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/asher/SiteHeader";
@@ -10,8 +11,31 @@ import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
 import { SkipToContentLink } from "@/components/asher/SkipToContentLink";
 import { track } from "@/lib/analytics";
 
+// One picked at random per page load -- purely for a bit of variety on a
+// page people otherwise only ever see once by accident.
+const NOT_FOUND_ILLUSTRATIONS = [
+  {
+    src: "/asher/404-stage.png",
+    alt: "Illustration of a Victorian stage actor announcing “Well, this is awkward. We lost something,” surrounded by scattered pages on an empty theatre stage.",
+  },
+  {
+    src: "/asher/404-squirrel.png",
+    alt: "Comic-panel illustration of a squirrel, the Time Squirrel, hoarding old computer parts and broken web pages in its tree-hollow nest.",
+  },
+  {
+    src: "/asher/404-hamster.png",
+    alt: "Comic-panel illustration of Timo the Time Hamster eating torn pages labelled 404 amid a tangle of cables.",
+  },
+];
+
 export function NotFoundContent() {
   const pathname = usePathname();
+
+  // Chosen once per mount (not on every render) via useState's lazy
+  // initializer -- a fresh visit to a broken link gets a fresh pick.
+  const [illustration] = useState(
+    () => NOT_FOUND_ILLUSTRATIONS[Math.floor(Math.random() * NOT_FOUND_ILLUSTRATIONS.length)]
+  );
 
   useEffect(() => {
     // Belt-and-suspenders for the browser tab title: `not-found.tsx`'s
@@ -65,16 +89,25 @@ export function NotFoundContent() {
             style={{ background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(240,184,101,0.12) 0%, transparent 65%)" }}
           />
           <div className="relative mx-auto max-w-lg text-center">
-            <p className="font-mono-stage text-xs uppercase tracking-[0.3em] text-spotlight/70">
+            <div className="mx-auto overflow-hidden rounded-lg border border-amber-faint bg-stage/40">
+              <Image
+                src={illustration.src}
+                alt={illustration.alt}
+                width={1408}
+                height={768}
+                priority
+                className="h-auto w-full"
+              />
+            </div>
+            <p className="mt-8 font-mono-stage text-xs uppercase tracking-[0.3em] text-spotlight/70">
               / act_404 · missing_scene
             </p>
             <h1 className="mt-5 font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
-              Scene not <span className="italic text-spotlight-gradient">found.</span>
+              Oops, Something&rsquo;s <span className="italic text-spotlight-gradient">Missing</span>
             </h1>
             <p className="mt-6 leading-relaxed text-stone/80">
-              Whatever you were looking for isn&rsquo;t in this production — wrong link, an old cue that got cut,
-              or a page that never made it to opening night. Either way, there&rsquo;s a lot more happening on
-              the actual stage.
+              Whatever you were looking for is somewhere else — maybe a wrong link, it got cut, or it just
+              never made it. Either way, there&rsquo;s other stuff to check out.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
               <Link
