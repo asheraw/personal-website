@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { urlFor } from "@/sanity/lib/image";
@@ -13,6 +12,7 @@ import { BlogReadingBar } from "@/components/asher/blog/BlogReadingBar";
 import { createPostBodyComponents } from "@/components/asher/blog/portableTextComponents";
 import { CommentSection } from "@/components/asher/blog/CommentSection";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
+import { FeaturedImage } from "@/components/asher/blog/FeaturedImage";
 import { RelatedPosts } from "@/components/asher/blog/RelatedPosts";
 import { ShareBar } from "@/components/asher/blog/ShareBar";
 import { AffiliateDisclosure } from "@/components/asher/blog/AffiliateDisclosure";
@@ -277,16 +277,11 @@ export default async function PostPage({ params }: PageProps) {
           )}
 
           {post.mainImage && (
-            <div className="mt-10">
-              <Image
-                src={urlFor(post.mainImage).width(1200).url()}
-                alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
-                width={1200}
-                height={675}
-                className="h-auto w-full"
-                priority
-              />
-            </div>
+            <FeaturedImage
+              src={urlFor(post.mainImage).width(1200).url()}
+              fullSrc={urlFor(post.mainImage).width(2400).url()}
+              alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
+            />
           )}
 
           {bodyHasAffiliateLinks(post.body) && <AffiliateDisclosure />}
