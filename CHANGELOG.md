@@ -11,6 +11,34 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Link Management: broken-link checker, monitoring, affiliate registry
+
+Closes out the last open piece of Phase 3 (SEO & Machine Readability) — three related roadmap items (a
+broken-link checker, external-link monitoring, an affiliate-link registry) built together since they share
+the same underlying question: what URLs does the site's own content point to, and are they still good.
+
+**Studio → Link Checker** (new top-nav tool) scans every post and reusable snippet's own rich text for links,
+checks each one live, and groups results into **Broken** / **Affiliate links** / **Everything else**. Results
+persist as `linkCheck` documents — a browsable record between runs, not a one-off report. Re-running upserts
+by URL rather than piling up duplicates, and a URL removed from every post/snippet it used to appear in gets
+cleaned up automatically. A weekly cron re-runs the same check without Asher needing to remember to — that's
+what makes this monitoring, not just an on-demand audit.
+
+**Affiliate links, made real.** New "Affiliate link" annotation in the post editor, separate from the plain
+URL one, so it's unambiguous while writing which links are affiliate. Renders with `rel="sponsored"`
+automatically (Google's recommended rel for paid links) and any post using one now shows an FTC-style
+disclosure banner automatically — a writer can't forget to add the disclosure on one post but not another,
+since it's derived from the content itself rather than a separate step.
+
+Verified against real production content before shipping: a live run found all 27 real links across existing
+posts and snippets, correctly attributed to their source, and caught one genuinely broken link (a Reuters
+article now returning 401 — a real find, not a test artifact). Re-ran to confirm the upsert logic (stable
+document count, no duplicates) and that `brokenSince` persists across runs instead of resetting each time.
+Verified the affiliate path end-to-end with a temporary test post — correct affiliate flag, correct source
+attribution, correct cleanup once the test post was deleted.
+
+---
+
 ## 2026-08-04 (continued) — Contact Submissions: text clipping actually fixed, table polished
 
 The earlier fix for clipped Name/Email/Subject text (wrapping Sanity UI's `Text` in an `overflow:hidden` div)

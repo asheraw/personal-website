@@ -170,6 +170,42 @@ redirecting except that the deployed `middleware.ts` actually includes this rule
 
 ---
 
+## Link Checker: broken links, monitoring, and affiliate registry (shipped 2026-08-04)
+
+**Studio → Link Checker** (top nav) scans every post and reusable snippet's own rich text for links — both
+the plain URL annotation and the Affiliate link one (below) — and checks each URL live: HEAD first, falling
+back to GET for hosts that reject HEAD outright. Results group into three sections: **Broken**, **Affiliate
+links**, **Everything else**. Component: `src/sanity/components/LinkCheckerTool.tsx`. Shared checking logic:
+`src/lib/linkChecker.ts`.
+
+**Results persist, not just report.** Each checked URL is its own `linkCheck` document (deterministic id
+hashed from the URL, so re-checking upserts rather than duplicating), storing which post(s)/snippet(s) use it,
+last status, and `brokenSince` (set the first time a URL fails, left untouched on every subsequent failed
+check, cleared automatically the moment it passes again). A URL that's been removed from every post/snippet
+it used to appear in has its `linkCheck` document deleted on the next run — the registry only ever reflects
+what's actually in current content, never stale history.
+
+**Monitoring, not just an on-demand audit.** `vercel.json` runs `/api/cron/check-links` weekly (same
+`CRON_SECRET` auth as `/api/cron/purge-trash` — already configured, nothing new to set up). **Check now** in
+the tool itself calls `/api/check-links` (no cron secret needed — same no-extra-auth pattern as the AI
+suggestion routes, since reaching Studio is the access control on this solo-owner site) to run the identical
+check on demand.
+
+**False positives happen.** Some sites block automated/bot-like requests (a plain `HEAD`/`GET` with no
+browser fingerprint) even though the page loads completely fine for an actual visitor — a flagged link is
+worth a quick manual click before assuming it's really broken, not an automatic "go fix this."
+
+**Affiliate links.** A separate "Affiliate link" annotation next to the plain URL one in the post editor
+(`blockContentType.ts`) — picking it instead of a plain link does two things automatically: the rendered link
+gets `rel="sponsored"` (Google's recommended rel attribute for paid/affiliate links, distinct from a plain
+`nofollow`), and the post gets an FTC-style disclosure banner (`AffiliateDisclosure.tsx`) rendered
+automatically above the body — driven by `bodyHasAffiliateLinks()` scanning the post's own markDefs
+(`src/lib/portableText.ts`), not a separate toggle a writer has to remember to flip. No disclosure banner
+showing on a post that should have one almost always means the link was added via the plain "External URL"
+annotation instead of "Affiliate link" by mistake — check which one was actually picked.
+
+---
+
 ## Skip-to-content link (shipped 2026-07-31)
 
 An invisible-until-focused "Skip to content" link (`src/components/asher/SkipToContentLink.tsx`), the very
