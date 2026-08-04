@@ -449,6 +449,14 @@ misfire after this: the click handler checks `emblaApi.internalEngine().dragHand
 out if a drag is still in progress — without that guard, dragging to the next slide also pops the lightbox
 open, since a drag ends in a pointerup that looks just like a click.
 
+**Missed spot, closed same day: the Featured Image.** All of the above only ever covered Portable Text *body*
+images. The separate `mainImage` field rendered at the top of every post (`src/app/(site)/blog/[slug]/page.tsx`)
+went through plain `next/image` with no lightbox at all until Asher noticed. Fixed with a small dedicated
+wrapper, `FeaturedImage.tsx` — always full width (it's the hero, not a Display-size-able body block, so it has
+no size options), but opens the same `ImageLightbox.tsx` on click. Worth remembering if another image spot
+turns up outside the post body later (an author photo, a category card image, etc.) — none of those go through
+`portableTextComponents.tsx` either, so none of them automatically inherited this for free.
+
 ---
 
 ## Instagram embed block (shipped 2026-08-04)
@@ -1475,6 +1483,12 @@ what actually reflects in the browser tab; the `metadata` export in `src/app/not
 it does still apply to some fields (confirmed `robots: noindex` renders correctly) but shouldn't be trusted
 alone for `title` in this specific file. If a future Next.js upgrade fixes this upstream, the manual
 `document.title` line is harmless to leave in place either way.
+
+**Illustration + copy (2026-08-04):** the page shows one of three illustrations (`public/asher/404-*.png`),
+picked at random per visit via a `useState` lazy initializer in `NotFoundContent.tsx` — computed once on mount
+so it's stable for that visit, not re-rolled on every re-render. Adding a fourth just means adding one more
+entry to the `NOT_FOUND_ILLUSTRATIONS` array at the top of that file plus the image file itself in
+`public/asher/`; nothing else needs to change.
 
 ---
 

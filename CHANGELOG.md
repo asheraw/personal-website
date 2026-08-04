@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — 404 page: three illustrations, new copy, and a Featured Image lightbox gap closed
+
+Asher sent three custom illustrations (a flustered stage actor, the Time Squirrel, Timo the Time Hamster) and
+new copy for the 404 page, plus a follow-up spot he noticed: a post's Featured Image wasn't clickable, unlike
+every image in the body.
+
+**404 page** (`NotFoundContent.tsx`) — one of the three illustrations is picked at random per visit (`useState`
+lazy initializer, so it's stable for that visit but fresh on the next one), sitting above the heading. New
+copy: "Oops, Something's Missing" (was "Scene not found."), and a friendlier explanation paragraph. One small
+wording fix made along the way: Asher's draft had "is some else" — read as a typo for "is somewhere else" and
+shipped that reading; flagged directly in case that guess was wrong.
+
+**Featured Image lightbox** (`FeaturedImage.tsx`, new) — the earlier image-lightbox work only touched Portable
+Text body images; the separate `mainImage` field rendered at the top of every post was missed entirely. Same
+click-to-lightbox treatment now, always full width (it's the hero, not a Display-size-able body block, so no
+size options here).
+
+Verified live: loaded the 404 page six times running and got all three illustrations back across those loads
+(confirming the random pick actually varies, not just once and cached), and opened a real post's Featured
+Image lightbox end to end, confirming the full-size original actually loads.
+
+---
+
 ## 2026-08-04 (continued) — Comments can now have their submitted date edited
 
 Asher is restoring old pre-migration posts and has been tracking down their original comments via the Wayback
