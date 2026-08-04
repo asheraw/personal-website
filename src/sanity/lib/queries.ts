@@ -80,7 +80,7 @@ export const POST_BY_SLUG_QUERY = `
       }
     },
     mainImage,
-    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && asset._ref == ^.mainImage.asset._ref][0].altText),
+    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText),
     seoTitle,
     socialImage,
     useBrandedSocialCard,
@@ -148,7 +148,7 @@ export const RELATED_POSTS_QUERY = `
     "autoExcerpt": pt::text(body)[0...200],
     publishedAt,
     mainImage,
-    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && asset._ref == ^.mainImage.asset._ref][0].altText),
+    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText),
     "matchScore": count((categories[]->slug.current)[@ in $categorySlugs]) + count((tags[])[@ in $tags])
   }
 `;

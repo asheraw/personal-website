@@ -43,7 +43,7 @@ export function MediaLibraryTool() {
         originalFilename,
         size,
         "usedBy": *[_type == "post" && references(^._id)]{title, "slug": slug.current},
-        "defaultAlt": *[_type == "imageAssetAlt" && asset._ref == ^._id][0].altText
+        "defaultAlt": *[_type == "imageAssetAlt" && assetId == ^._id][0].altText
       }`,
     )
   }, [client])
@@ -70,7 +70,7 @@ export function MediaLibraryTool() {
         await client.createOrReplace({
           _id: altDocId(assetId),
           _type: 'imageAssetAlt',
-          asset: {_type: 'reference', _ref: assetId},
+          assetId,
           altText: trimmed,
         })
       } else {
