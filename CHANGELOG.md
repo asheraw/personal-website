@@ -11,6 +11,38 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — PLAY architecture (Phase 4): per-post interactive presentation
+
+The biggest remaining phase from the ACE spec — and a genuinely different thing from what "PLAY" already
+meant on this site. The homepage's 3D world is one fixed experience; the spec's PLAY is a *per-post*,
+editor-configurable interactive presentation, built from an approved registry of component types with
+structured configuration data — never arbitrary code in Sanity. Asked what the first registered component
+type should actually be rather than guessing at a creative direction; picked "minimal architecture + one
+simple component" to prove the pattern properly before investing in more.
+
+**The registry, for real.** New "PLAY mode" section on posts: enabled/mobile-availability toggles, and a
+`presentation` array capped at exactly one item — the registry slot itself. Adding a second component type
+later means registering another array member, not restructuring anything.
+
+**First component: Key Moments.** A click-through carousel of a post's own pull quotes — keyboard, click, and
+swipe navigation, a progress indicator, an optional intro line. Nicely reuses today's earlier pull-quote AI
+suggestions: draft them with "Suggest SEO & Excerpt," paste them straight into Key Moments. New route
+`/blog/[slug]/play`, linked from a small entry-point button on the real post.
+
+**Mobile disabling is genuinely server-aware**, not client-side viewport sniffing — checked from the
+request's own User-Agent header before anything is sent, both for the redirect-away-if-disabled behavior and
+for whether the entry-point button shows at all. The PLAY page sets `noindex` plus a canonical pointing back
+at the real post — "the canonical version always wins, alternatives are derivatives, never rivals," straight
+from the spec.
+
+Verified with a real Playwright browser against the live site, not just curl: the entry-point link, the
+intro screen, real click-through navigation with captions and progress-dot state, the mobile-UA redirect
+firing in an actual browser navigation, and the noindex/canonical tags — all against a real test post,
+cleaned up afterward. The screenshot step caught a real bug curl alone couldn't have: the page's own header
+bar was rendering underneath the site's fixed global header instead of below it — fixed before shipping.
+
+---
+
 ## 2026-08-04 (continued) — AI Workspace: alternative headlines, pull quotes, FAQ suggestions — Phase 8 closed
 
 The last named gap in Phase 8. Extends the existing **Suggest SEO & Excerpt** dialog rather than adding

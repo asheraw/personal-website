@@ -1223,6 +1223,50 @@ headlines and FAQ pairs, both pull quotes confirmed as exact substrings of the s
 
 ---
 
+## PLAY mode, per-post (shipped 2026-08-04)
+
+**Not the homepage's 3D world.** That's a single, fixed, hand-built experience with no Sanity registry and no
+per-post opt-in — a different product that happens to share the "PLAY" name. This is the ACE spec's actual
+Phase 4 ask: an editor-configurable, per-post interactive presentation, built from an approved registry of
+component types with structured configuration data — never arbitrary JavaScript stored in Sanity.
+
+**The registry.** `postType.ts`'s `play` object: `enabled` and `mobileEnabled` booleans, plus `presentation`
+— an array capped at exactly one item (`rule.max(1)`). That array-of-one is the registry slot itself: Sanity
+naturally offers a type picker for an array once it has more than one `of` member, so registering a *second*
+presentation type later is just adding another array member type there, not restructuring this field or
+anything that reads it.
+
+**First registered type: Key Moments** (`postType.ts`'s `keyMoments` object) — an optional intro line plus 2+
+`moments` (a quote/key line and an optional caption each). Renderer: `src/components/asher/blog/
+KeyMomentsPlay.tsx`, a client component with keyboard (arrow keys), click, and touch-swipe navigation, a
+progress-dot indicator, and a "Back to the full post" exit. Route: `src/app/(site)/blog/[slug]/play/page.tsx`,
+lean dedicated query `POST_PLAY_QUERY` (title/slug/`play` only — doesn't need the post's full body). Editors
+can paste "Suggest SEO & Excerpt"'s pull-quote suggestions straight into `moments` — same underlying idea
+(a short, striking line from the post's own text), different destination.
+
+**Mobile disabling is server-side, not client-side viewport width** — `src/lib/device.ts`'s
+`isMobileUserAgent()` checks the request's own `User-Agent` header. Two places use it: the PLAY page itself
+redirects to the real post if `mobileEnabled` is `false` and the UA looks mobile (so a shared PLAY link never
+shows a broken/disabled page to a mobile visitor), and the STORY page's entry-point button doesn't render at
+all under the same condition (so there's no link that would just redirect away). This matches the spec's
+explicit instruction not to rely on browser width after already downloading a PLAY experience.
+
+**SEO:** the PLAY page sets `robots: {index: false}` and `alternates.canonical` pointing at the real post URL
+— "the canonical version always wins, alternatives are derivatives, never rivals," per the spec. If a PLAY
+page ever needs to be indexable later, this is the one line to change.
+
+**If the PLAY page's own header bar looks like it's overlapping the site's real header:** check the
+outermost wrapper in `KeyMomentsPlay.tsx` still has `pt-28` — the site header (`SiteHeader.tsx`) is
+`position: fixed`, and every other page (see `BlogChrome.tsx`) accounts for its height the same way. This was
+a real bug caught only by an actual screenshot during verification, not by checking rendered HTML with curl.
+
+Verified with a real Playwright browser against the live site (not just curl): entry-point link, intro
+screen, click-through navigation between real moments with correct captions and progress-dot state, the
+mobile-UA redirect firing in an actual browser navigation, and noindex/canonical tags — all against a real
+test post, deleted afterward.
+
+---
+
 ## Privacy Policy (shipped 2026-08-02)
 
 `/privacy` (`src/app/(site)/privacy/page.tsx`), linked from the site footer's copyright line (every page) and
