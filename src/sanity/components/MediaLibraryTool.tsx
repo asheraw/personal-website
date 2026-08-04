@@ -1,5 +1,5 @@
-import {useEffect, useState} from 'react'
-import {Card, Flex, Grid, Text, Stack, Badge, Spinner, Box} from '@sanity/ui'
+import {useCallback, useEffect, useState} from 'react'
+import {Card, Flex, Grid, Text, Stack, Badge, Spinner, Box, TextInput, Button} from '@sanity/ui'
 import {useClient} from 'sanity'
 
 type UsedByPost = {title: string; slug: string | null}
@@ -9,6 +9,7 @@ type ImageAsset = {
   originalFilename: string | null
   size: number
   usedBy: UsedByPost[]
+  defaultAlt: string | null
 }
 
 // A custom Studio Tool (registered in sanity.config.ts) rather than a
@@ -20,23 +21,36 @@ type ImageAsset = {
 // query using `references()` so it doesn't need to know every field an
 // image could be embedded in (main image, social image, or inside the
 // post body) -- `references()` checks the whole document tree.
+// Deterministic 1:1 id -- lets saving a default alt text be a plain
+// createOrReplace (no separate "does one already exist" lookup needed)
+// and keeps the mapping obvious to read directly in Vision/the API.
+function altDocId(assetId: string): string {
+  return `imgalt-${assetId}`
+}
+
 export function MediaLibraryTool() {
   const client = useClient({apiVersion: '2026-07-22'})
   const [assets, setAssets] = useState<ImageAsset[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [savingId, setSavingId] = useState<string | null>(null)
+
+  const load = useCallback(() => {
+    return client.fetch<ImageAsset[]>(
+      `*[_type == "sanity.imageAsset"] | order(_createdAt desc) {
+        _id,
+        url,
+        originalFilename,
+        size,
+        "usedBy": *[_type == "post" && references(^._id)]{title, "slug": slug.current},
+        "defaultAlt": *[_type == "imageAssetAlt" && asset._ref == ^._id][0].altText
+      }`,
+    )
+  }, [client])
 
   useEffect(() => {
     let cancelled = false
-    client
-      .fetch<ImageAsset[]>(
-        `*[_type == "sanity.imageAsset"] | order(_createdAt desc) {
-          _id,
-          url,
-          originalFilename,
-          size,
-          "usedBy": *[_type == "post" && references(^._id)]{title, "slug": slug.current}
-        }`,
-      )
+    load()
       .then((result) => {
         if (!cancelled) setAssets(result)
       })
@@ -46,7 +60,31 @@ export function MediaLibraryTool() {
     return () => {
       cancelled = true
     }
-  }, [client])
+  }, [load])
+
+  async function saveAlt(assetId: string, altText: string) {
+    setSavingId(assetId)
+    try {
+      const trimmed = altText.trim()
+      if (trimmed) {
+        await client.createOrReplace({
+          _id: altDocId(assetId),
+          _type: 'imageAssetAlt',
+          asset: {_type: 'reference', _ref: assetId},
+          altText: trimmed,
+        })
+      } else {
+        // Blanking it out removes the fallback entirely rather than
+        // leaving an empty-string override sitting around.
+        await client.delete(altDocId(assetId)).catch(() => {})
+      }
+      setAssets((prev) =>
+        prev ? prev.map((a) => (a._id === assetId ? {...a, defaultAlt: trimmed || null} : a)) : prev,
+      )
+    } finally {
+      setSavingId(null)
+    }
+  }
 
   if (error) {
     return (
@@ -77,7 +115,9 @@ export function MediaLibraryTool() {
           </Text>
           <Text size={1} muted>
             {assets.length} image{assets.length === 1 ? '' : 's'} uploaded · {unused.length} not currently used
-            in any post
+            in any post. Set a default alt text here to fill the gap automatically on any post that uses this
+            image as its Featured Image and hasn&rsquo;t written its own — writing one for a specific post
+            always takes priority over this.
           </Text>
         </Stack>
         <Grid columns={[2, 3, 4, 5]} gap={3}>
@@ -126,6 +166,29 @@ export function MediaLibraryTool() {
                     Not used
                   </Badge>
                 )}
+                <Stack space={2}>
+                  <TextInput
+                    fontSize={0}
+                    padding={2}
+                    placeholder="Default alt text"
+                    value={drafts[asset._id] ?? asset.defaultAlt ?? ''}
+                    onChange={(event) =>
+                      setDrafts((prev) => ({...prev, [asset._id]: event.currentTarget.value}))
+                    }
+                  />
+                  <Button
+                    text={savingId === asset._id ? 'Saving…' : 'Save'}
+                    mode="ghost"
+                    fontSize={0}
+                    padding={2}
+                    disabled={
+                      savingId === asset._id ||
+                      drafts[asset._id] === undefined ||
+                      drafts[asset._id] === (asset.defaultAlt ?? '')
+                    }
+                    onClick={() => saveAlt(asset._id, drafts[asset._id] ?? '')}
+                  />
+                </Stack>
               </Stack>
             </Card>
           ))}

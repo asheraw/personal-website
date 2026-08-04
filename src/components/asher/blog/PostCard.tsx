@@ -22,7 +22,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
         <Link href={`/blog/${post.slug}`} className="block mb-5">
           <Image
             src={urlFor(post.mainImage).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()}
-            alt={post.mainImage.alt ?? post.title}
+            alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
             width={1200}
             height={630}
             // Only the first card on a page loads immediately (it's the one

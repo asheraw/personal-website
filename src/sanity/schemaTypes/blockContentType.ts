@@ -92,6 +92,13 @@ export const blockContentType = defineType({
                 name: 'href',
                 type: 'url',
               },
+              {
+                title: 'Open in the same tab instead',
+                name: 'openInSameTab',
+                type: 'boolean',
+                description: 'External links open in a new tab by default. Turn this on for the rare case you want it to replace the current page instead (e.g. linking to your own site under a different domain).',
+                initialValue: false,
+              },
             ],
           },
           // Links to another post by reference (its stable _id), not a

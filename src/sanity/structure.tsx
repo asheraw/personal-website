@@ -141,6 +141,7 @@ export const structure: StructureResolver = (S) =>
             'shareLog',
             'aiOutputLog',
             'linkCheck',
+            'imageAssetAlt',
           ].includes(item.getId()!),
       ),
     ])

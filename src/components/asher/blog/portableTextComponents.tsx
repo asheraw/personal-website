@@ -106,12 +106,16 @@ export const postBodyComponents: PortableTextComponents = {
     link: ({ value, children }) => {
       const href = (value?.href as string) ?? "#";
       const isExternal = /^https?:\/\//.test(href) && !href.includes("asheraw.com");
+      // openInSameTab is the rare per-link override -- external links open
+      // in a new tab by default, same as always, unless a writer
+      // deliberately turns this on for a specific link.
+      const openInNewTab = isExternal && !value?.openInSameTab;
       return (
         <Link
           href={href}
           className="text-spotlight underline decoration-spotlight/40 underline-offset-2 transition-colors hover:decoration-spotlight"
-          target={isExternal ? "_blank" : undefined}
-          rel={isExternal ? "noreferrer" : undefined}
+          target={openInNewTab ? "_blank" : undefined}
+          rel={openInNewTab ? "noreferrer" : undefined}
         >
           {children}
         </Link>

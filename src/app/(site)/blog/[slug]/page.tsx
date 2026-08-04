@@ -36,6 +36,7 @@ type Post = {
   _updatedAt: string;
   body: unknown;
   mainImage?: { asset?: { _ref: string }; alt?: string };
+  mainImageAlt?: string;
   seoTitle?: string;
   socialImage?: { asset?: { _ref: string } };
   useBrandedSocialCard?: boolean;
@@ -258,7 +259,7 @@ export default async function PostPage({ params }: PageProps) {
             <div className="mt-10">
               <Image
                 src={urlFor(post.mainImage).width(1200).url()}
-                alt={post.mainImage.alt ?? post.title}
+                alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
                 width={1200}
                 height={675}
                 className="h-auto w-full"

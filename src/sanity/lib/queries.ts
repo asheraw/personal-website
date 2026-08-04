@@ -16,6 +16,10 @@ export const POST_SUMMARY_PROJECTION = `{
   publishedAt,
   _updatedAt,
   mainImage,
+  // Falls back to the image's own library-level default (Studio -> Media,
+  // see imageAssetAltType.ts) only when this post never got its own alt
+  // text written -- a post-specific alt always wins over the fallback.
+  "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && asset._ref == ^.mainImage.asset._ref][0].altText),
   "author": author->{name, "slug": slug.current},
   "categories": categories[]->{title, "slug": slug.current},
   tags,
@@ -76,6 +80,7 @@ export const POST_BY_SLUG_QUERY = `
       }
     },
     mainImage,
+    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && asset._ref == ^.mainImage.asset._ref][0].altText),
     seoTitle,
     socialImage,
     useBrandedSocialCard,
@@ -131,6 +136,7 @@ export const RELATED_POSTS_QUERY = `
     "autoExcerpt": pt::text(body)[0...200],
     publishedAt,
     mainImage,
+    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && asset._ref == ^.mainImage.asset._ref][0].altText),
     "matchScore": count((categories[]->slug.current)[@ in $categorySlugs]) + count((tags[])[@ in $tags])
   }
 `;
@@ -155,6 +161,7 @@ export type RelatedPost = {
   autoExcerpt?: string;
   publishedAt?: string;
   mainImage?: { asset?: { _ref: string }; alt?: string };
+  mainImageAlt?: string;
 };
 
 export type PostSummary = {
@@ -167,6 +174,7 @@ export type PostSummary = {
   publishedAt?: string;
   _updatedAt: string;
   mainImage?: { asset?: { _ref: string }; alt?: string };
+  mainImageAlt?: string;
   author?: { name: string; slug: string } | null;
   categories?: { title: string; slug: string }[];
   tags?: string[];
