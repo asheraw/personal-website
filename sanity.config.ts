@@ -27,10 +27,12 @@ import {StudioNavbar} from './src/sanity/components/StudioNavbar'
 import {NotFoundHitsTool} from './src/sanity/components/NotFoundHitsTool'
 import {ContactSubmissionsTool} from './src/sanity/components/ContactSubmissionsTool'
 import {LinkCheckerTool} from './src/sanity/components/LinkCheckerTool'
+import {DistributionDashboardTool} from './src/sanity/components/DistributionDashboardTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {LinkIcon} from '@sanity/icons/Link'
+import {ShareIcon} from '@sanity/icons/Share'
 
 export default defineConfig({
   basePath: '/studio',
@@ -145,5 +147,14 @@ export default defineConfig({
     // registry in one tool -- every link inside a post/snippet's own text,
     // checked live and re-checked weekly (vercel.json cron).
     {name: 'link-checker', title: 'Link Checker', icon: LinkIcon, component: LinkCheckerTool},
+    // Distribution dashboard -- drafted-social-copy status, share counts,
+    // and a manual engagement log, per post, replacing the plain Social
+    // Shares list (folded into this instead of living alongside it).
+    {
+      name: 'distribution',
+      title: 'Distribution',
+      icon: ShareIcon,
+      component: DistributionDashboardTool,
+    },
   ],
 })

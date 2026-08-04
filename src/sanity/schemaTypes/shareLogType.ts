@@ -1,5 +1,5 @@
 import {ShareIcon} from '@sanity/icons/Share'
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 
 // One document per post (_id: "share-<slug>"), created/incremented by
 // /api/track-share -- called from ShareBar.tsx alongside its existing
@@ -37,6 +37,34 @@ export const shareLogType = defineType({
     defineField({name: 'copyLinkCount', title: 'Copy link', type: 'number', readOnly: true, initialValue: 0}),
     defineField({name: 'nativeCount', title: 'Native share sheet', type: 'number', readOnly: true, initialValue: 0}),
     defineField({name: 'lastSharedAt', title: 'Last shared', type: 'datetime', readOnly: true}),
+    // Manual, not automated -- ACE_MASTER_SPEC.md is explicit that pulling
+    // replies/engagement back from X/Facebook/LinkedIn's own APIs isn't
+    // worth the ongoing fees/OAuth/platform churn for a solo creator. This
+    // is the other half of "distribution dashboard": a place to jot down
+    // "got 3 replies on LinkedIn" by hand, from Studio -> Distribution,
+    // without needing any platform integration at all.
+    defineField({
+      name: 'engagementNotes',
+      title: 'Engagement notes',
+      type: 'array',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          fields: [
+            defineField({name: 'note', type: 'text', rows: 2}),
+            defineField({name: 'platform', type: 'string'}),
+            defineField({name: 'timestamp', type: 'datetime'}),
+          ],
+          preview: {
+            select: {note: 'note', platform: 'platform', timestamp: 'timestamp'},
+            prepare: ({note, platform, timestamp}) => ({
+              title: note,
+              subtitle: `${platform ? `${platform} · ` : ''}${timestamp ? new Date(timestamp).toLocaleDateString() : ''}`,
+            }),
+          },
+        }),
+      ],
+    }),
   ],
   orderings: [
     {

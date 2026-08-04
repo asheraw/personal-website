@@ -2,7 +2,6 @@ import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {CogIcon} from '@sanity/icons/Cog'
 import {ComponentIcon} from '@sanity/icons/Component'
 import {BarChartIcon} from '@sanity/icons/BarChart'
-import {ShareIcon} from '@sanity/icons/Share'
 import {DocumentsIcon} from '@sanity/icons/Documents'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
@@ -80,18 +79,9 @@ export const structure: StructureResolver = (S) =>
       // a genuine table view with a Handled checkbox and delete, instead of
       // clicking into each submission's own document.
       S.documentTypeListItem('redirect').title('Redirects'),
-      // Default-sorted by total shares (most-shared post first) rather
-      // than creation date -- that's the actually useful question here
-      // ("what's getting shared"), not "what was shared most recently."
-      S.listItem()
-        .title('Social Shares')
-        .icon(ShareIcon)
-        .schemaType('shareLog')
-        .child(
-          S.documentTypeList('shareLog')
-            .title('Social Shares')
-            .defaultOrdering([{field: 'totalShares', direction: 'desc'}]),
-        ),
+      // Social Shares moved to a top-nav tool (see sanity.config.ts) --
+      // folded into the Distribution dashboard alongside drafted-copy
+      // status and a manual engagement log, instead of a standalone list.
       // 404 Hits moved to a top-nav tool (see sanity.config.ts) -- a single
       // overview page listing every path, instead of clicking into each
       // one's own document.
