@@ -50,9 +50,12 @@ type CommentRow = {
 type PostGroup = {
   postId: string | null
   postTitle: string | null
+  postSlug: string | null
   commentsLocked: boolean
   comments: CommentRow[]
 }
+
+const SITE_HOST = 'asheraw.com'
 
 const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critical'> = {
   pending: 'caution',
@@ -359,7 +362,13 @@ export function CommentsTool() {
     for (const c of live) {
       const key = c.postId ?? 'unknown'
       if (!byPost.has(key))
-        byPost.set(key, {postId: c.postId, postTitle: c.postTitle, commentsLocked: c.postCommentsLocked, comments: []})
+        byPost.set(key, {
+          postId: c.postId,
+          postTitle: c.postTitle,
+          postSlug: c.postSlug,
+          commentsLocked: c.postCommentsLocked,
+          comments: [],
+        })
       byPost.get(key)!.comments.push(c)
     }
     return [...byPost.values()].sort((a, b) => {
@@ -496,7 +505,20 @@ export function CommentsTool() {
                 <Stack key={key} space={3}>
                   <Flex align="center" gap={2} wrap="wrap">
                     <Text size={1} weight="semibold">
-                      On &ldquo;{group.postTitle ?? 'unknown post'}&rdquo;
+                      On &ldquo;
+                      {group.postSlug ? (
+                        <a
+                          href={`https://${SITE_HOST}/blog/${group.postSlug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{color: 'inherit', textDecoration: 'underline'}}
+                        >
+                          {group.postTitle ?? 'unknown post'}
+                        </a>
+                      ) : (
+                        group.postTitle ?? 'unknown post'
+                      )}
+                      &rdquo;
                     </Text>
                     <Badge tone="default" fontSize={0}>
                       {totalCount} {totalCount === 1 ? 'comment' : 'comments'}
@@ -763,39 +785,48 @@ function CommentCard({
   // confirmation step before the actually-effectful onTrash fires.
   const [confirmingTrash, setConfirmingTrash] = useState(false)
 
+  // One joined line rather than several separate Flex children with
+  // hand-glued "· " prefixes -- those misaligned the moment they wrapped
+  // onto more than one row, especially once emails got longer (restored
+  // comments use a placeholder address). A single string always wraps as
+  // plain text, so the spacing stays consistent no matter the width.
+  const metaLine = [
+    new Date(comment.createdAt).toLocaleString(),
+    comment.email || null,
+    comment.ip && comment.ip !== 'unknown' ? comment.ip : null,
+    comment.editedAt ? `edited ${new Date(comment.editedAt).toLocaleDateString()}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <Card padding={3} radius={2} border tone={comment.isAuthorReply ? 'primary' : undefined}>
       <Stack space={3}>
-        <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
-          <Flex align="center" gap={2} wrap="wrap">
-            {comment.parentComment && (
-              <Text size={1} muted>
-                ↳
+        <Stack space={2}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
+            <Flex align="center" gap={2} wrap="wrap">
+              {comment.parentComment && (
+                <Text size={1} muted>
+                  ↳
+                </Text>
+              )}
+              <Text size={1} weight="medium">
+                {comment.name}
               </Text>
-            )}
-            <Text size={1} weight="medium">
-              {comment.name}
-            </Text>
-            {comment.email && (
-              <Text size={0} muted>
-                {comment.email}
-              </Text>
-            )}
-            {comment.ip && comment.ip !== 'unknown' && (
-              <Text size={0} muted>
-                · {comment.ip}
-              </Text>
-            )}
-            {isNew && (
-              <Badge tone="primary" fontSize={0}>
-                New
-              </Badge>
-            )}
+              {isNew && (
+                <Badge tone="primary" fontSize={0}>
+                  New
+                </Badge>
+              )}
+            </Flex>
+            <Badge tone={STATUS_TONE[comment.status]} fontSize={0}>
+              {comment.status}
+            </Badge>
           </Flex>
-          <Badge tone={STATUS_TONE[comment.status]} fontSize={0}>
-            {comment.status}
-          </Badge>
-        </Flex>
+          <Text size={0} muted>
+            {metaLine}
+          </Text>
+        </Stack>
         {parentStatus && parentStatus !== 'approved' && (
           <Text size={0} muted>
             The comment this replies to isn&rsquo;t approved yet, so this reply won&rsquo;t show in context on
@@ -847,16 +878,6 @@ function CommentCard({
             <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
               {comment.message}
             </Text>
-            <Flex align="center" gap={2}>
-              <Text size={0} muted>
-                {new Date(comment.createdAt).toLocaleString()}
-              </Text>
-              {comment.editedAt && (
-                <Text size={0} muted>
-                  · edited {new Date(comment.editedAt).toLocaleDateString()}
-                </Text>
-              )}
-            </Flex>
           </>
         )}
 
@@ -944,7 +965,20 @@ function TrashedCommentCard({
             )}
           </Flex>
           <Text size={0} muted>
-            On &ldquo;{comment.postTitle ?? 'unknown post'}&rdquo;
+            On &ldquo;
+            {comment.postSlug ? (
+              <a
+                href={`https://${SITE_HOST}/blog/${comment.postSlug}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{color: 'inherit', textDecoration: 'underline'}}
+              >
+                {comment.postTitle ?? 'unknown post'}
+              </a>
+            ) : (
+              comment.postTitle ?? 'unknown post'
+            )}
+            &rdquo;
           </Text>
         </Flex>
         <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
