@@ -26,9 +26,12 @@ what makes this monitoring, not just an on-demand audit.
 
 **Affiliate links, made real.** New "Affiliate link" annotation in the post editor, separate from the plain
 URL one, so it's unambiguous while writing which links are affiliate. Renders with `rel="sponsored"`
-automatically (Google's recommended rel for paid links) and any post using one now shows an FTC-style
-disclosure banner automatically — a writer can't forget to add the disclosure on one post but not another,
-since it's derived from the content itself rather than a separate step.
+automatically (Google's recommended rel for paid links) and any post using one now shows a disclosure banner
+automatically — a writer can't forget to add the disclosure on one post but not another, since it's derived
+from the content itself rather than a separate step. Not an FTC/US-specific concern (Asher's Singapore-based)
+— Singapore's own ASAS/SCAP advertising standards expect sponsored content to be identifiable, and affiliate
+programs like Amazon Associates require the disclosure contractually regardless of where the affiliate is
+based, so the practice still holds even though the specific "FTC" citation wouldn't.
 
 Verified against real production content before shipping: a live run found all 27 real links across existing
 posts and snippets, correctly attributed to their source, and caught one genuinely broken link (a Reuters

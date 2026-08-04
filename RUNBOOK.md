@@ -198,10 +198,15 @@ worth a quick manual click before assuming it's really broken, not an automatic 
 **Affiliate links.** A separate "Affiliate link" annotation next to the plain URL one in the post editor
 (`blockContentType.ts`) — picking it instead of a plain link does two things automatically: the rendered link
 gets `rel="sponsored"` (Google's recommended rel attribute for paid/affiliate links, distinct from a plain
-`nofollow`), and the post gets an FTC-style disclosure banner (`AffiliateDisclosure.tsx`) rendered
-automatically above the body — driven by `bodyHasAffiliateLinks()` scanning the post's own markDefs
-(`src/lib/portableText.ts`), not a separate toggle a writer has to remember to flip. No disclosure banner
-showing on a post that should have one almost always means the link was added via the plain "External URL"
+`nofollow`), and the post gets a disclosure banner (`AffiliateDisclosure.tsx`) rendered automatically above
+the body — driven by `bodyHasAffiliateLinks()` scanning the post's own markDefs (`src/lib/portableText.ts`),
+not a separate toggle a writer has to remember to flip. Not a US-specific/FTC thing — Asher is Singapore-based,
+where FTC rules don't apply directly, but disclosure is still the right call: Singapore's own ad standards
+body (ASAS/SCAP) expects sponsored content to be identifiable as such, and merchant affiliate programs
+(Amazon Associates being the obvious one, given the two books on the roadmap) contractually require a
+disclosure statement from every affiliate regardless of where they're based, as a term of the program itself.
+No disclosure banner showing on a post that should have one almost always means the link was added via the
+plain "External URL"
 annotation instead of "Affiliate link" by mistake — check which one was actually picked.
 
 ---
