@@ -240,6 +240,21 @@ export const blockContentType = defineType({
           },
           initialValue: 'carousel',
         }),
+        defineField({
+          name: 'displaySize',
+          title: 'Display size',
+          type: 'string',
+          description:
+            'How wide this shows in the post. "Original" fills the post column, same as always -- pick Small or Medium for a photo that doesn\'t need to dominate the page. Readers can still tap/click through to the full-size original either way.',
+          options: {
+            list: [
+              {title: 'Small', value: 'small'},
+              {title: 'Medium', value: 'medium'},
+              {title: 'Original (fills the column)', value: 'original'},
+            ],
+          },
+          initialValue: 'original',
+        }),
       ],
       preview: {
         select: {alt: 'alt', asset: 'asset', additionalImages: 'additionalImages', displayStyle: 'displayStyle'},

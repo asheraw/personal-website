@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { PortableText, type PortableTextComponents, type PortableTextBlockComponent } from "@portabletext/react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -6,6 +5,7 @@ import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
 import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
+import { SizedImage, type DisplaySize } from "@/components/asher/blog/SizedImage";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { isTextColorValue } from "@/lib/textColors";
 
@@ -165,6 +165,8 @@ export const postBodyComponents: PortableTextComponents = {
     // additionalImages renders exactly as a plain image always has.
     image: ({ value }) => {
       if (!value?.asset) return null;
+      const size: DisplaySize =
+        value.displaySize === "small" || value.displaySize === "medium" ? value.displaySize : "original";
       const additional = (value.additionalImages ?? []) as GalleryImage[];
       if (additional.length > 0) {
         const images: GalleryImage[] = [
@@ -175,24 +177,16 @@ export const postBodyComponents: PortableTextComponents = {
           value.displayStyle === "slideshow" || value.displayStyle === "scroll-strip"
             ? value.displayStyle
             : "carousel";
-        return <ImageCarousel images={images} mode={mode} />;
+        return <ImageCarousel images={images} mode={mode} size={size} />;
       }
       return (
-        <figure className="my-8">
-          <Image
-            src={urlFor(value).width(1200).url()}
-            alt={value.alt ?? ""}
-            width={1200}
-            height={800}
-            loading="lazy"
-            className="h-auto w-full"
-          />
-          {value.caption && (
-            <figcaption className="mt-2 text-center font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60">
-              {value.caption}
-            </figcaption>
-          )}
-        </figure>
+        <SizedImage
+          src={urlFor(value).width(1200).url()}
+          fullSrc={urlFor(value).width(2400).url()}
+          alt={value.alt ?? ""}
+          caption={value.caption}
+          size={size}
+        />
       );
     },
     divider: () => <hr className="my-10 border-amber-faint" />,
