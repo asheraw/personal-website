@@ -5,7 +5,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
-import { ImageCarousel } from "@/components/asher/blog/ImageCarousel";
+import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { isTextColorValue } from "@/lib/textColors";
 
@@ -159,8 +159,24 @@ export const postBodyComponents: PortableTextComponents = {
     },
   },
   types: {
+    // A plain single photo, unless "More photos" was used in Studio --
+    // then it's the first photo in a carousel/slideshow/scrolling strip
+    // alongside them, rendered by ImageCarousel instead. A block with no
+    // additionalImages renders exactly as a plain image always has.
     image: ({ value }) => {
       if (!value?.asset) return null;
+      const additional = (value.additionalImages ?? []) as GalleryImage[];
+      if (additional.length > 0) {
+        const images: GalleryImage[] = [
+          { _key: `${value._key ?? "primary"}-main`, asset: value.asset, alt: value.alt, caption: value.caption },
+          ...additional,
+        ];
+        const mode: DisplayStyle =
+          value.displayStyle === "slideshow" || value.displayStyle === "scroll-strip"
+            ? value.displayStyle
+            : "carousel";
+        return <ImageCarousel images={images} mode={mode} />;
+      }
       return (
         <figure className="my-8">
           <Image
@@ -179,12 +195,6 @@ export const postBodyComponents: PortableTextComponents = {
         </figure>
       );
     },
-    imageGallery: ({ value }) => (
-      <ImageCarousel
-        images={value?.images ?? []}
-        mode={value?.layout === "slideshow" ? "slideshow" : "carousel"}
-      />
-    ),
     divider: () => <hr className="my-10 border-amber-faint" />,
     codeBlock: ({ value }) => (
       <div className="my-8 overflow-hidden rounded-lg border border-amber-faint text-sm">

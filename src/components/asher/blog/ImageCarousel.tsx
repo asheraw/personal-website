@@ -4,25 +4,36 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
+import AutoScroll from "embla-carousel-auto-scroll";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { urlFor } from "@/sanity/lib/image";
 
 const SLIDESHOW_INTERVAL_MS = 5000;
+const SCROLL_STRIP_HEIGHT = 280;
 
-type GalleryImage = {
+export type GalleryImage = {
   _key: string;
   asset?: { _ref: string };
   alt?: string;
   caption?: string;
 };
 
-// Renders both the "Carousel" and "Slideshow" imageGallery block types --
-// same markup and controls either way, the only difference is whether
-// Embla's Autoplay plugin is attached. Built on embla-carousel-react
-// (https://github.com/davidjerleke/embla-carousel), which also gives touch
-// swipe and drag for free -- no manual touch handlers needed here.
-export function ImageCarousel({ images, mode }: { images: GalleryImage[]; mode: "carousel" | "slideshow" }) {
-  const count = images?.length ?? 0;
+export type DisplayStyle = "carousel" | "slideshow" | "scroll-strip";
+
+// Renders every multi-photo Image block. "Carousel" and "Slideshow" show
+// one photo at a time (arrows, dots) -- the only difference between them is
+// whether Embla's Autoplay plugin is attached. "Scrolling strip" instead
+// shows every photo at once, each at its own natural width, continuously
+// auto-scrolling via Embla's Auto Scroll plugin. Both plugins pause on
+// hover/touch through their own stopOnMouseEnter/stopOnInteraction options.
+export function ImageCarousel({ images, mode }: { images: GalleryImage[]; mode: DisplayStyle }) {
+  if (!images?.length) return null;
+  if (mode === "scroll-strip") return <ScrollStrip images={images} />;
+  return <SlideCarousel images={images} mode={mode} />;
+}
+
+function SlideCarousel({ images, mode }: { images: GalleryImage[]; mode: "carousel" | "slideshow" }) {
+  const count = images.length;
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: count > 1 },
@@ -51,7 +62,6 @@ export function ImageCarousel({ images, mode }: { images: GalleryImage[]; mode: 
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
   const scrollTo = useCallback((i: number) => emblaApi?.scrollTo(i), [emblaApi]);
 
-  if (count === 0) return null;
   const current = images[selectedIndex] ?? images[0];
 
   return (
@@ -116,5 +126,40 @@ export function ImageCarousel({ images, mode }: { images: GalleryImage[]; mode: 
         </figcaption>
       )}
     </figure>
+  );
+}
+
+function ScrollStrip({ images }: { images: GalleryImage[] }) {
+  const [emblaRef] = useEmblaCarousel(
+    { loop: true, dragFree: true, containScroll: false },
+    [AutoScroll({ speed: 1, stopOnInteraction: false, stopOnMouseEnter: true })]
+  );
+
+  return (
+    <div className="my-8 overflow-hidden" ref={emblaRef}>
+      <div className="flex gap-3">
+        {images.map((img) =>
+          img.asset ? (
+            <figure key={img._key} className="shrink-0 grow-0">
+              {/* Plain <img>, not next/image -- these need their natural
+                  aspect ratio at a fixed height, and no image dimensions
+                  are fetched for post-body images, so there's nothing to
+                  hand next/image's width/height (or fill's aspect box). */}
+              <img
+                src={urlFor(img).height(SCROLL_STRIP_HEIGHT).fit("max").url()}
+                alt={img.alt ?? ""}
+                className="block h-[280px] w-auto rounded-lg border border-amber-faint object-cover"
+                loading="lazy"
+              />
+              {img.caption && (
+                <figcaption className="mt-1.5 text-center font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60">
+                  {img.caption}
+                </figcaption>
+              )}
+            </figure>
+          ) : null
+        )}
+      </div>
+    </div>
   );
 }

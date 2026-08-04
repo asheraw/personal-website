@@ -1,6 +1,5 @@
 import {defineType, defineArrayMember, defineField} from 'sanity'
 import {ImageIcon} from '@sanity/icons/Image'
-import {ImagesIcon} from '@sanity/icons/Images'
 import {CodeBlockIcon} from '@sanity/icons/CodeBlock'
 import {UlistIcon} from '@sanity/icons/Ulist'
 import {PlayIcon} from '@sanity/icons/Play'
@@ -176,6 +175,13 @@ export const blockContentType = defineType({
     // You can add additional types here. Note that you can't use
     // primitive types such as 'string' and 'number' in the same array
     // as a block type.
+    // One block for both a single photo and a multi-photo carousel/
+    // slideshow -- adding one or more "More photos" turns an ordinary
+    // Image into a gallery automatically, so there's only one button in
+    // the toolbar instead of two. A block with no additionalImages
+    // renders exactly like a plain image always has (see
+    // portableTextComponents.tsx); Display style only appears once a
+    // second photo is added. Rendered by ImageCarousel.tsx when it is one.
     defineArrayMember({
       type: 'image',
       icon: ImageIcon,
@@ -193,35 +199,9 @@ export const blockContentType = defineType({
           title: 'Caption (optional)',
           description: 'Shown beneath the image.',
         }),
-      ],
-    }),
-    // Multiple images shown one at a time, not stacked -- either
-    // visitor-controlled (Carousel: arrows/dots/swipe, sits still until
-    // clicked) or self-advancing (Slideshow: same controls, plus an
-    // auto-advance timer that pauses on hover). Both share one block type
-    // and one image list, since "how it advances" is the only real
-    // difference -- rendered by ImageCarousel.tsx, keyed off `layout`.
-    defineArrayMember({
-      type: 'object',
-      name: 'imageGallery',
-      title: 'Image Carousel / Slideshow',
-      icon: ImagesIcon,
-      fields: [
         defineField({
-          name: 'layout',
-          title: 'Layout',
-          type: 'string',
-          options: {
-            list: [
-              {title: 'Carousel (reader clicks through)', value: 'carousel'},
-              {title: 'Slideshow (auto-advances on its own)', value: 'slideshow'},
-            ],
-          },
-          initialValue: 'carousel',
-        }),
-        defineField({
-          name: 'images',
-          title: 'Images',
+          name: 'additionalImages',
+          title: 'More photos (optional -- turns this into a carousel)',
           type: 'array',
           of: [
             defineArrayMember({
@@ -243,18 +223,39 @@ export const blockContentType = defineType({
               ],
             }),
           ],
-          validation: (rule) =>
-            rule
-              .min(2)
-              .error('Add at least 2 images -- for just one, use the plain Image block instead.'),
+          description:
+            'Add one or more extra photos here and the image above becomes the first photo in a carousel, alongside these.',
+        }),
+        defineField({
+          name: 'displayStyle',
+          title: 'Display style',
+          type: 'string',
+          hidden: ({parent}) => !((parent as {additionalImages?: unknown[]})?.additionalImages?.length),
+          options: {
+            list: [
+              {title: 'Carousel (reader clicks through)', value: 'carousel'},
+              {title: 'Slideshow (auto-advances on its own)', value: 'slideshow'},
+              {title: 'Scrolling strip (variable width, auto-scrolls)', value: 'scroll-strip'},
+            ],
+          },
+          initialValue: 'carousel',
         }),
       ],
       preview: {
-        select: {images: 'images', layout: 'layout'},
-        prepare: ({images, layout}) => ({
-          title: `Image ${layout === 'slideshow' ? 'Slideshow' : 'Carousel'} (${images?.length ?? 0} photos)`,
-          media: images?.[0],
-        }),
+        select: {alt: 'alt', asset: 'asset', additionalImages: 'additionalImages', displayStyle: 'displayStyle'},
+        prepare: ({alt, asset, additionalImages, displayStyle}) => {
+          const extra = (additionalImages as unknown[] | undefined)?.length ?? 0;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Studio resolves an image-asset preview from this shape at runtime, but PreviewValue['media'] is only typed for React nodes.
+          const media = {_type: 'image', asset} as any;
+          if (!extra) return {title: alt || 'Image', media};
+          const label =
+            displayStyle === 'slideshow'
+              ? 'Slideshow'
+              : displayStyle === 'scroll-strip'
+                ? 'Scrolling strip'
+                : 'Carousel';
+          return {title: `Image ${label} (${extra + 1} photos)`, media};
+        },
       },
     }),
     defineArrayMember({
@@ -341,13 +342,8 @@ export const blockContentType = defineType({
     // it. `to: [{type: 'snippet'}]` on an array member (rather than a
     // nested reference field) is what makes Sanity store this directly as
     // a `{_type: 'snippetRef', _ref: ...}` item in the body array itself.
-    defineArrayMember({
-      type: 'reference',
-      name: 'snippetRef',
-      title: 'Reusable snippet',
-      icon: ComponentIcon,
-      to: [{type: 'snippet'}],
-    }),
+    // Ordered ahead of Reusable snippet -- Asher reaches for this often
+    // enough that it was getting buried in the toolbar's "..." overflow.
     defineArrayMember({
       type: 'object',
       name: 'youtube',
@@ -365,6 +361,13 @@ export const blockContentType = defineType({
         select: {url: 'url'},
         prepare: ({url}) => ({title: 'YouTube embed', subtitle: url}),
       },
+    }),
+    defineArrayMember({
+      type: 'reference',
+      name: 'snippetRef',
+      title: 'Reusable snippet',
+      icon: ComponentIcon,
+      to: [{type: 'snippet'}],
     }),
     // Instagram's own free, official embed (blockquote + embed.js) --
     // shows the real photo, caption, account, and like count, with a
