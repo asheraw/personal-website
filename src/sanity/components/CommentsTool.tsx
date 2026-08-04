@@ -95,6 +95,12 @@ export function CommentsTool() {
   const [editDate, setEditDate] = useState('')
   const [editBusy, setEditBusy] = useState(false)
   const [viewingTrash, setViewingTrash] = useState(false)
+  const [search, setSearch] = useState('')
+  // Explicit overrides of the default expand/collapse state (see
+  // groupIsExpanded below) -- a group the user has opened or closed by hand
+  // stays that way regardless of its pending status, until they toggle it
+  // again or reload.
+  const [expandOverrides, setExpandOverrides] = useState<Record<string, boolean>>({})
 
   // Captured once, on mount, before this same visit overwrites it below --
   // so "New" during THIS visit reflects the PREVIOUS visit's bookmark, and
@@ -329,6 +335,21 @@ export function CommentsTool() {
     [comments],
   )
   const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
+  const searchTerm = search.trim().toLowerCase()
+
+  function commentText(c: CommentRow): string {
+    return `${c.name} ${c.message}`.toLowerCase()
+  }
+
+  // A reply matching but its parent not (or vice versa) would read as
+  // context-free gibberish on its own -- so a search match keeps its whole
+  // thread (top-level comment + every level of reply under it) rather than
+  // just the one card that happens to contain the term.
+  function threadFamily(group: PostGroup, topLevelComment: CommentRow): CommentRow[] {
+    const replies = group.comments.filter((c) => c.parentComment === topLevelComment._id)
+    const replies3 = group.comments.filter((c) => replies.some((r) => r._id === c.parentComment))
+    return [topLevelComment, ...replies, ...replies3]
+  }
 
   // Grouped by post, posts with anything pending first, then by most
   // recent activity -- so the thing most likely to need you shows up
@@ -349,6 +370,27 @@ export function CommentsTool() {
       return latest(b) - latest(a)
     })
   }, [live])
+
+  // Per group, which top-level threads to actually show -- every one of
+  // them when there's no search, or just the threads whose family (or
+  // whose post's own title) matches when there is. A group with nothing
+  // left after that is dropped entirely rather than rendering an empty
+  // "On ..." header.
+  const visibleGroups = useMemo(() => {
+    return groups
+      .map((group) => {
+        const allTopLevel = group.comments
+          .filter((c) => !c.parentComment)
+          .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+        if (!searchTerm) return {group, topLevel: allTopLevel}
+        const titleMatches = !!group.postTitle?.toLowerCase().includes(searchTerm)
+        const topLevel = titleMatches
+          ? allTopLevel
+          : allTopLevel.filter((c) => threadFamily(group, c).some((f) => commentText(f).includes(searchTerm)))
+        return {group, topLevel}
+      })
+      .filter(({topLevel}) => !searchTerm || topLevel.length > 0)
+  }, [groups, searchTerm])
 
   function isNew(comment: CommentRow) {
     return lastSeenAt !== null && new Date(comment.createdAt) > new Date(lastSeenAt)
@@ -382,6 +424,17 @@ export function CommentsTool() {
             onClick={() => setViewingTrash((v) => !v)}
           />
         </Flex>
+
+        {!viewingTrash && (
+          <TextInput
+            fontSize={1}
+            placeholder="Search by name or comment text…"
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            clearButton={search.length > 0}
+            onClear={() => setSearch('')}
+          />
+        )}
 
         {viewingTrash ? (
           <Stack space={3}>
@@ -422,18 +475,32 @@ export function CommentsTool() {
               </Text>
             )}
 
-            {groups.map((group) => {
-              const topLevel = group.comments
-                .filter((c) => !c.parentComment)
-                .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+            {searchTerm && visibleGroups.length === 0 && (
+              <Text size={1} muted>
+                No comments match &ldquo;{search.trim()}&rdquo;.
+              </Text>
+            )}
+
+            {visibleGroups.map(({group, topLevel}) => {
+              const key = group.postId ?? 'unknown'
               const groupPending = group.comments.some((c) => c.status === 'pending')
+              // Settled (nothing pending) groups collapse by default -- with
+              // dozens of old posts' worth of restored comments, a fully
+              // expanded page for content that never needs a second look is
+              // exactly what made this tool feel heavy. A search in progress
+              // always shows its results in full; that's the point of it.
+              const isExpanded = !!searchTerm || (expandOverrides[key] ?? groupPending)
+              const totalCount = group.comments.length
 
               return (
-                <Stack key={group.postId ?? 'unknown'} space={3}>
+                <Stack key={key} space={3}>
                   <Flex align="center" gap={2} wrap="wrap">
                     <Text size={1} weight="semibold">
                       On &ldquo;{group.postTitle ?? 'unknown post'}&rdquo;
                     </Text>
+                    <Badge tone="default" fontSize={0}>
+                      {totalCount} {totalCount === 1 ? 'comment' : 'comments'}
+                    </Badge>
                     {groupPending && (
                       <Badge tone="caution" fontSize={0}>
                         needs review
@@ -454,8 +521,18 @@ export function CommentsTool() {
                         onClick={() => toggleCommentsLocked(group.postId!, !group.commentsLocked)}
                       />
                     )}
+                    {!searchTerm && (
+                      <Button
+                        text={isExpanded ? 'Hide' : 'Show'}
+                        mode="ghost"
+                        fontSize={0}
+                        padding={2}
+                        onClick={() => setExpandOverrides((prev) => ({...prev, [key]: !isExpanded}))}
+                      />
+                    )}
                   </Flex>
 
+                  {isExpanded && (
                   <Stack space={4}>
                     {topLevel.map((comment) => {
                       const replies = group.comments
@@ -590,6 +667,7 @@ export function CommentsTool() {
                       )
                     })}
                   </Stack>
+                  )}
                 </Stack>
               )
             })}
