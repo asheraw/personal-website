@@ -11,6 +11,32 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-04 (continued) — Instagram embeds, and the carousel rebuilt on Embla
+
+Two requests handled together: an Instagram post embed block for the post editor, and a rebuild of the
+existing image carousel/slideshow on [Embla Carousel](https://github.com/davidjerleke/embla-carousel), which
+Asher pointed at directly as "a simple elegant one to use."
+
+**Instagram embed** — new `instagramEmbed` block type in the post body editor: paste a post URL, it renders
+using Instagram's own free `embed.js` (a `<blockquote>` that Instagram's script hydrates into the real card —
+photo, caption, account, like count, a link back to the post). Worth being upfront about a limit: this does
+*not* render an actual scrollable comment thread — Instagram's free embed doesn't expose one. Getting a real
+comment thread would need Meta's Graph API (token-gated, requires app review), which felt like the wrong
+tradeoff for one post block. Verified the schema compiles cleanly in Studio and the block
+renders on a real post page; couldn't fully verify `embed.js`'s hydration itself from this sandbox (it's a
+live external script), so that's worth a glance on the real site the first time it's used.
+
+**Carousel/slideshow rebuilt on Embla** — `embla-carousel-react` was already an installed dependency
+(pulled in transitively by shadcn/ui), so this added just one new package, `embla-carousel-autoplay`, for the
+slideshow's auto-advance. Replaces the old hand-rolled `useState` index + `setInterval` + manual touch-delta
+swipe detection with Embla's own scroll engine — same look and controls (dot indicators, chevron buttons,
+per-image captions, pause on hover), but touch/drag swiping is now Embla's native behavior instead of a
+40px-threshold heuristic. Verified live against a real post with a multi-image gallery
+(`christmas-2015-the-quest-a-christmas-adventure`): clicking Next correctly advanced the image and moved the
+active dot.
+
+---
+
 ## 2026-08-04 (continued) — Editorial calendar: free drag-and-drop scheduling
 
 Asher asked for a drag-and-drop editorial calendar but flagged upfront that Sanity's own scheduling might be

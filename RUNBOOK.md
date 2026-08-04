@@ -389,7 +389,7 @@ back to never hiding (visible for the rest of the page) rather than erroring.
 
 ---
 
-## Image Carousel / Slideshow block (shipped 2026-08-02)
+## Image Carousel / Slideshow block (shipped 2026-08-02, rebuilt on Embla 2026-08-04)
 
 A new block type in the post body editor, alongside the plain Image block: **Image Carousel / Slideshow**
 (`imageGallery` in `src/sanity/schemaTypes/blockContentType.ts`). Pick 2 or more images (each with the same
@@ -409,6 +409,34 @@ prop is the only thing that changes), registered as the `imageGallery` type in `
 (`portableTextComponents.tsx`). No GROQ query changes were needed to ship this — `POST_BY_SLUG_QUERY`
 already fetches the whole `body[]` array as a spread (`{ ... }`), so a new block type just flows through
 automatically the same way `callout`, `accordion`, etc. already do.
+
+**Rebuilt on [Embla Carousel](https://github.com/davidjerleke/embla-carousel) (2026-08-04)** — Asher asked
+for it by name. `embla-carousel-react` was already installed transitively (via shadcn/ui's own unused
+`src/components/ui/carousel.tsx` wrapper, which this does *not* use — that wrapper lays out a horizontal
+multi-item strip, not the single-image-at-a-time display this block needs, so `ImageCarousel.tsx` calls
+`useEmblaCarousel` directly instead). Added one new package, `embla-carousel-autoplay`, for the slideshow's
+timer — its `stopOnMouseEnter` option replaces the old manual hover/touch `paused` state, and native
+Embla drag/swipe replaces the old 40px touch-delta threshold logic. Same visual result (dots, chevrons,
+captions), simpler implementation.
+
+---
+
+## Instagram embed block (shipped 2026-08-04)
+
+A new block type in the post body editor: **Instagram embed** (`instagramEmbed` in
+`src/sanity/schemaTypes/blockContentType.ts`). Paste a post URL (e.g.
+`https://www.instagram.com/p/XXXXXXXXXXX/`) and it renders as a real embedded card on the post page — photo,
+caption, account name, like count, and a link back to the post — not just a bare link.
+
+Uses Instagram's own official, free `embed.js` script (`src/components/asher/blog/InstagramEmbed.tsx`): the
+component renders a `<blockquote class="instagram-media" data-instgrm-permalink="...">`, and Instagram's own
+script (loaded once per page, regardless of how many embeds appear) scans for and hydrates every one of these
+into the real embed. No API token, no app registration.
+
+**What this does *not* show: an actual comment thread.** Instagram's free client-side embed doesn't expose a
+scrollable list of comments — that's only available through Meta's Graph API, which is token-gated and
+requires app review. If a real comment thread ever becomes a firm requirement, that's the path, but it's a
+meaningfully bigger lift than this block.
 
 ---
 
