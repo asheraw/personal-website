@@ -105,10 +105,12 @@ both tabs now.
 commits — confirmed the only change in each really was the outer chrome, nothing functional dropped. Along
 the way, found (pre-existing, not caused by the merge) that Content Audit's query fetched every post's
 `slug` without ever using it, and that the "open this post in its own Studio editor" deep link
-(`/studio/structure/post;<id>`) was duplicated verbatim in both Content Audit and
-`DistributionDashboardTool.tsx`. Fixed both: dropped the unused field, extracted the deep link into
-`src/sanity/lib/openPostInStudio.ts` (`openPostInStudio(postId)`) — reuse this for any future tool that
-needs an "open this post" button rather than re-writing the URL by hand.
+was duplicated verbatim in both Content Audit and `DistributionDashboardTool.tsx`. Fixed both: dropped the
+unused field, extracted the deep link into `src/sanity/lib/openPostInStudio.ts`
+(`openPostInStudio(postId)`) — reuse this for any future tool that needs an "open this post" button rather
+than re-writing the URL by hand. **The extracted URL itself was wrong at the time** (used a guessed
+structure-tool pane path, `/studio/structure/post;<id>`) — see the "Open post" links section further below
+for the real fix, added the same day once Asher clicked one and it didn't work.
 
 **Moved into the Structure sidebar**: 404 Hits, Contact Submissions, Export, and Bulk Operations — occasional
 admin tools, not daily-use — now live under a **Site Admin** entry in `structure.tsx` instead of the top
@@ -283,6 +285,8 @@ document via `openDocumentInStudio(schemaType, id)` (`src/sanity/lib/openPostInS
 same day from the post-only `openPostInStudio()` helper to also cover snippets). Needed threading each
 source's real document `_id` through `linkChecker.ts`'s `Source` type and `collectLinks()` queries — it
 previously only tracked `type`/`title`/`slug`, none of which alone is enough to build a Studio deep link.
+**The URL this built was wrong at first** — see "Open post" links: the real fix below for what actually
+makes these work, fixed the same day once Asher clicked one and it didn't load.
 
 **Affiliate links.** A separate "Affiliate link" annotation next to the plain URL one in the post editor
 (`blockContentType.ts`) — picking it instead of a plain link does two things automatically: the rendered link
@@ -297,6 +301,37 @@ disclosure statement from every affiliate regardless of where they're based, as 
 No disclosure banner showing on a post that should have one almost always means the link was added via the
 plain "External URL"
 annotation instead of "Affiliate link" by mistake — check which one was actually picked.
+
+---
+
+## "Open post" links: the real fix (shipped 2026-08-05)
+
+Every "open this in Studio" button (Content Audit, Distribution, Link Checker's clickable sources) shares
+`src/sanity/lib/openPostInStudio.ts`'s `openDocumentInStudio(schemaType, id)`. The first version constructed
+a structure-tool pane path by hand — `/studio/structure/<paneId>;<id>`, guessing `<paneId>` equals the
+schema type name based on how `S.documentTypeList()`'s default id assignment works. It typechecked, it
+matched that convention correctly on paper — and it still didn't work. Asher clicked one: new tab opened,
+editor never loaded. A pane path depends on the exact shape of the pane stack `structure.tsx` builds, which
+isn't something to reliably guess from a helper function that lives entirely outside the structure tree —
+the assumption was reasonable but wrong, and this sandbox has no Studio login to have caught that by
+actually clicking it before shipping.
+
+**The actual fix**: Sanity's own **intent** URL scheme —
+`/studio/intent/edit/id=<id>;type=<schemaType>/` — a documented, stable route built specifically for
+deep-linking to a document from *outside* the structure tool, resolved dynamically at runtime rather than
+depending on pane topology at all. Confirmed this is real and not another guess by reading the actual
+matching function in Sanity's own compiled source (`defaultIntentChecker`, `sanity/structure`): for an
+`edit` intent, it checks `params.id` is set and `params.type` is included in the pane's own
+`schemaTypeName` list — which `S.documentTypeList('post')`/`S.documentTypeList('snippet')` in
+`structure.tsx` already set correctly, unchanged, with zero further edits needed there. One fix in one
+shared helper covers all three buttons.
+
+**Verification limit, stated plainly**: still no way to click-test this directly in this sandbox — Studio
+requires a real login, and even the plain `/studio` route hits a "Connect this Studio to your project"
+CORS gate here regardless of any code change, confirmed by checking that the *unmodified* route hits the
+same screen. What changed this time versus the first (wrong) attempt: the fix is grounded in tracing the
+exact runtime matching logic that will process the URL, not an assumed convention that merely looked
+plausible.
 
 ---
 
@@ -921,9 +956,10 @@ document — the four checks are cheap enough to compute live on every load, so 
 `.map()`, not a scan-and-store pattern. A post with nothing wrong doesn't appear in the list at all,
 keeping it short and actionable rather than a wall of green checkmarks.
 
-**"Open post"** per row uses the same Studio deep-link pattern already established in
-`DistributionDashboardTool.tsx` — `window.open('/studio/structure/post;${_id}', '_blank')` — straight into
-that post's editor, since the point is fixing it, not just knowing about it.
+**"Open post"** per row opens straight into that post's editor via `openPostInStudio()`
+(`src/sanity/lib/openPostInStudio.ts`), since the point is fixing it, not just knowing about it — see
+"Open post" links: the real fix further below for the actual URL scheme this uses (an earlier version
+guessed wrong and didn't work).
 
 **Verified against real content before shipping**: ran the exact GROQ query via `npx tsx` against the live
 dataset (19 published posts at the time) — flagged exactly one real post (missing a featured image and an

@@ -11,6 +11,25 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Fixed: "Open post" links opened a tab but never loaded the editor
+
+Asher reported the newly-clickable post/snippet links (Content Audit, Distribution, Link Checker) opened a
+new tab that never actually loaded the document editor. Real bug in the URL scheme, not a fluke: the
+`openPostInStudio()`/`openDocumentInStudio()` helper hand-constructed a structure-tool pane path
+(`/studio/structure/<paneId>;<id>`) based on what looked like the right convention — it typechecked, it
+matched Sanity's own default pane-id behavior on paper, but a pane path depends on exactly how
+`structure.tsx` nests its panes, which isn't something to guess correctly from outside the structure tree
+itself. It evidently wasn't right, and this sandbox has no Studio login to have caught that by clicking it
+before shipping.
+
+Switched to Sanity's own **intent** URL scheme (`/studio/intent/edit/id=<id>;type=<type>/`) — a documented,
+stable route built specifically for deep-linking to a document from outside the structure tool, resolved
+dynamically at runtime rather than depending on pane topology. This time verified by tracing the exact
+matching function (`defaultIntentChecker`) in Sanity's own compiled source: confirmed it checks
+`params.id` + `params.type` against each pane's own `schemaTypeName`, which the existing Posts/Reusable
+Snippets panes in `structure.tsx` already set correctly — no changes needed there at all. One fix, three
+buttons covered, since all three share this one helper.
+
 ## 2026-08-05 (continued) — Link Checker: real fix for a real false-positive, plus two usability asks
 
 Asher flagged Content Health's Link Checker showing several Instagram profile links as broken when they
