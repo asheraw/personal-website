@@ -32,8 +32,8 @@ function formatElapsed(ms: number): string {
  * fragile" Rule #4 warns against, likely to break on a future Sanity
  * upgrade. Left out on purpose. Full-screen writing itself is covered by
  * Studio's own built-in expand button on this field -- this panel just
- * triggers that same built-in state automatically when the document pane's
- * Focus mode is entered, so the two no longer need two separate clicks.
+ * keeps that state in sync with the document pane's Focus mode, so the two
+ * no longer need separate clicks in either direction.
  */
 export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
   const {value, renderDefault} = props
@@ -63,31 +63,32 @@ export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
     [blocks],
   )
 
-  // Entering Focus mode (the document pane's own toolbar toggle) should
-  // also expand this field's editor -- Asher's preferred writing setup was
-  // two separate clicks before this.
+  // Focus mode (the document pane's own toolbar toggle) and this field's
+  // own Expand editor state should move together -- entering Focus mode
+  // expands the editor, leaving it collapses the editor back down, so
+  // Asher can drop back to the normal view for title/slug/SEO fields
+  // without an extra manual click.
   //
   // Writing to Sanity's FullscreenPTEContext directly (an earlier attempt)
-  // turned out to be a no-op: the editor's own "expand" state is local
-  // React state that's seeded from that context once at mount and never
-  // re-reads it afterwards, so a later write just sits there unused. The
-  // only thing that actually flips that state is a real click on the
-  // editor's own expand/collapse button (`data-testid="fullscreen-button-expand"`
-  // in Sanity's source), so this simulates exactly that click instead of
+  // turned out to be a no-op: the editor's own expanded/collapsed state is
+  // local React state that's seeded from that context once at mount and
+  // never re-reads it afterwards, so a later write just sits there unused.
+  // The only thing that actually flips that state is a real click on the
+  // editor's own toolbar button -- `data-testid="fullscreen-button-expand"`
+  // when collapsed, `"fullscreen-button-collapse"` when expanded (both from
+  // Sanity's source) -- so this simulates exactly that click instead of
   // trying to fake the internal state it produces. `DocumentPaneContext` is
   // @internal to Sanity and genuinely can be null outside a document pane,
-  // hence the `?.`; if a future Studio version renames the button's test id,
-  // this just quietly stops finding it rather than throwing.
+  // hence the `?.`; if a future Studio version renames either test id, this
+  // just quietly stops finding the button rather than throwing.
   const documentPane = useContext(DocumentPaneContext)
   const maximized = documentPane?.maximized ?? false
   const bodyFieldRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!maximized) return
-    const expandButton = bodyFieldRef.current?.querySelector(
-      '[data-testid="fullscreen-button-expand"]',
-    )
-    if (expandButton instanceof HTMLElement) expandButton.click()
+    const testId = maximized ? 'fullscreen-button-expand' : 'fullscreen-button-collapse'
+    const button = bodyFieldRef.current?.querySelector(`[data-testid="${testId}"]`)
+    if (button instanceof HTMLElement) button.click()
   }, [maximized])
 
   function jumpTo(key: string | undefined) {
