@@ -737,6 +737,12 @@ Every comment submitted on a post starts as **pending** and shows nowhere on the
 comment with one-click **Approve** / **Reject** / **Mark as Spam** / **Edit** / **Trash** buttons, and a count
 of comments awaiting review at the top of the tool. Component: `src/sanity/components/CommentsTool.tsx`.
 
+**Top-level comments sort newest-first within each post's group (changed 2026-08-05)** — the point of opening
+a group is "what's new since I last looked," so the newest sits right at the top rather than needing a scroll
+to the bottom. Replies within a thread still sort oldest-first (`allTopLevel` in `visibleGroups` flipped to
+descending; the `replies`/`replies3` sorts further down in the render stayed ascending on purpose — a
+conversation should still read the way it happened).
+
 **A pending count is also always visible, without opening the Comments tool at all** — a floating "N comments
 need review" badge in the corner of every Studio screen (fixed 2026-07-31 after an earlier attempt, a badge
 on the Comments tool's own nav icon, turned out to never actually render at normal window widths; see "Studio

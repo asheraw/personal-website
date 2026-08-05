@@ -32,6 +32,10 @@ would need that policy updated first, not just a code change.
 Verified with a real request carrying a bot-like User-Agent string before shipping — the field landed exactly
 as sent, in both places — then cleaned up.
 
+**Also today:** Asher asked for the Comments tool to show a post's newest comment at the top instead of
+needing a scroll to find it. Top-level comments within each post's group now sort newest-first; replies
+within a thread stay oldest-first, since a conversation should still read the way it actually happened.
+
 ---
 
 ## 2026-08-04 (continued) — Comments tool: clickable post titles, cleaner info line, less clutter
