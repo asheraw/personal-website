@@ -815,7 +815,21 @@ cursor-centering typewriter scroll. Neither is built. Both require patching the 
 rendering internals, which isn't a stable, documented customization surface in Sanity Studio — the "clever
 and fragile" pattern Rule #4 warns against, and a real risk of breaking on a future Sanity upgrade for
 comparatively little value. Full-screen writing itself is already covered by Studio's own built-in expand
-button on this field (top-right of the editor toolbar) — nothing new was needed there.
+button on this field (top-right of the editor toolbar).
+
+**Focus mode auto-expands the body editor (shipped 2026-08-05):** Asher's actual writing setup is the document
+pane's Focus mode (top-right toolbar icon, hides the left Structure/post-list panes) *plus* the body field's
+own Expand editor fullscreen state — previously two separate clicks. Entering Focus mode now automatically
+triggers Expand editor too; title, slug, and every other field stay in the normal view, since only the body
+field needs the extra room. Implemented by reading the document pane's `maximized` flag off Sanity's
+`DocumentPaneContext` and, when it's true, calling `setFullscreenPath(path, true)` on `FullscreenPTEContext`
+for the body field's path — both imported from `sanity/_singletons`, Sanity's sanctioned mechanism for sharing
+context across separately-bundled parts of Studio. **Both context shapes are marked `@internal` in Sanity's own
+source** — not officially part of the stable public API, same caveat as the `onPaste` mechanism below. Written
+to degrade gracefully: `DocumentPaneContext` is read with `?.` since it can genuinely be `null` outside a
+document pane, and if a future Sanity version renames or removes either context, the worst case is this
+silently stops auto-expanding — Studio reverts to today's two-click behavior, no crash, no data risk. Entering
+Focus mode triggers the expand; exiting Focus mode does *not* auto-collapse the editor back (not asked for).
 
 **If the outline's click-to-jump doesn't scroll to the right place:** this relies on Sanity's Portable Text
 editor rendering each block with a `data-key` attribute matching its `_key` — a reasonable but unverified

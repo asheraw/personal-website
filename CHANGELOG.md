@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Focus mode now auto-expands the body editor
+
+Asher's preferred writing setup is Focus mode (hides the left Structure/post-list panes) plus the body
+field's own "Expand editor" fullscreen state — previously two separate clicks, in either order, every time.
+Entering Focus mode now automatically triggers Expand editor too; title, slug, and every other field stay in
+the normal (non-expanded) view, since only the body field's writing surface needs the extra room.
+
+Implemented in `DistractionFreeWritingPanel.tsx` by reading the document pane's `maximized` flag off
+Sanity's `DocumentPaneContext` and, when it flips true, calling `setFullscreenPath(path, true)` on
+`FullscreenPTEContext` for the body field's own path — both contexts imported from Sanity's `sanity/_singletons`
+entry point (its sanctioned way of sharing context across separately-bundled parts of Studio). Confirmed both
+shapes directly against the installed `node_modules/sanity` type definitions before writing any code, since
+neither is in Sanity's public docs.
+
+**Caveat worth knowing:** both context values are marked `@internal` in Sanity's own source — not officially
+guaranteed to stay stable across Studio upgrades. Written to degrade gracefully rather than break: `DocumentPaneContext`
+is read with `?.` since it can genuinely be `null`, and if a future Sanity version removes or renames either
+context, the worst case is this quietly stops auto-expanding and Studio reverts to today's two-click behavior
+— no crash, no data risk. This only affects entering Focus mode; exiting Focus mode does not auto-collapse the
+editor back, since that wasn't asked for.
+
 ## 2026-08-05 (continued) — Pasting a YouTube/Instagram URL now auto-embeds it
 
 Asher pointed out the actual friction: embedding a video meant opening the block-insert menu, picking
