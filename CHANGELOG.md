@@ -11,6 +11,30 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Fixed: approving a comment could collapse its whole group away
+
+Asher described the Comments tool "closing the entire tab" right after approving a comment — disruptive
+specifically because he'd often approve a comment and then immediately reply to it. Real bug, not a
+misunderstanding: a post's comment group collapses by default once nothing in it is pending (shipped
+2026-08-04, to keep dozens of old restored threads from making the tool feel heavy) — but approving, rejecting,
+or spam-marking the *last* pending comment in a group makes it "settled" the instant that action lands, which
+collapsed the whole group out from under whatever Asher was about to do next. Fixed by pinning a group open the
+moment any comment inside it is actioned, the same way manually expanding it already worked — a group only
+ever collapses now from the user's own explicit toggle, never as a side effect of the action that just settled it.
+
+## 2026-08-05 (continued) — Checked the comment-count badge across every post with comments: no bug
+
+Asher noticed the byline comment-count badge (the small speech-bubble icon near the post title) wasn't showing
+on the just-restored Christmas 2016 post, even though the comments themselves were visible further down the
+page. Checked all 8 posts on the site with real comments, live in production — by the time of checking, every
+one matched exactly, badge count and comments-section count identical, Christmas 2016 included. Not a lasting
+bug: the badge count is server-rendered and cached, invalidated automatically whenever a comment changes, but
+that invalidation is normally relayed through an active browser connection to Sanity. Restoring those comments
+via a direct script (rather than clicking Approve in Studio, which has that connection open) meant the cache
+took a little longer than usual to catch up — a one-time timing lag for script-restored comments specifically,
+not a repeatable defect. Worth knowing for future restorations: the comments section itself is always
+immediately accurate (it fetches live, uncached), but the small byline badge may lag briefly.
+
 ## 2026-08-05 (continued) — Writing stats stayed visible in Focus mode's expanded editor
 
 Asher noticed the word count / reading time / session timer bar disappeared once Focus mode expanded the

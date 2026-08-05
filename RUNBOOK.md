@@ -913,6 +913,17 @@ full expansion of whatever matches, since collapsing during a search would defea
 in a matched comment's *whole thread*, not just the single card containing the term, via `threadFamily()`, so
 a matching reply never shows divorced from the comment it's replying to.
 
+**A group could auto-collapse itself the instant its last pending comment got approved (real bug, fixed same
+day it shipped).** `isExpanded` for a group falls back to "does it have anything pending" only when the user
+hasn't explicitly toggled it (`expandOverrides[key] ?? groupPending`). Approving, rejecting, or spam-marking a
+group's *last* pending comment flips `groupPending` to `false` the instant that patch lands — with no explicit
+override set yet, the whole group collapsed away right as the action completed. Asher described this as the
+tool "closing the entire tab" on him mid-review, disruptive specifically because approving a comment and then
+immediately replying to it is a normal part of his workflow — the group vanishing mid-action lost his place.
+Fixed in `setStatus()`: any status change now also pins that comment's group open in `expandOverrides`, the
+same as an explicit manual expand, so a group only ever collapses from the user's own toggle — never as a side
+effect of the very action that just settled it.
+
 **Post titles link to the live post,** in both the main view's group header and the Trash view's per-card
 reference — `https://asheraw.com/blog/<slug>` in a new tab, using each row's already-fetched `postSlug`.
 
@@ -947,6 +958,17 @@ opposed to the full dated thread view) — ask Asher directly how to date those 
 his call so far has been to estimate from the list's own apparent order, clearly flagged as estimated in the
 commit rather than presented as exact. Fixable later per-comment via the date-edit field covered above.
 `src/app/api/comments/route.ts`.
+
+**The byline comment-count badge can lag briefly right after a script-restored comment lands.** The post page's
+`commentCount` (the small speech-bubble badge near the title, `src/components/asher/blog/CommentCountBadge.tsx`)
+comes from a cached, tag-invalidated `sanityFetch()` call — normally invalidated the instant a comment changes,
+but that invalidation is relayed through an active browser connection to Sanity's Live Content API. Approving a
+comment through Studio has that connection open already; a direct write-token script (as above) doesn't, so the
+cache can take a short while longer to catch up. The comments section itself is unaffected either way — it's a
+separate, always-live client fetch (`CommentSection.tsx` → `/api/comments`), never cached. Confirmed 2026-08-05
+by checking every post on the site with real comments live in production: all matched immediately by the time
+of checking. Not worth "fixing" — it's normal cache eventual-consistency, not a defect, and it self-resolves
+without intervention.
 
 **Spam protection:** a honeypot field (a hidden `website` input — real visitors never see or fill it; if it's
 filled, the request is silently accepted but nothing is actually saved) plus a simple math challenge (e.g.
