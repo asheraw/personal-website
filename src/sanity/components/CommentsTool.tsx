@@ -397,9 +397,14 @@ export function CommentsTool() {
   const visibleGroups = useMemo(() => {
     return groups
       .map((group) => {
+        // Newest first -- the whole point of scanning a post's group is
+        // "what's new since I last looked," and the newest is what should
+        // be sitting right at the top, not whatever's oldest. Replies
+        // within a thread stay oldest-first further down (a conversation
+        // reads the way it happened, not backwards).
         const allTopLevel = group.comments
           .filter((c) => !c.parentComment)
-          .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+          .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
         if (!searchTerm) return {group, topLevel: allTopLevel}
         const titleMatches = !!group.postTitle?.toLowerCase().includes(searchTerm)
         const topLevel = titleMatches
