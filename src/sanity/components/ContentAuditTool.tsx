@@ -1,11 +1,11 @@
 import {useCallback, useEffect, useState} from 'react'
 import {Badge, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
+import {openPostInStudio} from '../lib/openPostInStudio'
 
 type AuditRow = {
   _id: string
   title?: string
-  slug?: string
   hasImage: boolean
   hasAltText: boolean
   hasExcerpt: boolean
@@ -15,7 +15,6 @@ type AuditRow = {
 type RawRow = {
   _id: string
   title?: string
-  slug?: string
   mainImage?: unknown
   hasAltText: boolean
   excerpt?: string
@@ -58,7 +57,7 @@ export function ContentAuditTool() {
     client
       .fetch<RawRow[]>(
         `*[_type == "post" && defined(slug.current)] | order(publishedAt desc) {
-          _id, title, "slug": slug.current, mainImage,
+          _id, title, mainImage,
           "hasAltText": defined(coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)),
           excerpt, categories
         }`,
@@ -68,7 +67,6 @@ export function ContentAuditTool() {
           raw.map((r) => ({
             _id: r._id,
             title: r.title,
-            slug: r.slug,
             hasImage: !!r.mainImage,
             hasAltText: r.hasAltText,
             hasExcerpt: !!r.excerpt,
@@ -135,7 +133,7 @@ export function ContentAuditTool() {
                   mode="ghost"
                   fontSize={0}
                   padding={2}
-                  onClick={() => window.open(`/studio/structure/post;${row._id}`, '_blank')}
+                  onClick={() => openPostInStudio(row._id)}
                 />
               </Flex>
             </Card>

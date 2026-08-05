@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from 'react'
 import {Badge, Box, Button, Card, Flex, Select, Spinner, Stack, Text, TextArea} from '@sanity/ui'
 import {useClient} from 'sanity'
+import {openPostInStudio} from '../lib/openPostInStudio'
 
 type Post = {_id: string; title: string; slug: string; publishedAt?: string}
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
@@ -177,7 +178,7 @@ export function DistributionDashboardTool() {
                         mode="ghost"
                         fontSize={0}
                         padding={2}
-                        onClick={() => window.open(`/studio/structure/post;${post._id}`, '_blank')}
+                        onClick={() => openPostInStudio(post._id)}
                       />
                     </Flex>
                   </Flex>
