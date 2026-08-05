@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useState} from 'react'
-import {Badge, Box, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 
 type AuditRow = {
@@ -45,6 +45,11 @@ function issuesFor(row: AuditRow): (keyof typeof ISSUE_LABELS)[] {
 // run, just a live query computed and shown immediately. A post with
 // nothing wrong doesn't show up at all, so the list stays short and
 // actionable rather than a wall of green checkmarks.
+//
+// No page-level title/padding of its own -- rendered as one tab inside
+// ContentHealthTool.tsx, which provides the shared page chrome, alongside
+// LinkCheckerTool as the other tab (merged 2026-08-05, real overlap: both
+// are "which posts need a look" checks).
 export function ContentAuditTool() {
   const client = useClient({apiVersion: '2026-07-22'})
   const [rows, setRows] = useState<AuditRow[] | null>(null)
@@ -88,60 +93,55 @@ export function ContentAuditTool() {
   const flagged = rows.filter((r) => issuesFor(r).length > 0)
 
   return (
-    <Box padding={4}>
-      <Stack space={4}>
-        <Stack space={2}>
-          <Flex align="center" gap={3} wrap="wrap">
-            <Text size={3} weight="bold">
-              Content Audit
-            </Text>
-            <Badge tone={flagged.length > 0 ? 'caution' : 'positive'} fontSize={1}>
-              {flagged.length > 0 ? `${flagged.length} need attention` : 'Nothing to flag'}
-            </Badge>
-          </Flex>
-          <Text size={1} muted>
-            Every published post checked for a featured image, image alt text, an excerpt, and at least
-            one category — the things that actually affect how a post reads and shares, not how old it
-            is. A post with nothing missing doesn&rsquo;t show up below.
-          </Text>
-        </Stack>
-
-        {flagged.length === 0 && (
-          <Text size={1} muted>
-            No posts are missing any of the four checks.
-          </Text>
-        )}
-
-        {flagged.length > 0 && (
-          <Stack space={3}>
-            {flagged.map((row) => (
-              <Card key={row._id} padding={3} radius={2} border>
-                <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
-                  <Stack space={2} style={{minWidth: 0, flex: 1}}>
-                    <Text size={1} weight="medium" textOverflow="ellipsis">
-                      {row.title || 'Untitled'}
-                    </Text>
-                    <Flex gap={2} wrap="wrap">
-                      {issuesFor(row).map((key) => (
-                        <Badge key={key} tone="caution" fontSize={0}>
-                          {ISSUE_LABELS[key]}
-                        </Badge>
-                      ))}
-                    </Flex>
-                  </Stack>
-                  <Button
-                    text="Open post"
-                    mode="ghost"
-                    fontSize={0}
-                    padding={2}
-                    onClick={() => window.open(`/studio/structure/post;${row._id}`, '_blank')}
-                  />
-                </Flex>
-              </Card>
-            ))}
-          </Stack>
-        )}
+    <Stack space={4}>
+      <Stack space={2}>
+        <Flex align="center" gap={3} wrap="wrap">
+          <Badge tone={flagged.length > 0 ? 'caution' : 'positive'} fontSize={1}>
+            {flagged.length > 0 ? `${flagged.length} need attention` : 'Nothing to flag'}
+          </Badge>
+        </Flex>
+        <Text size={1} muted>
+          Every published post checked for a featured image, image alt text, an excerpt, and at least one
+          category — the things that actually affect how a post reads and shares, not how old it is. A
+          post with nothing missing doesn&rsquo;t show up below.
+        </Text>
       </Stack>
-    </Box>
+
+      {flagged.length === 0 && (
+        <Text size={1} muted>
+          No posts are missing any of the four checks.
+        </Text>
+      )}
+
+      {flagged.length > 0 && (
+        <Stack space={3}>
+          {flagged.map((row) => (
+            <Card key={row._id} padding={3} radius={2} border>
+              <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
+                <Stack space={2} style={{minWidth: 0, flex: 1}}>
+                  <Text size={1} weight="medium" textOverflow="ellipsis">
+                    {row.title || 'Untitled'}
+                  </Text>
+                  <Flex gap={2} wrap="wrap">
+                    {issuesFor(row).map((key) => (
+                      <Badge key={key} tone="caution" fontSize={0}>
+                        {ISSUE_LABELS[key]}
+                      </Badge>
+                    ))}
+                  </Flex>
+                </Stack>
+                <Button
+                  text="Open post"
+                  mode="ghost"
+                  fontSize={0}
+                  padding={2}
+                  onClick={() => window.open(`/studio/structure/post;${row._id}`, '_blank')}
+                />
+              </Flex>
+            </Card>
+          ))}
+        </Stack>
+      )}
+    </Stack>
   )
 }

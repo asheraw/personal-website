@@ -4,13 +4,11 @@
  * This configuration is used to for the Sanity Studio that’s mounted on the `\src\app\studio\[[...tool]]\page.tsx` route
  */
 
-import {visionTool} from '@sanity/vision'
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
 import {presentationTool, defineLocations, defineDocuments} from 'sanity/presentation'
 
-// Go to https://www.sanity.io/docs/api-versioning to learn how API versioning works
-import {apiVersion, dataset, projectId} from './src/sanity/env'
+import {dataset, projectId} from './src/sanity/env'
 import {schema} from './src/sanity/schemaTypes'
 import {structure} from './src/sanity/structure'
 import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
@@ -25,23 +23,13 @@ import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
 import {CommentsToolIcon} from './src/sanity/components/CommentsToolIcon'
 import {StudioNavbar} from './src/sanity/components/StudioNavbar'
-import {NotFoundHitsTool} from './src/sanity/components/NotFoundHitsTool'
-import {ContactSubmissionsTool} from './src/sanity/components/ContactSubmissionsTool'
-import {LinkCheckerTool} from './src/sanity/components/LinkCheckerTool'
 import {DistributionDashboardTool} from './src/sanity/components/DistributionDashboardTool'
 import {EditorialCalendarTool} from './src/sanity/components/EditorialCalendarTool'
-import {ExportTool} from './src/sanity/components/ExportTool'
-import {ContentAuditTool} from './src/sanity/components/ContentAuditTool'
-import {BulkOperationsTool} from './src/sanity/components/BulkOperationsTool'
+import {ContentHealthTool} from './src/sanity/components/ContentHealthTool'
 import {ImageIcon} from '@sanity/icons/Image'
-import {ClockIcon} from '@sanity/icons/Clock'
-import {EditIcon} from '@sanity/icons/Edit'
-import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
-import {EnvelopeIcon} from '@sanity/icons/Envelope'
-import {LinkIcon} from '@sanity/icons/Link'
+import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {ShareIcon} from '@sanity/icons/Share'
 import {CalendarIcon} from '@sanity/icons/Calendar'
-import {DownloadIcon} from '@sanity/icons/Download'
 
 export default defineConfig({
   basePath: '/studio',
@@ -49,6 +37,13 @@ export default defineConfig({
   dataset,
   // Add and edit the content schema in the './sanity/schemaTypes' folder
   schema,
+  // Sanity's own Content Releases feature -- never explicitly set up, just
+  // appears by default in Studio v6. Turned off: the Editorial Calendar
+  // tool already covers real scheduling needs, and this was just adding a
+  // top-nav item nobody uses. Vision (raw GROQ console, removed from
+  // `plugins` below) went for the same reason -- a developer tool on a
+  // site run by a non-technical owner.
+  releases: {enabled: false},
   studio: {
     components: {
       // Floating "N comments need review" badge, always visible regardless
@@ -119,10 +114,16 @@ export default defineConfig({
         },
       },
     }),
-    // Vision is for querying with GROQ from inside the Studio
-    // https://www.sanity.io/docs/the-vision-plugin
-    visionTool({defaultApiVersion: apiVersion}),
   ],
+  // Kept deliberately short (2026-08-05 cleanup) -- top nav had grown to 14
+  // items across a session of shipping tools one at a time, never stepping
+  // back to look at the whole bar together. What's left here is daily/
+  // frequent-use tools only; occasional admin tools (404 Hits, Contact
+  // Submissions, Export, Bulk Operations) moved into the Structure
+  // sidebar's own "Site Admin" section instead (see structure.tsx) --
+  // Structure Builder's S.component() embeds the exact same components,
+  // nothing lost, just organized by how often each one actually gets
+  // opened rather than all flattened into one bar.
   tools: (prev) => [
     ...prev,
     // A custom top-nav tool (not a document-type list, since image assets
@@ -139,24 +140,6 @@ export default defineConfig({
     // not reliably visible. The always-visible signal is the floating
     // navbar badge (studio.components.navbar -> StudioNavbar, above).
     {name: 'comments', title: 'Comments', icon: CommentsToolIcon, component: CommentsTool},
-    // 404 hits, one overview page instead of clicking into each path's own
-    // document -- most-hit paths first, with a per-path expandable full hit
-    // log (every timestamp + referrer) for spotting scanning/bruteforcing
-    // patterns rather than just first/last seen.
-    {name: 'not-found-hits', title: '404 Hits', icon: LinkRemovedIcon, component: NotFoundHitsTool},
-    // Contact form submissions, table view -- one overview page with a
-    // Handled checkbox and delete, instead of clicking into each
-    // submission's own document.
-    {
-      name: 'contact-submissions',
-      title: 'Contact Submissions',
-      icon: EnvelopeIcon,
-      component: ContactSubmissionsTool,
-    },
-    // Broken-link checker, external-link monitor, and affiliate-link
-    // registry in one tool -- every link inside a post/snippet's own text,
-    // checked live and re-checked weekly (vercel.json cron).
-    {name: 'link-checker', title: 'Link Checker', icon: LinkIcon, component: LinkCheckerTool},
     // Distribution dashboard -- drafted-social-copy status, share counts,
     // and a manual engagement log, per post, replacing the plain Social
     // Shares list (folded into this instead of living alongside it).
@@ -172,21 +155,9 @@ export default defineConfig({
     // Studio tool patching a normal field, not Sanity's paid Schedule
     // Publishing feature.
     {name: 'editorial-calendar', title: 'Calendar', icon: CalendarIcon, component: EditorialCalendarTool},
-    // Export -- the "no vendor lock-in" escape hatch. Every published post,
-    // in whichever of five formats (Markdown/JSON/HTML/EPUB/PDF) is picked,
-    // zipped client-side. The per-post equivalent (works on an unpublished
-    // draft too) lives as the "Export…" document action button, not here.
-    {name: 'export', title: 'Export', icon: DownloadIcon, component: ExportTool},
-    // Missing-metadata check -- no featured image, no alt text, no
-    // excerpt, no category -- across every published post. Deliberately
-    // not "stale by age": asked Asher directly and old posts aging isn't
-    // something he wants flagged for a personal blog with no expiring
-    // content.
-    {name: 'content-audit', title: 'Content Audit', icon: ClockIcon, component: ContentAuditTool},
-    // Bulk field edits (tag/category/author) and search & replace across
-    // many posts at once, both with a real undo log (Studio -> Bulk
-    // Operations -> History). See bulkOperationLogType.ts and
-    // src/lib/bulkOperations.ts for the actual change-computation logic.
-    {name: 'bulk-operations', title: 'Bulk Operations', icon: EditIcon, component: BulkOperationsTool},
+    // Content Audit (missing metadata) and Link Checker (broken/affiliate
+    // links) merged into one tabbed tool -- real overlap, both are "which
+    // posts need a look" checks. See ContentHealthTool.tsx.
+    {name: 'content-health', title: 'Content Health', icon: CheckmarkCircleIcon, component: ContentHealthTool},
   ],
 })
