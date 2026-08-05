@@ -3,7 +3,7 @@ import {writeClient} from '@/sanity/lib/write-client'
 type MarkDef = {_type?: string; _key?: string; href?: string}
 type Block = {_type?: string; markDefs?: MarkDef[]}
 
-type Source = {type: 'post' | 'snippet'; title: string; slug?: string}
+type Source = {type: 'post' | 'snippet'; title: string; slug?: string; id: string}
 type LinkEntry = {url: string; isAffiliate: boolean; sources: Source[]}
 
 const CHECK_TIMEOUT_MS = 8000
@@ -34,7 +34,7 @@ function extractLinksFromBlocks(blocks: unknown, source: Source, into: Map<strin
       const existing = into.get(url)
       if (existing) {
         existing.isAffiliate = existing.isAffiliate || isAffiliate
-        if (!existing.sources.some((s) => s.type === source.type && s.title === source.title)) {
+        if (!existing.sources.some((s) => s.id === source.id)) {
           existing.sources.push(source)
         }
       } else {
@@ -47,23 +47,33 @@ function extractLinksFromBlocks(blocks: unknown, source: Source, into: Map<strin
 /** Every distinct http(s) URL used in any post or snippet's own rich text, with where it's used. */
 export async function collectLinks(): Promise<LinkEntry[]> {
   const [posts, snippets] = await Promise.all([
-    writeClient.fetch<{title: string; slug: string; body: unknown}[]>(
-      `*[_type == "post" && defined(slug.current)]{title, "slug": slug.current, body}`,
+    writeClient.fetch<{_id: string; title: string; slug: string; body: unknown}[]>(
+      `*[_type == "post" && defined(slug.current)]{_id, title, "slug": slug.current, body}`,
     ),
-    writeClient.fetch<{title: string; content: unknown}[]>(`*[_type == "snippet"]{title, content}`),
+    writeClient.fetch<{_id: string; title: string; content: unknown}[]>(
+      `*[_type == "snippet"]{_id, title, content}`,
+    ),
   ])
 
   const links = new Map<string, LinkEntry>()
   for (const post of posts) {
-    extractLinksFromBlocks(post.body, {type: 'post', title: post.title, slug: post.slug}, links)
+    extractLinksFromBlocks(post.body, {type: 'post', title: post.title, slug: post.slug, id: post._id}, links)
   }
   for (const snippet of snippets) {
-    extractLinksFromBlocks(snippet.content, {type: 'snippet', title: snippet.title}, links)
+    extractLinksFromBlocks(snippet.content, {type: 'snippet', title: snippet.title, id: snippet._id}, links)
   }
   return [...links.values()]
 }
 
-type CheckResult = {ok: boolean; statusCode?: number; error?: string}
+// 401/403/429 usually mean a site is refusing an automated/bot-looking
+// request specifically -- not that the page itself is actually gone.
+// Instagram in particular does this for essentially all non-browser
+// traffic. Flagging these separately from a real 404/dead-domain failure
+// is the difference between "broken" meaning something trustworthy versus
+// crying wolf on links that are perfectly fine for an actual visitor.
+const BOT_BLOCK_STATUS_CODES = new Set([401, 403, 429])
+
+type CheckResult = {ok: boolean; statusCode?: number; error?: string; blocked: boolean}
 
 async function checkUrl(url: string): Promise<CheckResult> {
   for (const method of ['HEAD', 'GET'] as const) {
@@ -78,16 +88,16 @@ async function checkUrl(url: string): Promise<CheckResult> {
       // itself is fine -- fall through to a real GET rather than reporting
       // a false break.
       if (res.status === 405 || res.status === 501) continue
-      return {ok: res.ok, statusCode: res.status}
+      return {ok: res.ok, statusCode: res.status, blocked: BOT_BLOCK_STATUS_CODES.has(res.status)}
     } catch (err) {
       if (method === 'GET') {
-        return {ok: false, error: err instanceof Error ? err.message : 'Request failed'}
+        return {ok: false, error: err instanceof Error ? err.message : 'Request failed', blocked: false}
       }
       // HEAD threw (some hosts refuse it outright, not just via a status
       // code) -- try GET before giving up.
     }
   }
-  return {ok: false, error: 'Request failed'}
+  return {ok: false, error: 'Request failed', blocked: false}
 }
 
 async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -141,6 +151,7 @@ export async function runLinkCheck(): Promise<{checked: number; broken: number}>
       ok: result.ok,
       statusCode: result.statusCode,
       error: result.error,
+      blocked: result.blocked,
       lastCheckedAt: now,
       ...(brokenSince ? {brokenSince} : {}),
     })

@@ -34,6 +34,7 @@ export const linkCheckType = defineType({
             defineField({name: 'type', type: 'string'}),
             defineField({name: 'title', type: 'string'}),
             defineField({name: 'slug', type: 'string'}),
+            defineField({name: 'id', title: 'Document ID', type: 'string'}),
           ],
           preview: {
             select: {type: 'type', title: 'title'},
@@ -45,6 +46,15 @@ export const linkCheckType = defineType({
     defineField({name: 'ok', title: 'OK', type: 'boolean', readOnly: true}),
     defineField({name: 'statusCode', title: 'HTTP status', type: 'number', readOnly: true}),
     defineField({name: 'error', title: 'Error (if any)', type: 'string', readOnly: true}),
+    defineField({
+      name: 'blocked',
+      title: 'Likely bot-blocked',
+      type: 'boolean',
+      readOnly: true,
+      initialValue: false,
+      description:
+        'True when the failure was a 401/403/429 -- the site actively refusing an automated request, not necessarily that the page is gone. Shown as its own "Possibly Blocked" section in Studio -> Content Health rather than lumped in with genuinely broken links.',
+    }),
     defineField({
       name: 'lastCheckedAt',
       title: 'Last checked',
@@ -69,11 +79,12 @@ export const linkCheckType = defineType({
     },
   ],
   preview: {
-    select: {url: 'url', ok: 'ok', isAffiliate: 'isAffiliate'},
-    prepare({url, ok, isAffiliate}) {
+    select: {url: 'url', ok: 'ok', isAffiliate: 'isAffiliate', blocked: 'blocked'},
+    prepare({url, ok, isAffiliate, blocked}) {
+      const status = ok === false ? (blocked ? '⚠ possibly blocked' : '✗ broken') : '✓ ok'
       return {
         title: url || '(no URL)',
-        subtitle: `${ok === false ? '✗ broken' : '✓ ok'}${isAffiliate ? ' · affiliate' : ''}`,
+        subtitle: `${status}${isAffiliate ? ' · affiliate' : ''}`,
       }
     },
   },

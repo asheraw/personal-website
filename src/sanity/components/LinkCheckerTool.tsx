@@ -1,11 +1,13 @@
 import {useCallback, useEffect, useState} from 'react'
-import {Badge, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Button, Card, Flex, Spinner, Stack, Text, Tooltip} from '@sanity/ui'
+import type {CardTone} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {RefreshIcon} from '@sanity/icons/Refresh'
 import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
+import {openDocumentInStudio} from '../lib/openPostInStudio'
 
-type Source = {type: 'post' | 'snippet'; title: string; slug?: string}
+type Source = {type: 'post' | 'snippet'; title: string; slug?: string; id: string}
 type LinkCheckRow = {
   _id: string
   url: string
@@ -14,25 +16,55 @@ type LinkCheckRow = {
   ok?: boolean
   statusCode?: number
   error?: string
+  blocked?: boolean
   lastCheckedAt?: string
   brokenSince?: string
 }
 
-type SectionKey = 'broken' | 'affiliate' | 'healthy'
+type SectionKey = 'broken' | 'blocked' | 'affiliate' | 'healthy'
 
 const SECTIONS: {
   key: SectionKey
   title: string
   emptyLabel: string
-  badgeTone: 'critical' | 'primary' | 'default'
+  badgeTone: 'critical' | 'caution' | 'primary' | 'default'
 }[] = [
   {key: 'broken', title: 'Broken', emptyLabel: 'Nothing broken as of the last check.', badgeTone: 'critical'},
+  {
+    key: 'blocked',
+    title: 'Possibly Blocked',
+    emptyLabel: 'Nothing flagged as bot-blocked.',
+    badgeTone: 'caution',
+  },
   {key: 'affiliate', title: 'Affiliate links', emptyLabel: 'No affiliate links in use yet.', badgeTone: 'primary'},
   {key: 'healthy', title: 'Everything else', emptyLabel: 'No other links yet.', badgeTone: 'default'},
 ]
 
-function sourceLabel(source: Source): string {
-  return source.type === 'post' ? `Post: ${source.title}` : `Snippet: ${source.title}`
+// One-line, plain-English meaning per HTTP status this checker is likely to
+// actually see -- shown as a tooltip on each status badge so "what does 429
+// mean again" never needs a search engine. Codes outside this list still
+// show their raw number; only the handful worth knowing by name are here.
+const STATUS_MEANINGS: Record<number, string> = {
+  400: "Bad Request — the server couldn't understand this request.",
+  401: 'Unauthorized — this page requires being logged in to view.',
+  403: "Forbidden — often an automated-traffic block, not necessarily that the page is gone.",
+  404: "Not Found — the page genuinely doesn't exist at this address anymore.",
+  410: 'Gone — deliberately, permanently removed by the site.',
+  429: 'Too Many Requests — rate-limited. The site is blocking automated checks, not necessarily broken.',
+  500: 'Internal Server Error — something is wrong on their end.',
+  502: 'Bad Gateway — a server/proxy issue in front of their site, often temporary.',
+  503: 'Service Unavailable — temporarily down or overloaded.',
+  504: 'Gateway Timeout — the server took too long to respond.',
+}
+
+function statusMeaning(statusCode: number | undefined, error: string | undefined): string {
+  if (statusCode) return STATUS_MEANINGS[statusCode] ?? `HTTP ${statusCode} — an error response from the server.`
+  return error || 'The request failed before getting any response (timeout, DNS, or connection error).'
+}
+
+function cardTone(row: LinkCheckRow): CardTone {
+  if (row.ok === false) return row.blocked ? 'caution' : 'critical'
+  return 'transparent'
 }
 
 // A broken-link checker, external-link monitor, and affiliate-link
@@ -53,13 +85,13 @@ export function LinkCheckerTool() {
   const [rows, setRows] = useState<LinkCheckRow[] | null>(null)
   const [checking, setChecking] = useState(false)
   const [checkError, setCheckError] = useState('')
-  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(['broken', 'affiliate']))
+  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(['broken', 'blocked', 'affiliate']))
 
   const load = useCallback(() => {
     client
       .fetch<LinkCheckRow[]>(
         `*[_type == "linkCheck"] | order(url asc){
-          _id, url, isAffiliate, sources, ok, statusCode, error, lastCheckedAt, brokenSince
+          _id, url, isAffiliate, sources, ok, statusCode, error, blocked, lastCheckedAt, brokenSince
         }`,
       )
       .then(setRows)
@@ -101,10 +133,17 @@ export function LinkCheckerTool() {
     )
   }
 
-  const broken = rows.filter((r) => r.ok === false)
+  // "Broken" means a genuine failure -- a real 404, a dead domain, a
+  // connection error. 401/403/429 get their own section: those status
+  // codes mean the site actively refused an automated-looking request,
+  // which happens to perfectly fine pages (Instagram in particular blocks
+  // almost all non-browser traffic this way) -- not the same thing as the
+  // page actually being gone.
+  const broken = rows.filter((r) => r.ok === false && !r.blocked)
+  const blocked = rows.filter((r) => r.ok === false && r.blocked)
   const affiliate = rows.filter((r) => r.ok !== false && r.isAffiliate)
   const healthy = rows.filter((r) => r.ok !== false && !r.isAffiliate)
-  const byKey: Record<SectionKey, LinkCheckRow[]> = {broken, affiliate, healthy}
+  const byKey: Record<SectionKey, LinkCheckRow[]> = {broken, blocked, affiliate, healthy}
 
   const lastChecked = rows.reduce<string | undefined>((latest, r) => {
     if (!r.lastCheckedAt) return latest
@@ -120,6 +159,11 @@ export function LinkCheckerTool() {
               {broken.length} broken
             </Badge>
           )}
+          {blocked.length > 0 && (
+            <Badge tone="caution" fontSize={1}>
+              {blocked.length} possibly blocked
+            </Badge>
+          )}
           <Button
             text={checking ? 'Checking…' : 'Check now'}
             icon={RefreshIcon}
@@ -132,8 +176,10 @@ export function LinkCheckerTool() {
         </Flex>
         <Text size={1} muted>
           Every link inside a post or reusable snippet&rsquo;s own text, checked live and re-checked
-          automatically once a week. Some sites block automated checks even though the page loads fine for
-          a person -- worth a quick manual click before assuming a flagged link is actually broken.
+          automatically once a week. Links that come back 401/403/429 show under &ldquo;Possibly
+          Blocked&rdquo; instead of Broken -- those codes usually mean a site is refusing an automated
+          check specifically (Instagram does this to almost all non-browser traffic), not that the page is
+          actually gone. Hover any status badge for what it means.
           {lastChecked && ` Last checked ${new Date(lastChecked).toLocaleString()}.`}
         </Text>
         {checkError && (
@@ -172,7 +218,7 @@ export function LinkCheckerTool() {
                     </Text>
                   )}
                   {sectionRows.map((row) => (
-                    <Card key={row._id} padding={3} radius={2} border tone={row.ok === false ? 'critical' : 'transparent'}>
+                    <Card key={row._id} padding={3} radius={2} border tone={cardTone(row)}>
                       <Stack space={2}>
                         <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
                           <Text
@@ -189,9 +235,19 @@ export function LinkCheckerTool() {
                               </Badge>
                             )}
                             {row.ok === false ? (
-                              <Badge tone="critical" fontSize={0}>
-                                {row.statusCode ? `HTTP ${row.statusCode}` : row.error || 'broken'}
-                              </Badge>
+                              <Tooltip
+                                content={
+                                  <Text size={1} style={{maxWidth: 240}}>
+                                    {statusMeaning(row.statusCode, row.error)}
+                                  </Text>
+                                }
+                                padding={2}
+                                placement="top"
+                              >
+                                <Badge tone={row.blocked ? 'caution' : 'critical'} fontSize={0} style={{cursor: 'help'}}>
+                                  {row.statusCode ? `HTTP ${row.statusCode}` : row.error || 'broken'}
+                                </Badge>
+                              </Tooltip>
                             ) : (
                               <Badge tone="positive" fontSize={0}>
                                 {row.statusCode ? `HTTP ${row.statusCode}` : 'ok'}
@@ -199,9 +255,31 @@ export function LinkCheckerTool() {
                             )}
                           </Flex>
                         </Flex>
-                        <Text size={0} muted>
-                          {row.sources.map(sourceLabel).join(' · ') || 'No longer referenced'}
-                        </Text>
+                        <Flex gap={2} wrap="wrap" align="center">
+                          {row.sources.length === 0 && (
+                            <Text size={0} muted>
+                              No longer referenced
+                            </Text>
+                          )}
+                          {row.sources.map((source, i) => (
+                            <Flex key={source.id} align="center" gap={2}>
+                              {i > 0 && (
+                                <Text size={0} muted>
+                                  ·
+                                </Text>
+                              )}
+                              <Text
+                                size={0}
+                                muted
+                                style={{cursor: 'pointer', textDecoration: 'underline'}}
+                                onClick={() => openDocumentInStudio(source.type, source.id)}
+                              >
+                                {source.type === 'post' ? 'Post: ' : 'Snippet: '}
+                                {source.title}
+                              </Text>
+                            </Flex>
+                          ))}
+                        </Flex>
                         <Text size={0} muted>
                           {row.lastCheckedAt && `Last checked ${new Date(row.lastCheckedAt).toLocaleString()}`}
                           {row.brokenSince &&
