@@ -11,6 +11,34 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Pasting a YouTube/Instagram URL now auto-embeds it
+
+Asher pointed out the actual friction: embedding a video meant opening the block-insert menu, picking
+"YouTube embed," *then* pasting the URL a second time into that block's own field. Now pasting a bare
+YouTube or Instagram post URL directly into the body — on its own line, or over selected text — inserts the
+real embed block immediately, no menu detour.
+
+Built on Sanity's own documented `onPaste` hook on the Portable Text input (`src/sanity/lib/autoEmbedPaste.ts`),
+wired through `DistractionFreeWritingPanel.tsx`'s existing `renderDefault()` call, since that's the one place
+already customizing the body field's input component — no second, competing `components.input` override
+needed. A regex checks whether the *entire* pasted string is just a YouTube or Instagram URL (not a sentence
+that happens to mention one) and returns the matching block object directly; anything else falls through to
+Sanity's normal paste handling untouched.
+
+**Honest limit, stated directly to Asher:** this only fires on an actual clipboard paste (Ctrl/Cmd+V). Typing
+a URL by hand and pressing space/Enter does *not* trigger it — that would need a different, currently
+undocumented Studio "Behaviors" API, not attempted here since it's real internals Sanity hasn't committed to
+as stable public API yet.
+
+**Verified the matching logic directly, not the live paste interaction itself** — this sandbox has no way to
+log into Studio and click-test a real paste event, so the actual `onPaste` wiring couldn't be exercised
+end-to-end. What *was* verified: running the real matching function against realistic URL variants
+(youtube.com/youtu.be/shorts, instagram.com/p//reel, with and without query strings or trailing slashes) —
+every real video/post URL matched correctly, and a URL sitting inside a normal sentence was correctly left
+alone. Worth a real check in Studio to confirm the block actually appears on paste.
+
+---
+
 ## 2026-08-05 (continued) — ACE spec review, two shelved, and Markdown export shipped
 
 Asked what's left in the original `ACE_MASTER_SPEC.md` roadmap. Cross-checked the actual spec against

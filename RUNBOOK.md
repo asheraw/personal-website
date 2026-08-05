@@ -476,6 +476,35 @@ scrollable list of comments — that's only available through Meta's Graph API, 
 requires app review. If a real comment thread ever becomes a firm requirement, that's the path, but it's a
 meaningfully bigger lift than this block.
 
+**Pasting a bare URL auto-embeds it (shipped 2026-08-05).** Paste a YouTube or Instagram post URL directly
+into the body — on its own line, or over selected text — and the real `youtube`/`instagramEmbed` block is
+inserted immediately, no need to open the block-insert menu first. `src/sanity/lib/autoEmbedPaste.ts` exports
+`onPasteAutoEmbed`, wired via Sanity's documented `onPaste` prop on `PortableTextInput`
+(https://www.sanity.io/docs/studio/customizing-block-content, "Custom paste handler"). It's threaded through
+`DistractionFreeWritingPanel.tsx`'s existing `renderDefault({...props, onPaste: onPasteAutoEmbed})` call rather
+than a second `components.input` override on the field — Sanity only supports one input override per field, and
+that file already owns the slot.
+
+The two regexes (`YOUTUBE_URL`/`INSTAGRAM_URL`) are anchored start-to-end on purpose — they check whether the
+*whole* pasted clipboard string is just the URL, not whether a URL appears somewhere inside a longer paste.
+Pasting a sentence that happens to contain a YouTube link leaves it as plain text, unchanged; only a bare link
+gets converted. Returning `{insert: [{_type: 'youtube', url: text}]}` inserts the block directly rather than
+wrapping it as `{_type: 'block', children: [...]}`, because `youtube`/`instagramEmbed` are registered as
+top-level block members in `blockContentType.ts`'s `of` array (siblings of `{type: 'block'}`), not inline
+objects — an easy mistake to make copying Sanity's own doc example, which demonstrates an *inline* object
+instead.
+
+**Known limit:** this only fires on an actual clipboard paste event. Typing a URL by hand and pressing space
+or Enter does not trigger it. That would need Sanity's newer, still-`@beta`/undocumented-for-this-exact-use
+"Editor Behaviors" API (shipped Studio v3.92.0, June 2025) reacting to `insert.text`/`insert.break` events —
+deliberately not attempted, since it means building on internals Sanity hasn't published a public recipe for.
+
+**Verification note:** the URL-matching logic itself was verified directly (ran `onPasteAutoEmbed` against
+realistic YouTube/Instagram URL variants, including query strings and trailing slashes, plus a URL embedded in
+a normal sentence to confirm it's correctly ignored). The actual in-Studio paste interaction could not be
+click-tested end-to-end — that needs a real, authenticated Studio session, which automated testing in this
+project's sandbox doesn't have. Worth a real check next time you're writing a post.
+
 ---
 
 ## Share bar: resharing a post to other platforms (shipped 2026-08-02)
