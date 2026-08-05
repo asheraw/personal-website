@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 — Google Tag Manager: wired `cookie_consent` through to GA4
+
+Closes the last item on the analytics "last mile." The site already pushed a `cookie_consent` event to
+`dataLayer` on Accept (see `CookieConsent.tsx`), but nothing in GTM was listening for it, so it never
+reached GA4. Walked Asher through GTM's UI directly (container `GTM-PVCX5DQ`, no code changes needed):
+
+- A Custom Event trigger (`Custom Event - cookie_consent`) matching event name `cookie_consent`.
+- A GA4 Event tag (`GA4 - cookie_consent`), reusing the existing "Google Tag" connection's Measurement ID,
+  Event Name `cookie_consent`, firing on the trigger above.
+- Published.
+
+GTM's own Preview/Tag Assistant tooling repeatedly failed to connect on Asher's desktop browser — turned
+out to be that browser profile's extensions/ad-blocker (confirmed separately blocking Microsoft Clarity's
+script outright with `net::ERR_BLOCKED_BY_CLIENT`), not a real problem with the tag setup. Verified instead
+by checking `gtm.js` loaded with a real `200` in Network tab once consent was granted, then confirming
+end-to-end on a phone: `cookie_consent` showed up in GA4's Realtime report with a live event count.
+
+Declines still aren't visible in GA4 by design — GTM/GA never loads at all for a visitor who declines, so
+there's nothing for a GTM trigger to ever catch. The first-party `/api/track-consent` → Sanity Cookie
+Consent Log remains the only complete record of both choices (see `CookieConsent.tsx`'s own comment).
+
 ## 2026-08-05 (continued) — Fixed: "Open post" links opened a tab but never loaded the editor
 
 Asher reported the newly-clickable post/snippet links (Content Audit, Distribution, Link Checker) opened a

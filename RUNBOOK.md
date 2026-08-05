@@ -1702,9 +1702,14 @@ accepted · 38 declined · 79% accept rate" at a glance.
 
 **Accept also gets a bonus GA event**, `cookie_consent` (category `privacy`, label `accepted`), pushed to
 `dataLayer` via the existing `track()` helper in `src/lib/analytics.ts` — this is real GA data, but only ever
-the accept half, for the structural reason above. It arrives in GA4 as a raw dataLayer event; if Asher wants
-it as a proper GA4 conversion/event report, that needs a Trigger + Tag added in Tag Manager itself (variable:
-Event equals `cookie_consent`) — nothing further to do in code for that part.
+the accept half, for the structural reason above. **Wired through to GA4 in GTM itself on 2026-08-06**
+(container `GTM-PVCX5DQ`, no code change): a Custom Event trigger matching `cookie_consent`, feeding a GA4
+Event tag (reusing the existing "Google Tag" connection's Measurement ID) named the same. Confirmed live via
+GA4's Realtime report showing a real `cookie_consent` event after accepting on a real device — GTM's own
+Preview/Tag Assistant tooling refused to connect on the browser used to set this up, which turned out to be
+that browser profile's ad-blocker/extensions (it was separately blocking Microsoft Clarity's script outright),
+not a problem with the trigger/tag config — worth remembering if Preview mode ever seems to hang for no
+reason: check for a blocked request before assuming the GTM setup itself is wrong.
 
 `window.dataLayer` is deliberately seeded (`window.dataLayer = window.dataLayer || []`) right before calling
 `track()` on Accept, not left to `track()` alone — at the exact moment of the click, GTM's own script hasn't
