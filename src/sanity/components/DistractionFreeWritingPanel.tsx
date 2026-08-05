@@ -2,6 +2,7 @@ import {useEffect, useMemo, useState} from 'react'
 import {Badge, Box, Card, Flex, Stack, Text} from '@sanity/ui'
 import type {ArrayOfObjectsInputProps} from 'sanity'
 import {portableTextToPlainText, estimateReadingTimeFromText} from '../../lib/portableText'
+import {onPasteAutoEmbed} from '../lib/autoEmbedPaste'
 
 type PTBlock = {_key?: string; _type?: string; style?: string; children?: {text?: string}[]}
 
@@ -115,7 +116,7 @@ export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
           </Box>
         )}
       </Card>
-      {renderDefault(props)}
+      {renderDefault({...props, onPaste: onPasteAutoEmbed})}
     </Stack>
   )
 }
