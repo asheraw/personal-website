@@ -857,6 +857,17 @@ interaction couldn't be exercised end-to-end in a browser during development —
 Studio is what verified the entering direction; the exiting direction added the same day follows the identical,
 now-proven mechanism, just for the opposite test id.
 
+**Stats bar "disappearing" in the expanded editor (shipped 2026-08-05):** Asher noticed the word count/reading
+time/session timer bar was gone once the editor expanded. It was never actually removed — it's covered up.
+Sanity's own expanded-editor state (`isFullscreen` on `PortableTextInput`) renders the editor into a
+full-viewport `Portal` (see `ExpandedLayer` in Sanity's source), which visually sits on top of the entire normal
+document layout, including this panel's own `Card`. There's no supported way to inject content into that
+overlay from `renderDefault`'s caller, so the fix floats a *duplicate* of just the three stat badges via
+`createPortal(..., document.body)`, `position: fixed; top: 12px; right: 12px`, with a maximal (`2147483647`)
+z-index, rendered only while `maximized` is true. The original in-flow `Card` is untouched and keeps working
+exactly as before in the normal (non-expanded) view — there's no visible duplicate there, only when the overlay
+is actually covering it.
+
 **If the outline's click-to-jump doesn't scroll to the right place:** this relies on Sanity's Portable Text
 editor rendering each block with a `data-key` attribute matching its `_key` — a reasonable but unverified
 assumption (no Studio login available to visually confirm interactively this session). It's implemented

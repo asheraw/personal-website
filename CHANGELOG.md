@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Writing stats stayed visible in Focus mode's expanded editor
+
+Asher noticed the word count / reading time / session timer bar disappeared once Focus mode expanded the
+editor. It was never actually gone — Sanity's own expanded editor renders itself into a full-viewport overlay
+(a React portal) that visually covers the normal document layout, stats bar included, underneath it. Since
+`renderDefault` doesn't expose any hook into that overlay's own content, the fix floats a duplicate copy of
+just the three stat badges via `createPortal` straight onto `document.body`, fixed top-right, with a
+deliberately maximal z-index — shown only while the editor is expanded, so there's no second copy cluttering
+the normal (non-expanded) view where the original bar already works fine.
+
+## 2026-08-05 (continued) — Restored a 2016 comment thread from a screenshot
+
+Added Liu Yuantai's comment and Asher's reply to **Christmas 2016: Finding Home**, following the established
+Wayback-restoration pattern: created directly via a throwaway write-token script (not through `/api/comments`,
+since these are already-public historical comments, not new submissions), `status: 'approved'`, `isAuthorReply:
+true` on Asher's reply, placeholder `@restored.invalid` emails, and `createdAt` converted from the screenshot's
+timestamps (Dec 28, 2016, 1:34am and 2:56pm, Singapore time) to UTC.
+
 ## 2026-08-05 (continued) — Focus mode now auto-expands the body editor
 
 Asher's preferred writing setup is Focus mode (hides the left Structure/post-list panes) plus the body
