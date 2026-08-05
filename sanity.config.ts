@@ -32,8 +32,10 @@ import {DistributionDashboardTool} from './src/sanity/components/DistributionDas
 import {EditorialCalendarTool} from './src/sanity/components/EditorialCalendarTool'
 import {ExportTool} from './src/sanity/components/ExportTool'
 import {ContentAuditTool} from './src/sanity/components/ContentAuditTool'
+import {BulkOperationsTool} from './src/sanity/components/BulkOperationsTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {ClockIcon} from '@sanity/icons/Clock'
+import {EditIcon} from '@sanity/icons/Edit'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {LinkIcon} from '@sanity/icons/Link'
@@ -181,5 +183,10 @@ export default defineConfig({
     // something he wants flagged for a personal blog with no expiring
     // content.
     {name: 'content-audit', title: 'Content Audit', icon: ClockIcon, component: ContentAuditTool},
+    // Bulk field edits (tag/category/author) and search & replace across
+    // many posts at once, both with a real undo log (Studio -> Bulk
+    // Operations -> History). See bulkOperationLogType.ts and
+    // src/lib/bulkOperations.ts for the actual change-computation logic.
+    {name: 'bulk-operations', title: 'Bulk Operations', icon: EditIcon, component: BulkOperationsTool},
   ],
 })
