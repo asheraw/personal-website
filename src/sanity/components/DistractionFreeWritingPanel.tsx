@@ -1,6 +1,7 @@
-import {useEffect, useMemo, useState} from 'react'
+import {useContext, useEffect, useMemo, useState} from 'react'
 import {Badge, Box, Card, Flex, Stack, Text} from '@sanity/ui'
 import type {ArrayOfObjectsInputProps} from 'sanity'
+import {DocumentPaneContext, FullscreenPTEContext} from 'sanity/_singletons'
 import {portableTextToPlainText, estimateReadingTimeFromText} from '../../lib/portableText'
 import {onPasteAutoEmbed} from '../lib/autoEmbedPaste'
 
@@ -29,12 +30,13 @@ function formatElapsed(ms: number): string {
  * Portable Text editor's own rendering internals in ways that aren't a
  * stable, documented customization surface -- the kind of "clever and
  * fragile" Rule #4 warns against, likely to break on a future Sanity
- * upgrade. Left out on purpose. Full-screen writing is already covered by
- * Studio's own built-in expand button on this field (top-right of the
- * editor toolbar) -- nothing new needed there either.
+ * upgrade. Left out on purpose. Full-screen writing itself is covered by
+ * Studio's own built-in expand button on this field -- this panel just
+ * triggers that same built-in state automatically when the document pane's
+ * Focus mode is entered, so the two no longer need two separate clicks.
  */
 export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
-  const {value, renderDefault} = props
+  const {value, renderDefault, path} = props
   const [sessionStart] = useState(() => Date.now())
   const [elapsed, setElapsed] = useState(0)
   const [outlineOpen, setOutlineOpen] = useState(false)
@@ -60,6 +62,22 @@ export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
         .map((b) => ({key: b._key, style: b.style, text: headingText(b) || 'Untitled heading'})),
     [blocks],
   )
+
+  // Entering Focus mode (the document pane's own toolbar toggle) should
+  // also expand this field's editor -- Asher's preferred writing setup was
+  // two separate clicks before this. Both context values are @internal:
+  // not officially part of Sanity's stable API, so this is written to fail
+  // quiet rather than loud. `FullscreenPTEContext`'s default value is a
+  // real (non-null) object even outside a provider, so it's safe to call
+  // directly; `DocumentPaneContext` genuinely can be null (e.g. if this
+  // field is ever rendered outside a document pane), hence the `?.`.
+  const documentPane = useContext(DocumentPaneContext)
+  const fullscreenPTE = useContext(FullscreenPTEContext)
+  const maximized = documentPane?.maximized ?? false
+
+  useEffect(() => {
+    if (maximized) fullscreenPTE.setFullscreenPath(path, true)
+  }, [maximized, path, fullscreenPTE])
 
   function jumpTo(key: string | undefined) {
     if (!key) return
