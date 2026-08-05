@@ -817,19 +817,41 @@ and fragile" pattern Rule #4 warns against, and a real risk of breaking on a fut
 comparatively little value. Full-screen writing itself is already covered by Studio's own built-in expand
 button on this field (top-right of the editor toolbar).
 
-**Focus mode auto-expands the body editor (shipped 2026-08-05):** Asher's actual writing setup is the document
-pane's Focus mode (top-right toolbar icon, hides the left Structure/post-list panes) *plus* the body field's
-own Expand editor fullscreen state — previously two separate clicks. Entering Focus mode now automatically
-triggers Expand editor too; title, slug, and every other field stay in the normal view, since only the body
-field needs the extra room. Implemented by reading the document pane's `maximized` flag off Sanity's
-`DocumentPaneContext` and, when it's true, calling `setFullscreenPath(path, true)` on `FullscreenPTEContext`
-for the body field's path — both imported from `sanity/_singletons`, Sanity's sanctioned mechanism for sharing
-context across separately-bundled parts of Studio. **Both context shapes are marked `@internal` in Sanity's own
-source** — not officially part of the stable public API, same caveat as the `onPaste` mechanism below. Written
-to degrade gracefully: `DocumentPaneContext` is read with `?.` since it can genuinely be `null` outside a
-document pane, and if a future Sanity version renames or removes either context, the worst case is this
-silently stops auto-expanding — Studio reverts to today's two-click behavior, no crash, no data risk. Entering
+**Focus mode auto-expands the body editor (shipped 2026-08-05, fixed same day):** Asher's actual writing setup
+is the document pane's Focus mode (top-right toolbar icon, hides the left Structure/post-list panes) *plus* the
+body field's own Expand editor fullscreen state — previously two separate clicks. Entering Focus mode now
+automatically triggers Expand editor too; title, slug, and every other field stay in the normal view, since
+only the body field needs the extra room.
+
+The first version of this read the document pane's `maximized` flag off Sanity's `DocumentPaneContext` and, on
+it flipping true, wrote directly to `FullscreenPTEContext`'s `setFullscreenPath(path, true)` — both imported
+from `sanity/_singletons`. It shipped, and didn't work: Asher reported Focus mode still wasn't expanding the
+editor. Reading Sanity's actual `PortableTextInput` source (not just its type definitions) explained why —
+that component only reads `FullscreenPTEContext` **once, at mount** (or when its own `path` prop's identity
+changes); its real expanded/collapsed state is separate local React state seeded from the context at that one
+moment and never re-synced afterwards. A write from outside, after mount, lands in the context but nothing
+tells the already-mounted field to look at it again — a real gap between "the shared state changed" and "the
+component that renders the UI noticed."
+
+**The actual fix** doesn't try to fake that internal state at all. The field's real expand button carries a
+stable `data-testid` (`fullscreen-button-expand` when collapsed, `fullscreen-button-collapse` when expanded) —
+confirmed directly in Sanity's compiled source, and in `@sanity/ui`'s own `Button` source, that `data-testid`
+and the button's `onClick` land on the same native `<button>` element. So instead of writing to context,
+entering Focus mode now finds that real button inside the field's own DOM subtree and calls `.click()` on it
+directly — the exact same effect a manual click has, since a native `click()` on an element with a React
+`onClick` reliably fires that handler. `DocumentPaneContext` is still read the same way (with `?.`, since it
+can genuinely be `null` outside a document pane) purely to know *when* to click; `FullscreenPTEContext` is no
+longer touched. **Still relies on one `@internal` Sanity context plus one test-id string, neither part of the
+stable public API** — if a future Studio version renames the test id, this quietly stops finding the button
+rather than erroring, and Studio reverts to today's two-click behavior with no crash or data risk. Entering
 Focus mode triggers the expand; exiting Focus mode does *not* auto-collapse the editor back (not asked for).
+
+**Verification limit, stated plainly:** this sandbox has no Sanity Studio login, so the actual click-and-expand
+interaction couldn't be exercised end-to-end in a browser. What *was* verified directly: the real button's
+`data-testid` and its `onClick` handler landing on the same DOM node (read from `@sanity/ui`'s own source), and
+that `PortableTextInput` only seeds its fullscreen state from context at mount (read from Sanity's own source)
+— which is exactly why the first version failed and exactly why clicking the real button, rather than writing
+to context, is the correct fix. Worth a real click-test in Studio to confirm.
 
 **If the outline's click-to-jump doesn't scroll to the right place:** this relies on Sanity's Portable Text
 editor rendering each block with a `data-key` attribute matching its `_key` — a reasonable but unverified

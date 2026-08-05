@@ -32,6 +32,19 @@ context, the worst case is this quietly stops auto-expanding and Studio reverts 
 — no crash, no data risk. This only affects entering Focus mode; exiting Focus mode does not auto-collapse the
 editor back, since that wasn't asked for.
 
+**Follow-up, same day — Asher reported it didn't actually work:** it didn't. Writing to `FullscreenPTEContext`
+turned out to be a no-op in practice: Sanity's `PortableTextInput` only reads that context once, at mount (or
+when its own `path` prop changes identity) — the field's real expanded/collapsed state is separate local React
+state, seeded from the context at that one moment and never re-synced afterwards. A write from outside, after
+mount, just sits in the context unused; nothing tells the already-mounted field to look at it again. Confirmed
+by reading `PortableTextInput`'s actual source in `node_modules/sanity`, not just the type definitions this
+time. Fixed properly by not trying to fake that internal state at all: the field's real expand button carries
+a stable `data-testid` (`fullscreen-button-expand` / `fullscreen-button-collapse`), so entering Focus mode now
+finds that real button in the DOM and clicks it — the exact same action a manual click performs, since
+`data-testid` and `onClick` land on the same native `<button>` element (confirmed directly in `@sanity/ui`'s
+Button source). Same `@internal`/graceful-degradation posture as before: if a future Sanity version renames
+that test id, this quietly stops finding the button rather than erroring.
+
 ## 2026-08-05 (continued) — Pasting a YouTube/Instagram URL now auto-embeds it
 
 Asher pointed out the actual friction: embedding a video meant opening the block-insert menu, picking
