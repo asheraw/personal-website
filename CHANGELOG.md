@@ -11,6 +11,18 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Double-checked the Content Health merge; fixed two small things
+
+Asked directly to verify nothing broke in yesterday's Content Audit/Link Checker merge and to look for
+anything streamlinable. Diffed both components against their pre-merge commits — confirmed byte-for-byte
+identical functionality, only page chrome (a duplicate title/padding wrapper) was removed. No duplicate
+tool registrations, no orphaned imports, `bulkOperationLog` correctly excluded from the Structure sidebar's
+auto-generated document list. Found two small pre-existing (not merge-caused) things worth cleaning up
+anyway: Content Audit's query fetched every post's `slug` but never used it (the "Open post" button links
+by `_id`), and the "open this post in its own Studio editor" deep link was duplicated verbatim in both
+Content Audit and Distribution. Removed the unused field, extracted the deep link into one shared
+`openPostInStudio()` helper (`src/sanity/lib/openPostInStudio.ts`) used by both.
+
 ## 2026-08-05 (continued) — Studio's top nav: 14 tools down to 7
 
 Asked directly whether the growing top bar could combine anything logically — it had reached 14 items

@@ -101,6 +101,15 @@ does. The merge only touched page-level chrome: both `ContentAuditTool.tsx` and 
 longer render their own outer `Box padding`/title, since `ContentHealthTool.tsx` provides that once for
 both tabs now.
 
+**Double-checked afterward, not just assumed correct**: diffed both components against their pre-merge
+commits — confirmed the only change in each really was the outer chrome, nothing functional dropped. Along
+the way, found (pre-existing, not caused by the merge) that Content Audit's query fetched every post's
+`slug` without ever using it, and that the "open this post in its own Studio editor" deep link
+(`/studio/structure/post;<id>`) was duplicated verbatim in both Content Audit and
+`DistributionDashboardTool.tsx`. Fixed both: dropped the unused field, extracted the deep link into
+`src/sanity/lib/openPostInStudio.ts` (`openPostInStudio(postId)`) — reuse this for any future tool that
+needs an "open this post" button rather than re-writing the URL by hand.
+
 **Moved into the Structure sidebar**: 404 Hits, Contact Submissions, Export, and Bulk Operations — occasional
 admin tools, not daily-use — now live under a **Site Admin** entry in `structure.tsx` instead of the top
 bar, via Structure Builder's `S.component(MyToolComponent)`. This is a real, first-class Structure Builder
