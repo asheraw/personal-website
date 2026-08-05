@@ -241,9 +241,9 @@ redirecting except that the deployed `middleware.ts` actually includes this rule
 Audit shipped — merged into one tool, see the top-nav cleanup entry below) scans every post and reusable
 snippet's own rich text for links — both
 the plain URL annotation and the Affiliate link one (below) — and checks each URL live: HEAD first, falling
-back to GET for hosts that reject HEAD outright. Results group into three sections: **Broken**, **Affiliate
-links**, **Everything else**. Component: `src/sanity/components/LinkCheckerTool.tsx`. Shared checking logic:
-`src/lib/linkChecker.ts`.
+back to GET for hosts that reject HEAD outright. Results group into four sections: **Broken**, **Possibly
+Blocked**, **Affiliate links**, **Everything else**. Component: `src/sanity/components/LinkCheckerTool.tsx`.
+Shared checking logic: `src/lib/linkChecker.ts`.
 
 **Results persist, not just report.** Each checked URL is its own `linkCheck` document (deterministic id
 hashed from the URL, so re-checking upserts rather than duplicating), storing which post(s)/snippet(s) use it,
@@ -258,9 +258,31 @@ the tool itself calls `/api/check-links` (no cron secret needed — same no-extr
 suggestion routes, since reaching Studio is the access control on this solo-owner site) to run the identical
 check on demand.
 
-**False positives happen.** Some sites block automated/bot-like requests (a plain `HEAD`/`GET` with no
-browser fingerprint) even though the page loads completely fine for an actual visitor — a flagged link is
-worth a quick manual click before assuming it's really broken, not an automatic "go fix this."
+**"Possibly Blocked" is a real, separate classification, not just a caveat in the copy (fixed 2026-08-05).**
+Some sites — Instagram most aggressively, but also Vercel's own bot protection occasionally blocking this
+checker's distinctive User-Agent on `asheraw.com`'s own pages — return `401`/`403`/`429` to
+automated-looking requests specifically, regardless of whether the page is actually fine for a real visitor.
+Those three status codes get a `blocked: true` flag computed once at check time
+(`BOT_BLOCK_STATUS_CODES` in `linkChecker.ts`) and persisted on the document, so they show under their own
+amber **Possibly Blocked** section instead of being lumped in with genuine `404`s/dead domains under
+**Broken**. Asher flagged this directly after seeing several Instagram profile links reported broken that
+weren't — verified the fix by running the real production check against live content and re-checking the
+exact URLs from his screenshot: all came back `200`, confirming they were never actually broken, just
+transiently blocked at check time. **A "Possibly Blocked" result is still worth a quick manual click before
+assuming it's fine** — the classification is a strong signal, not a guarantee, since a small number of
+sites could plausibly return one of these codes for a genuinely-gone page too.
+
+**Hover a status badge to see what it means.** `STATUS_MEANINGS` in `LinkCheckerTool.tsx` is a plain-English,
+one-line explanation per HTTP code this checker actually encounters (400/401/403/404/410/429/500/502/503/504)
+— shown as a `Tooltip` on the badge. Added directly because Asher said he doesn't always remember what each
+code means; codes outside this list still show their raw number with a generic fallback explanation.
+
+**Each source is individually clickable, straight into its own Studio editor.** Previously plain text
+("Post: Title · Post: Other Title"); each post/snippet reference under a checked link now opens that exact
+document via `openDocumentInStudio(schemaType, id)` (`src/sanity/lib/openPostInStudio.ts`, generalized the
+same day from the post-only `openPostInStudio()` helper to also cover snippets). Needed threading each
+source's real document `_id` through `linkChecker.ts`'s `Source` type and `collectLinks()` queries — it
+previously only tracked `type`/`title`/`slug`, none of which alone is enough to build a Studio deep link.
 
 **Affiliate links.** A separate "Affiliate link" annotation next to the plain URL one in the post editor
 (`blockContentType.ts`) — picking it instead of a plain link does two things automatically: the rendered link

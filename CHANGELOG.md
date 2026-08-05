@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Link Checker: real fix for a real false-positive, plus two usability asks
+
+Asher flagged Content Health's Link Checker showing several Instagram profile links as broken when they
+weren't. Confirmed with a real check, not a guess: ran the actual production check against live content,
+then re-checked the exact URLs from his screenshot (`asheraw.com/#contact`, five Instagram profiles) —
+every one came back 200 OK. They were never actually broken; Instagram (and, it turns out, Vercel's own
+bot protection occasionally blocking the checker's own distinctive User-Agent on asheraw.com's own pages)
+returns 401/403/429 to automated-looking requests specifically, a signal that's fundamentally different
+from a genuine 404 or dead domain, but the tool was lumping both under "Broken."
+
+**Real fix, not just a relabel**: 401/403/429 results now get a `blocked: true` flag computed once at check
+time (`linkChecker.ts`) and persisted on the `linkCheck` document, showing under a separate **Possibly
+Blocked** section (amber, not red) instead of Broken. Verified end to end against live production — every
+one of the day's actual 401/403 hits came back correctly flagged as blocked, zero false "broken" reports.
+
+**Two other asks, same conversation**: hovering any status badge now shows a plain-English explanation
+(a `STATUS_MEANINGS` lookup — 403 vs. 429 vs. 500 all mean different things, and remembering which is which
+shouldn't be required). And every post/snippet a broken or blocked link appears in is now individually
+clickable, opening straight into that document's own Studio editor — generalized the `openPostInStudio()`
+helper from yesterday into `openDocumentInStudio(schemaType, id)` so it covers snippets too, and threaded
+each source's document `_id` through the link collector (it previously only tracked type/title/slug, not
+enough to build a Studio deep link).
+
 ## 2026-08-05 (continued) — Double-checked the Content Health merge; fixed two small things
 
 Asked directly to verify nothing broke in yesterday's Content Audit/Link Checker merge and to look for
