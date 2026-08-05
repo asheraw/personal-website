@@ -19,7 +19,7 @@ import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
-import {createExportMarkdownAction} from './src/sanity/actions/exportMarkdown'
+import {createExportAction} from './src/sanity/actions/exportPost'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
@@ -77,7 +77,7 @@ export default defineConfig({
         createSuggestSeoAction(),
         createSuggestSocialCopyAction(),
         createSuggestImagePromptAction(),
-        createExportMarkdownAction(),
+        createExportAction(),
         ...withDateAction.slice(1),
       ]
     },
@@ -170,10 +170,10 @@ export default defineConfig({
     // Studio tool patching a normal field, not Sanity's paid Schedule
     // Publishing feature.
     {name: 'editorial-calendar', title: 'Calendar', icon: CalendarIcon, component: EditorialCalendarTool},
-    // Markdown export -- the "no vendor lock-in" escape hatch. Every
-    // published post as a real, portable .md file, zipped client-side. The
-    // per-post equivalent (works on an unpublished draft too) lives as a
-    // document action button, "Export as Markdown", not here.
+    // Export -- the "no vendor lock-in" escape hatch. Every published post,
+    // in whichever of five formats (Markdown/JSON/HTML/EPUB/PDF) is picked,
+    // zipped client-side. The per-post equivalent (works on an unpublished
+    // draft too) lives as the "Export…" document action button, not here.
     {name: 'export', title: 'Export', icon: DownloadIcon, component: ExportTool},
     // Missing-metadata check -- no featured image, no alt text, no
     // excerpt, no category -- across every published post. Deliberately

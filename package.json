@@ -25,6 +25,7 @@
     "@mdxeditor/editor": "^3.39.1",
     "@portabletext/markdown": "^1.4.4",
     "@portabletext/react": "^6.2.0",
+    "@portabletext/to-html": "^5.0.2",
     "@prisma/client": "^6.11.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -77,6 +78,7 @@
     "next-intl": "^4.3.4",
     "next-sanity": "^13.2.3",
     "next-themes": "^0.4.6",
+    "pdfkit": "^0.19.1",
     "prisma": "^6.11.1",
     "react": "^19.0.0",
     "react-day-picker": "^9.8.0",
@@ -102,6 +104,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/pdfkit": "^0.17.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.185.1",
