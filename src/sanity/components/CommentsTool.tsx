@@ -181,6 +181,14 @@ export function CommentsTool() {
       if (status === 'approved' && approvedComment?.parentComment) {
         notifySubscribers(id)
       }
+      // Approving/rejecting/spamming the *last* pending comment in a group
+      // makes it "settled" -- which would otherwise auto-collapse the whole
+      // group the instant this action lands (see isExpanded below), closing
+      // it out from under whatever the user meant to do next, like replying
+      // to the comment they just approved. Pin it open, same as an explicit
+      // manual expand, the moment it's touched.
+      const groupKey = approvedComment?.postId ?? 'unknown'
+      setExpandOverrides((prev) => ({...prev, [groupKey]: true}))
     } finally {
       setBusyId(null)
     }
