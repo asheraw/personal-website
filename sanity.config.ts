@@ -31,7 +31,9 @@ import {LinkCheckerTool} from './src/sanity/components/LinkCheckerTool'
 import {DistributionDashboardTool} from './src/sanity/components/DistributionDashboardTool'
 import {EditorialCalendarTool} from './src/sanity/components/EditorialCalendarTool'
 import {ExportTool} from './src/sanity/components/ExportTool'
+import {ContentAuditTool} from './src/sanity/components/ContentAuditTool'
 import {ImageIcon} from '@sanity/icons/Image'
+import {ClockIcon} from '@sanity/icons/Clock'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {LinkIcon} from '@sanity/icons/Link'
@@ -173,5 +175,11 @@ export default defineConfig({
     // per-post equivalent (works on an unpublished draft too) lives as a
     // document action button, "Export as Markdown", not here.
     {name: 'export', title: 'Export', icon: DownloadIcon, component: ExportTool},
+    // Missing-metadata check -- no featured image, no alt text, no
+    // excerpt, no category -- across every published post. Deliberately
+    // not "stale by age": asked Asher directly and old posts aging isn't
+    // something he wants flagged for a personal blog with no expiring
+    // content.
+    {name: 'content-audit', title: 'Content Audit', icon: ClockIcon, component: ContentAuditTool},
   ],
 })
