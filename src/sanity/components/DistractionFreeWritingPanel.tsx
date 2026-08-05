@@ -1,7 +1,7 @@
-import {useContext, useEffect, useMemo, useState} from 'react'
+import {useContext, useEffect, useMemo, useRef, useState} from 'react'
 import {Badge, Box, Card, Flex, Stack, Text} from '@sanity/ui'
 import type {ArrayOfObjectsInputProps} from 'sanity'
-import {DocumentPaneContext, FullscreenPTEContext} from 'sanity/_singletons'
+import {DocumentPaneContext} from 'sanity/_singletons'
 import {portableTextToPlainText, estimateReadingTimeFromText} from '../../lib/portableText'
 import {onPasteAutoEmbed} from '../lib/autoEmbedPaste'
 
@@ -36,7 +36,7 @@ function formatElapsed(ms: number): string {
  * Focus mode is entered, so the two no longer need two separate clicks.
  */
 export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
-  const {value, renderDefault, path} = props
+  const {value, renderDefault} = props
   const [sessionStart] = useState(() => Date.now())
   const [elapsed, setElapsed] = useState(0)
   const [outlineOpen, setOutlineOpen] = useState(false)
@@ -65,19 +65,30 @@ export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
 
   // Entering Focus mode (the document pane's own toolbar toggle) should
   // also expand this field's editor -- Asher's preferred writing setup was
-  // two separate clicks before this. Both context values are @internal:
-  // not officially part of Sanity's stable API, so this is written to fail
-  // quiet rather than loud. `FullscreenPTEContext`'s default value is a
-  // real (non-null) object even outside a provider, so it's safe to call
-  // directly; `DocumentPaneContext` genuinely can be null (e.g. if this
-  // field is ever rendered outside a document pane), hence the `?.`.
+  // two separate clicks before this.
+  //
+  // Writing to Sanity's FullscreenPTEContext directly (an earlier attempt)
+  // turned out to be a no-op: the editor's own "expand" state is local
+  // React state that's seeded from that context once at mount and never
+  // re-reads it afterwards, so a later write just sits there unused. The
+  // only thing that actually flips that state is a real click on the
+  // editor's own expand/collapse button (`data-testid="fullscreen-button-expand"`
+  // in Sanity's source), so this simulates exactly that click instead of
+  // trying to fake the internal state it produces. `DocumentPaneContext` is
+  // @internal to Sanity and genuinely can be null outside a document pane,
+  // hence the `?.`; if a future Studio version renames the button's test id,
+  // this just quietly stops finding it rather than throwing.
   const documentPane = useContext(DocumentPaneContext)
-  const fullscreenPTE = useContext(FullscreenPTEContext)
   const maximized = documentPane?.maximized ?? false
+  const bodyFieldRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (maximized) fullscreenPTE.setFullscreenPath(path, true)
-  }, [maximized, path, fullscreenPTE])
+    if (!maximized) return
+    const expandButton = bodyFieldRef.current?.querySelector(
+      '[data-testid="fullscreen-button-expand"]',
+    )
+    if (expandButton instanceof HTMLElement) expandButton.click()
+  }, [maximized])
 
   function jumpTo(key: string | undefined) {
     if (!key) return
@@ -134,7 +145,7 @@ export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
           </Box>
         )}
       </Card>
-      {renderDefault({...props, onPaste: onPasteAutoEmbed})}
+      <div ref={bodyFieldRef}>{renderDefault({...props, onPaste: onPasteAutoEmbed})}</div>
     </Stack>
   )
 }
