@@ -45,6 +45,12 @@ finds that real button in the DOM and clicks it — the exact same action a manu
 Button source). Same `@internal`/graceful-degradation posture as before: if a future Sanity version renames
 that test id, this quietly stops finding the button rather than erroring.
 
+**Second follow-up, same day — confirmed working, and now symmetric:** Asher confirmed entering Focus mode
+now expands the editor as intended, then asked for the reverse too, since exiting Focus mode is exactly when
+he's back to working on title, slug, images, and SEO fields. Leaving Focus mode now clicks the editor's own
+collapse button the same way entering clicks the expand button — one small change, picking the right test id
+for the direction instead of hardcoding "expand" only.
+
 ## 2026-08-05 (continued) — Pasting a YouTube/Instagram URL now auto-embeds it
 
 Asher pointed out the actual friction: embedding a video meant opening the block-insert menu, picking

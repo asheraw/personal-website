@@ -833,25 +833,29 @@ moment and never re-synced afterwards. A write from outside, after mount, lands 
 tells the already-mounted field to look at it again — a real gap between "the shared state changed" and "the
 component that renders the UI noticed."
 
-**The actual fix** doesn't try to fake that internal state at all. The field's real expand button carries a
-stable `data-testid` (`fullscreen-button-expand` when collapsed, `fullscreen-button-collapse` when expanded) —
-confirmed directly in Sanity's compiled source, and in `@sanity/ui`'s own `Button` source, that `data-testid`
-and the button's `onClick` land on the same native `<button>` element. So instead of writing to context,
-entering Focus mode now finds that real button inside the field's own DOM subtree and calls `.click()` on it
+**The actual fix** doesn't try to fake that internal state at all. The field's real expand/collapse button
+carries a stable `data-testid` (`fullscreen-button-expand` when collapsed, `fullscreen-button-collapse` when
+expanded) — confirmed directly in Sanity's compiled source, and in `@sanity/ui`'s own `Button` source, that
+`data-testid` and the button's `onClick` land on the same native `<button>` element. So instead of writing to
+context, Focus mode now finds that real button inside the field's own DOM subtree and calls `.click()` on it
 directly — the exact same effect a manual click has, since a native `click()` on an element with a React
 `onClick` reliably fires that handler. `DocumentPaneContext` is still read the same way (with `?.`, since it
 can genuinely be `null` outside a document pane) purely to know *when* to click; `FullscreenPTEContext` is no
-longer touched. **Still relies on one `@internal` Sanity context plus one test-id string, neither part of the
-stable public API** — if a future Studio version renames the test id, this quietly stops finding the button
-rather than erroring, and Studio reverts to today's two-click behavior with no crash or data risk. Entering
-Focus mode triggers the expand; exiting Focus mode does *not* auto-collapse the editor back (not asked for).
+longer touched. **Still relies on one `@internal` Sanity context plus two test-id strings, none part of the
+stable public API** — if a future Studio version renames a test id, this quietly stops finding the button
+rather than erroring, and Studio reverts to today's manual-click behavior with no crash or data risk.
 
-**Verification limit, stated plainly:** this sandbox has no Sanity Studio login, so the actual click-and-expand
-interaction couldn't be exercised end-to-end in a browser. What *was* verified directly: the real button's
-`data-testid` and its `onClick` handler landing on the same DOM node (read from `@sanity/ui`'s own source), and
-that `PortableTextInput` only seeds its fullscreen state from context at mount (read from Sanity's own source)
-— which is exactly why the first version failed and exactly why clicking the real button, rather than writing
-to context, is the correct fix. Worth a real click-test in Studio to confirm.
+**Confirmed working, then made symmetric (same day):** Asher confirmed entering Focus mode correctly expands
+the editor. He then asked for leaving Focus mode to collapse it back too, since that's exactly when he's back
+to working on title, slug, images, and SEO fields, which live outside the expanded editor. The single effect
+now picks whichever test id matches the direction (`fullscreen-button-expand` entering, `-collapse` leaving)
+instead of only ever looking for "expand" — both directions run through the same click-simulation mechanism
+described above.
+
+**Verification limit, stated plainly:** this sandbox has no Sanity Studio login, so the actual click-and-toggle
+interaction couldn't be exercised end-to-end in a browser during development — Asher's own confirmation in
+Studio is what verified the entering direction; the exiting direction added the same day follows the identical,
+now-proven mechanism, just for the opposite test id.
 
 **If the outline's click-to-jump doesn't scroll to the right place:** this relies on Sanity's Portable Text
 editor rendering each block with a `data-key` attribute matching its `_key` — a reasonable but unverified
