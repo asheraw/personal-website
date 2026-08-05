@@ -515,6 +515,11 @@ deep-merge `alternates` across nested layouts, so defining `alternates` on a pag
 `types` will silently drop whatever feed link the layout above it declared. Every page under `/blog` that
 sets its own `alternates` re-declares `types` explicitly for exactly this reason.
 
+**The site-wide feed lives at the bare root (`/rss.xml`), not `/blog/rss.xml`** — worth remembering, since the
+other three all live under `/blog/...` and it's an easy guess that the site-wide one does too. `/blog/rss` and
+`/blog/rss.xml` both redirect to `/rss.xml` (Studio → Redirects, added 2026-08-05) rather than the real feed
+being moved — an existing subscriber's URL should never change under them.
+
 ---
 
 ## Sitemap and breadcrumb structured data (shipped 2026-07-31)
@@ -1574,6 +1579,15 @@ blind `.append()` — the read step is what makes the 500-cap possible; without 
 tool — see the Redirects section above for the full behavior. The destination field searches existing
 posts/categories/authors/static pages as you type; picking one fills in the real path instead of it being
 typed by hand.
+
+**User-Agent captured too (shipped 2026-08-05):** each hit (top-level "last" value and per-hit in the log)
+also stores the requester's User-Agent, read server-side from the request header in
+`/api/track-404/route.ts` — not from the client body, so it can't be spoofed the way a POSTed field could.
+The tool shows a quick **"likely a bot"** badge (`looksLikeBot()`, a loose regex against common
+crawler/bot User-Agent substrings — not real bot detection, just enough to separate "a search engine
+re-found a stale link" from "a real visitor hit a wrong URL" at a glance). Deliberately does **not** also
+capture IP for this — IP collection is scoped in the privacy policy specifically to spam detection on the
+contact form and comments; extending it to anonymous 404 tracking would need that policy updated first.
 
 ---
 

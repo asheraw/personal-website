@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 — RSS URL guesses redirected, 404 hits now capture User-Agent
+
+Asher asked where the RSS feeds live (answered: `/rss.xml` site-wide, plus `/blog/category/[slug]/rss.xml`,
+`/blog/tag/[tag]/rss.xml`, and `/blog/author/[slug]/rss.xml`) and separately noticed `/blog/rss` 404ing — a
+reasonable guess given the other three feeds all live under `/blog/...`, even though the site-wide one has
+always lived at the bare root. Added two redirects via **Studio → Redirects** (`/blog/rss` and `/blog/rss.xml`,
+both → `/rss.xml`) rather than moving the real feed's URL, since that one's presumably already the URL any
+existing subscriber has. Verified live: both now 301 through to a real `200` on `/rss.xml`.
+
+**404 Hits now capture User-Agent**, following up on "any possibility to get more data to better identify" —
+read server-side from the request header (can't be spoofed via the client body the way a POSTed field could),
+stored alongside the existing path/referrer, both as a "last" value and per-hit in the log. **Studio → 404
+Hits** shows it in the summary line, in the expanded per-hit log, and a quick "likely a bot" badge from a loose
+User-Agent pattern match — enough to separate "a crawler re-found a stale link" from "a real visitor hit a
+wrong URL" at a glance. Deliberately did *not* add IP here too: that's scoped in the privacy policy
+specifically to spam detection on the contact form and comments, and extending it to anonymous 404 tracking
+would need that policy updated first, not just a code change.
+
+Verified with a real request carrying a bot-like User-Agent string before shipping — the field landed exactly
+as sent, in both places — then cleaned up.
+
+---
+
 ## 2026-08-04 (continued) — Comments tool: clickable post titles, cleaner info line, less clutter
 
 Two follow-ups from Asher restoring a growing number of old comments (see below): the tool was getting
