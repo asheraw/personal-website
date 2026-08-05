@@ -1,4 +1,5 @@
 import {useContext, useEffect, useMemo, useRef, useState} from 'react'
+import {createPortal} from 'react-dom'
 import {Badge, Box, Card, Flex, Stack, Text} from '@sanity/ui'
 import type {ArrayOfObjectsInputProps} from 'sanity'
 import {DocumentPaneContext} from 'sanity/_singletons'
@@ -100,21 +101,25 @@ export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
     el?.scrollIntoView({behavior: 'smooth', block: 'center'})
   }
 
+  const statsBadges = (
+    <Flex align="center" gap={3} wrap="wrap">
+      <Badge tone="default" mode="outline">
+        {wordCount} word{wordCount === 1 ? '' : 's'}
+      </Badge>
+      <Badge tone="default" mode="outline">
+        {readingTime} min read
+      </Badge>
+      <Badge tone="primary" mode="outline">
+        Session {formatElapsed(elapsed)}
+      </Badge>
+    </Flex>
+  )
+
   return (
     <Stack space={3}>
       <Card padding={3} radius={2} border tone="transparent">
         <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
-          <Flex align="center" gap={3} wrap="wrap">
-            <Badge tone="default" mode="outline">
-              {wordCount} word{wordCount === 1 ? '' : 's'}
-            </Badge>
-            <Badge tone="default" mode="outline">
-              {readingTime} min read
-            </Badge>
-            <Badge tone="primary" mode="outline">
-              Session {formatElapsed(elapsed)}
-            </Badge>
-          </Flex>
+          {statsBadges}
           {outline.length > 0 && (
             <Text
               size={1}
@@ -147,6 +152,27 @@ export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
         )}
       </Card>
       <div ref={bodyFieldRef}>{renderDefault({...props, onPaste: onPasteAutoEmbed})}</div>
+      {/*
+        The Card above still renders normally while in Focus mode -- it never
+        actually disappears. What happens is Sanity's own expanded editor
+        renders itself into a full-viewport portal that visually covers
+        everything else on the page, this stats bar included. Floating a
+        copy directly on `document.body`, above that portal's content, is
+        the only way to keep it visible without reaching into that portal
+        (which isn't something `renderDefault` exposes a way to do).
+      */}
+      {maximized &&
+        createPortal(
+          <Card
+            padding={3}
+            radius={2}
+            shadow={3}
+            style={{position: 'fixed', top: 12, right: 12, zIndex: 2147483647}}
+          >
+            {statsBadges}
+          </Card>,
+          document.body,
+        )}
     </Stack>
   )
 }
