@@ -67,6 +67,7 @@ export const commentType = defineType({
       name: 'createdAt',
       title: 'Submitted',
       type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
       readOnly: true,
       initialValue: () => new Date().toISOString(),
     }),
@@ -99,6 +100,7 @@ export const commentType = defineType({
       name: 'notifyExpiresAt',
       title: 'Notification expires',
       type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
       description:
         'When this reply-notification subscription lapses if the thread stays quiet. Set on submission (+30 days) and pushed forward another 30 days each time a notification actually goes out, so an active conversation keeps everyone subscribed notified.',
       readOnly: true,
@@ -108,6 +110,7 @@ export const commentType = defineType({
       name: 'editedAt',
       title: 'Last edited by Asher',
       type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
       description: 'Set automatically whenever the message is edited from the Comments tool. Not shown publicly.',
       readOnly: true,
       hidden: ({document}) => !document?.editedAt,
@@ -116,6 +119,7 @@ export const commentType = defineType({
       name: 'trashedAt',
       title: 'Trashed',
       type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
       description:
         'Set by the Trash button in Studio -> Comments. A trashed comment never shows on the live site regardless of its status, and is permanently deleted automatically 30 days after this date (or sooner, from the Trash view).',
       readOnly: true,

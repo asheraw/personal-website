@@ -17,7 +17,13 @@ export const bulkOperationLogType = defineType({
   type: 'document',
   icon: EditIcon,
   fields: [
-    defineField({name: 'performedAt', title: 'Performed', type: 'datetime', readOnly: true}),
+    defineField({
+      name: 'performedAt',
+      title: 'Performed',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
     defineField({
       name: 'operationType',
       title: 'Operation',
@@ -81,6 +87,7 @@ export const bulkOperationLogType = defineType({
       name: 'undoneAt',
       title: 'Undone',
       type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
       readOnly: true,
       description: 'Set once this operation has been undone from the History view. Hidden until then.',
       hidden: ({document}) => !document?.undoneAt,

@@ -47,7 +47,7 @@ export const aiOutputLogType = defineType({
           type: 'object',
           fields: [
             defineField({name: 'action', type: 'string'}),
-            defineField({name: 'timestamp', type: 'datetime'}),
+            defineField({name: 'timestamp', type: 'datetime', options: {dateFormat: 'YYYY-MMM-DD'}}),
           ],
           preview: {
             select: {action: 'action', timestamp: 'timestamp'},

@@ -36,7 +36,13 @@ export const shareLogType = defineType({
     defineField({name: 'emailCount', title: 'Email', type: 'number', readOnly: true, initialValue: 0}),
     defineField({name: 'copyLinkCount', title: 'Copy link', type: 'number', readOnly: true, initialValue: 0}),
     defineField({name: 'nativeCount', title: 'Native share sheet', type: 'number', readOnly: true, initialValue: 0}),
-    defineField({name: 'lastSharedAt', title: 'Last shared', type: 'datetime', readOnly: true}),
+    defineField({
+      name: 'lastSharedAt',
+      title: 'Last shared',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
     // Manual, not automated -- ACE_MASTER_SPEC.md is explicit that pulling
     // replies/engagement back from X/Facebook/LinkedIn's own APIs isn't
     // worth the ongoing fees/OAuth/platform churn for a solo creator. This
@@ -53,7 +59,7 @@ export const shareLogType = defineType({
           fields: [
             defineField({name: 'note', type: 'text', rows: 2}),
             defineField({name: 'platform', type: 'string'}),
-            defineField({name: 'timestamp', type: 'datetime'}),
+            defineField({name: 'timestamp', type: 'datetime', options: {dateFormat: 'YYYY-MMM-DD'}}),
           ],
           preview: {
             select: {note: 'note', platform: 'platform', timestamp: 'timestamp'},

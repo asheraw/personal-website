@@ -28,7 +28,7 @@ export const consentLogType = defineType({
           type: 'object',
           fields: [
             defineField({name: 'choice', type: 'string'}),
-            defineField({name: 'timestamp', type: 'datetime'}),
+            defineField({name: 'timestamp', type: 'datetime', options: {dateFormat: 'YYYY-MMM-DD'}}),
           ],
           preview: {
             select: {choice: 'choice', timestamp: 'timestamp'},

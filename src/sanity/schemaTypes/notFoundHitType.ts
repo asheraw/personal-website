@@ -30,8 +30,20 @@ export const notFoundHitType = defineType({
       readOnly: true,
       description: 'The browser/bot identifying itself on the most recent hit -- the quickest way to tell "a search engine crawler found a stale link" from "a real visitor typed or clicked a wrong URL."',
     }),
-    defineField({name: 'firstSeenAt', title: 'First seen', type: 'datetime', readOnly: true}),
-    defineField({name: 'lastSeenAt', title: 'Last seen', type: 'datetime', readOnly: true}),
+    defineField({
+      name: 'firstSeenAt',
+      title: 'First seen',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
+    defineField({
+      name: 'lastSeenAt',
+      title: 'Last seen',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
     defineField({
       name: 'hits',
       title: 'Hit log',
@@ -42,7 +54,7 @@ export const notFoundHitType = defineType({
         defineArrayMember({
           type: 'object',
           fields: [
-            defineField({name: 'timestamp', type: 'datetime'}),
+            defineField({name: 'timestamp', type: 'datetime', options: {dateFormat: 'YYYY-MMM-DD'}}),
             defineField({name: 'referrer', type: 'string'}),
             defineField({name: 'userAgent', type: 'string'}),
           ],
