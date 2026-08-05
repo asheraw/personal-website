@@ -23,6 +23,13 @@ export const notFoundHitType = defineType({
       readOnly: true,
       description: 'Where the visitor came from on their most recent hit, if their browser sent one. Blank often just means a direct link or a privacy setting stripped it -- not necessarily meaningful on its own.',
     }),
+    defineField({
+      name: 'userAgent',
+      title: 'Last user agent',
+      type: 'string',
+      readOnly: true,
+      description: 'The browser/bot identifying itself on the most recent hit -- the quickest way to tell "a search engine crawler found a stale link" from "a real visitor typed or clicked a wrong URL."',
+    }),
     defineField({name: 'firstSeenAt', title: 'First seen', type: 'datetime', readOnly: true}),
     defineField({name: 'lastSeenAt', title: 'Last seen', type: 'datetime', readOnly: true}),
     defineField({
@@ -37,6 +44,7 @@ export const notFoundHitType = defineType({
           fields: [
             defineField({name: 'timestamp', type: 'datetime'}),
             defineField({name: 'referrer', type: 'string'}),
+            defineField({name: 'userAgent', type: 'string'}),
           ],
           preview: {
             select: {timestamp: 'timestamp', referrer: 'referrer'},

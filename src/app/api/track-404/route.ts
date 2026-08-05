@@ -18,6 +18,15 @@ export async function POST(request: NextRequest) {
     // trusted to be well-formed or bounded in length.
     const safePath = path.slice(0, 300);
     const safeReferrer = typeof referrer === "string" ? referrer.slice(0, 300) : undefined;
+    // Read server-side, not from the client body -- a browser can't lie
+    // about its own User-Agent header the way it could a POSTed field, and
+    // it's the quickest way to tell a search-engine crawler re-visiting a
+    // stale link apart from a real visitor who typed or clicked a wrong
+    // URL. Not IP: that's a separate, more sensitive kind of data this
+    // site's privacy policy specifically scopes to spam detection on the
+    // contact form and comments -- extending it to anonymous 404 tracking
+    // would need that policy updated first, not just a code change.
+    const safeUserAgent = request.headers.get("user-agent")?.slice(0, 300) || undefined;
 
     // Deterministic id from the path, so repeat hits land on the same
     // document instead of creating a new one each time.
@@ -40,21 +49,26 @@ export async function POST(request: NextRequest) {
     // (bot scanning, deliberate bruteforcing) can't grow this document
     // without bound. hitCount (incremented separately below) stays the true
     // total even past that cap.
-    const existing = await writeClient.fetch<{ hits?: { timestamp: string; referrer?: string }[] }>(
-      `*[_id == $id][0]{hits}`,
-      { id }
-    );
+    const existing = await writeClient.fetch<{
+      hits?: { timestamp: string; referrer?: string; userAgent?: string }[];
+    }>(`*[_id == $id][0]{hits}`, { id });
     const newHit = {
       _key: `hit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: now,
       ...(safeReferrer ? { referrer: safeReferrer } : {}),
+      ...(safeUserAgent ? { userAgent: safeUserAgent } : {}),
     };
     const updatedHits = [...(existing?.hits ?? []), newHit].slice(-500);
 
     await writeClient
       .patch(id)
       .inc({ hitCount: 1 })
-      .set({ lastSeenAt: now, hits: updatedHits, ...(safeReferrer ? { referrer: safeReferrer } : {}) })
+      .set({
+        lastSeenAt: now,
+        hits: updatedHits,
+        ...(safeReferrer ? { referrer: safeReferrer } : {}),
+        ...(safeUserAgent ? { userAgent: safeUserAgent } : {}),
+      })
       .commit();
 
     return NextResponse.json({ success: true });

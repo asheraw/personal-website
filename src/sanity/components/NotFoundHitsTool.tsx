@@ -7,16 +7,26 @@ import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {CreateRedirectForm} from './CreateRedirectForm'
 
 type Status = 'pending' | 'ignored' | 'actioned'
-type Hit = {timestamp: string; referrer?: string}
+type Hit = {timestamp: string; referrer?: string; userAgent?: string}
 type NotFoundRow = {
   _id: string
   path: string
   hitCount: number
   referrer?: string
+  userAgent?: string
   firstSeenAt: string
   lastSeenAt: string
   status?: Status
   hits: Hit[]
+}
+
+// A quick, deliberately loose signal, not a real bot-detection library --
+// good enough to separate "a search engine crawler found a stale link"
+// from "a real visitor" at a glance, which is the actual question here.
+const BOT_UA_PATTERN = /bot|spider|crawl|slurp|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot/i
+
+function looksLikeBot(userAgent: string | undefined): boolean {
+  return !!userAgent && BOT_UA_PATTERN.test(userAgent)
 }
 
 const SECTIONS: {
@@ -63,6 +73,11 @@ function NotFoundRowCard({
             <Badge tone={row.hitCount > 5 ? 'critical' : 'default'} fontSize={0}>
               {row.hitCount}× hit{row.hitCount === 1 ? '' : 's'}
             </Badge>
+            {looksLikeBot(row.userAgent) && (
+              <Badge tone="default" fontSize={0}>
+                likely a bot
+              </Badge>
+            )}
             <Button
               text="Create redirect"
               icon={ArrowRightIcon}
@@ -96,6 +111,7 @@ function NotFoundRowCard({
           First seen {new Date(row.firstSeenAt).toLocaleString()} · Last seen{' '}
           {new Date(row.lastSeenAt).toLocaleString()}
           {row.referrer ? ` · Last referrer: ${row.referrer}` : ''}
+          {row.userAgent ? ` · Last user agent: ${row.userAgent}` : ''}
         </Text>
         {row.hits?.length > 0 && (
           <Text size={0} style={{cursor: 'pointer', textDecoration: 'underline'}} onClick={onToggleExpanded}>
@@ -109,6 +125,7 @@ function NotFoundRowCard({
               {[...row.hits].reverse().map((hit, i) => (
                 <Text key={i} size={0} muted style={{fontFamily: 'monospace'}}>
                   {new Date(hit.timestamp).toLocaleString()} — {hit.referrer || 'no referrer'}
+                  {hit.userAgent ? ` — ${looksLikeBot(hit.userAgent) ? '🤖 ' : ''}${hit.userAgent}` : ''}
                 </Text>
               ))}
             </Stack>
@@ -140,7 +157,7 @@ export function NotFoundHitsTool() {
     client
       .fetch<NotFoundRow[]>(
         `*[_type == "notFoundHit"] | order(hitCount desc){
-          _id, path, hitCount, referrer, firstSeenAt, lastSeenAt, status, hits
+          _id, path, hitCount, referrer, userAgent, firstSeenAt, lastSeenAt, status, hits
         }`,
       )
       .then(setRows)
