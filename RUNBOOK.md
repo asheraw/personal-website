@@ -83,6 +83,44 @@ for.
 
 ---
 
+## Studio's top nav: kept short on purpose (reorganized 2026-08-05)
+
+Every tool built this session got its own top-nav slot as it shipped, one at a time, with nobody stepping
+back to look at the growing bar as a whole — it reached 14 items before Asher flagged it directly. Fixed
+with three different moves, not just a repaint:
+
+**Removed entirely**: `visionTool()` (the GROQ query console plugin) and `releases: {enabled: false}`
+(Sanity's own content-scheduling feature — never explicitly configured in this project, just a Studio v6
+default that appears on its own). Both in `sanity.config.ts`. Neither is something a non-technical site
+owner would reach for directly; Releases specifically duplicates what the Editorial Calendar tool already
+does.
+
+**Merged**: Content Audit + Link Checker → **Content Health** (`ContentHealthTool.tsx`), a tabbed wrapper
+around the same two unchanged components — see their own sections above/below for what each tab actually
+does. The merge only touched page-level chrome: both `ContentAuditTool.tsx` and `LinkCheckerTool.tsx` no
+longer render their own outer `Box padding`/title, since `ContentHealthTool.tsx` provides that once for
+both tabs now.
+
+**Moved into the Structure sidebar**: 404 Hits, Contact Submissions, Export, and Bulk Operations — occasional
+admin tools, not daily-use — now live under a **Site Admin** entry in `structure.tsx` instead of the top
+bar, via Structure Builder's `S.component(MyToolComponent)`. This is a real, first-class Structure Builder
+API (confirmed directly in the installed `sanity` package's own type definitions —
+`component(component: UserComponent): ComponentBuilder`, distinct from the already-used
+`S.view.component(...)` for document-view tabs) for embedding any custom React component as a structure
+pane, the same family of builder as `S.document()`/`S.list()`. The components themselves are completely
+unchanged — only where they're mounted moved, from `sanity.config.ts`'s `tools` array to a
+`S.listItem().child(S.component(Component).title('...'))` entry.
+
+**To add a new occasional-use admin tool going forward**: prefer `S.component()` in `structure.tsx`'s
+"Site Admin" list over a new top-nav entry in `sanity.config.ts`, unless it's something Asher will actually
+open daily (that's the bar Comments/Distribution/Calendar/Media clear, which is why they stayed in the top
+bar). Keeps the top nav from slowly regrowing the same way it did this session.
+
+**Final top nav**: Structure, Presentation, Media, Comments, Distribution, Calendar, Content Health — down
+from 14.
+
+---
+
 ## Prepare for Publish: checklist + AI-suggested SEO
 
 **The pre-publish checklist** (shipped 2026-07-29) runs automatically every time Publish is clicked on a
@@ -188,9 +226,11 @@ redirecting except that the deployed `middleware.ts` actually includes this rule
 
 ---
 
-## Link Checker: broken links, monitoring, and affiliate registry (shipped 2026-08-04)
+## Link Checker: broken links, monitoring, and affiliate registry (shipped 2026-08-04, moved into Content Health 2026-08-05)
 
-**Studio → Link Checker** (top nav) scans every post and reusable snippet's own rich text for links — both
+**Studio → Content Health → Link Checker tab** (moved out of its own top-nav slot the same day Content
+Audit shipped — merged into one tool, see the top-nav cleanup entry below) scans every post and reusable
+snippet's own rich text for links — both
 the plain URL annotation and the Affiliate link one (below) — and checks each URL live: HEAD first, falling
 back to GET for hosts that reject HEAD outright. Results group into three sections: **Broken**, **Affiliate
 links**, **Everything else**. Component: `src/sanity/components/LinkCheckerTool.tsx`. Shared checking logic:
@@ -829,9 +869,11 @@ known, accepted limitation rather than something solved here.
 
 ---
 
-## Content Audit: missing-metadata check, not stale-by-age (shipped 2026-08-05)
+## Content Audit: missing-metadata check, not stale-by-age (shipped 2026-08-05, moved into Content Health same day)
 
-**Studio → Content Audit** (`src/sanity/components/ContentAuditTool.tsx`) flags every published post
+**Studio → Content Health → Missing Metadata tab** (`src/sanity/components/ContentAuditTool.tsx`, rendered
+inside `ContentHealthTool.tsx` alongside Link Checker — merged the same day it shipped, see the top-nav
+cleanup entry below) flags every published post
 missing a featured image, image alt text, an excerpt, or a category. **Deliberately not age-based** —
 the ACE spec's original wording was "stale flags (configurable 6/12/24 month threshold)," but asked Asher
 directly before building it and old posts aging isn't something he wants flagged on a personal blog with

@@ -11,6 +11,31 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Studio's top nav: 14 tools down to 7
+
+Asked directly whether the growing top bar could combine anything logically — it had reached 14 items
+across a session of shipping tools one at a time without ever stepping back to look at the whole bar
+together. Three real changes, not just a repaint:
+
+**Removed outright:** Vision (raw GROQ query console) and Releases (Sanity's own content-scheduling
+feature). Neither was something Asher, non-technical, would use directly — Vision is a developer tool, and
+Releases duplicates what the custom Editorial Calendar already does. Releases in particular had never been
+explicitly configured; it's just a Studio v6 default that showed up on its own.
+
+**Merged:** Content Audit and Link Checker into one tabbed **Content Health** tool — genuine overlap, both
+are "which posts need a look" checks (missing metadata vs. broken/affiliate links), the same reasoning that
+already folded Social Shares into Distribution. Neither component's actual logic changed, only their outer
+page chrome — each stopped rendering its own title/padding since the new shared parent provides that once.
+
+**Moved, not removed:** 404 Hits, Contact Submissions, Export, and Bulk Operations — occasional admin tools,
+not daily-use — now live in a new **Site Admin** folder inside the Structure sidebar instead of the top
+bar, via Structure Builder's `S.component()` (the same mechanism Sanity provides for embedding any custom
+component as a pane; confirmed directly against the installed package's type definitions before using it,
+not assumed from memory). Comments, Distribution, and Calendar stayed in the top nav since those genuinely
+are daily/frequent tools.
+
+Top nav is now: Structure, Presentation, Media, Comments, Distribution, Calendar, Content Health.
+
 ## 2026-08-05 (continued) — Restored a YouTube comment thread on "Easter 2018: Under the Sycamore Tree"
 
 Added Ruth's comment and Asher's reply, plus Liu Yuantai's comment and Asher's reply, from a screenshot of
