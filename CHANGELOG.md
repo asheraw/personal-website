@@ -11,6 +11,18 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Every date in Studio now shows the month as a name
+
+Asked for the month abbreviated (e.g. "Aug") instead of a number wherever a date shows in Studio, instead
+of Sanity's own default `YYYY-MM-DD`. Turned out to be a one-line-per-field schema option, not a custom
+component — Sanity's built-in datetime input already supports a `dateFormat` string (its literal default
+is `"YYYY-MM-DD"`, confirmed by reading `@sanity/util`'s own source). Added `options: {dateFormat:
+'YYYY-MMM-DD'}` to all 17 `datetime` fields across every schema type — posts, comments, the new Bulk
+Operations log, link checker, 404 hits, share log, AI output log, cookie consent log. Time format
+untouched. Verified the exact output directly against Sanity's own formatter function (the same one its
+input calls internally) before shipping — confirmed real output `"2026-Aug-05"`, not just that the option
+was accepted.
+
 ## 2026-08-05 (continued) — Bulk Operations: tag/category/author edits, search-replace, undo
 
 Third and last of the "actively buildable" ACE items this session (content audit and export formats

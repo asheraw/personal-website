@@ -65,6 +65,24 @@ means this specific update won't go live until the Node version is fixed.
 
 ---
 
+## Date display format across Studio (shipped 2026-08-05)
+
+Every `datetime` field in Studio shows as `YYYY-MMM-DD HH:mm` (e.g. `2026-Aug-05 14:30`), not Sanity's own
+default `YYYY-MM-DD HH:mm`. Set per-field via the schema, not a custom input component — Sanity's built-in
+datetime input reads an `options.dateFormat` string (Moment-style tokens: `YYYY`/`MMM`/`DD`), defaulting to
+the literal string `"YYYY-MM-DD"` if the option isn't set (confirmed by reading `@sanity/util`'s
+`legacyDateFormat.js` directly, not assumed).
+
+**To add a new `datetime` field**, include `options: {dateFormat: 'YYYY-MMM-DD'}` so it matches every other
+date in Studio — easy to forget since the field still works perfectly well without it, just in the old
+numeric-month format. All 17 existing `datetime` fields have it (`postType`, `commentType`,
+`bulkOperationLogType`, `linkCheckType`, `notFoundHitType`, `shareLogType`, `aiOutputLogType`,
+`consentLogType`) — grep for `type: 'datetime'` across `src/sanity/schemaTypes/` to find any that don't.
+Time format (`HH:mm`) is untouched — only the date portion changed, since that's what was actually asked
+for.
+
+---
+
 ## Prepare for Publish: checklist + AI-suggested SEO
 
 **The pre-publish checklist** (shipped 2026-07-29) runs automatically every time Publish is clicked on a
