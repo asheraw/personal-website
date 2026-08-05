@@ -15,8 +15,8 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 Asher pointed out the actual friction: embedding a video meant opening the block-insert menu, picking
 "YouTube embed," *then* pasting the URL a second time into that block's own field. Now pasting a bare
-YouTube or Instagram post URL directly into the body — on its own line, or over selected text — inserts the
-real embed block immediately, no menu detour.
+YouTube or Instagram post URL onto its own blank line inserts the real embed block immediately, no menu
+detour.
 
 Built on Sanity's own documented `onPaste` hook on the Portable Text input (`src/sanity/lib/autoEmbedPaste.ts`),
 wired through `DistractionFreeWritingPanel.tsx`'s existing `renderDefault()` call, since that's the one place
@@ -36,6 +36,18 @@ end-to-end. What *was* verified: running the real matching function against real
 (youtube.com/youtu.be/shorts, instagram.com/p//reel, with and without query strings or trailing slashes) —
 every real video/post URL matched correctly, and a URL sitting inside a normal sentence was correctly left
 alone. Worth a real check in Studio to confirm the block actually appears on paste.
+
+**Follow-up, same day — a real problem caught before it caused one:** the version above described this as
+also working "over selected text," which was wrong and would have been a genuine regression. Asher flagged it
+directly: pasting a URL over highlighted text is his existing way to turn that text into a link (Sanity's own
+built-in behavior), and this feature's first version didn't check for that at all — it would have hijacked
+any highlight-then-paste into an embed instead of a link, unconditionally. `PasteData` has no direct "is
+there a selection" flag (confirmed by reading the actual `@portabletext/editor` source), so the fix checks
+whether the block being pasted into already has real text in it: a non-empty block means something's
+selected, so it now always falls through to normal paste handling in that case. An embed only ever
+auto-inserts onto a genuinely empty line. Verified directly against both cases (an empty block still embeds;
+a non-empty one — simulating a real highlight-and-replace — now correctly falls through), plus the
+can't-identify-the-target case, which also falls through rather than guessing.
 
 ---
 
