@@ -11,6 +11,41 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Bulk Operations: tag/category/author edits, search-replace, undo
+
+Third and last of the "actively buildable" ACE items this session (content audit and export formats
+shipped earlier today). Scoped down from the spec's fuller list, stated plainly: no bulk publish/unpublish
+(this schema has no "archived" lifecycle state to move posts into or out of), no "reassign to series" (no
+series field exists on posts — inventing one wasn't the ask), no link/URL-migration tool (a distinct,
+separate feature). What's here is a real, complete slice: **Studio → Bulk Operations**, three tabs.
+
+**Bulk Edit** — select any set of posts, then add/remove a tag, add/remove a category, or change the
+author across all of them at once, with a confirm step showing exactly what will change before anything
+commits. **Search & Replace** — find text across every post's title, excerpt, and body paragraphs (not
+image captions, callouts, or code blocks — deliberately scoped to plain text, stated in the tool itself
+rather than special-casing every custom block type), preview every match with surrounding context, replace
+with the same confirm step. **History** — every commit writes a log entry capturing the *previous* value
+of every field it touched; **Undo** replays those values back in one transaction and marks the entry
+undone. One undo mechanism covers every operation type uniformly, since undoing any of them is really the
+same "put this field back to what it was" action regardless of what changed it.
+
+The actual patch-building and search-matching logic lives in its own plain module
+(`src/lib/bulkOperations.ts`), separated from the Studio UI on purpose — same reasoning as the export
+formats' `src/lib/export*.ts` files — so it could be run directly against real data (`npx tsx`) before ever
+touching the interface. Confirmed correct against the live dataset: tag/category/author change
+computation, and the GROQ `pt::text(body) match` search used to find candidate posts.
+
+**The one thing that genuinely needed a real write to verify, not just a read**: whether Undo actually
+restores content, not just whether the code runs without an error. Ran two full round trips against
+throwaway draft posts (created, used, deleted — never touching real content): apply a bulk tag change
+through the exact transaction pattern the UI uses, confirm it applied, undo through the exact replay logic
+the UI uses, confirm the field matched its real pre-edit state exactly, byte for byte. Did the same for
+search-replace across title, excerpt, and body together. Both restored correctly. (The first test run
+looked like it failed on the body field — turned out to be a mistake in the *test's* own comparison,
+checking against the literal object used to create the post rather than what Sanity actually stored and
+returned; comparing against the real fetched pre-edit state confirmed the undo itself was correct all
+along.)
+
 ## 2026-08-05 (continued) — Four more export formats: JSON, HTML, EPUB, PDF
 
 Second of the three "actively buildable" ACE items this session (content audit first, bulk operations

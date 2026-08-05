@@ -840,6 +840,68 @@ excerpt), everything else correctly showed as clean.
 
 ---
 
+## Bulk Operations: tag/category/author edits, search-replace, undo (shipped 2026-08-05)
+
+**Studio → Bulk Operations** (`src/sanity/components/BulkOperationsTool.tsx`), three tabs: **Bulk Edit**,
+**Search & Replace**, **History**. Scoped down from the ACE spec's fuller list, on purpose: no bulk
+publish/unpublish (this schema has no "archived" lifecycle state to move posts into or out of — only
+Sanity's own draft/published), no "reassign to series" (no series field exists on `post` — building one
+would be inventing a requirement, not implementing one), no link/URL-migration tool (a genuinely separate
+feature). What's here: field edits across a selected set of posts, a real find-and-replace, and an undo
+log that covers both.
+
+**Core logic lives in `src/lib/bulkOperations.ts`, deliberately separated from the Studio component** —
+same reasoning as `src/lib/exportMarkdown.ts` etc.: every `compute*Changes` function is pure (given
+currently-loaded post data and an intended edit, returns exactly what would change and what it would
+revert to), so it can be run directly via `npx tsx` against real fetched data before the UI ever touches
+it. This is what actually got exercised for verification, not fixtures.
+
+**Bulk Edit**: fetches every post (`title`, `tags`, `categories[]{_ref}`, `author{_ref}`) plus the full
+category and author lists, alongside a filterable checkbox list. Add/remove tag, add/remove category,
+change author each compute a `FieldChange[]` — **the whole new field value, not an incremental patch
+operator** (e.g. `computeAddTagChanges` returns `newValue: [...currentTags, tag]`, not an `append`
+instruction). Deliberate: `client.patch().set()` can only be called once per patch (see the
+`categoryDeleteGuard.tsx` gotcha noted elsewhere in this file — calling `.set()`/`.unset()` more than once
+silently drops all but the last call), so computing the complete final value client-side and setting it in
+one call sidesteps that footgun entirely rather than working around it.
+
+**Search & Replace**: the candidate-post query uses GROQ's `pt::text(body) match $term` — flattens a
+Portable Text field to plain text for text search, confirmed working directly against the live dataset
+before relying on it (not previously used anywhere else in this codebase). **Scoped to plain block text
+only** — `title`, `excerpt`, and `block`-type children spans in the body (paragraphs, headings,
+blockquotes, list items) — explicitly **not** image captions, callout text, code blocks, or accordion
+content. Walking every custom block type's own text fields for a feature meant to fix a typo across many
+posts, not rewrite arbitrary structured content, wasn't worth the complexity — stated in the tool's own UI
+text, not left silent. Replacement is scoped per-post (every occurrence in an included post changes
+together, not selectable occurrence-by-occurrence) and preserves marks/annotations automatically, since
+only `span.text` itself is mutated, never a span's `marks` array.
+
+**History & Undo**: every commit — bulk edit or search-replace — writes one `bulkOperationLog` document
+(`bulkOperationLogType.ts`, system-created only, same "never hand-authored" convention as `linkCheckType`)
+recording, per affected post, which `fieldPath` changed and its `previousValue` (`JSON.stringify`d, whole
+field, not a diff). **Undo granularity is deliberately coarse — whole-field snapshots, not
+per-character diffing** — one mechanism covers every operation type uniformly, since undoing an add-tag,
+a category swap, and a search-replace are all really the same "put this field back to what it was"
+operation regardless of what changed it. Undo replays `JSON.parse(previousValue)` back via one
+`client.transaction()`, then patches the log's own `undoneAt`. **If Undo fails outright** (shown as an
+error rather than silently), the most likely cause is a post in that batch having been deleted since the
+original operation — a transaction is atomic, so one missing document fails the whole undo; not handled
+with per-post partial recovery, since it's a genuinely rare edge case and the failure is at least loud
+rather than silent.
+
+**Verified with real writes, not just reads — the one part of this session's work where a read-only check
+wouldn't have been enough.** Whether Undo actually restores content is a claim about mutation, not just
+computation, so it needed a real commit-and-revert cycle to actually prove: created a throwaway draft post
+(deleted immediately after, never real content), ran a bulk tag-add through the *exact* transaction code
+path the UI uses, confirmed it applied, ran Undo through the *exact* replay logic the UI uses, confirmed
+the field matched its real pre-edit state exactly. Repeated for search-replace across title/excerpt/body
+together. Both restored correctly. (First pass on the search-replace body check looked like a failure —
+turned out to be the *test's* own bug, comparing the restored value against the literal JS object used to
+create the post rather than what Sanity had actually stored and returned for it; comparing against the
+real fetched pre-edit state confirmed the undo logic itself was correct the whole time.)
+
+---
+
 ## Reusable snippets
 
 **Studio -> Reusable Snippets** (left sidebar) — shipped 2026-07-30. A snippet (pull quote, callout, call to
