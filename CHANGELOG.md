@@ -11,6 +11,50 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Four more export formats: JSON, HTML, EPUB, PDF
+
+Second of the three "actively buildable" ACE items this session (content audit first, bulk operations
+next). Extends the Markdown exporter shipped earlier today — every format shares the same already-proven
+`ExportPost`/`POST_EXPORT_PROJECTION` data, so there's one canonical dereferenced post shape, not five
+slightly different ones.
+
+**JSON** is close to free — the dereferenced post shape serialized as-is. **HTML** builds a real,
+self-contained per-post page (inline styles, no external font/stylesheet links) via the official
+`@portabletext/to-html` package — real YouTube `<iframe>` embeds and internal links, unlike Markdown which
+can only link out. **EPUB** is a genuine, hand-rolled EPUB 2.0.1 package (mimetype/container.xml/OPF
+manifest/NCX table of contents/XHTML chapters) — the one format that actually downloads and bundles every
+image into the archive rather than linking to Sanity's CDN, since e-readers render offline and a remote
+image URL just shows broken. **PDF** walks Portable Text directly via `pdfkit`, with real inline
+bold/italic/underline/strikethrough/text-color/links — not just block-level structure with plain text
+inside, which was the original, more conservative plan.
+
+**PDF needed a new architecture, not just a new file:** `pdfkit` is Node-oriented and can't run in the
+Studio browser bundle, so PDF generation happens through a new `/api/export/pdf` route (Node runtime) —
+the Studio UI POSTs a post ID (or `{all: true}`) and downloads the response, the same pattern already
+established by the Link Checker's "Check now" button. Shipping it also surfaced a real, non-obvious
+Next.js/pdfkit incompatibility: bundling pdfkit for the server rewrites the relative path it uses to read
+its own font-metric files at runtime, breaking with `ENOENT` on a path that made no sense
+(`D:\ROOT\node_modules\...` instead of the real project path). Fixed by marking `pdfkit` as a
+`serverExternalPackages` entry in `next.config.ts`, confirmed both locally and — since Vercel's own
+serverless file-tracing is a different mechanism than local dev, and could plausibly have dropped the font
+files from the deployed bundle even with the same config — verified again directly against the live
+`asheraw.com/api/export/pdf` endpoint after deploying, not just assumed from a local pass.
+
+**Caught two real rendering bugs by actually looking at the output, not just running it:** generated real
+PDFs from real posts and rendered them to images (`PyMuPDF`) for visual inspection, the same standard this
+session already held Markdown export to. Found and fixed: callout/code-block backgrounds where the text
+was drawing *above* its own box instead of inside it (a y-coordinate math error `tsc`/`next build` had no
+way to catch), and a "▶ Watch on YouTube" label rendering as garbled characters because pdfkit's built-in
+fonts only support a Latin-1-range character set — dropped the arrow glyph for PDF specifically rather than
+chase down a custom font embed for one symbol.
+
+**Every format's own scope decisions, stated plainly rather than silently:** EPUB's YouTube/Instagram
+embeds fall back to a plain link (no `<iframe>` — e-readers don't execute remote content) and internal
+links point at the full `asheraw.com` URL instead of a relative path (nothing to resolve a relative path
+against inside an offline package). PDF has no fold/unfold for accordions — always shown expanded, the
+only sensible behavior for something read linearly. Both verified directly against real content before
+shipping, the same bar as every other export format this session.
+
 ## 2026-08-05 (continued) — Content Audit tool: missing-metadata check, not "stale by age"
 
 Continuing the ACE spec's remaining "actively buildable" items (import tooling, more export formats,

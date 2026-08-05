@@ -689,24 +689,32 @@ field does.
 
 ---
 
-## Markdown export: per-post and full-archive (shipped 2026-08-05)
+## Export: Markdown, JSON, HTML, EPUB, PDF — per-post and full-archive (shipped 2026-08-05)
 
-The first piece of the spec's import/export tooling (`ACE_MASTER_SPEC.md` Phase 10) — scoped down deliberately
-to Markdown export only, not the full five-import/five-export list, after asking Asher directly rather than
-guessing where to start. Core conversion logic lives in `src/lib/exportMarkdown.ts` (`buildMarkdownFile()`),
-shared by both entry points below so a single-post export and the full archive can never quietly render the
-same post differently.
+The spec's export tooling (`ACE_MASTER_SPEC.md` Phase 10) — Markdown shipped first, scoped down deliberately
+from the full five-import/five-export list after asking Asher directly rather than guessing where to start;
+the other four export formats followed the same day. Import tooling stayed out of scope entirely — asked
+directly and there's no real content left on WordPress/Medium/Substack/Ghost to migrate in, so building
+parsers with nothing real to validate them against wasn't worth doing.
 
-**"Export as Markdown"** — a document action (`src/sanity/actions/exportMarkdown.tsx`, registered in
-`sanity.config.ts`'s `document.actions`) right in a post's own editor, next to Suggest SEO/Social/Image
-Prompt. Refetches the current document by its own `_id` via `POST_EXPORT_BY_ID_QUERY` (not from `props.draft`
-directly — see below on why) and downloads a `.md` file: YAML frontmatter (title, slug, date, author,
-categories, tags, excerpt) then the body. Works on an unpublished draft.
+Every format shares the same already-dereferenced `ExportPost` shape (`src/lib/exportMarkdown.ts`) and the
+same `POST_EXPORT_PROJECTION`/`POST_EXPORT_BY_ID_QUERY`/`ALL_POSTS_EXPORT_QUERY` (`queries.ts`) — one
+canonical post shape every converter reads from, not five slightly different ones.
 
-**Studio → Export** (top nav, `src/sanity/components/ExportTool.tsx`) — the "full collection" half. Fetches
-every *published* post via `ALL_POSTS_EXPORT_QUERY`, converts each, and zips them client-side (`jszip`) into
-one downloadable archive. Drafts are deliberately excluded here — an archive meant to leave the building
-shouldn't include work still mid-draft, unlike the single-post action above.
+**"Export…"** — a document action (`src/sanity/actions/exportPost.tsx`, registered in `sanity.config.ts`'s
+`document.actions`) right in a post's own editor, next to Suggest SEO/Social/Image Prompt. Opens a small
+dialog (the same dialog pattern `categoryDeleteGuard.tsx` already established) listing all five formats;
+Markdown/JSON/HTML/EPUB build and download immediately in the browser, PDF posts to `/api/export/pdf` and
+downloads the response. Refetches the current document by its own `_id` via `POST_EXPORT_BY_ID_QUERY` (not
+from `props.draft` directly — see below on why). Works on an unpublished draft.
+
+**Studio → Export** (top nav, `src/sanity/components/ExportTool.tsx`) — the "full collection" half. A format
+selector (defaulting to Markdown, so the original one-click flow is unchanged) above a single "Download all
+posts" button. Fetches every *published* post via `ALL_POSTS_EXPORT_QUERY` — drafts are deliberately excluded
+here, an archive meant to leave the building shouldn't include work still mid-draft, unlike the single-post
+action above. Markdown/JSON/HTML each produce one file per post, zipped together (`jszip`); EPUB and PDF each
+produce a single combined file instead (a book with every post as its own chapter, or a document with every
+post concatenated) since neither format is naturally "many small files."
 
 **`POST_EXPORT_PROJECTION` (in `queries.ts`) reuses `POST_BY_SLUG_QUERY`'s exact reference-resolution shape**
 — `internalLink` marks get a `slug` field resolved server-side, `snippetRef` blocks get their `snippetData`
@@ -736,6 +744,70 @@ with the same options object, so a link inside a snippet renders identically to 
 real fetched posts via `npx tsx` (no dev server needed for this kind of check): confirmed a post with internal
 links and a YouTube embed, a 6-photo gallery (including the additional-images branch), and a post with an
 accordion all converted correctly by reading the actual generated Markdown output.
+
+**JSON** (`src/lib/exportJson.ts`) — no conversion logic at all, just `JSON.stringify(post, null, 2)` on the
+same `ExportPost` shape. The one format with genuinely nothing that could drift from the others.
+
+**HTML** (`src/lib/exportHtml.ts`) — a real, self-contained `.html` file per post via the official
+`@portabletext/to-html` package (`toHTML()`, mirroring `@portabletext/markdown`'s `types`/`marks` config
+pattern). Inline `<style>`, no external font/stylesheet links — nothing to break once downloaded, same
+"portable, no vendor lock-in" spirit as Markdown. `youtube` renders a real `<iframe>` (extracts the video ID
+from watch/youtu.be/shorts URL shapes), `image`/gallery renders real `<figure>`/`<figcaption>` elements,
+`textColor` gets an actual `<span style="color:...">` (a real improvement over Markdown, which has no color
+concept) using a small static hex map (`TEXT_COLOR_HEX`, exported from this file) — not theme-aware like the
+live site's `--tc-<name>` CSS variables, since an exported file has no site CSS to lean on.
+
+**EPUB** (`src/lib/exportEpub.ts`) — a genuine, hand-rolled EPUB 2.0.1 package: `mimetype` (must be the first
+entry in the zip, stored uncompressed — part of the EPUB spec itself, not a `jszip` quirk), `META-INF/
+container.xml`, an OPF manifest/spine, an NCX table of contents, one XHTML chapter per post. Reuses
+`exportHtml.ts`'s `htmlComponents` as a base but **cannot reuse it unmodified** — EPUB readers render
+offline, inside the package's own sandbox: `youtube` falls back to a plain link (no `<iframe>`, since
+e-readers don't execute remote content) and `internalLink` points at the full `https://asheraw.com/blog/
+<slug>` URL instead of a relative path (nothing to resolve a relative path against inside an offline
+package). **The one format that actually downloads and bundles images** (`bundleImages()`) rather than
+linking to Sanity's CDN — a remote `<img src="https://...">` mostly just shows broken in an offline e-reader,
+unlike Markdown/HTML where a live connection is assumed. Each chapter gets its own `OEBPS/images/<chapterId>/`
+subfolder so two posts' images can never collide on the same filename inside a multi-post archive — a real
+bug caught and fixed during review, before it ever shipped: the first draft used one shared folder across
+every chapter, along with an image path that was relative to the *wrong* directory. Verified by inspecting
+the actual generated archive's structure and a real chapter's XHTML content, not just that it produced a
+file of nonzero size.
+
+**PDF** (`src/lib/exportPdf.ts`, via `pdfkit`) — walks Portable Text directly rather than converting through
+HTML/Markdown first, since `pdfkit`'s API is imperative (draw commands), not string-based. Real inline
+styling, not just block-level structure: bold/italic/underline/strike-through/text-color/links all apply
+per-span via `pdfkit`'s `continued: true` chaining, matching what a span's own `marks` say, layered with
+block-level defaults (headings always bold, blockquotes always italic, with a drawn left bar). Images are
+forced to `.format('jpg')` via Sanity's own image URL builder — `pdfkit` only decodes JPEG and PNG natively,
+and Sanity can serve WebP. **No fold/unfold for accordions** — always shown expanded, the only sensible
+behavior for something meant to be read linearly, not clicked through.
+
+**PDF runs through a new `/api/export/pdf` route (Node runtime), not directly in the Studio browser bundle**
+— `pdfkit` uses Node's `Buffer`/stream internals and doesn't run in a browser SPA, unlike every other format
+here. Same "needs real server-side work" pattern already established by the Link Checker's "Check now" button
+hitting `/api/check-links`. The Studio UI (`exportPost.tsx`'s dialog, `ExportTool.tsx`'s format selector)
+POSTs `{postId}` or `{all: true}` and downloads the binary response.
+
+**A real, non-obvious deploy gotcha, caught and fixed the same day it shipped**: bundling `pdfkit` into the
+Next.js server build breaks it — `pdfkit` reads its own bundled font-metric files (`Helvetica.afm` etc.) from
+disk at runtime via a `__dirname`-relative path, and bundling rewrites that path, failing with `ENOENT` on a
+path that made no sense (`D:\ROOT\node_modules\...`, not the real project directory). Fixed by adding
+`pdfkit` to `serverExternalPackages` in `next.config.ts`, which tells Next.js to `require()` it straight from
+`node_modules` at runtime instead of bundling it. **Verified twice, not just once**: locally after the fix,
+then again directly against the live `asheraw.com/api/export/pdf` endpoint after deploying — Vercel's own
+serverless file-tracing is a different mechanism than local `next dev`, so a local pass alone wouldn't have
+proven the font files actually made it into the deployed function's file set.
+
+**Caught two real rendering bugs by actually rendering real PDFs and looking at them** (`PyMuPDF`, converting
+generated pages to images), not just by running the code or checking file size: (1) the callout and code-block
+background boxes had their text drawing *above* the box instead of inside it — a `y`-coordinate math error a
+type check or successful build has no way to catch, since the code was valid TypeScript that just computed
+the wrong number. (2) a "▶ Watch on YouTube" label rendered as garbled characters ("%¶") — `pdfkit`'s built-in
+standard fonts (Helvetica, Times, Courier) only support a Latin-1/WinAnsi-range character set, and the ▶
+arrow glyph (U+25B6) silently fails rather than erroring. Fixed by dropping the arrow for PDF specifically
+("Watch on YouTube" alone) rather than chasing down a custom embedded font for one symbol — the same
+Unicode limit likely applies to emoji or other exotic characters anywhere in a post's own body text too, a
+known, accepted limitation rather than something solved here.
 
 ---
 
