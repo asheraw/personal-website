@@ -11,6 +11,16 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Restored a YouTube comment thread on "Easter 2018: Under the Sycamore Tree"
+
+Added Ruth's comment and Asher's reply, plus Liu Yuantai's comment and Asher's reply, from a screenshot of
+the video's YouTube comments — same established Wayback-restoration pattern, this time from a YouTube
+screenshot rather than the blog's own old comment system. The screenshot only showed relative time ("8
+years ago"), not an exact date, so both threads are dated from the post's own publish date (2018-04-03)
+rather than guessed more precisely — clearly an estimate, not exact. Liu Yuantai is the same person already
+restored on the Christmas 2016 post earlier this session — reused the same name and placeholder email
+rather than creating a second, inconsistent identity for the same real commenter.
+
 ## 2026-08-05 (continued) — Every date in Studio now shows the month as a name
 
 Asked for the month abbreviated (e.g. "Aug") instead of a number wherever a date shows in Studio, instead
