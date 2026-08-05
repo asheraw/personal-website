@@ -11,6 +11,23 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — Content Audit tool: missing-metadata check, not "stale by age"
+
+Continuing the ACE spec's remaining "actively buildable" items (import tooling, more export formats,
+bulk operations, content audit — see the spec-review entry below). Asked directly whether there's still
+content to migrate from WordPress/Medium/Substack/Ghost before starting import tooling: there isn't, so
+that one's dropped rather than built against nothing real to validate it — the other three are real.
+
+Started with Content Audit. The spec's version of this was age-based staleness flags (6/12/24-month
+thresholds). Asked Asher directly before building it, since a personal blog doesn't have posts that
+expire the way a news site's archive does — he confirmed old posts aging isn't something he wants
+flagged, and wasn't sure what the actual use case was. Rescoped to something with a real one instead:
+**Studio → Content Audit** now flags every published post missing a featured image, image alt text, an
+excerpt, or a category — real editorial gaps, regardless of how old the post is. A post with nothing
+missing doesn't show up at all, so the list stays short. Each row links straight into that post's Studio
+editor. No schema change needed — every check reads a field that already exists, reusing the exact
+alt-text-fallback logic already proven in the blog listing's own query.
+
 ## 2026-08-05 (continued) — Fixed: approving a comment could collapse its whole group away
 
 Asher described the Comments tool "closing the entire tab" right after approving a comment — disruptive

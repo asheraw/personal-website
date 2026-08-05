@@ -739,6 +739,35 @@ accordion all converted correctly by reading the actual generated Markdown outpu
 
 ---
 
+## Content Audit: missing-metadata check, not stale-by-age (shipped 2026-08-05)
+
+**Studio → Content Audit** (`src/sanity/components/ContentAuditTool.tsx`) flags every published post
+missing a featured image, image alt text, an excerpt, or a category. **Deliberately not age-based** —
+the ACE spec's original wording was "stale flags (configurable 6/12/24 month threshold)," but asked Asher
+directly before building it and old posts aging isn't something he wants flagged on a personal blog with
+no expiring content; he also wasn't sure what the use case would even be. Rescoped to genuinely useful
+checks instead, confirmed with him rather than guessed.
+
+**No schema change** — every check reads a field that already exists on `post`. The alt-text check reuses
+the exact `coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)`
+fallback pattern already proven in `POST_SUMMARY_PROJECTION` (`queries.ts`), so "does this post have alt
+text" means the same thing here as it does everywhere else on the site.
+
+**Simpler than Link Checker on purpose**: no "Check now" button, no API route, no persisted results
+document — the four checks are cheap enough to compute live on every load, so it's just a query and a
+`.map()`, not a scan-and-store pattern. A post with nothing wrong doesn't appear in the list at all,
+keeping it short and actionable rather than a wall of green checkmarks.
+
+**"Open post"** per row uses the same Studio deep-link pattern already established in
+`DistributionDashboardTool.tsx` — `window.open('/studio/structure/post;${_id}', '_blank')` — straight into
+that post's editor, since the point is fixing it, not just knowing about it.
+
+**Verified against real content before shipping**: ran the exact GROQ query via `npx tsx` against the live
+dataset (19 published posts at the time) — flagged exactly one real post (missing a featured image and an
+excerpt), everything else correctly showed as clean.
+
+---
+
 ## Reusable snippets
 
 **Studio -> Reusable Snippets** (left sidebar) — shipped 2026-07-30. A snippet (pull quote, callout, call to
