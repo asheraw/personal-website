@@ -11,6 +11,55 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-05 (continued) — ACE spec review, two shelved, and Markdown export shipped
+
+Asked what's left in the original `ACE_MASTER_SPEC.md` roadmap. Cross-checked the actual spec against
+everything shipped rather than trusting memory — most of it is done (Phases 0–4, 6–9, several well beyond
+what the spec even asked for). What's genuinely left, split into "on hold by Asher's own call" (Email &
+Newsletter, waiting on a lead magnet; bulk operations; audio narration, no free TTS option) versus "not
+started yet" (series/collections + footnotes, content audit/stale detection, import/export, the Avatar Door,
+a dedicated final-hardening pass).
+
+**Two of those got a real decision today, logged in `IDEAS.md`:**
+- **The Avatar Door** — the "talking" (TTS) requirement is dropped entirely; text-on-screen is fine if this
+  ever gets built. Shelved specifically until there's real traffic *and* the post count crosses 200 — not
+  just "the publishing foundation is stable," a higher bar than the spec's own gate.
+- **Series/collections & footnotes** — reconfirmed tied together (footnotes only matter *for* a book), still
+  shelved since neither of the two books Asher has in mind is ready to go up yet.
+
+**Import/export tooling — started, scoped down deliberately.** The full spec item covers five import formats
+and five export formats; rather than guess at where to start, asked directly. Landed on Markdown export
+first — real portability, no new heavy dependencies. Shipped:
+
+- **"Export as Markdown"** — a document action right in a post's own editor (works on an unpublished draft
+  too), downloads that one post as a real `.md` file: YAML frontmatter (title, date, author, categories,
+  tags, excerpt) plus the body converted via the official `@portabletext/markdown` package.
+- **Studio → Export** — the "full collection" half: every *published* post zipped client-side into one
+  download, each as its own file. Drafts deliberately excluded — an archive meant to leave the building
+  shouldn't include work still mid-draft.
+- Every custom block type got its own converter: callouts, code blocks, dividers, accordions (as GFM
+  `<details>`), YouTube/Instagram embeds (as links), and the merged image block including its gallery photos.
+  `internalLink` marks resolve to real `/blog/<slug>` paths and `snippetRef` blocks inline the referenced
+  snippet's own content — reusing the exact reference-resolution shape `POST_BY_SLUG_QUERY` already proved
+  live, so this can't quietly drift from how the real post page resolves the same references.
+
+**Verified against real content, not fixtures** — ran the actual conversion function against real fetched
+posts (via `tsx`, no dev server needed for this kind of check): a post with internal links and a YouTube
+embed, a 6-photo gallery, and a post with an accordion all converted correctly, checked by reading the actual
+generated Markdown.
+
+**Two unrelated things found and fixed along the way, not part of the ask:**
+- `POST_SUMMARY_PROJECTION`'s own `mainImageAlt` fallback (used by the blog listing, RSS, sitemap, and every
+  category/tag/author page) was still querying the pre-migration `asset._ref` field — a leftover from the
+  `imageAssetAlt` hotfix days ago that only touched two of the three occurrences at the time. The
+  library-level default alt text had been silently never applying anywhere except the single post page
+  itself since then.
+- The Christmas 2015 post's photo gallery was still set to "Scrolling strip" from an earlier same-session
+  test that didn't actually revert the way it looked like it had — reset back to its real original
+  "Slideshow" setting.
+
+---
+
 ## 2026-08-05 — RSS URL guesses redirected, 404 hits now capture User-Agent
 
 Asher asked where the RSS feeds live (answered: `/rss.xml` site-wide, plus `/blog/category/[slug]/rss.xml`,

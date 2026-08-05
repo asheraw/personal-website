@@ -644,6 +644,56 @@ field does.
 
 ---
 
+## Markdown export: per-post and full-archive (shipped 2026-08-05)
+
+The first piece of the spec's import/export tooling (`ACE_MASTER_SPEC.md` Phase 10) — scoped down deliberately
+to Markdown export only, not the full five-import/five-export list, after asking Asher directly rather than
+guessing where to start. Core conversion logic lives in `src/lib/exportMarkdown.ts` (`buildMarkdownFile()`),
+shared by both entry points below so a single-post export and the full archive can never quietly render the
+same post differently.
+
+**"Export as Markdown"** — a document action (`src/sanity/actions/exportMarkdown.tsx`, registered in
+`sanity.config.ts`'s `document.actions`) right in a post's own editor, next to Suggest SEO/Social/Image
+Prompt. Refetches the current document by its own `_id` via `POST_EXPORT_BY_ID_QUERY` (not from `props.draft`
+directly — see below on why) and downloads a `.md` file: YAML frontmatter (title, slug, date, author,
+categories, tags, excerpt) then the body. Works on an unpublished draft.
+
+**Studio → Export** (top nav, `src/sanity/components/ExportTool.tsx`) — the "full collection" half. Fetches
+every *published* post via `ALL_POSTS_EXPORT_QUERY`, converts each, and zips them client-side (`jszip`) into
+one downloadable archive. Drafts are deliberately excluded here — an archive meant to leave the building
+shouldn't include work still mid-draft, unlike the single-post action above.
+
+**`POST_EXPORT_PROJECTION` (in `queries.ts`) reuses `POST_BY_SLUG_QUERY`'s exact reference-resolution shape**
+— `internalLink` marks get a `slug` field resolved server-side, `snippetRef` blocks get their `snippetData`
+dereferenced — specifically so export can never drift from how the real post page resolves the same
+references. This is also why the document action refetches by `_id` rather than converting `props.draft`
+directly: the raw document only has bare `_ref`s, not the resolved shape the converter needs. **Requires
+`{perspective: 'raw'}`** on that refetch specifically because it can run on an unpublished draft — the same
+gotcha as the Editorial Calendar's cron (this API version's default query perspective silently excludes
+`drafts.*` documents).
+
+**Every custom block type has its own renderer**, via the official `@portabletext/markdown` package's `types`/
+`marks` config (all in `exportMarkdown.ts`): `divider` → `---`, `codeBlock` → a fenced block (reuses the
+library's own `DefaultCodeBlockRenderer`, since the field names already match), `callout` → a labeled
+blockquote, `accordion` → a GFM `<details><summary>` block, `youtube`/`instagramEmbed` → a plain link, `image`
+→ a real `![alt](url)` pointing at the existing Sanity CDN URL (images are linked, never bundled into the
+zip — keeps it small), with `additionalImages` (a gallery) listed as further images under an HTML comment
+noting the display style. `internalLink`/`affiliateLink` marks need explicit renderers since the library's own
+default only knows about its own `'link'` type by name; without one, they'd fall through to `unknownMark` and
+silently lose their `href`. `textColor` marks get no custom renderer at all — the default `unknownMark`
+fallback already does exactly the right thing for it (pass through the text, drop the color, since Markdown
+has no color concept).
+
+**`snippetRef` recurses**: a resolved snippet's own `content` gets run back through `portableTextToMarkdown()`
+with the same options object, so a link inside a snippet renders identically to a link in the post body.
+
+**Verified against real content before shipping, not fixtures** — ran `buildMarkdownFile()` directly against
+real fetched posts via `npx tsx` (no dev server needed for this kind of check): confirmed a post with internal
+links and a YouTube embed, a 6-photo gallery (including the additional-images branch), and a post with an
+accordion all converted correctly by reading the actual generated Markdown output.
+
+---
+
 ## Reusable snippets
 
 **Studio -> Reusable Snippets** (left sidebar) — shipped 2026-07-30. A snippet (pull quote, callout, call to
