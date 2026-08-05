@@ -10,6 +10,26 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## The Avatar Door (3D/2D talking avatar greeter)
+
+**What:** from `ACE_MASTER_SPEC.md` Part VI / Phase 10 — a talking avatar (3D head on desktop, lighter 2D
+sprite on mobile) greeting visitors on the homepage: "Want to read my latest thoughts?" / "What do you want
+to know?", routing to the latest post or an AI-search-plus-TTS answer. Distinct from what's already built —
+the existing walkable 3D PLAY world and the reading-companion mascot riding the progress bar are a different
+thing, not this.
+
+**Why not now:** shelved 2026-08-05, Asher's own call, on two fronts at once. First, the "talking" part (TTS
+voice playback) is dropped as a requirement entirely — if this gets built, on-screen text is a fine
+substitute, no audio needed. Second, and the bigger reason: the whole thing waits until there's actually
+enough of an audience and archive to justify it — specifically, **meaningful traffic and at least 200 blog
+posts**. Right now there's neither the readership nor the back-catalog depth that would make an AI-search
+greeter genuinely useful versus a normal way in.
+
+**Worth revisiting when:** the blog has real, sustained traffic and the post count crosses 200 — at which
+point this is a text-based (not voice) avatar/search entry point, not the original spec's TTS-driven version.
+
+---
+
 ## Audio narration (auto TTS per post)
 
 **What:** from `ACE_MASTER_SPEC.md`'s Phase 10 list — automatic text-to-speech narration per post,
@@ -70,6 +90,10 @@ guessing at unprompted for a book that doesn't exist on the site yet.
 **Worth revisiting when:** one of the two books is actually ready to start going up — most likely "Live
 Streaming for Coaches & Consultants" first, since it already exists and needs revision rather than being
 written from scratch, versus "Acting As Jesus," which is still at the background-work stage.
+
+**Reconfirmed 2026-08-05:** asked directly whether footnotes/citations should be split out as its own
+independent item (since it's tracked separately in the spec) — Asher's call was no, keep them tied together
+on purpose, since footnotes only actually matter *for* a book. Same "no pending works" reasoning holds.
 
 ---
 
