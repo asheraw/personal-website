@@ -19,7 +19,7 @@ export const POST_SUMMARY_PROJECTION = `{
   // Falls back to the image's own library-level default (Studio -> Media,
   // see imageAssetAltType.ts) only when this post never got its own alt
   // text written -- a post-specific alt always wins over the fallback.
-  "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && asset._ref == ^.mainImage.asset._ref][0].altText),
+  "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText),
   "author": author->{name, "slug": slug.current},
   "categories": categories[]->{title, "slug": slug.current},
   tags,
@@ -93,6 +93,45 @@ export const POST_BY_SLUG_QUERY = `
     "primaryCategory": primaryCategory->{title, "slug": slug.current},
     "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && references(^._id)])
   }
+`;
+
+// Shared by both the single-post "Export as Markdown" document action and
+// the bulk "Export all posts" tool -- same reference-resolution as
+// POST_BY_SLUG_QUERY (internalLink -> slug, snippetRef -> content) so a
+// post reads identically whether it's exported alone or as part of the
+// full archive. Author/categories resolve straight to plain strings here
+// (not slug-carrying objects) since export frontmatter has no links to
+// preserve, only the names themselves.
+export const POST_EXPORT_PROJECTION = `{
+  title,
+  "slug": slug.current,
+  publishedAt,
+  excerpt,
+  "author": author->name,
+  "categories": categories[]->title,
+  tags,
+  mainImage,
+  "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText),
+  body[]{
+    ...,
+    _type == "block" => {
+      markDefs[]{
+        ...,
+        _type == "internalLink" => {
+          "slug": reference->slug.current
+        }
+      }
+    },
+    _type == "snippetRef" => {
+      "snippetData": @->{snippetType, content}
+    }
+  }
+}`;
+
+export const POST_EXPORT_BY_ID_QUERY = `*[_id == $id][0] ${POST_EXPORT_PROJECTION}`;
+
+export const ALL_POSTS_EXPORT_QUERY = `
+  *[_type == "post" && defined(slug.current)] | order(publishedAt asc) ${POST_EXPORT_PROJECTION}
 `;
 
 // Lean, purpose-specific query for the PLAY page (src/app/(site)/blog/

@@ -19,6 +19,7 @@ import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
+import {createExportMarkdownAction} from './src/sanity/actions/exportMarkdown'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
@@ -29,12 +30,14 @@ import {ContactSubmissionsTool} from './src/sanity/components/ContactSubmissions
 import {LinkCheckerTool} from './src/sanity/components/LinkCheckerTool'
 import {DistributionDashboardTool} from './src/sanity/components/DistributionDashboardTool'
 import {EditorialCalendarTool} from './src/sanity/components/EditorialCalendarTool'
+import {ExportTool} from './src/sanity/components/ExportTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {LinkIcon} from '@sanity/icons/Link'
 import {ShareIcon} from '@sanity/icons/Share'
 import {CalendarIcon} from '@sanity/icons/Calendar'
+import {DownloadIcon} from '@sanity/icons/Download'
 
 export default defineConfig({
   basePath: '/studio',
@@ -72,6 +75,7 @@ export default defineConfig({
         createSuggestSeoAction(),
         createSuggestSocialCopyAction(),
         createSuggestImagePromptAction(),
+        createExportMarkdownAction(),
         ...withDateAction.slice(1),
       ]
     },
@@ -164,5 +168,10 @@ export default defineConfig({
     // Studio tool patching a normal field, not Sanity's paid Schedule
     // Publishing feature.
     {name: 'editorial-calendar', title: 'Calendar', icon: CalendarIcon, component: EditorialCalendarTool},
+    // Markdown export -- the "no vendor lock-in" escape hatch. Every
+    // published post as a real, portable .md file, zipped client-side. The
+    // per-post equivalent (works on an unpublished draft too) lives as a
+    // document action button, "Export as Markdown", not here.
+    {name: 'export', title: 'Export', icon: DownloadIcon, component: ExportTool},
   ],
 })
