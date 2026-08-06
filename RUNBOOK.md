@@ -1670,7 +1670,24 @@ forcing it to refresh** — and critically, **a redeploy does not fix this**, co
 twice on the J Factor incident below, no change) — Vercel's Data Cache is deliberately designed to survive
 redeploys, the same way ISR output would.
 
-**Checks, in order:**
+**Fixed automatically now — nothing for Asher to do (shipped 2026-08-06, second pass).** Every time the
+**Publish** button is clicked on a post, `src/sanity/actions/revalidateOnPublish.ts`
+(`withRevalidateOnPublish`, composed onto the publish action in `sanity.config.ts` alongside
+`withAutoPublishDate`/`withPrePublishChecklist`) waits ~4 seconds — giving Sanity's own systems a moment to
+settle — then calls `GET /api/revalidate` in the background, clearing the Data Cache for the whole blog
+section directly. This doesn't replace the Live Content API's own automatic update path from the section
+above; it's a second, independent path to the same result, so whichever one actually fires first wins and
+nothing conflicts by having both running. Best-effort, same as this project's other background side effects
+(comment/contact notification emails, etc.) — a failed or skipped call here never blocks Publish or shows an
+error; worst case the site just takes as long to catch up as it did before this existed. **The first version
+of this fix required a manual step (visiting a URL with a secret) — reworked same day into this fully
+automatic version after Asher's feedback that the manual version was too much friction for something that
+should just work when he clicks the button he already clicks.** `/api/revalidate` itself is intentionally
+unauthenticated (no secret) — same low-stakes-public-route pattern as `/api/track-404`/`/api/track-search`;
+worst-case misuse is a few extra Sanity reads, never data exposure or a content change, so a secret Asher
+would have to set up and remember wasn't worth the friction for what it actually protects.
+
+**Checks, if a post ever still looks stale despite the above (should be rare now):**
 1. **Confirm it's actually published, not just saved as a draft.** In Studio, open the post — a green
    "Published" badge (not a "Publish" button still showing) confirms it went through.
 2. **Rule out your own browser/device before assuming it's the site:** hard-refresh
@@ -1678,35 +1695,27 @@ redeploys, the same way ISR output would.
    completely different device/network shows the same stale content, it's not your browser or local network
    caching — it's server-side.
 3. **For `/blog` specifically:** wait a minute; it re-checks on its own timer regardless of anything else.
-4. **For an individual post page (`/blog/[slug]`) confirmed stale on multiple devices/networks:** use
-   **`GET /api/revalidate?secret=<REVALIDATE_SECRET>`** (`src/app/api/revalidate/route.ts`, shipped
-   2026-08-06 specifically for this) — visiting that URL calls Next's `revalidatePath('/blog', 'layout')`
-   directly, clearing the Data Cache for the whole blog section (listing + every post page) in one call,
-   completely bypassing whatever broke in the Live Content API's own update chain. **Do not rely on
-   redeploying** — confirmed above that doesn't touch this cache layer. **One-time setup required before this
-   works:** add a `REVALIDATE_SECRET` environment variable in Vercel (any long random string, same shape as
-   `CRON_SECRET`) and redeploy once — the route fails closed (500, clearly worded) if that variable isn't set
-   at all, same fail-closed pattern as every other secret-gated route here. Optional `?path=` query param to
-   target something more specific than the whole blog section (e.g. `?path=/blog/some-other-slug`) — defaults
-   to `/blog` (which also always additionally clears `/blog` itself even when a more specific path is given,
-   so "is it on the listing yet" and "is the post's own page fresh" both get fixed by one visit either way).
-5. **If this keeps happening, not just a one-off:** worth checking whether `SANITY_API_READ_TOKEN` is still
-   correctly set in Vercel's environment variables (`src/sanity/lib/live.ts`'s `browserToken`/`serverToken`) —
-   an invalid or missing token could plausibly degrade the Live Content API's own update path silently. The
-   more durable long-term fix, not yet built, would be wiring an actual Sanity webhook (Studio project settings
-   at manage.sanity.io → API → Webhooks) to call `/api/revalidate` automatically on every publish, instead of
-   relying on someone noticing a stale post and visiting the URL by hand.
+4. **As a manual fallback**, visiting `asheraw.com/api/revalidate` directly in a browser (no secret needed)
+   forces the same clear the auto-trigger above does — useful if the auto-trigger's background call happened
+   to fail (best-effort, not guaranteed) or for content edited somewhere other than a post's own Publish
+   button. Optional `?path=` query param targets something more specific than the whole blog section (e.g.
+   `?path=/blog/some-other-slug`) — always additionally clears `/blog` itself too either way. **Do not rely on
+   redeploying instead** — confirmed directly that a redeploy alone does not touch this cache layer (Vercel's
+   Data Cache is deliberately designed to survive redeploys).
+5. **If this keeps happening, not just a rare one-off:** worth checking whether `SANITY_API_READ_TOKEN` is
+   still correctly set in Vercel's environment variables (`src/sanity/lib/live.ts`'s
+   `browserToken`/`serverToken`) — an invalid or missing token could plausibly degrade the Live Content API's
+   own update path silently, though the auto-trigger on Publish should catch it regardless of that.
 
 **Incident, 2026-08-06:** Asher edited an already-published post ("Easter 2019: The J Factor Afterthoughts")
 in Studio — confirmed green "Published" status, "Last published 38 min. ago." The live post page kept showing
 the old content, confirmed stale on a second device on a completely different network (ruling out
 browser/local-network caching), **and confirmed still stale after two separate redeploys** — the detail that
 disproved the original hypothesis (that a redeploy alone would fix it) and pointed at the Data Cache
-specifically once the actual response headers were checked. Root cause of *why* the Live Content API's
+specifically once the actual response headers were checked. Root cause of *why* the Live Content API's own
 update chain didn't fire for this one publish is still not confirmed (would need live Vercel function logs,
-not available this session) — but the mechanism and the fix are now both confirmed, not guessed, and
-`/api/revalidate` exists as a direct, immediate escape hatch for whenever this recurs, without needing to
-re-diagnose from scratch each time.
+not available this session) — but the mechanism is confirmed, not guessed, and the fix now runs automatically
+on every future publish rather than needing anyone to notice a stale post and act on it.
 
 **History:** On 2026-07-28, the live site was frozen on whatever content existed at the last deploy — new
 posts added in Sanity simply never appeared at all, because at the time neither blog page had any instruction

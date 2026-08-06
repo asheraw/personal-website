@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (truly the last one) — Stale-post fix made automatic, no manual step needed
+
+Asher's feedback on the first version of the fix below: "too complicated" -- fair, since it required a
+one-time Vercel env var setup and then visiting a secret-bearing URL by hand whenever a post looked stale.
+Reworked into something that needs nothing from him: `withRevalidateOnPublish` now wraps the post Publish
+action itself (`src/sanity/actions/revalidateOnPublish.ts`, composed in `sanity.config.ts` alongside the
+existing auto-publish-date/pre-publish-checklist wrappers) and calls `/api/revalidate` automatically ~4
+seconds after every publish. Dropped the secret requirement from the route entirely in the same change --
+same low-stakes-public-route pattern already used for `/api/track-404` etc., since the worst-case misuse is
+just a few extra reads, not worth the setup friction it was creating. Clicking the same Publish button Asher
+already uses is now the whole fix; the URL still exists as a manual fallback but shouldn't ever need touching.
+
+---
+
 ## 2026-08-06 (once more, resolved) — Found and fixed the stale-post root cause: a stuck Data Cache entry
 
 Follow-up to the incident logged below. A redeploy didn't fix the stale "J Factor" post either, which

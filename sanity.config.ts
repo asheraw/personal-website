@@ -13,6 +13,7 @@ import {schema} from './src/sanity/schemaTypes'
 import {structure} from './src/sanity/structure'
 import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
 import {withPrePublishChecklist} from './src/sanity/actions/prepareForPublish'
+import {withRevalidateOnPublish} from './src/sanity/actions/revalidateOnPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
@@ -62,7 +63,7 @@ export default defineConfig({
       if (context.schemaType !== 'post') return prev
       const withDateAction = prev.map((action) =>
         (action as {action?: string}).action === 'publish'
-          ? withPrePublishChecklist(withAutoPublishDate(action))
+          ? withPrePublishChecklist(withAutoPublishDate(withRevalidateOnPublish(action)))
           : action
       )
       // Publish must stay the primary (first) action -- Studio renders
