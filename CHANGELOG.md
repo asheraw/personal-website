@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (yet one more time) — Incident: an edited published post stayed stale on live for 40+ minutes
+
+Asher edited "Easter 2019: The J Factor Afterthoughts" (already published, converting it to use Quote Grid)
+and the live post page kept showing the old content for 40+ minutes, confirmed on a second device on a
+different network entirely -- ruling out browser or local-network caching. No code fix shipped here (couldn't
+confirm root cause without live Vercel/Sanity access this session), but documented the real architectural gap
+this exposed: `/blog/[slug]` has no time-based revalidate fallback at all (removed earlier to fix a
+Presentation-mode regression), unlike `/blog` itself which still self-heals within a minute via its own
+`revalidate = 60`. Full writeup, immediate unblock steps (trigger a fresh deploy), and the tradeoffs around
+adding a longer-interval safety net back are in RUNBOOK.md's "Publishing" section, rewritten to match the
+current (not the 2026-07-28-era) architecture.
+
+---
+
 ## 2026-08-06 (and once more) — Fixed reading time not counting Quote Grid content
 
 Asher noticed "The J Factor" showing as a 1-minute read despite having real content -- traced it to

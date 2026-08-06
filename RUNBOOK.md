@@ -1636,18 +1636,61 @@ they're already a real part of, with a working one-click way out.
 
 ---
 
-## Publishing: "I published a post but it's not showing up"
+## Publishing: "I published a post but it's not showing up" / "I edited a published post and the change isn't showing"
 
-**Symptoms:** A post is published in Sanity Studio (asheraw.com/studio) but doesn't appear on asheraw.com/blog.
+**Symptoms:** A post is published (or a published post is edited) in Sanity Studio (asheraw.com/studio) but
+asheraw.com doesn't reflect it — either a brand-new post never appears on `/blog`, or an existing post's own
+page keeps showing the old content.
+
+**These two pages currently use two different freshness mechanisms, which matters for how you troubleshoot:**
+- **`/blog` (the listing)** still has a fixed `export const revalidate = 60` — it re-checks Sanity at most
+  once a minute, no matter what. Self-heals on its own within a minute if it's ever behind.
+- **`/blog/[slug]` (an individual post page)** has **no time-based revalidate at all** — it relies entirely
+  on `sanityFetch()` (Sanity's Live Content API, `src/sanity/lib/live.ts`) to push updates on its own. This
+  was a deliberate choice (see the comment at the top of `src/app/(site)/blog/[slug]/page.tsx`): running a
+  fixed revalidate timer *alongside* the Live Content API's own tag-based updates was found to make every
+  keystroke in Presentation/live-preview force a full page reload instead of a smooth in-place update, so the
+  timer was removed. **The tradeoff:** if the Live Content API's own update path ever fails silently for any
+  reason, an individual post page has nothing else to fall back on — it can stay stale indefinitely instead
+  of self-correcting within a bounded time the way `/blog` does.
 
 **Checks, in order:**
-1. **Wait a minute.** The blog re-checks Sanity for changes at most once every 60 seconds (not instantly). If it's been under a minute, just wait.
-2. **Confirm it's actually published, not just saved as a draft.** In Studio, open the post — if there's a "Publish" button still showing, it's a draft. Click Publish.
-3. **Confirm the post has a slug.** Every post needs its own URL slug (auto-generated from the title). If the title field was left blank at some point, the slug might never have generated. Open the post and check the Slug field has a value.
-4. **Check the live site directly:** visit `asheraw.com/blog` and hard-refresh (Ctrl+Shift+R / Cmd+Shift+R) to rule out your browser showing you an old cached copy.
-5. **If none of that explains it,** the site's connection to Sanity itself may be misconfigured (this happened once — see "History" below). That needs a developer to check the Sanity project ID/dataset environment variables on Vercel.
+1. **Confirm it's actually published, not just saved as a draft.** In Studio, open the post — a green
+   "Published" badge (not a "Publish" button still showing) confirms it went through.
+2. **Rule out your own browser/device before assuming it's the site:** hard-refresh
+   (Ctrl+Shift+R / Cmd+Shift+R), and ideally check from a second device on a different network entirely. If a
+   completely different device/network shows the same stale content, it's not your browser or local network
+   caching — it's server-side.
+3. **For `/blog` specifically:** wait a minute; it re-checks on its own timer regardless of anything else.
+4. **For an individual post page (`/blog/[slug]`) that's confirmed stale on multiple devices/networks after
+   several minutes:** this is the "no time-based fallback" gap described above. **The fastest real fix is
+   triggering a fresh deploy** (Vercel dashboard → redeploy the latest commit, or push any commit) — a new
+   deploy always regenerates every page against Sanity's current published content, completely independent of
+   whether the Live Content API's own live-update path is working. This isn't a real root-cause fix, just the
+   fastest way to unblock a specific stuck post.
+5. **If this keeps happening, not just a one-off:** worth checking whether `SANITY_API_READ_TOKEN` is still
+   correctly set in Vercel's environment variables (`src/sanity/lib/live.ts`'s `browserToken`/`serverToken`) —
+   an invalid or missing token could plausibly degrade the Live Content API's own update path silently. Also
+   worth considering a longer-interval time-based revalidate (e.g. every few minutes, not 60 seconds) as a
+   safety net specifically for `/blog/[slug]` — but re-test Presentation's smooth in-place updates carefully
+   before shipping that, given the exact regression that caused the timer to be removed in the first place.
 
-**History:** On 2026-07-28, the live site was frozen on whatever content existed at the last deploy — new posts added in Sanity simply never appeared, because the blog pages had no instruction to ever re-check Sanity. Fixed by adding a 60-second revalidation window to `/blog` and `/blog/[slug]`. If this exact symptom reappears (posts genuinely never show, not even after minutes), check that `export const revalidate = 60` is still present near the top of `src/app/blog/page.tsx` and `src/app/blog/[slug]/page.tsx` — it may have been accidentally removed in a later edit.
+**Incident, 2026-08-06:** Asher edited an already-published post ("Easter 2019: The J Factor Afterthoughts")
+in Studio — confirmed green "Published" status, "Last published 38 min. ago." The live post page kept showing
+the old content the entire time, confirmed stale on a second device on a completely different network (ruling
+out browser/local-network caching). Root cause not confirmed (no live access to Vercel/Sanity logs from the
+session diagnosing this) — most likely explanation, given the architecture above, is the Live Content API's
+own server-side update path not firing for this particular publish, with nothing to fall back on since this
+page has no time-based revalidate. Unblocked by triggering a fresh deploy. If this recurs, it's worth
+prioritizing the "add back a longer-interval safety net" option above rather than treating a redeploy as the
+permanent fix each time.
+
+**History:** On 2026-07-28, the live site was frozen on whatever content existed at the last deploy — new
+posts added in Sanity simply never appeared at all, because at the time neither blog page had any instruction
+to re-check Sanity. Fixed then by adding a 60-second revalidation window to both `/blog` and `/blog/[slug]`.
+The individual post page's timer was later removed (see above) once it moved to `sanityFetch`, which is why
+the current failure mode looks different from this original incident — `/blog` still self-heals within a
+minute; `/blog/[slug]` currently does not.
 
 ---
 
