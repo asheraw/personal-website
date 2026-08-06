@@ -2060,6 +2060,50 @@ contact form and comments; extending it to anonymous 404 tracking would need tha
 
 ---
 
+## Search query tracking: content ideas straight from what readers look for (shipped 2026-08-06)
+
+**Studio → Site Admin → Search Queries** logs every distinct thing typed into the blog's search box
+(`BlogSearch.tsx`) — same overview-page pattern as 404 Hits, and built for the same reason: turn "what are
+visitors actually looking for" into something browsable in Studio instead of buried in Google Analytics (or
+not captured at all, as it wasn't before this). Asher's own framing when asking for this: the search box
+becoming something closer to a content-idea funnel, and — his longer-term thought — a natural fit for a
+future RAG-style avatar (see the note at the end of this section).
+
+**What actually gets logged, and when:** `BlogSearch.tsx` debounces 800ms after the visitor stops typing (not
+on every keystroke — a partial "h", "he", "hel" while typing "help" would be meaningless noise) before calling
+`POST /api/track-search` with the settled query text and how many posts it matched. Skipped entirely for
+anything under 2 characters, and never re-logged if the exact same settled query fires twice in a row (e.g.
+clicking back into an already-typed box). One document per distinct **normalized** query (trimmed, lowercased,
+whitespace-collapsed) — `searchQueryLogType.ts` — repeat searches increment `hitCount` rather than piling up
+duplicate documents, exactly the same `createIfNotExists` + read-modify-write pattern as `/api/track-404`.
+`lastResultCount` (and a full per-search `hits` log, capped at 500) tracks how many posts matched each time —
+**a query that keeps coming back with 0 results is the single strongest signal this captures**: something
+readers want that this blog doesn't have yet (or the search index genuinely can't find, worth checking before
+assuming it's a real gap).
+
+**Runs unconditionally, not gated by analytics cookie consent** — same reasoning already established for
+404-hit tracking and share tracking: this is anonymous, first-party, operational data (just the search text
+and a result count, nothing that identifies a visitor), not a third-party analytics script, so it isn't the
+kind of thing the cookie banner's "Accept/Decline" choice is about. Disclosed in `/privacy` regardless (see
+"What you search for on the blog" under "What's collected automatically") — the same discipline every other
+tracking feature here follows: a new data-collection point always gets a matching policy update in the same
+change, not "later."
+
+**Studio tool** (`SearchQueriesTool.tsx`) mirrors `NotFoundHitsTool.tsx`'s Pending/Ignored/Actioned accordion
+pattern exactly — Pending starts open, most-searched-first within each group, a **"no results"** badge on any
+row whose most recent search came back empty, expandable per-query search log. Mark a query **Actioned** once
+you've written a post about it (or realized it already exists and search just isn't finding it), **Ignored**
+if it's not worth pursuing.
+
+**On the RAG idea specifically:** this ships the data-collection half only — logging queries and turning them
+into a browsable content-idea list. It does **not** build the "AI avatar that answers questions using the
+site's own content" idea Asher separately floated (already logged in `IDEAS.md` as an explicitly deferred,
+bigger project). The two are complementary, not the same feature: if that avatar/RAG project happens later,
+these logged queries — especially the zero-result ones — are a genuinely useful head start on knowing what a
+retrieval system should be able to answer, but building this tracker doesn't require or imply building that.
+
+---
+
 ## Contacts / where things live
 
 - **Code:** github.com/asheraw/personal-website (public repo)

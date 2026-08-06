@@ -10,7 +10,7 @@ const DESCRIPTION = "What asheraw.com collects, why, and how to have it removed 
 // and it changes rarely enough that a code change (reviewed like any other)
 // is the right amount of friction. Bump this whenever the wording below
 // actually changes.
-const LAST_UPDATED = "August 2, 2026";
+const LAST_UPDATED = "August 6, 2026";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -25,6 +25,7 @@ const TLDR = [
   "Analytics tracking is off by default, including heatmaps and session recordings. It only turns on if you click “Accept” on the cookie banner, and you can decline it entirely.",
   "I never sell your data, and there are no ad trackers or retargeting pixels on this site.",
   "Your IP address is logged briefly on submissions, only to catch spam — not to track what you do on the site.",
+  "If you search the blog, what you typed gets logged (just the text, nothing about you) so I know what to write about next.",
   "I use a small number of trusted services (listed below) to run the site — never to profit from your data.",
   "There's no email newsletter yet, but if one launches: joining is opt-in only, and a sponsor paying to be mentioned in an email is not the same as me selling your email address to anyone — I don't do the second one, ever.",
   "Want anything deleted? Email me and I’ll remove it — no forms, no runaround.",
@@ -135,6 +136,14 @@ export default function PrivacyPage() {
                 actually getting shared. Same reasoning as the accept/decline count above &mdash; it works
                 regardless of your analytics choice. No IP address, no identifying information, just a tally
                 per post per platform.
+              </li>
+              <li>
+                <strong className="text-ivory">What you search for on the blog:</strong>{" "}
+                if you use the search box and pause on something you typed, that search term gets logged
+                (along with how many posts it matched) so I can see what readers are actually looking for
+                &mdash; especially searches that come back empty, which tell me what to write about next.
+                Only the text you typed is stored, nothing that identifies you, and it&rsquo;s logged only
+                after you stop typing for a moment, not on every keystroke.
               </li>
             </ul>
           </section>

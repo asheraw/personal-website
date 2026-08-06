@@ -17,7 +17,8 @@ import {aiOutputLogType} from './aiOutputLogType'
 import {linkCheckType} from './linkCheckType'
 import {imageAssetAltType} from './imageAssetAltType'
 import {bulkOperationLogType} from './bulkOperationLogType'
+import {searchQueryLogType} from './searchQueryLogType'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType, shareLogType, aiOutputLogType, linkCheckType, imageAssetAltType, bulkOperationLogType],
+  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType, shareLogType, aiOutputLogType, linkCheckType, imageAssetAltType, bulkOperationLogType, searchQueryLogType],
 }

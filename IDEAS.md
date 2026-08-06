@@ -28,6 +28,11 @@ greeter genuinely useful versus a normal way in.
 **Worth revisiting when:** the blog has real, sustained traffic and the post count crosses 200 — at which
 point this is a text-based (not voice) avatar/search entry point, not the original spec's TTS-driven version.
 
+**Related, shipped 2026-08-06:** the blog search box now logs every settled query as a content-idea signal
+(Studio → Site Admin → Search Queries, see RUNBOOK.md) — Asher's own framing for asking for it was that this
+could be a natural fit feeding a future RAG-style version of this avatar. That's groundwork data collection
+only, not a step toward building the avatar itself — the traffic/200-post gating above is unchanged.
+
 ---
 
 ## Audio narration (auto TTS per post)

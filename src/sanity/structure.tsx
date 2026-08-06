@@ -8,6 +8,7 @@ import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {DownloadIcon} from '@sanity/icons/Download'
 import {EditIcon} from '@sanity/icons/Edit'
+import {SearchIcon} from '@sanity/icons/Search'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
@@ -15,6 +16,7 @@ import {NotFoundHitsTool} from './components/NotFoundHitsTool'
 import {ContactSubmissionsTool} from './components/ContactSubmissionsTool'
 import {ExportTool} from './components/ExportTool'
 import {BulkOperationsTool} from './components/BulkOperationsTool'
+import {SearchQueriesTool} from './components/SearchQueriesTool'
 
 // https://www.sanity.io/docs/structure-builder-cheat-sheet
 export const structure: StructureResolver = (S) =>
@@ -119,6 +121,10 @@ export const structure: StructureResolver = (S) =>
                 .title('Bulk Operations')
                 .icon(EditIcon)
                 .child(S.component(BulkOperationsTool).title('Bulk Operations')),
+              S.listItem()
+                .title('Search Queries')
+                .icon(SearchIcon)
+                .child(S.component(SearchQueriesTool).title('Search Queries')),
             ]),
         ),
       S.divider(),
@@ -169,6 +175,7 @@ export const structure: StructureResolver = (S) =>
             'linkCheck',
             'imageAssetAlt',
             'bulkOperationLog',
+            'searchQueryLog',
           ].includes(item.getId()!),
       ),
     ])

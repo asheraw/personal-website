@@ -11,6 +11,25 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (continued once more) — Search Queries: the blog search box now logs content ideas
+
+New **Studio → Site Admin → Search Queries** tool -- every distinct thing typed into the blog search box gets
+logged (query text + how many posts it matched), same overview-page pattern as 404 Hits: grouped into
+Pending/Ignored/Actioned, most-searched-first, with a **"no results"** badge on any query whose last search
+came back empty -- the strongest signal here, since it's a direct line to "someone wanted this and this blog
+doesn't have it yet."
+
+Debounced client-side (800ms after typing stops, 2-character minimum) so only a settled query gets logged,
+never every keystroke while someone's still typing. Runs regardless of cookie-consent choice, same reasoning
+as the existing 404-hit and share tracking: anonymous, first-party, no visitor-identifying data, not a
+third-party analytics script. `/privacy` updated in the same change to disclose it.
+
+Per Asher: this pairs with the "AI avatar" idea already logged in `IDEAS.md` as a deliberately-deferred,
+bigger project (his framing: the logged queries could feed a future RAG-style version of that avatar) --
+this ships only the data-collection half, not the avatar itself.
+
+---
+
 ## 2026-08-06 (continued) — Housekeeping: fixed a `Text tone=` typo repeated across 8 Studio files
 
 Found while auditing the type-check output after pulling in the last big batch of work: `<Text tone="critical">`

@@ -28,10 +28,21 @@ function normalize(text: string): string {
 // few dozen posts. Doesn't reach into full post bodies, though -- a "search
 // the wider web" fallback link covers anything buried in body text that
 // this shallow index can't see.
+// Debounce before logging a query -- long enough that a query still being
+// typed ("h", "he", "hel"...) never gets logged as its own thing, short
+// enough to still catch someone who paused to read the results before
+// giving up and typing something else.
+const LOG_DEBOUNCE_MS = 800;
+const MIN_LOGGABLE_LENGTH = 2;
+
 export function BlogSearch({ posts }: { posts: SearchablePost[] }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Guards against logging the exact same settled query twice in a row --
+  // e.g. clicking back into the box without changing anything shouldn't
+  // count as a second search.
+  const lastLoggedRef = useRef<string | null>(null);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -47,8 +58,11 @@ export function BlogSearch({ posts }: { posts: SearchablePost[] }) {
 
   // Title matches first, then anything only matching in the summary/tags/
   // categories -- a title hit is almost always what someone meant.
-  const results = useMemo(() => {
-    if (!trimmed) return [];
+  // matchCount is the true total (before the MAX_RESULTS slice) -- kept
+  // separately so query logging below reports how many posts actually
+  // matched, not just how many the dropdown had room to show.
+  const { results, matchCount } = useMemo(() => {
+    if (!trimmed) return { results: [] as SearchablePost[], matchCount: 0 };
     const q = normalize(trimmed);
     const titleMatches: SearchablePost[] = [];
     const otherMatches: SearchablePost[] = [];
@@ -62,8 +76,31 @@ export function BlogSearch({ posts }: { posts: SearchablePost[] }) {
       );
       if (haystack.includes(q)) otherMatches.push(post);
     }
-    return [...titleMatches, ...otherMatches].slice(0, MAX_RESULTS);
+    const all = [...titleMatches, ...otherMatches];
+    return { results: all.slice(0, MAX_RESULTS), matchCount: all.length };
   }, [trimmed, posts]);
+
+  // Logs a settled query as a future-content signal (see /api/track-search)
+  // -- debounced so only a query someone actually paused on gets logged,
+  // never every intermediate keystroke. Runs regardless of analytics
+  // cookie consent, same as 404-hit and share tracking: anonymous,
+  // first-party, no visitor-identifying data, not a third-party script.
+  useEffect(() => {
+    if (trimmed.length < MIN_LOGGABLE_LENGTH) return;
+    const timer = setTimeout(() => {
+      if (lastLoggedRef.current === trimmed) return;
+      lastLoggedRef.current = trimmed;
+      fetch("/api/track-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: trimmed, resultCount: matchCount }),
+      }).catch(() => {
+        // Best-effort -- a missed log entry isn't worth surfacing to the
+        // visitor or retrying.
+      });
+    }, LOG_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [trimmed, matchCount]);
 
   const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(`site:asheraw.com ${trimmed}`)}`;
 
