@@ -7,7 +7,6 @@ import {ComponentIcon} from '@sanity/icons/Component'
 import {LinkIcon} from '@sanity/icons/Link'
 import {DocumentIcon} from '@sanity/icons/Document'
 import {TagIcon} from '@sanity/icons/Tag'
-import {HeartFilledIcon} from '@sanity/icons/HeartFilled'
 import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
 
@@ -490,71 +489,6 @@ export const blockContentType = defineType({
       title: 'Reusable snippet',
       icon: ComponentIcon,
       to: [{type: 'snippet'}],
-    }),
-    // Superseded by the single "Embed" type above (2026-08-06) -- for new
-    // content, reach for that one instead of either of these. Both are
-    // still kept registered here (rather than deleted, and deliberately
-    // *not* marked `hidden`) purely so any post that already has one of
-    // these blocks keeps rendering *and* stays editable in Studio;
-    // removing a type from this schema entirely while content still
-    // references it turns those specific blocks into "Unknown type" in
-    // the editor, even though the live site would still render them fine
-    // via portableTextComponents.tsx. Not marking them `hidden` either --
-    // couldn't verify from this session (no live Studio access) whether
-    // Sanity's `hidden` on an array-member type suppresses only the
-    // insert-menu button or the already-existing blocks too, and guessing
-    // wrong on Studio editor-chrome behavior has broken things here before
-    // (see RUNBOOK.md's imageAssetAlt incident). Net effect right now: the
-    // toolbar still shows these two alongside the new Embed button, they
-    // just aren't the ones to use going forward. A proper migration
-    // (rewrite any existing youtube/instagramEmbed blocks to the new embed
-    // shape, then delete these two for real, hiding them from the toolbar
-    // for good) is the next step, but needs a session with live Sanity
-    // read/write access to run safely -- this one
-    // didn't have that, so this is the conservative version of the merge:
-    // new content only ever needs one button, nothing old was touched or
-    // risked.
-    defineArrayMember({
-      type: 'object',
-      name: 'youtube',
-      title: 'YouTube embed (legacy)',
-      icon: PlayIcon,
-      fields: [
-        defineField({
-          name: 'url',
-          title: 'YouTube URL',
-          type: 'url',
-          description: 'Paste the full video URL, e.g. https://www.youtube.com/watch?v=...',
-        }),
-      ],
-      preview: {
-        select: {url: 'url'},
-        prepare: ({url}) => ({title: 'YouTube embed (legacy)', subtitle: url}),
-      },
-    }),
-    // Instagram's own free, official embed (blockquote + embed.js) --
-    // shows the real photo, caption, account, and like count, with a
-    // "View this post on Instagram" link. Not the same as pulling actual
-    // comment replies inline -- that needs Meta's token-gated Graph API
-    // oEmbed endpoint and app review, a much bigger lift for a feature
-    // that isn't asked for often enough to justify it yet.
-    defineArrayMember({
-      type: 'object',
-      name: 'instagramEmbed',
-      title: 'Instagram embed (legacy)',
-      icon: HeartFilledIcon,
-      fields: [
-        defineField({
-          name: 'url',
-          title: 'Instagram post URL',
-          type: 'url',
-          description: 'Paste the full post URL, e.g. https://www.instagram.com/p/XXXXXXXXXXX/',
-        }),
-      ],
-      preview: {
-        select: {url: 'url'},
-        prepare: ({url}) => ({title: 'Instagram embed (legacy)', subtitle: url}),
-      },
     }),
   ],
 })
