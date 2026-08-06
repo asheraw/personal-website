@@ -640,6 +640,19 @@ a reader has to parse, so serif still reads fine there. If a future layout adds 
 in serif, apply the same reasoning: serif italic for a whole sentence is a real readability cost, not a
 stylistic-preference toss-up.
 
+**Text weight is now a per-block field, not fixed (added same day, again from Asher's feedback).** The
+`font-medium` bump from the fix above reads fine for a single Quote Grid, but Asher ran into it specifically
+using several Quote Grids back to back on one post -- at that volume, bold quote text throughout got tiring to
+read, even though the exact same weight was fine as an accent for just one or two. New **Text weight** field
+on the block (`textWeight` in `blockContentType.ts`, radio: Regular/Bold) controls the quote text's own
+font-weight, independent of Layout -- `QuoteGrid.tsx`'s `weight` prop, threaded through all three layout
+components (`quoteWeightClass = weight === 'bold' ? 'font-medium' : 'font-normal'`). **Regular is the new
+default** (`initialValue: 'regular'`) precisely because Bold is the one that causes fatigue at volume, and the
+"why weren't more consecutive Quote Grids the common case" framing turned out backwards from actual use --
+default to what's comfortable in bulk, let Bold be the deliberate opt-in for a single grid that wants more
+visual punch, not the other way around. Only affects the quote paragraph itself -- names, roles, and the
+decorative quotation marks/avatar initials are unaffected either way.
+
 ---
 
 ## Embed block: YouTube + Instagram merged into one, with YouTube anti-distraction params (shipped 2026-08-06)

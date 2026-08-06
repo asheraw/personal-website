@@ -7,7 +7,7 @@ import { Accordion } from "@/components/asher/blog/Accordion";
 import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
 import { SizedImage, type DisplaySize } from "@/components/asher/blog/SizedImage";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
-import { QuoteGrid, type QuoteEntry, type QuoteGridLayout } from "@/components/asher/blog/QuoteGrid";
+import { QuoteGrid, type QuoteEntry, type QuoteGridLayout, type QuoteGridWeight } from "@/components/asher/blog/QuoteGrid";
 import { isTextColorValue } from "@/lib/textColors";
 
 function getYouTubeId(url: string): string | null {
@@ -247,6 +247,7 @@ export const postBodyComponents: PortableTextComponents = {
       <QuoteGrid
         entries={(value?.entries ?? []) as QuoteEntry[]}
         layout={(value?.layout as QuoteGridLayout) ?? "cards"}
+        weight={(value?.textWeight as QuoteGridWeight) ?? "regular"}
       />
     ),
     // Renders a Reusable Snippet inserted into this post -- `snippetData`

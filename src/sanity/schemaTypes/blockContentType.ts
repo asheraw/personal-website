@@ -309,6 +309,21 @@ export const blockContentType = defineType({
           initialValue: 'cards',
         }),
         defineField({
+          name: 'textWeight',
+          title: 'Text weight',
+          type: 'string',
+          description:
+            'How bold the quote text itself is. Regular reads more comfortably when several Quote Grids appear one after another on the same post; Bold gives a single grid more visual punch.',
+          options: {
+            list: [
+              {title: 'Regular', value: 'regular'},
+              {title: 'Bold', value: 'bold'},
+            ],
+            layout: 'radio',
+          },
+          initialValue: 'regular',
+        }),
+        defineField({
           name: 'entries',
           title: 'Quotes',
           type: 'array',

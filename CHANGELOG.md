@@ -11,6 +11,18 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (still going) — Quote Grid: text weight is now a per-block choice, defaulting lighter
+
+Asher's follow-up after the sans-serif fix: he'd used several Quote Grids back to back on one post, and at
+that volume the bolder quote weight (added earlier the same day to compensate for dropping the serif face)
+got tiring to read, even though it read fine as an accent for a single grid. New **Text weight** field on the
+block -- Regular or Bold, radio choice, independent of Layout -- controls just the quote paragraph's own
+font-weight; names, roles, and the decorative quote marks/avatar initials are unaffected either way. Flipped
+the default to Regular in the same change, since that's what holds up when several grids appear in a row,
+with Bold staying available as the deliberate choice for a single grid that wants more visual punch.
+
+---
+
 ## 2026-08-06 (one more still) — Quote Grid: quote text switched from serif italic to sans-serif italic
 
 Asher's feedback right after the Quote Grid shipped: the Spotlight and Minimal layouts set the actual quote

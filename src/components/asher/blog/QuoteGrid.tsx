@@ -10,17 +10,34 @@ export type QuoteEntry = {
 };
 
 export type QuoteGridLayout = "cards" | "spotlight" | "minimal";
+export type QuoteGridWeight = "regular" | "bold";
 
 // Three genuinely different visual treatments for the same data (photo +
 // name + role + quote), picked per-block via the "Layout" field -- built
 // this way specifically so Asher can drop the same set of quotes into a
 // post, try each layout, and see which one actually reads best in context
 // instead of only ever having one fixed look.
-export function QuoteGrid({ entries, layout }: { entries: QuoteEntry[]; layout: QuoteGridLayout }) {
+//
+// `weight` controls the quote text's own font-weight, independent of
+// layout -- added after Asher used several Quote Grids back to back on
+// one post and found the bolder weight (the default when this shipped)
+// tiring to read at that volume, even though it reads fine as an accent
+// for one or two grids on their own. Regular is now the default for that
+// reason; Bold stays available for whenever a heavier, more attention-
+// grabbing single grid is actually what's wanted.
+export function QuoteGrid({
+  entries,
+  layout,
+  weight = "regular",
+}: {
+  entries: QuoteEntry[];
+  layout: QuoteGridLayout;
+  weight?: QuoteGridWeight;
+}) {
   if (!entries?.length) return null;
-  if (layout === "spotlight") return <SpotlightLayout entries={entries} />;
-  if (layout === "minimal") return <MinimalLayout entries={entries} />;
-  return <CardsLayout entries={entries} />;
+  if (layout === "spotlight") return <SpotlightLayout entries={entries} weight={weight} />;
+  if (layout === "minimal") return <MinimalLayout entries={entries} weight={weight} />;
+  return <CardsLayout entries={entries} weight={weight} />;
 }
 
 // A photo, or (when none was added) a circle with the person's initial --
@@ -53,7 +70,8 @@ function Avatar({ entry, size }: { entry: QuoteEntry; size: number }) {
 // "Cards" -- a testimonial-wall grid. Each card gets a large, faint
 // decorative quotation mark in the corner so it reads as a considered
 // design, not just a bordered box with text in it.
-function CardsLayout({ entries }: { entries: QuoteEntry[] }) {
+function CardsLayout({ entries, weight }: { entries: QuoteEntry[]; weight: QuoteGridWeight }) {
+  const quoteWeightClass = weight === "bold" ? "font-medium" : "font-normal";
   return (
     <div className="my-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {entries.map((entry) => (
@@ -76,7 +94,9 @@ function CardsLayout({ entries }: { entries: QuoteEntry[] }) {
               )}
             </div>
           </div>
-          <p className="relative mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ivory/90">{entry.quote}</p>
+          <p className={`relative mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ivory/90 ${quoteWeightClass}`}>
+            {entry.quote}
+          </p>
         </div>
       ))}
     </div>
@@ -96,7 +116,8 @@ function CardsLayout({ entries }: { entries: QuoteEntry[] }) {
 // to read than sans-serif italic -- Playfair's italic cut narrows the
 // letterforms further, worse right when the point is a reader parsing a
 // full sentence, not admiring one large character.
-function SpotlightLayout({ entries }: { entries: QuoteEntry[] }) {
+function SpotlightLayout({ entries, weight }: { entries: QuoteEntry[]; weight: QuoteGridWeight }) {
+  const quoteWeightClass = weight === "bold" ? "font-medium" : "font-normal";
   return (
     <div className="my-8 space-y-8">
       {entries.map((entry, i) => {
@@ -110,7 +131,9 @@ function SpotlightLayout({ entries }: { entries: QuoteEntry[] }) {
           >
             <Avatar entry={entry} size={72} />
             <div className={`flex-1 text-center sm:text-left ${reversed ? "sm:text-right" : ""}`}>
-              <p className="text-lg font-medium italic leading-snug text-ivory">&ldquo;{entry.quote}&rdquo;</p>
+              <p className={`text-lg italic leading-snug text-ivory ${quoteWeightClass}`}>
+                &ldquo;{entry.quote}&rdquo;
+              </p>
               <p className="mt-3 text-sm font-medium text-spotlight">
                 {entry.name}
                 {entry.role && <span className="font-normal text-stone/60"> — {entry.role}</span>}
@@ -126,12 +149,13 @@ function SpotlightLayout({ entries }: { entries: QuoteEntry[] }) {
 // "Minimal" -- a clean divided list, closer to a pull-quote than a card.
 // Big quotation marks carry the visual weight instead of borders/boxes;
 // the avatar shrinks to a small inline byline under each quote.
-function MinimalLayout({ entries }: { entries: QuoteEntry[] }) {
+function MinimalLayout({ entries, weight }: { entries: QuoteEntry[]; weight: QuoteGridWeight }) {
+  const quoteWeightClass = weight === "bold" ? "font-medium" : "font-normal";
   return (
     <div className="my-8 divide-y divide-amber-faint border-y border-amber-faint">
       {entries.map((entry) => (
         <div key={entry._key} className="py-6 first:pt-0 last:pb-0">
-          <p className="text-xl font-medium italic leading-snug text-ivory/95">
+          <p className={`text-xl italic leading-snug text-ivory/95 ${quoteWeightClass}`}>
             <span className="text-spotlight" aria-hidden="true">
               &ldquo;
             </span>
