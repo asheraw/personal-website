@@ -11,6 +11,22 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (and once more) — Fixed reading time not counting Quote Grid content
+
+Asher noticed "The J Factor" showing as a 1-minute read despite having real content -- traced it to
+`portableTextToPlainText()` (`src/lib/portableText.ts`), the shared word-count function behind reading time
+everywhere it's shown: it only ever read `block`/`callout`/`accordion` text, so a post built mostly out of
+Quote Grid entries had almost nothing left to count. Added a `quoteGrid` case pulling every entry's quote
+text in. Since this one function backs reading time on the live site, Studio's post list, the writing panel's
+word count, and what the AI Workspace tools see when drafting SEO/social copy, this fixes all of them at
+once, immediately, no data migration needed.
+
+Flagged, not fixed: the auto-generated excerpt/RSS-description/search-blurb fallback uses a separate
+mechanism (GROQ's `pt::text()`), which likely has the same blind spot for Quote Grid content. Noted in
+RUNBOOK.md as a known gap, worth a look if it turns out to matter.
+
+---
+
 ## 2026-08-06 (still going) — Quote Grid: text weight is now a per-block choice, defaulting lighter
 
 Asher's follow-up after the sans-serif fix: he'd used several Quote Grids back to back on one post, and at

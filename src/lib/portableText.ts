@@ -10,6 +10,7 @@ type PortableTextBlock = {
   children?: { text?: string }[];
   text?: string;
   content?: string;
+  entries?: { name?: string; quote?: string }[];
 };
 
 export function portableTextToPlainText(blocks: unknown): string {
@@ -24,6 +25,14 @@ export function portableTextToPlainText(blocks: unknown): string {
       // toward reading time even though they're not "block" type.
       if (block._type === "callout") return block.text || "";
       if (block._type === "accordion") return block.content || "";
+      // A Quote Grid's actual content is entirely inside its entries, not
+      // on the block itself -- missed the first time this was written,
+      // which meant a post built mostly out of Quote Grids (real prose,
+      // just structured) undercounted its reading time down toward the
+      // 1-minute floor.
+      if (block._type === "quoteGrid" && Array.isArray(block.entries)) {
+        return block.entries.map((entry) => entry.quote || "").join(" ");
+      }
       return "";
     })
     .filter(Boolean)

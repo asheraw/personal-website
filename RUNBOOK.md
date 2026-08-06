@@ -397,6 +397,26 @@ automatically from the post body — nothing to fill in, and it can't go stale s
 time rather than stored. Lives in `src/lib/portableText.ts` (`estimateReadingTimeMinutes`), shared by Studio
 and the frontend so both always agree.
 
+**Didn't count Quote Grid text until 2026-08-06 (real bug, caught by Asher on "The J Factor").** The word
+count this is based on (`portableTextToPlainText()`, same file) only ever read `block`/`callout`/`accordion`
+content -- a post built mostly out of Quote Grid blocks (real prose, just structured as name+quote entries
+instead of plain paragraphs) had almost nothing left to count, floored at "1 min read" regardless of how much
+was actually there to read. Fixed by adding a `quoteGrid` case that pulls every entry's `quote` text in, same
+as callout/accordion already did. Since this function is shared everywhere reading time (or general body
+plain-text) gets computed -- the live post page, Studio's own post list, the writing panel's word count, and
+the AI Workspace's SEO/social-copy/image-prompt tools (they read the body as plain text for their prompts) --
+this one fix corrects all of them at once, immediately, for every post that already has Quote Grid content
+in it. No data migration needed; it's a pure computation fix, nothing stored changed.
+
+**Known, not yet fixed: auto-generated excerpts have the same blind spot, through a different mechanism.**
+The blog listing card blurb / RSS description / search-index fallback (`autoExcerpt`/`bodyPlainText`/`blurb`
+in `src/sanity/lib/queries.ts`) use GROQ's own built-in `pt::text()` function, not `portableTextToPlainText()`
+-- a separate code path this fix didn't touch, and `pt::text()`'s documented behavior is to only pull text
+from `block`-type spans, the same original blind spot. A post that's mostly Quote Grid content likely still
+gets a short-or-empty auto-excerpt wherever no manual `excerpt` field is set. Worth a look if that turns out
+to matter in practice -- not fixed here since it's Sanity's own function (no JS-level equivalent to patch the
+same way) and needs a real query test against live content to get right, which wasn't available this session.
+
 **Categories** use a checkbox list in Studio (shipped 2026-07-29) instead of Sanity's default search-and-pick
 popup — every existing category is visible at a glance, laid out in 2-3 columns depending on how many there
 are. Custom input component: `src/sanity/components/CategoryCheckboxInput.tsx`.
