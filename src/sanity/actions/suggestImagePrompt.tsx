@@ -3,6 +3,7 @@ import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 import {ImageIcon} from '@sanity/icons/Image'
 import {Box, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {portableTextToPlainText} from '../../lib/portableText'
+import {ErrorMessage} from '../components/ErrorMessage'
 
 type Suggestions = {prompts: string[]; logId?: string | null}
 
@@ -114,7 +115,7 @@ export function createSuggestImagePromptAction(): DocumentActionComponent {
                 )}
                 {status === 'error' && (
                   <Stack space={4}>
-                    <Text tone="critical">{error}</Text>
+                    <ErrorMessage>{error}</ErrorMessage>
                     <Button text="Try again" tone="primary" onClick={runSuggestion} />
                   </Stack>
                 )}

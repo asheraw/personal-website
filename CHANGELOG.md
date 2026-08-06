@@ -11,6 +11,22 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (continued) — Housekeeping: fixed a `Text tone=` typo repeated across 8 Studio files
+
+Found while auditing the type-check output after pulling in the last big batch of work: `<Text tone="critical">`
+doesn't actually work in Sanity UI -- `Text` has no `tone` prop (only `Card`/`Badge`/`Button` do), so every one
+of these silently rendered as plain, uncolored text instead of the intended red/critical styling. It had been
+copy-pasted into 13 places across 8 files (`categoryDeleteGuard.tsx`, `exportPost.tsx`, `suggestSeo.tsx`,
+`suggestImagePrompt.tsx`, `suggestSocialCopy.tsx`, `BulkOperationsTool.tsx` ×5, `CreateRedirectForm.tsx`,
+`ExportTool.tsx`, `LinkCheckerTool.tsx`) -- every one an error message shown after a failed action.
+
+Pulled the fix into one shared `ErrorMessage.tsx` component (a `Card tone="critical"` wrapping a `Text`, since
+`Card` does support `tone` and its children inherit the color) instead of re-fixing the same two-line pattern
+13 times separately -- one place to get it right, one less spot for the same typo to reappear in file #9.
+TypeScript's error count dropped from 36 to 23 (the remaining 23 are pre-existing, unrelated to this).
+
+---
+
 ## 2026-08-06 — Google Tag Manager: wired `cookie_consent` through to GA4
 
 Closes the last item on the analytics "last mile." The site already pushed a `cookie_consent` event to

@@ -3,6 +3,7 @@ import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 import {ShareIcon} from '@sanity/icons/Share'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {portableTextToPlainText} from '../../lib/portableText'
+import {ErrorMessage} from '../components/ErrorMessage'
 
 type Suggestions = {x: string[]; linkedin: string[]; facebook: string[]; logId?: string | null}
 
@@ -118,7 +119,7 @@ export function createSuggestSocialCopyAction(): DocumentActionComponent {
                 )}
                 {status === 'error' && (
                   <Stack space={4}>
-                    <Text tone="critical">{error}</Text>
+                    <ErrorMessage>{error}</ErrorMessage>
                     <Button text="Try again" tone="primary" onClick={runSuggestion} />
                   </Stack>
                 )}

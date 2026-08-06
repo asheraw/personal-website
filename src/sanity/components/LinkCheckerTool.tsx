@@ -6,6 +6,7 @@ import {RefreshIcon} from '@sanity/icons/Refresh'
 import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {openDocumentInStudio} from '../lib/openPostInStudio'
+import {ErrorMessage} from './ErrorMessage'
 
 type Source = {type: 'post' | 'snippet'; title: string; slug?: string; id: string}
 type LinkCheckRow = {
@@ -182,11 +183,7 @@ export function LinkCheckerTool() {
           actually gone. Hover any status badge for what it means.
           {lastChecked && ` Last checked ${new Date(lastChecked).toLocaleString()}.`}
         </Text>
-        {checkError && (
-          <Text size={1} tone="critical">
-            {checkError}
-          </Text>
-        )}
+        {checkError && <ErrorMessage>{checkError}</ErrorMessage>}
       </Stack>
 
       {rows.length === 0 && (

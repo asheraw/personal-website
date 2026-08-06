@@ -17,6 +17,7 @@ import {
   TextInput,
 } from '@sanity/ui'
 import {useClient} from 'sanity'
+import {ErrorMessage} from './ErrorMessage'
 import {
   computeAddTagChanges,
   computeRemoveTagChanges,
@@ -496,7 +497,7 @@ export function BulkOperationsTool() {
                       <Button text="Apply to selected" mode="ghost" fontSize={1} onClick={() => startFieldOp('changeAuthor')} />
                     </Flex>
 
-                    {editError && <Text tone="critical">{editError}</Text>}
+                    {editError && <ErrorMessage>{editError}</ErrorMessage>}
                   </Stack>
                 </Card>
               </Stack>
@@ -572,7 +573,7 @@ export function BulkOperationsTool() {
                   </Stack>
                 </Card>
               )}
-              {srError && !srPendingChanges && <Text tone="critical">{srError}</Text>}
+              {srError && !srPendingChanges && <ErrorMessage>{srError}</ErrorMessage>}
             </Stack>
           </TabPanel>
         )}
@@ -618,7 +619,7 @@ export function BulkOperationsTool() {
                   </Card>
                 ))
               )}
-              {undoError && <Text tone="critical">{undoError}</Text>}
+              {undoError && <ErrorMessage>{undoError}</ErrorMessage>}
             </Stack>
           </TabPanel>
         )}
@@ -636,7 +637,7 @@ export function BulkOperationsTool() {
                   afterward from the History tab.
                 </Text>
               </Card>
-              {editError && <Text tone="critical">{editError}</Text>}
+              {editError && <ErrorMessage>{editError}</ErrorMessage>}
               <Flex justify="flex-end" gap={2}>
                 <Button text="Cancel" mode="ghost" disabled={editPhase === 'working'} onClick={() => setEditPhase('idle')} />
                 <Button
@@ -663,7 +664,7 @@ export function BulkOperationsTool() {
                   afterward from the History tab.
                 </Text>
               </Card>
-              {srError && <Text tone="critical">{srError}</Text>}
+              {srError && <ErrorMessage>{srError}</ErrorMessage>}
               <Flex justify="flex-end" gap={2}>
                 <Button text="Cancel" mode="ghost" disabled={srPhase === 'working'} onClick={() => setSrPhase('idle')} />
                 <Button

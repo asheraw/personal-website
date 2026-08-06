@@ -9,6 +9,7 @@ import {buildHtmlFile} from '../../lib/exportHtml'
 import {buildEpubBlob, epubFilename} from '../../lib/exportEpub'
 import {downloadBlob, downloadTextFile} from '../../lib/downloadFile'
 import {POST_EXPORT_BY_ID_QUERY} from '../lib/queries'
+import {ErrorMessage} from '../components/ErrorMessage'
 
 type Format = 'markdown' | 'json' | 'html' | 'epub' | 'pdf'
 
@@ -107,7 +108,7 @@ export function createExportAction(): DocumentActionComponent {
                       />
                     ))}
                   </Grid>
-                  {errorMsg && <Text tone="critical">{errorMsg}</Text>}
+                  {errorMsg && <ErrorMessage>{errorMsg}</ErrorMessage>}
                 </Stack>
               </Box>
             ),

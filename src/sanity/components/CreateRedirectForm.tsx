@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react'
 import {useClient} from 'sanity'
 import {Box, Button, Card, Checkbox, Flex, Spinner, Stack, Text, TextInput} from '@sanity/ui'
+import {ErrorMessage} from './ErrorMessage'
 
 type Option = {value: string; label: string; group: string}
 
@@ -175,11 +176,7 @@ export function CreateRedirectForm({
           <Checkbox checked={permanent} onChange={() => setPermanent((p) => !p)} />
           <Text size={1}>Permanent (301)</Text>
         </Flex>
-        {status === 'error' && (
-          <Text size={1} tone="critical">
-            {error}
-          </Text>
-        )}
+        {status === 'error' && <ErrorMessage>{error}</ErrorMessage>}
         <Flex gap={2}>
           <Button
             text={status === 'saving' ? 'Creating…' : 'Create redirect'}

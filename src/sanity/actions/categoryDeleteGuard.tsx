@@ -2,6 +2,7 @@ import {useState} from 'react'
 import {useClient} from 'sanity'
 import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 import {Box, Button, Card, Flex, Select, Spinner, Stack, Text} from '@sanity/ui'
+import {ErrorMessage} from '../components/ErrorMessage'
 
 type LinkedPost = {
   _id: string
@@ -172,7 +173,7 @@ export function withCategoryDeleteGuard(originalAction: DocumentActionComponent)
                           ))}
                         </Select>
                       </Stack>
-                      {errorMsg && <Text tone="critical">{errorMsg}</Text>}
+                      {errorMsg && <ErrorMessage>{errorMsg}</ErrorMessage>}
                       <Flex justify="flex-end" gap={2}>
                         <Button
                           text="Cancel"

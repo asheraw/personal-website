@@ -4,6 +4,7 @@ import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {portableTextToPlainText} from '../../lib/portableText'
+import {ErrorMessage} from '../components/ErrorMessage'
 
 type Faq = {question: string; answer: string}
 type Suggestions = {
@@ -257,7 +258,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                 )}
                 {status === 'error' && (
                   <Stack space={4}>
-                    <Text tone="critical">{error}</Text>
+                    <ErrorMessage>{error}</ErrorMessage>
                     <Button text="Try again" tone="primary" onClick={runSuggestion} />
                   </Stack>
                 )}

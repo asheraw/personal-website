@@ -1,5 +1,6 @@
 import {useState} from 'react'
 import {Badge, Box, Button, Card, Flex, Select, Spinner, Stack, Text} from '@sanity/ui'
+import {ErrorMessage} from './ErrorMessage'
 import {useClient} from 'sanity'
 import JSZip from 'jszip'
 import {buildMarkdownFile, type ExportPost} from '../../lib/exportMarkdown'
@@ -144,7 +145,7 @@ export function ExportTool() {
                 </Badge>
               )}
             </Flex>
-            {status === 'error' && <Text tone="critical">{error}</Text>}
+            {status === 'error' && <ErrorMessage>{error}</ErrorMessage>}
           </Stack>
         </Card>
       </Stack>
