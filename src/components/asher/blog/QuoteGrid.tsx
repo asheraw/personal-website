@@ -11,6 +11,7 @@ export type QuoteEntry = {
 
 export type QuoteGridLayout = "cards" | "spotlight" | "minimal";
 export type QuoteGridWeight = "regular" | "bold";
+export type QuoteGridSize = "regular" | "small";
 
 // Three genuinely different visual treatments for the same data (photo +
 // name + role + quote), picked per-block via the "Layout" field -- built
@@ -25,19 +26,26 @@ export type QuoteGridWeight = "regular" | "bold";
 // for one or two grids on their own. Regular is now the default for that
 // reason; Bold stays available for whenever a heavier, more attention-
 // grabbing single grid is actually what's wanted.
+//
+// `size` is the same idea, one step further -- a second, independent knob
+// (not folded into `weight`) since "smaller" and "bolder" are different
+// asks that can combine either way (a dense list of short Small quotes,
+// or one Bold-but-Small pull-quote).
 export function QuoteGrid({
   entries,
   layout,
   weight = "regular",
+  size = "regular",
 }: {
   entries: QuoteEntry[];
   layout: QuoteGridLayout;
   weight?: QuoteGridWeight;
+  size?: QuoteGridSize;
 }) {
   if (!entries?.length) return null;
-  if (layout === "spotlight") return <SpotlightLayout entries={entries} weight={weight} />;
-  if (layout === "minimal") return <MinimalLayout entries={entries} weight={weight} />;
-  return <CardsLayout entries={entries} weight={weight} />;
+  if (layout === "spotlight") return <SpotlightLayout entries={entries} weight={weight} size={size} />;
+  if (layout === "minimal") return <MinimalLayout entries={entries} weight={weight} size={size} />;
+  return <CardsLayout entries={entries} weight={weight} size={size} />;
 }
 
 // A photo, or (when none was added) a circle with the person's initial --
@@ -70,8 +78,17 @@ function Avatar({ entry, size }: { entry: QuoteEntry; size: number }) {
 // "Cards" -- a testimonial-wall grid. Each card gets a large, faint
 // decorative quotation mark in the corner so it reads as a considered
 // design, not just a bordered box with text in it.
-function CardsLayout({ entries, weight }: { entries: QuoteEntry[]; weight: QuoteGridWeight }) {
+function CardsLayout({
+  entries,
+  weight,
+  size,
+}: {
+  entries: QuoteEntry[];
+  weight: QuoteGridWeight;
+  size: QuoteGridSize;
+}) {
   const quoteWeightClass = weight === "bold" ? "font-medium" : "font-normal";
+  const quoteSizeClass = size === "small" ? "text-xs" : "text-sm";
   return (
     <div className="my-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {entries.map((entry) => (
@@ -94,7 +111,7 @@ function CardsLayout({ entries, weight }: { entries: QuoteEntry[]; weight: Quote
               )}
             </div>
           </div>
-          <p className={`relative mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ivory/90 ${quoteWeightClass}`}>
+          <p className={`relative mt-4 whitespace-pre-wrap leading-relaxed text-ivory/90 ${quoteSizeClass} ${quoteWeightClass}`}>
             {entry.quote}
           </p>
         </div>
@@ -116,8 +133,17 @@ function CardsLayout({ entries, weight }: { entries: QuoteEntry[]; weight: Quote
 // to read than sans-serif italic -- Playfair's italic cut narrows the
 // letterforms further, worse right when the point is a reader parsing a
 // full sentence, not admiring one large character.
-function SpotlightLayout({ entries, weight }: { entries: QuoteEntry[]; weight: QuoteGridWeight }) {
+function SpotlightLayout({
+  entries,
+  weight,
+  size,
+}: {
+  entries: QuoteEntry[];
+  weight: QuoteGridWeight;
+  size: QuoteGridSize;
+}) {
   const quoteWeightClass = weight === "bold" ? "font-medium" : "font-normal";
+  const quoteSizeClass = size === "small" ? "text-base" : "text-lg";
   return (
     <div className="my-8 space-y-8">
       {entries.map((entry, i) => {
@@ -131,7 +157,7 @@ function SpotlightLayout({ entries, weight }: { entries: QuoteEntry[]; weight: Q
           >
             <Avatar entry={entry} size={72} />
             <div className={`flex-1 text-center sm:text-left ${reversed ? "sm:text-right" : ""}`}>
-              <p className={`text-lg italic leading-snug text-ivory ${quoteWeightClass}`}>
+              <p className={`italic leading-snug text-ivory ${quoteSizeClass} ${quoteWeightClass}`}>
                 &ldquo;{entry.quote}&rdquo;
               </p>
               <p className="mt-3 text-sm font-medium text-spotlight">
@@ -149,13 +175,31 @@ function SpotlightLayout({ entries, weight }: { entries: QuoteEntry[]; weight: Q
 // "Minimal" -- a clean divided list, closer to a pull-quote than a card.
 // Big quotation marks carry the visual weight instead of borders/boxes;
 // the avatar shrinks to a small inline byline under each quote.
-function MinimalLayout({ entries, weight }: { entries: QuoteEntry[]; weight: QuoteGridWeight }) {
+function MinimalLayout({
+  entries,
+  weight,
+  size,
+}: {
+  entries: QuoteEntry[];
+  weight: QuoteGridWeight;
+  size: QuoteGridSize;
+}) {
   const quoteWeightClass = weight === "bold" ? "font-medium" : "font-normal";
+  const quoteSizeClass = size === "small" ? "text-lg" : "text-xl";
   return (
     <div className="my-8 divide-y divide-amber-faint border-y border-amber-faint">
       {entries.map((entry) => (
-        <div key={entry._key} className="py-6 first:pt-0 last:pb-0">
-          <p className={`text-xl italic leading-snug text-ivory/95 ${quoteWeightClass}`}>
+        // Between-entry gap stays py-6, unchanged -- the complaint was
+        // specifically the outer top/bottom rules, not the spacing between
+        // quotes. Previously `first:pt-0 last:pb-0` zeroed out padding
+        // right where those outer border-y lines are, so the very first
+        // and last quote sat flush against the rule with no breathing room
+        // at all. Given more room than py-6 (not just restored to it),
+        // since the outer rule reads as a stronger visual break than the
+        // divider between two quotes and looked tight even at equal
+        // padding.
+        <div key={entry._key} className="py-6 first:pt-8 last:pb-8">
+          <p className={`italic leading-snug text-ivory/95 ${quoteSizeClass} ${quoteWeightClass}`}>
             <span className="text-spotlight" aria-hidden="true">
               &ldquo;
             </span>

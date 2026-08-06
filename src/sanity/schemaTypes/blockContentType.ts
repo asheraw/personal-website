@@ -323,6 +323,21 @@ export const blockContentType = defineType({
           initialValue: 'regular',
         }),
         defineField({
+          name: 'textSize',
+          title: 'Text size',
+          type: 'string',
+          description:
+            'How large the quote text itself is, independent of weight above. Small suits a longer or denser set of quotes; Regular is the original size.',
+          options: {
+            list: [
+              {title: 'Regular', value: 'regular'},
+              {title: 'Small', value: 'small'},
+            ],
+            layout: 'radio',
+          },
+          initialValue: 'regular',
+        }),
+        defineField({
           name: 'entries',
           title: 'Quotes',
           type: 'array',
