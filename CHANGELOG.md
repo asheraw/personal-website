@@ -11,6 +11,23 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (continued, for real this time) — Legacy embed migration actually run; the two old buttons are gone
+
+The script logged just below was written but never run (no live Sanity access in that session). Ran it for
+real this time: `--dry-run` first to preview (38 blocks across 11 posts, no warnings), then for real. Confirmed
+clean afterward via the script's own built-in check — zero posts left referencing the old `youtube`/
+`instagramEmbed` types. Deleted both array members from `blockContentType.ts` (and the now-unused
+`HeartFilledIcon` import), which is what actually removes the "(legacy)" buttons from the editor's insert
+menu — the two types existed in the schema for exactly one reason (keep already-published posts from turning
+into "Unknown type" blocks), and that reason no longer applies to any post.
+
+`tsc --noEmit` and `next build` both stayed clean (only the same pre-existing, unrelated baseline errors).
+Couldn't click through Studio's actual toolbar to eyeball the buttons gone — this sandbox still hits the same
+no-login CORS gate noted elsewhere in this log — so this one's verified by the two things that *are*
+checkable here: the code that produced those buttons is deleted, and the schema still compiles.
+
+---
+
 ## 2026-08-06 (continued once more) — Migration script for the old YouTube/Instagram embed types
 
 Asher asked what happens if the legacy `youtube`/`instagramEmbed` block types (still in the schema behind the

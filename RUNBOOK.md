@@ -717,33 +717,24 @@ and `portableTextComponents.tsx`'s `embed` renderer figures out which platform i
 (`isInstagramUrl()`/`getYouTubeId()`) and dispatches to the right embed automatically -- one thing to reach
 for instead of two, per Asher's ask to streamline the editor further.
 
-**The old `youtube`/`instagramEmbed` types are still registered in the schema, deliberately not removed or
-hidden.** A true "down to one button, nothing else" merge needs either confirming no post already uses the
-old types, or migrating any that do — and this shipped from a session with no live Sanity read/write access
-(confirmed blocked: `oj9eajjd.apicdn.sanity.io` returns a network-level 403 from this sandbox), so neither
-check was possible. Deleting a type outright while content still references it turns those specific blocks
-into "Unknown type" in Studio's editor (the live site would keep rendering them fine either way, since
-`portableTextComponents.tsx` still has both renderers) — a real risk not worth taking blind. Net effect right
-now: **the insert menu still technically shows three embed-related buttons** (Embed, YouTube embed (legacy),
-Instagram embed (legacy)), but only the first one is meant to be used going forward — the legacy two are
-there purely so anything already published stays renderable and editable. `src/sanity/lib/autoEmbedPaste.ts`
-(paste a bare URL onto an empty line) was updated in the same change to insert the new `embed` type, not the
-old ones, so that path doesn't quietly keep creating legacy blocks going forward either.
+**The old `youtube`/`instagramEmbed` types are gone from the schema (removed 2026-08-06).** They existed only
+so already-published posts using them wouldn't turn into "Unknown type" blocks in Studio's editor — once every
+post was migrated off them (see below), that reason no longer applied, so both array members (and the
+now-unused `HeartFilledIcon` import) were deleted from `blockContentType.ts` outright. **The insert menu now
+shows exactly one embed-related button, "Embed."** `src/sanity/lib/autoEmbedPaste.ts` (paste a bare URL onto
+an empty line) already inserted the new `embed` type, not the old ones, so that path never needed a change.
 
-**Migration script written 2026-08-06, not yet run — still needs a session with real Sanity access.**
-`scripts/migrate-legacy-embeds.mjs` finds every post with a `youtube`/`instagramEmbed` block and rewrites just
-that block's `_type` to `embed` (both legacy types already store the same single `url` field the new type
-does, so nothing about the embed itself changes — same shape-migration pattern as the Image/imageGallery merge
-on 2026-08-04). Patches each matching block individually by its `_key` rather than replacing the whole `body`
-array, so it can't clobber unrelated edits, and migrates draft/published versions of a post independently
-since they're separate documents that can genuinely differ. Run `node scripts/migrate-legacy-embeds.mjs
---dry-run` first to see exactly what it would change with nothing written; drop `--dry-run` to actually apply
-it (needs `SANITY_API_WRITE_TOKEN` in `.env.local` for the real run, not for `--dry-run`). It also re-queries
-after migrating and reports whether any legacy blocks remain. Written but not run in this session either —
-same network restriction (`oj9eajjd.apicdn.sanity.io` still returns a network-level 403 from this sandbox), so
-it's untested against the real dataset. Once a run reports zero remaining legacy blocks, the `youtube`/
-`instagramEmbed` array members can be deleted from `blockContentType.ts` for real — that's what actually gets
-the toolbar down to one button.
+**Migration script (`scripts/migrate-legacy-embeds.mjs`) written 2026-08-06, run for real the same day.**
+Finds every post with a `youtube`/`instagramEmbed` block and rewrites just that block's `_type` to `embed`
+(both legacy types already store the same single `url` field the new type does, so nothing about the embed
+itself changes — same shape-migration pattern as the Image/imageGallery merge on 2026-08-04). Patches each
+matching block individually by its `_key` rather than replacing the whole `body` array, so it can't clobber
+unrelated edits, and migrates draft/published versions of a post independently since they're separate
+documents that can genuinely differ. `--dry-run` previewed 38 blocks across 11 posts with no warnings; the
+real run patched all 38 and its own built-in re-check confirmed zero legacy blocks remained afterward — that
+verification is what cleared the way to delete the two types from the schema in the same session. Safe to
+re-run anytime in the future if a legacy block ever reappears (e.g. via a content import) — it's a no-op
+("nothing to migrate") when there's nothing left to do.
 
 **YouTube embeds (both the new `embed` type and the legacy `youtube` type) now carry anti-distraction
 parameters, per Asher's question about how much control exists over what YouTube shows around an embedded
