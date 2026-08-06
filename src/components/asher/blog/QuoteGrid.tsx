@@ -87,6 +87,15 @@ function CardsLayout({ entries }: { entries: QuoteEntry[] }) {
 // up front, quote set in larger italic display type. More editorial and
 // dynamic than a grid; best suited to a small handful of quotes rather
 // than a long list, since each one takes real vertical space.
+//
+// The quote text itself is sans-serif here and in Minimal below (not
+// font-display/Playfair, unlike the decorative quotation marks and avatar
+// initials elsewhere in this file, which stay serif on purpose -- those
+// are single glyphs, not something a reader has to actually read). A
+// serif display face set in italic at body-copy sizes is genuinely harder
+// to read than sans-serif italic -- Playfair's italic cut narrows the
+// letterforms further, worse right when the point is a reader parsing a
+// full sentence, not admiring one large character.
 function SpotlightLayout({ entries }: { entries: QuoteEntry[] }) {
   return (
     <div className="my-8 space-y-8">
@@ -101,7 +110,7 @@ function SpotlightLayout({ entries }: { entries: QuoteEntry[] }) {
           >
             <Avatar entry={entry} size={72} />
             <div className={`flex-1 text-center sm:text-left ${reversed ? "sm:text-right" : ""}`}>
-              <p className="font-display text-lg italic leading-snug text-ivory">&ldquo;{entry.quote}&rdquo;</p>
+              <p className="text-lg font-medium italic leading-snug text-ivory">&ldquo;{entry.quote}&rdquo;</p>
               <p className="mt-3 text-sm font-medium text-spotlight">
                 {entry.name}
                 {entry.role && <span className="font-normal text-stone/60"> — {entry.role}</span>}
@@ -122,7 +131,7 @@ function MinimalLayout({ entries }: { entries: QuoteEntry[] }) {
     <div className="my-8 divide-y divide-amber-faint border-y border-amber-faint">
       {entries.map((entry) => (
         <div key={entry._key} className="py-6 first:pt-0 last:pb-0">
-          <p className="font-display text-xl italic leading-snug text-ivory/95">
+          <p className="text-xl font-medium italic leading-snug text-ivory/95">
             <span className="text-spotlight" aria-hidden="true">
               &ldquo;
             </span>

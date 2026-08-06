@@ -629,6 +629,17 @@ Grid solves the actual case in front of Asher; a general-purpose table stays a s
 idea if a real rows/columns need shows up later (not logged in `IDEAS.md` as its own entry, since it wasn't
 asked for on its own merits -- only came up as one option while scoping Quote Grid).
 
+**Quote text is sans-serif, not the site's serif display face (fixed same day, Asher's feedback right after
+shipping).** Spotlight and Minimal originally set the actual quote in `font-display` (Playfair Display) *and*
+italic -- genuinely harder to read than sans-serif italic, since Playfair's italic cut narrows the letterforms
+further right where the point is reading a sentence, not admiring a character. Both now use the site's default
+sans-serif instead (with `font-medium` added to keep some visual weight, since Playfair's own character isn't
+carrying that anymore), italic kept. **The decorative serif accents were left alone on purpose** -- the large
+faint quotation marks (Cards layout) and the avatar-initial fallback circles are single glyphs, not body copy
+a reader has to parse, so serif still reads fine there. If a future layout adds more actual quote-length text
+in serif, apply the same reasoning: serif italic for a whole sentence is a real readability cost, not a
+stylistic-preference toss-up.
+
 ---
 
 ## Embed block: YouTube + Instagram merged into one, with YouTube anti-distraction params (shipped 2026-08-06)

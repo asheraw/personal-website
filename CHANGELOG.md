@@ -11,6 +11,19 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (one more still) — Quote Grid: quote text switched from serif italic to sans-serif italic
+
+Asher's feedback right after the Quote Grid shipped: the Spotlight and Minimal layouts set the actual quote
+text in `font-display` (Playfair Display, the site's serif display face) *and* italic together, which is
+genuinely harder to read than sans-serif italic -- the serif italic cut narrows the letterforms further, right
+where the point is reading a full sentence, not admiring a single large character. Switched both to the
+site's default sans-serif (dropped `font-display`, added `font-medium` to keep some visual weight now that
+Playfair's own character isn't doing that work) while keeping the italic treatment and everything else about
+the layouts unchanged. Left the *decorative* serif accents alone on purpose -- the large faint quotation marks
+and the avatar-initial fallback circles are single glyphs, not body copy, so serif reads fine there.
+
+---
+
 ## 2026-08-06 (yet another continuation) — Quote Grid block, and YouTube/Instagram merged into one Embed type
 
 **Quote Grid**, a new post-body block for the "several people's names/photos/comments together" case Asher
