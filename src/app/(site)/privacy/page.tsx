@@ -145,6 +145,12 @@ export default function PrivacyPage() {
                 Only the text you typed is stored, nothing that identifies you, and it&rsquo;s logged only
                 after you stop typing for a moment, not on every keystroke.
               </li>
+              <li>
+                <strong className="text-ivory">JavaScript errors:</strong>{" "}
+                if something breaks in your browser while you&rsquo;re on the site, the error message and which
+                page it happened on get logged so I can fix it. No IP address, no identifying information &mdash;
+                this reports bugs in the site&rsquo;s own code, not anything about you.
+              </li>
             </ul>
           </section>
 

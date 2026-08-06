@@ -1,4 +1,5 @@
 import {SparklesIcon} from '@sanity/icons/Sparkles'
+import {AddDocumentIcon} from '@sanity/icons/AddDocument'
 import {CogIcon} from '@sanity/icons/Cog'
 import {ComponentIcon} from '@sanity/icons/Component'
 import {BarChartIcon} from '@sanity/icons/BarChart'
@@ -9,6 +10,7 @@ import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {DownloadIcon} from '@sanity/icons/Download'
 import {EditIcon} from '@sanity/icons/Edit'
 import {SearchIcon} from '@sanity/icons/Search'
+import {BugIcon} from '@sanity/icons/Bug'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
@@ -17,12 +19,36 @@ import {ContactSubmissionsTool} from './components/ContactSubmissionsTool'
 import {ExportTool} from './components/ExportTool'
 import {BulkOperationsTool} from './components/BulkOperationsTool'
 import {SearchQueriesTool} from './components/SearchQueriesTool'
+import {ErrorLogTool} from './components/ErrorLogTool'
 
 // https://www.sanity.io/docs/structure-builder-cheat-sheet
 export const structure: StructureResolver = (S) =>
   S.list()
     .title('Blog')
     .items([
+      // One click straight into a blank post editor -- Asher's own ask, to
+      // cut "Posts -> + -> New Post" down to one click for his single most
+      // frequent action. Deliberately NOT the WordPress "auto-draft on
+      // page load" pattern he was wary of repeating: this only opens a
+      // pane, it doesn't write anything. Sanity itself doesn't create the
+      // document in the dataset until the first real edit happens (the
+      // same way the existing "+" button already behaves) -- clicking this
+      // and then clicking away without typing leaves the dataset untouched,
+      // same as today. The id is generated fresh inside the resolver
+      // function (not a module-level constant), so it's re-rolled on every
+      // single navigation into this item, not just once per Studio load --
+      // otherwise a second click within the same session would reopen
+      // whatever got typed and abandoned the first time instead of a truly
+      // blank one.
+      S.listItem()
+        .title('New Post')
+        .icon(AddDocumentIcon)
+        .child(() =>
+          S.document()
+            .schemaType('post')
+            .documentId(crypto.randomUUID())
+            .views([S.view.form(), S.view.component(SeoPreviewView).title('SEO Preview')]),
+        ),
       // Custom child so every post also gets an "SEO Preview" tab
       // alongside the normal Editor form -- approximate Google/social
       // previews, character-count guidance, and the same "worth a look"
@@ -125,6 +151,10 @@ export const structure: StructureResolver = (S) =>
                 .title('Search Queries')
                 .icon(SearchIcon)
                 .child(S.component(SearchQueriesTool).title('Search Queries')),
+              S.listItem()
+                .title('Error Log')
+                .icon(BugIcon)
+                .child(S.component(ErrorLogTool).title('Error Log')),
             ]),
         ),
       S.divider(),
@@ -176,6 +206,7 @@ export const structure: StructureResolver = (S) =>
             'imageAssetAlt',
             'bulkOperationLog',
             'searchQueryLog',
+            'errorLog',
           ].includes(item.getId()!),
       ),
     ])

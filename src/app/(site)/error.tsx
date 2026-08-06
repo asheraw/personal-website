@@ -19,7 +19,23 @@ export default function SiteError({
 }) {
   useEffect(() => {
     console.error("[site-error]", error);
+    // GTM/GA4 event -- only ever reaches Asher if he goes looking for a
+    // custom event in a GA4 report, and only for visitors who've granted
+    // consent. The fetch below is the reliable half: unconditional, and
+    // shows up in Studio -> Site Admin -> Error Log, the same place he
+    // already checks for 404s.
     track({ action: "page_error", category: "reliability", label: error.digest ?? error.message });
+    fetch("/api/track-error", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: error.message || "Unknown render error",
+        stack: error.stack,
+        source: "render",
+        path: window.location.pathname,
+      }),
+      keepalive: true,
+    }).catch(() => {});
   }, [error]);
 
   return (

@@ -10,6 +10,7 @@ import { SiteHeader } from "@/components/asher/SiteHeader";
 import { SiteFooter } from "@/components/asher/SiteFooter";
 import { CursorTracker } from "@/components/asher/CursorTracker";
 import { Analytics } from "@/components/asher/Analytics";
+import { ErrorMonitor } from "@/components/asher/ErrorMonitor";
 import { CookieConsent } from "@/components/asher/CookieConsent";
 import { StructuredData } from "@/components/asher/StructuredData";
 import { SkipToContentLink } from "@/components/asher/SkipToContentLink";
@@ -78,6 +79,7 @@ export default async function SiteLayout({ children }: Readonly<{ children: Reac
       <SkipToContentLink />
       <StructuredData />
       <Analytics />
+      <ErrorMonitor />
       <SiteProviders>
         <CursorTracker />
         <SiteHeader />

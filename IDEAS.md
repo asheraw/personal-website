@@ -10,6 +10,27 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## AI spam-check for comments
+
+**What:** when a new comment comes in (`POST /api/comments`), ask an AI model whether it actually reads as
+relevant to the post versus spam/off-topic/promotional, and surface that as a flag in Studio's moderation
+queue — a badge next to the comment, not an automatic action. Natural fit for the AI Workspace pattern already
+in place for SEO/social suggestions (`GEMINI_API_KEY`, `@google/genai`, structured JSON output, logged to
+`aiOutputLog`) — same model, same "suggests, doesn't act" shape.
+
+**Why not now:** raised 2026-08-06 alongside a review of caching/image-compression setup, and Asher's own
+framing was explicit — no visitors yet, so nothing to actually filter, and building spam detection against
+zero real submissions means tuning it blind. There's already a first layer doing real work without AI: a
+honeypot field, plus auto-flagging any new submission whose email/IP matches something already marked spam
+(`src/app/api/comments/route.ts`).
+
+**Worth revisiting when:** the site has enough real traffic that genuine borderline comments (not just bot
+honeypot trips) start showing up in the moderation queue, giving something real to tune the flag against.
+**Auto-delete specifically** — acting on the AI's judgment without a human check — is a separate, later step
+again, only worth considering once the flagging half has a track record of being right.
+
+---
+
 ## The Avatar Door (3D/2D talking avatar greeter)
 
 **What:** from `ACE_MASTER_SPEC.md` Part VI / Phase 10 — a talking avatar (3D head on desktop, lighter 2D

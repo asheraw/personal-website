@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { writeClient } from "@/sanity/lib/write-client";
+import { isRateLimited } from "@/lib/rateLimit";
 
 // Reuses the same Resend setup + destination inbox as the contact form
 // (RESEND_API_KEY, CONTACT_NOTIFICATION_EMAIL) -- both are "tell Asher
@@ -76,6 +77,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Message is too long." }, { status: 400 });
     }
 
+    // Rate limit: same IP posting more than 5 comments in 10 minutes gets
+    // rejected outright. The honeypot and captcha above stop naive bots,
+    // but neither stops a script that solves the captcha and posts
+    // straight to this endpoint repeatedly -- this is the actual throttle.
+    // Checked before the post lookup below so a rate-limited request costs
+    // one query, not several.
+    const rateLimitIp = request.headers.get("x-forwarded-for") || "unknown";
+    if (
+      await isRateLimited(writeClient, {
+        type: "comment",
+        ip: rateLimitIp,
+        timestampField: "createdAt",
+        windowMs: 10 * 60 * 1000,
+        max: 5,
+      })
+    ) {
+      return NextResponse.json(
+        { success: false, error: "You're posting comments faster than a real person would — please slow down and try again in a few minutes." },
+        { status: 429 }
+      );
+    }
+
     // Also doubles as the postId-exists check -- this route never
     // validated that before locking existed, since a bad postId just
     // created an orphaned comment nobody could see. Fetched once and
@@ -117,11 +140,12 @@ export async function POST(request: NextRequest) {
       parentRef = target.grandparentComment ? target.parentComment : parentComment;
     }
 
-    // Same header the contact form already reads. Not authoritative (a
-    // determined spammer can rotate IPs), but combined with the email
-    // check below it's a real deterrent against the common case: the same
-    // script or person retrying after a rejection.
-    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    // Same header read above for the rate-limit check, reused here rather
+    // than re-read -- it doesn't change within one request. Not
+    // authoritative (a determined spammer can rotate IPs), but combined
+    // with the email check below it's a real deterrent against the common
+    // case: the same script or person retrying after a rejection.
+    const ip = rateLimitIp;
     const normalizedEmail = email.toLowerCase();
 
     // Once something's been marked Spam in Studio, matching future

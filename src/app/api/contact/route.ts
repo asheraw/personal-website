@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { writeClient } from "@/sanity/lib/write-client";
+import { isRateLimited } from "@/lib/rateLimit";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const NOTIFY_EMAIL = process.env.CONTACT_NOTIFICATION_EMAIL || "";
@@ -28,6 +29,26 @@ export async function POST(request: NextRequest) {
     const countryCode = body.countryCode || "";
     const phone = body.phone || "";
     const ip = request.headers.get("x-forwarded-for") || "unknown";
+
+    // Rate limit: same IP submitting more than 3 messages in 15 minutes
+    // gets rejected outright -- this endpoint also sends a real email on
+    // every success, so a flood here is noisier and costs more than a
+    // flood of comments. The honeypot above stops naive bots; this stops a
+    // script posting straight to the endpoint repeatedly.
+    if (
+      await isRateLimited(writeClient, {
+        type: "contactSubmission",
+        ip,
+        timestampField: "_createdAt",
+        windowMs: 15 * 60 * 1000,
+        max: 3,
+      })
+    ) {
+      return NextResponse.json(
+        { success: false, error: "You're sending messages faster than a real person would — please slow down and try again in a few minutes." },
+        { status: 429 }
+      );
+    }
 
     // Step 1: write to Sanity FIRST, before attempting to send.
     // This is the record that survives even if the email step fails outright.
