@@ -11,6 +11,19 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (continued yet again) — Image Small/Medium: fixed pixel caps that had a real bug, switched to percentages
+
+Asher asked whether the Small/Medium/Original image-size options being hardcoded pixel values had a real
+reason behind it. Checked, and found an actual bug along the way: the article column is only ~704px wide on
+desktop, but "Medium" was capped at 720px -- a cap that never bound, so Medium and Original always rendered
+identically no matter the screen size. Switched `SizedImage.tsx` and `ImageCarousel.tsx` to percentage-based
+width classes instead (`sm:w-1/2` / `sm:w-3/4`), which fixes that and stays correct if the column's own width
+ever changes later. Left untouched below the `sm:` breakpoint on purpose -- the column's already narrow
+enough on a phone that shrinking further wouldn't help readability, so all three sizes still render the same
+on mobile.
+
+---
+
 ## 2026-08-06 (continued once more) — Search Queries: the blog search box now logs content ideas
 
 New **Studio → Site Admin → Search Queries** tool -- every distinct thing typed into the blog search box gets

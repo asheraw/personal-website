@@ -11,11 +11,19 @@ import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
 import type { DisplaySize } from "@/components/asher/blog/SizedImage";
 
 const SLIDESHOW_INTERVAL_MS = 5000;
+// A fixed row height for the scroll-strip, not a share of the column width
+// -- this is genuinely a different kind of "size" (how tall one row of
+// auto-scrolling photos is), not "how much of the text column this takes
+// up," so a pixel value is the right unit here, unlike SLIDE_WIDTH_CLASSES below.
 const SCROLL_STRIP_HEIGHT: Record<DisplaySize, number> = { small: 180, medium: 280, original: 380 };
-const SLIDE_MAX_WIDTH: Record<DisplaySize, string> = {
-  small: "max-w-[420px]",
-  medium: "max-w-[720px]",
-  original: "max-w-full",
+// Percentage of the article column's width, same reasoning as SizedImage.tsx's
+// WIDTH_CLASSES -- a fixed pixel cap here had the same bug (720px never
+// actually bound against the ~704px real column width, so Medium and
+// Original always rendered identically).
+const SLIDE_WIDTH_CLASSES: Record<DisplaySize, string> = {
+  small: "sm:w-1/2",
+  medium: "sm:w-3/4",
+  original: "w-full",
 };
 
 export type GalleryImage = {
@@ -100,7 +108,7 @@ function SlideCarousel({
   const current = images[selectedIndex] ?? images[0];
 
   return (
-    <figure className={`my-8 ${SLIDE_MAX_WIDTH[size]} ${size === "original" ? "" : "mx-auto"}`}>
+    <figure className={`my-8 w-full ${size === "original" ? "" : `${SLIDE_WIDTH_CLASSES[size]} sm:mx-auto`}`}>
       <div className="group relative overflow-hidden rounded-lg border border-amber-faint bg-stage/40">
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex">

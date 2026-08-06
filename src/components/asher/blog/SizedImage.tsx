@@ -6,10 +6,20 @@ import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
 
 export type DisplaySize = "small" | "medium" | "original";
 
-const MAX_WIDTH: Record<DisplaySize, string> = {
-  small: "max-w-[420px]",
-  medium: "max-w-[720px]",
-  original: "max-w-full",
+// Percentage of the article column's width, not a fixed pixel cap -- the
+// column itself (max-w-3xl, minus padding) works out to ~704px on desktop,
+// so a hardcoded "medium: 720px" cap used to never actually bind (720 >
+// 704), making Medium visually identical to Original at every viewport
+// size. Percentages stay correct if the column width class ever changes,
+// and scale proportionally at any width instead of targeting one specific
+// screen size. Only applied from `sm:` up -- below that, the column is
+// already narrower than either cap would meaningfully shrink it to, so
+// Small/Medium would otherwise pointlessly shrink an already-small photo
+// on a phone for no readability benefit.
+const WIDTH_CLASSES: Record<DisplaySize, string> = {
+  small: "sm:w-1/2",
+  medium: "sm:w-3/4",
+  original: "w-full",
 };
 
 // The plain single-Image renderer. Shows a container-width-capped preview
@@ -32,7 +42,7 @@ export function SizedImage({
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
-    <figure className={`my-8 ${MAX_WIDTH[size]} ${size === "original" ? "" : "mx-auto"}`}>
+    <figure className={`my-8 w-full ${size === "original" ? "" : `${WIDTH_CLASSES[size]} sm:mx-auto`}`}>
       <button
         type="button"
         onClick={() => setLightboxOpen(true)}

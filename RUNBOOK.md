@@ -563,15 +563,29 @@ of restarting the dev server process. Deleting just `.next/cache` didn't clear i
 `.next` directory and restarting did. If a content change looks like it "isn't taking" locally right after a
 build ran in the same session, this is the first thing to check.
 
-**Display size + lightbox (2026-08-04).** Every Image block also has a **Display size** field: Small (max
-420px), Medium (max 720px), or Original (fills the column, the default — matches every pre-existing post
-exactly). This is purely cosmetic on the page; clicking or tapping *any* image, in every display style, opens
+**Display size + lightbox (2026-08-04).** Every Image block also has a **Display size** field: Small, Medium,
+or Original (fills the column, the default — matches every pre-existing post exactly). This is purely
+cosmetic on the page; clicking or tapping *any* image, in every display style, opens
 `ImageLightbox.tsx` — a full-size, untouched view of the original, dismissible via Escape, clicking outside, or
 its close button. `SizedImage.tsx` handles the plain-image case; `ImageCarousel.tsx`'s own slide/thumbnail
 buttons handle the gallery cases. One thing worth knowing if a carousel's click-to-lightbox ever seems to
 misfire after this: the click handler checks `emblaApi.internalEngine().dragHandler.pointerDown()` and bails
 out if a drag is still in progress — without that guard, dragging to the next slide also pops the lightbox
 open, since a drag ends in a pointerup that looks just like a click.
+
+**Small/Medium changed from fixed pixel caps to percentages of the column width (2026-08-06), per Asher's
+question about whether hardcoded sizing had a real reason behind it.** It didn't, and the specific values
+chosen had a live bug: the article column (`max-w-3xl` minus padding) works out to ~704px wide on desktop, so
+the old "Medium: max 720px" cap never actually bound — Medium and Original rendered pixel-identical at every
+screen size. Now `SizedImage.tsx`'s `WIDTH_CLASSES` and `ImageCarousel.tsx`'s `SLIDE_WIDTH_CLASSES` use
+Tailwind fraction classes (`sm:w-1/2`, `sm:w-3/4`) instead of `max-w-[Npx]` — stays correct if the column's
+own width class ever changes later, and scales proportionally rather than targeting one specific viewport.
+Deliberately **not** applied below the `sm:` breakpoint — on a phone the column is already narrower than
+either cap would meaningfully shrink it to, so forcing a percentage there would just make an already-small
+photo pointlessly smaller for no readability benefit; Small/Medium/Original render identically on mobile,
+same as before. `ImageCarousel.tsx`'s `SCROLL_STRIP_HEIGHT` (a fixed row *height* for the scrolling-strip
+style, not a column-width share) was deliberately left in pixels — a different kind of "size" than the other
+two styles, where an absolute value is the right unit.
 
 **Missed spot, closed same day: the Featured Image.** All of the above only ever covered Portable Text *body*
 images. The separate `mainImage` field rendered at the top of every post (`src/app/(site)/blog/[slug]/page.tsx`)
