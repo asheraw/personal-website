@@ -2,11 +2,15 @@ import type { NextConfig } from "next";
 
 // Every external domain the public site actually loads a script/image/frame/
 // connection from -- started by grepping every component that touches a
-// third-party URL, then corrected against what a real browser actually tried
-// to reach (grepping alone missed *.api.sanity.io, used by a library-internal
-// live-connection component, not this codebase's own code -- see the
-// connect-src line below). See RUNBOOK.md's "Security headers" section for
-// the full list and why each one's there. `'unsafe-inline'` is a deliberate,
+// third-party URL, then corrected twice against what a real browser actually
+// tried to reach: once against a local production build (caught
+// *.api.sanity.io, used by a library-internal live-connection component, not
+// this codebase's own code), and once against the actual deployed site
+// (caught static.cloudflareinsights.com, a beacon script Vercel's own
+// hosting infrastructure injects automatically -- not from this repo or any
+// of its dependencies at all, impossible to find by reading source). See
+// RUNBOOK.md's "Security headers" section for the full list and why each
+// one's there. `'unsafe-inline'` is a deliberate,
 // documented tradeoff (not an oversight): Google Tag Manager's own bootstrap
 // snippet, Microsoft Clarity's loader, and the JSON-LD structured-data blocks
 // are all inline <script> tags with no nonce wiring in this codebase, so a
@@ -19,7 +23,11 @@ import type { NextConfig } from "next";
 // risks breaking the one tool Asher relies on daily.
 const PUBLIC_SITE_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.instagram.com https://connect.facebook.net https://www.clarity.ms",
+  // static.cloudflareinsights.com -- not from this codebase or any of its
+  // dependencies either; caught only by testing the real deployed site,
+  // where Vercel's own hosting infrastructure injects this beacon script
+  // automatically on every page, outside anything this repo controls.
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.instagram.com https://connect.facebook.net https://www.clarity.ms https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https://cdn.sanity.io https://www.google-analytics.com https://www.facebook.com https://www.clarity.ms https://*.clarity.ms",
   "font-src 'self' data:",
@@ -30,7 +38,7 @@ const PUBLIC_SITE_CSP = [
   // straight from the visitor's own browser to keep pages fresh without a
   // full reload -- easy to miss by reading source, since it's inside a
   // library, not this codebase's own components.
-  "connect-src 'self' https://*.api.sanity.io https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://connect.facebook.net https://www.facebook.com",
+  "connect-src 'self' https://*.api.sanity.io https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://connect.facebook.net https://www.facebook.com https://*.cloudflareinsights.com",
   "frame-src 'self' https://www.youtube-nocookie.com https://www.instagram.com",
   "frame-ancestors 'self'",
   "object-src 'none'",
