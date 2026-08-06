@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (the actual last one) — Found and fixed the real bug: the revalidate route wasn't reaching post pages at all
+
+The automatic on-publish fix from the previous entry still didn't work -- confirmed directly (edited, published,
+hard refreshed, still old), which ruled out Cloudflare (purged directly, no effect) and a Sanity project/
+dataset mismatch between Studio and the live site (checked: both share the same env config, no code path for
+them to diverge). The real bug: `/api/revalidate` called `revalidatePath('/blog', 'layout')`, which only
+cascades when a real `layout.tsx` exists at that path -- it doesn't (`/blog` and `/blog/[slug]` are separate
+page files, no shared layout) -- so that call was silently only ever touching the listing page, never an
+individual post's own page, regardless of redeploys, Cloudflare purges, or repeated Publish clicks. This is
+exactly why the listing showed fresh (if undercounted) content while the post itself stayed stuck indefinitely.
+
+Fixed by revalidating the actual `/blog/[slug]` route pattern with `'page'` type, which does correctly reach
+every post page. `revalidateOnPublish.ts` also now passes the specific post's own resolved URL as a direct,
+guaranteed hit on top of that. Also dropped the secret entirely from `/api/revalidate` in the previous pass
+and confirmed here it still isn't needed.
+
+---
+
 ## 2026-08-06 (truly the last one) — Stale-post fix made automatic, no manual step needed
 
 Asher's feedback on the first version of the fix below: "too complicated" -- fair, since it required a

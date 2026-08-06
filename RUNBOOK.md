@@ -416,6 +416,10 @@ from `block`-type spans, the same original blind spot. A post that's mostly Quot
 gets a short-or-empty auto-excerpt wherever no manual `excerpt` field is set. Worth a look if that turns out
 to matter in practice -- not fixed here since it's Sanity's own function (no JS-level equivalent to patch the
 same way) and needs a real query test against live content to get right, which wasn't available this session.
+**Confirmed actually showing up in practice, not just theoretical:** this is exactly why `/blog`'s card for
+"The J Factor" showed "1 min read" during the stale-post incident (see "Publishing" further below) -- the
+listing genuinely *was* seeing the new Quote Grid content (unlike the post's own page, separately stuck for
+an unrelated reason), just via this still-undercounting computation.
 
 **Categories** use a checkbox list in Studio (shipped 2026-07-29) instead of Sanity's default search-and-pick
 popup — every existing category is visible at a glance, laid out in 2-3 columns depending on how many there
@@ -1714,8 +1718,26 @@ browser/local-network caching), **and confirmed still stale after two separate r
 disproved the original hypothesis (that a redeploy alone would fix it) and pointed at the Data Cache
 specifically once the actual response headers were checked. Root cause of *why* the Live Content API's own
 update chain didn't fire for this one publish is still not confirmed (would need live Vercel function logs,
-not available this session) — but the mechanism is confirmed, not guessed, and the fix now runs automatically
-on every future publish rather than needing anyone to notice a stale post and act on it.
+not available this session) — but the mechanism is confirmed, not guessed.
+
+**Real bug found in the fix itself, same incident, third pass:** even after the automatic on-publish trigger
+shipped, the post page *still* stayed stale — confirmed by Asher directly (added a line, published, hard
+refreshed, no change), which ruled out both the Cloudflare layer (purged directly, no effect) and a
+Studio/Sanity project mismatch (checked: Studio and the live site share the exact same
+`NEXT_PUBLIC_SANITY_PROJECT_ID`/`NEXT_PUBLIC_SANITY_DATASET` config, no code path for them to diverge). The
+actual bug: `/api/revalidate` called `revalidatePath('/blog', 'layout')`, which only cascades to other pages
+when a real `layout.tsx` exists at that path — it doesn't (`/blog` and `/blog/[slug]` are separate `page.tsx`
+files with no shared layout between them) — so that call was silently only ever revalidating the listing
+page, never a specific post's own page, no matter how many times Publish was clicked or the URL was visited
+directly. This exactly explains the reported symptom: `/blog` reflected the new Quote Grid content (visible
+via its own separate, already-documented reading-time gap — see "Post metadata: reading time" — showing "1
+min" precisely because it *was* seeing the new content, just via a computation that undercounts Quote Grid
+text), while the post's own page stayed on the old ~14-minute pre-Quote-Grid version indefinitely, completely
+unaffected by redeploys, Cloudflare purges, or repeated Publish clicks. Fixed by revalidating the actual
+`/blog/[slug]` route pattern with `'page'` type (which does correctly reach every post page, route-group
+folders like `(site)` included, since `revalidatePath` operates on the real URL not the file-system path) —
+`revalidateOnPublish.ts` also now passes the specific post's own resolved URL (`?path=/blog/<slug>`, read off
+the draft's `slug.current`) as a direct, guaranteed-correct hit on top of the pattern-based call.
 
 **History:** On 2026-07-28, the live site was frozen on whatever content existed at the last deploy — new
 posts added in Sanity simply never appeared at all, because at the time neither blog page had any instruction

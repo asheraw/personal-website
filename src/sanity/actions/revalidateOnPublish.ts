@@ -32,12 +32,21 @@ export function withRevalidateOnPublish(originalAction: DocumentActionComponent)
     const original = originalAction(props)
     if (!original) return null
 
+    // The draft always has the slug this publish is about to make live --
+    // passed through as ?path=/blog/<slug> so /api/revalidate can hit this
+    // exact post's own URL directly, on top of the broader [slug]-pattern
+    // revalidation it already does regardless of whether a path is given.
+    const slug = (props.draft as {slug?: {current?: string}} | null)?.slug?.current
+    const revalidateUrl = slug
+      ? `/api/revalidate?path=${encodeURIComponent(`/blog/${slug}`)}`
+      : '/api/revalidate'
+
     return {
       ...original,
       onHandle: () => {
         original.onHandle?.()
         setTimeout(() => {
-          fetch('/api/revalidate').catch(() => {
+          fetch(revalidateUrl).catch(() => {
             // Best-effort -- see comment above.
           })
         }, REVALIDATE_DELAY_MS)
