@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (continued once more) — Migration script for the old YouTube/Instagram embed types
+
+Asher asked what happens if the legacy `youtube`/`instagramEmbed` block types (still in the schema behind the
+newer unified `embed` button) just got deleted, and whether existing posts could be moved over to the new type
+instead. Answer: deleting them while any post still uses one turns that specific block into "Unknown type" in
+Studio's editor -- not safe yet. Migrating is the right move and is genuinely simple, since both legacy types
+already store the same single `url` field the new `embed` type does -- it's really just a `_type` rename per
+block, nothing about which video/post gets embedded changes.
+
+Wrote `scripts/migrate-legacy-embeds.mjs` to do that: finds every post with a legacy embed block and patches
+just that block's `_type` (by its own `_key`, never rewriting the whole body array, so it can't clobber
+unrelated edits), with a `--dry-run` mode to preview first. Same network restriction as everything else this
+session applies -- no live Sanity access here, so this is written but not yet run against the real dataset.
+Once it reports zero posts left using the legacy types, the two legacy array members can come out of
+`blockContentType.ts` for good. See RUNBOOK.md's "Embed block" section for the full usage.
+
+---
+
 ## 2026-08-06 (continued again) — Studio structure-pane display bug fixed, and blog listing reading time now counts Quote Grids too
 
 Two more fixes today, both follow-ups from the stale-post saga above rather than new incidents.

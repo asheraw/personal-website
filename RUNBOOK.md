@@ -730,10 +730,20 @@ there purely so anything already published stays renderable and editable. `src/s
 (paste a bare URL onto an empty line) was updated in the same change to insert the new `embed` type, not the
 old ones, so that path doesn't quietly keep creating legacy blocks going forward either.
 
-**Next step, needs a session with real Sanity access:** check whether any post actually uses the old
-`youtube`/`instagramEmbed` types; if so, migrate them to `embed` (same shape migration pattern as the
-Image/imageGallery merge on 2026-08-04); then delete both legacy types from the schema for real. That's what
-actually gets the toolbar down to one button.
+**Migration script written 2026-08-06, not yet run — still needs a session with real Sanity access.**
+`scripts/migrate-legacy-embeds.mjs` finds every post with a `youtube`/`instagramEmbed` block and rewrites just
+that block's `_type` to `embed` (both legacy types already store the same single `url` field the new type
+does, so nothing about the embed itself changes — same shape-migration pattern as the Image/imageGallery merge
+on 2026-08-04). Patches each matching block individually by its `_key` rather than replacing the whole `body`
+array, so it can't clobber unrelated edits, and migrates draft/published versions of a post independently
+since they're separate documents that can genuinely differ. Run `node scripts/migrate-legacy-embeds.mjs
+--dry-run` first to see exactly what it would change with nothing written; drop `--dry-run` to actually apply
+it (needs `SANITY_API_WRITE_TOKEN` in `.env.local` for the real run, not for `--dry-run`). It also re-queries
+after migrating and reports whether any legacy blocks remain. Written but not run in this session either —
+same network restriction (`oj9eajjd.apicdn.sanity.io` still returns a network-level 403 from this sandbox), so
+it's untested against the real dataset. Once a run reports zero remaining legacy blocks, the `youtube`/
+`instagramEmbed` array members can be deleted from `blockContentType.ts` for real — that's what actually gets
+the toolbar down to one button.
 
 **YouTube embeds (both the new `embed` type and the legacy `youtube` type) now carry anti-distraction
 parameters, per Asher's question about how much control exists over what YouTube shows around an embedded
