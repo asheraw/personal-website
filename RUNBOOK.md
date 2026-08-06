@@ -1654,6 +1654,22 @@ page keeps showing the old content.
   reason, an individual post page has nothing else to fall back on — it can stay stale indefinitely instead
   of self-correcting within a bounded time the way `/blog` does.
 
+**What's actually caching this, confirmed by reading `next-sanity`'s own source
+(`node_modules/next-sanity/dist/live/conditions/next-js/index.js`), not guessed:** `defineLive` reconfigures
+its internal Sanity client with `useCdn: true` unconditionally for the published perspective — every
+`sanityFetch()` call on a normal (non-preview) page visit reads through **Sanity's own CDN**, and the result
+is cached in **Next.js's Data Cache** (a persistent layer, separate from the page's own HTTP response caching
+and separate from Vercel's Build Cache). Confirmed directly on the stuck "J Factor" post via the browser's
+Network tab: `x-vercel-cache: MISS`, `age: 0`, `cache-control: no-store` on the page response itself — the
+*page* has zero HTTP caching and runs fresh on every request, but the *Sanity data fetched inside that fresh
+render* can still come from a stale Data Cache entry regardless. That entry is only meant to clear the instant
+something's published, via Sanity's Live Content API pushing a "sync tag changed" event that a Server Action
+(`revalidateSyncTagsAction`, wired up by `<SanityLive/>`) turns into a `revalidateTag()` call. **If that chain
+doesn't fire or doesn't reach this deployment for one specific publish, the cached data has nothing else
+forcing it to refresh** — and critically, **a redeploy does not fix this**, confirmed directly (redeployed
+twice on the J Factor incident below, no change) — Vercel's Data Cache is deliberately designed to survive
+redeploys, the same way ISR output would.
+
 **Checks, in order:**
 1. **Confirm it's actually published, not just saved as a draft.** In Studio, open the post — a green
    "Published" badge (not a "Publish" button still showing) confirms it went through.
@@ -1662,28 +1678,35 @@ page keeps showing the old content.
    completely different device/network shows the same stale content, it's not your browser or local network
    caching — it's server-side.
 3. **For `/blog` specifically:** wait a minute; it re-checks on its own timer regardless of anything else.
-4. **For an individual post page (`/blog/[slug]`) that's confirmed stale on multiple devices/networks after
-   several minutes:** this is the "no time-based fallback" gap described above. **The fastest real fix is
-   triggering a fresh deploy** (Vercel dashboard → redeploy the latest commit, or push any commit) — a new
-   deploy always regenerates every page against Sanity's current published content, completely independent of
-   whether the Live Content API's own live-update path is working. This isn't a real root-cause fix, just the
-   fastest way to unblock a specific stuck post.
+4. **For an individual post page (`/blog/[slug]`) confirmed stale on multiple devices/networks:** use
+   **`GET /api/revalidate?secret=<REVALIDATE_SECRET>`** (`src/app/api/revalidate/route.ts`, shipped
+   2026-08-06 specifically for this) — visiting that URL calls Next's `revalidatePath('/blog', 'layout')`
+   directly, clearing the Data Cache for the whole blog section (listing + every post page) in one call,
+   completely bypassing whatever broke in the Live Content API's own update chain. **Do not rely on
+   redeploying** — confirmed above that doesn't touch this cache layer. **One-time setup required before this
+   works:** add a `REVALIDATE_SECRET` environment variable in Vercel (any long random string, same shape as
+   `CRON_SECRET`) and redeploy once — the route fails closed (500, clearly worded) if that variable isn't set
+   at all, same fail-closed pattern as every other secret-gated route here. Optional `?path=` query param to
+   target something more specific than the whole blog section (e.g. `?path=/blog/some-other-slug`) — defaults
+   to `/blog` (which also always additionally clears `/blog` itself even when a more specific path is given,
+   so "is it on the listing yet" and "is the post's own page fresh" both get fixed by one visit either way).
 5. **If this keeps happening, not just a one-off:** worth checking whether `SANITY_API_READ_TOKEN` is still
    correctly set in Vercel's environment variables (`src/sanity/lib/live.ts`'s `browserToken`/`serverToken`) —
-   an invalid or missing token could plausibly degrade the Live Content API's own update path silently. Also
-   worth considering a longer-interval time-based revalidate (e.g. every few minutes, not 60 seconds) as a
-   safety net specifically for `/blog/[slug]` — but re-test Presentation's smooth in-place updates carefully
-   before shipping that, given the exact regression that caused the timer to be removed in the first place.
+   an invalid or missing token could plausibly degrade the Live Content API's own update path silently. The
+   more durable long-term fix, not yet built, would be wiring an actual Sanity webhook (Studio project settings
+   at manage.sanity.io → API → Webhooks) to call `/api/revalidate` automatically on every publish, instead of
+   relying on someone noticing a stale post and visiting the URL by hand.
 
 **Incident, 2026-08-06:** Asher edited an already-published post ("Easter 2019: The J Factor Afterthoughts")
 in Studio — confirmed green "Published" status, "Last published 38 min. ago." The live post page kept showing
-the old content the entire time, confirmed stale on a second device on a completely different network (ruling
-out browser/local-network caching). Root cause not confirmed (no live access to Vercel/Sanity logs from the
-session diagnosing this) — most likely explanation, given the architecture above, is the Live Content API's
-own server-side update path not firing for this particular publish, with nothing to fall back on since this
-page has no time-based revalidate. Unblocked by triggering a fresh deploy. If this recurs, it's worth
-prioritizing the "add back a longer-interval safety net" option above rather than treating a redeploy as the
-permanent fix each time.
+the old content, confirmed stale on a second device on a completely different network (ruling out
+browser/local-network caching), **and confirmed still stale after two separate redeploys** — the detail that
+disproved the original hypothesis (that a redeploy alone would fix it) and pointed at the Data Cache
+specifically once the actual response headers were checked. Root cause of *why* the Live Content API's
+update chain didn't fire for this one publish is still not confirmed (would need live Vercel function logs,
+not available this session) — but the mechanism and the fix are now both confirmed, not guessed, and
+`/api/revalidate` exists as a direct, immediate escape hatch for whenever this recurs, without needing to
+re-diagnose from scratch each time.
 
 **History:** On 2026-07-28, the live site was frozen on whatever content existed at the last deploy — new
 posts added in Sanity simply never appeared at all, because at the time neither blog page had any instruction

@@ -11,6 +11,25 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (once more, resolved) — Found and fixed the stale-post root cause: a stuck Data Cache entry
+
+Follow-up to the incident logged below. A redeploy didn't fix the stale "J Factor" post either, which
+disproved the original theory -- checked the actual response headers instead (`x-vercel-cache: MISS`,
+`cache-control: no-store`), confirming the page itself has zero HTTP caching and runs fresh on every request.
+Traced the real culprit into `next-sanity`'s own source: every `sanityFetch()` call reads through Sanity's
+CDN by design, cached in Next.js's Data Cache -- a layer that's deliberately built to survive redeploys, and
+is only meant to clear via Sanity's Live Content API pushing a live event through to a `revalidateTag()` call.
+When that chain doesn't fire for one specific publish, nothing else forces a refresh, and no amount of
+redeploying touches it.
+
+Added `GET /api/revalidate?secret=...` as a direct manual override -- calls `revalidatePath('/blog', 'layout')`,
+clearing the Data Cache for the whole blog section in one visit, regardless of why the automatic chain didn't
+fire. Needs a one-time `REVALIDATE_SECRET` env var in Vercel (same shape as `CRON_SECRET`) before it'll work;
+fails closed with a clear message until that's set. Full mechanism writeup and the setup step are in
+RUNBOOK.md's "Publishing" section.
+
+---
+
 ## 2026-08-06 (yet one more time) — Incident: an edited published post stayed stale on live for 40+ minutes
 
 Asher edited "Easter 2019: The J Factor Afterthoughts" (already published, converting it to use Quote Grid)
