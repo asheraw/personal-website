@@ -1,18 +1,30 @@
 // Shared GROQ queries for fetching posts, used by the blog list, RSS feed,
 // sitemap, and category/tag/author pages so they all stay consistent.
 
+import type { PortableTextBlock } from "@/lib/portableText";
+
 export const POST_SUMMARY_PROJECTION = `{
   _id,
   title,
   "slug": slug.current,
   excerpt,
-  // Fallback preview text when no manual excerpt is set, trimmed to a
-  // generous raw length here -- the exact display length + word-boundary
-  // trimming happens in the frontend (see src/lib/text.ts).
-  "autoExcerpt": pt::text(body)[0...400],
-  // Untruncated plain text, used only to estimate reading time -- cheaper
-  // than fetching the full block-structured body just for a word count.
-  "bodyPlainText": pt::text(body),
+  // Powers both the auto-excerpt fallback and the reading-time estimate on
+  // the frontend (PostCard.tsx), via the same portableTextToPlainText()/
+  // estimateReadingTimeMinutes() logic the post page itself uses -- not
+  // GROQ's own pt::text(), which only reads _type == "block" spans and is
+  // blind to custom block types. That blindness is exactly what made a
+  // Quote-Grid-heavy post's listing card undercount its reading time
+  // (see RUNBOOK.md, "Post metadata: reading time"). Deliberately shallow:
+  // only the handful of fields that function actually reads, not the full
+  // body (markDefs, snippetRef resolution, etc. -- see POST_BY_SLUG_QUERY
+  // for those).
+  "bodyBlocks": body[]{
+    _type,
+    "children": children[]{text},
+    text,
+    content,
+    "entries": entries[]{quote}
+  },
   publishedAt,
   _updatedAt,
   mainImage,
@@ -220,8 +232,7 @@ export type PostSummary = {
   title: string;
   slug: string;
   excerpt?: string;
-  autoExcerpt?: string;
-  bodyPlainText?: string;
+  bodyBlocks?: PortableTextBlock[];
   publishedAt?: string;
   _updatedAt: string;
   mainImage?: { asset?: { _ref: string }; alt?: string };

@@ -23,7 +23,7 @@ function normalize(text: string): string {
 // no separate index to fetch, no server round trip per keystroke, and
 // nothing leaves the site for the common case (searching by title, topic,
 // tag, or category). A post's own summary text is already capped short in
-// its GROQ projection (POST_SUMMARY_PROJECTION's autoExcerpt), so passing
+// its GROQ projection (SEARCH_INDEX_QUERY's blurb), so passing
 // every post's searchable fields down here stays lightweight even with a
 // few dozen posts. Doesn't reach into full post bodies, though -- a "search
 // the wider web" fallback link covers anything buried in body text that

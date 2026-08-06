@@ -11,6 +11,38 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (continued again) — Studio structure-pane display bug fixed, and blog listing reading time now counts Quote Grids too
+
+Two more fixes today, both follow-ups from the stale-post saga above rather than new incidents.
+
+**Studio sidebar bug.** Asher noticed the left-hand Structure pane (Posts, Categories, Site Admin, etc.) would
+render correctly on load, then go mostly blank -- leaving only the last item or two -- the moment the pane
+collapsed and re-expanded (e.g. a browser resize narrow enough to trigger the auto-collapse). Checked
+`structure.tsx` first since that's this project's own code: it's a fully static, synchronous list with no
+async loading or collapse-handling logic, ruling it out as the source. Pointed instead to a known upstream bug
+in Sanity Studio's own structure-pane list virtualization. Bumped `sanity` and `@sanity/vision` from v6.7.0 to
+v6.9.0 (same major version, low-risk minor bump) to pick up the fix. Verified `tsc --noEmit` (same 23
+pre-existing errors, none new), `eslint`, and a full `next build` all still succeed post-upgrade -- but
+couldn't re-test the actual pane behavior live in this sandbox (no network access to Sanity's API here, same
+limitation as everything else in this saga), so this one needs a quick visual confirmation in Studio after
+deploy. See RUNBOOK.md's "Studio version" section for what to do if it still reproduces.
+
+**Blog listing reading time.** Flagged as a known loose end when the stale-post incident wrapped up: the post
+page's reading time got fixed to count Quote Grid content properly, but the blog listing card computed
+reading time through a completely separate path -- `POST_SUMMARY_PROJECTION` in `src/sanity/lib/queries.ts`
+used GROQ's own `pt::text()` function, which has the exact same blind spot (`quoteGrid` isn't a `block`-type
+span, so `pt::text()` never sees it) that the post-page fix didn't touch. Asher: "might as well fix it now."
+Rather than re-solving the same problem a second time in untested GROQ, `POST_SUMMARY_PROJECTION` now fetches
+a lightweight `bodyBlocks` array (just the handful of fields `portableTextToPlainText()` reads) and
+`PostCard.tsx` runs that same already-tested shared function over it -- one implementation instead of two,
+so the listing card's reading time (and its auto-excerpt fallback) can't drift from the post page's own count
+again. Since `POST_SUMMARY_PROJECTION` is shared, this covers the blog listing, category pages, tag pages,
+and author pages all at once. Left `RelatedPosts.tsx` and site search alone deliberately -- neither shows a
+reading time, and search is intentionally kept to a lightweight per-post fetch; noted as a smaller, optional
+follow-up in RUNBOOK.md if it turns out to matter.
+
+---
+
 ## 2026-08-06 (the actual last one) — Found and fixed the real bug: the revalidate route wasn't reaching post pages at all
 
 The automatic on-publish fix from the previous entry still didn't work -- confirmed directly (edited, published,

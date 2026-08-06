@@ -63,6 +63,21 @@ engines — check **Vercel → Project → Settings → General → Node.js Vers
 A failed build does *not* take the live site down — Vercel keeps serving the last successful deploy — it just
 means this specific update won't go live until the Node version is fixed.
 
+**Bumped to v6.9.0 on 2026-08-06** — fixes a Structure pane display bug Asher hit: the left-hand navigation
+list (Posts, Categories, Site Admin, etc.) would show everything correctly on first load, then go mostly
+blank — leaving only the last item or two visible — the moment the pane collapsed and was re-expanded (e.g.
+from a browser resize narrow enough to auto-collapse it). Confirmed this wasn't coming from this project's
+own `structure.tsx` (it's a fully static, synchronous list — no async loading or collapse-handling logic that
+could produce that symptom), which points to it being a bug in Sanity Studio's own structure-pane list
+virtualization, fixed upstream between v6.7.0 and v6.9.0. `@sanity/vision` bumped alongside it to keep
+versions in lockstep. Verified after the bump: `tsc --noEmit` (unchanged error count), `eslint`, and a full
+`next build` all still succeed — but the actual pane behavior couldn't be re-tested live in this sandbox (no
+network access to Sanity's API here, same limitation noted throughout "Publishing" below), so this is
+worth a quick visual check in Studio after deploy: collapse the pane (or resize the browser narrow enough to
+trigger it), re-expand, and confirm the full list still shows. If it still reproduces, the bug likely wasn't
+fully fixed upstream yet, or a different trigger is involved — worth filing with Sanity directly at that point
+rather than guessing further at a fix in this codebase.
+
 ---
 
 ## Date display format across Studio (shipped 2026-08-05)
@@ -408,18 +423,33 @@ the AI Workspace's SEO/social-copy/image-prompt tools (they read the body as pla
 this one fix corrects all of them at once, immediately, for every post that already has Quote Grid content
 in it. No data migration needed; it's a pure computation fix, nothing stored changed.
 
-**Known, not yet fixed: auto-generated excerpts have the same blind spot, through a different mechanism.**
-The blog listing card blurb / RSS description / search-index fallback (`autoExcerpt`/`bodyPlainText`/`blurb`
-in `src/sanity/lib/queries.ts`) use GROQ's own built-in `pt::text()` function, not `portableTextToPlainText()`
--- a separate code path this fix didn't touch, and `pt::text()`'s documented behavior is to only pull text
-from `block`-type spans, the same original blind spot. A post that's mostly Quote Grid content likely still
-gets a short-or-empty auto-excerpt wherever no manual `excerpt` field is set. Worth a look if that turns out
-to matter in practice -- not fixed here since it's Sanity's own function (no JS-level equivalent to patch the
-same way) and needs a real query test against live content to get right, which wasn't available this session.
 **Confirmed actually showing up in practice, not just theoretical:** this is exactly why `/blog`'s card for
 "The J Factor" showed "1 min read" during the stale-post incident (see "Publishing" further below) -- the
 listing genuinely *was* seeing the new Quote Grid content (unlike the post's own page, separately stuck for
-an unrelated reason), just via this still-undercounting computation.
+an unrelated reason), just via this still-undercounting computation. At the time, the blog listing card's own
+reading time was computed through a different code path (see below) and still had the bug.
+
+**Blog listing card also fixed, 2026-08-06 (same day, follow-up).** The post-page fix above didn't reach the
+listing card (`PostCard.tsx`), category/tag/author pages, or pagination, because those all read reading time
+from a *separate* GROQ-computed field (`POST_SUMMARY_PROJECTION`'s old `bodyPlainText`, built with Sanity's
+own built-in `pt::text()` function) instead of the shared JS function -- and `pt::text()` has the exact same
+blind spot `portableTextToPlainText()` used to have: it only pulls text from `block`-type spans, nothing from
+`quoteGrid`/`callout`/`accordion`. Rather than trying to replicate the JS fix a second time in GROQ (risky to
+get right blind, with no live query access to test against), `POST_SUMMARY_PROJECTION` now fetches a
+lightweight `bodyBlocks` array (`_type`, `children[].text`, `text`, `content`, `entries[].quote` -- exactly
+the fields `portableTextToPlainText()` reads, nothing more) and `PostCard.tsx` runs the same shared function
+over it. One fewer parallel implementation to keep in sync, and the listing card's reading time (and its
+auto-excerpt fallback, which reuses the same plain-text pass) now always matches the post page's own count.
+Since `POST_SUMMARY_PROJECTION` is shared by the blog listing, category pages, tag pages, and author pages,
+this one change covers all of them at once.
+
+**Still not fixed, deliberately out of scope: Related Posts and site search.** `RELATED_POSTS_QUERY`'s
+`autoExcerpt` (used by `RelatedPosts.tsx`, shown under a post) and `SEARCH_INDEX_QUERY`'s `blurb` (used by
+`BlogSearch.tsx`) still use `pt::text()` and have the same blind spot -- left alone this round since neither
+shows a reading time (blurb-undercounting is a much smaller cosmetic gap than the reading-time floor), and
+`BlogSearch.tsx` in particular is deliberately kept to a lightweight per-post fetch (no full body) so search
+stays fast even as the post count grows -- fetching `bodyBlocks` there would work against that. Worth
+revisiting the same way if Quote-Grid-heavy posts turn up thin/empty related-post blurbs in practice.
 
 **Categories** use a checkbox list in Studio (shipped 2026-07-29) instead of Sanity's default search-and-pick
 popup — every existing category is visible at a glance, laid out in 2-3 columns depending on how many there

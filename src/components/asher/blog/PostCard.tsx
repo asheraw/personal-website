@@ -3,7 +3,7 @@ import Image from "next/image";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
-import { estimateReadingTimeFromText } from "@/lib/portableText";
+import { portableTextToPlainText, estimateReadingTimeFromText } from "@/lib/portableText";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 
 // Matches the excerpt field's own 160-character guidance in Studio, so
@@ -12,9 +12,14 @@ import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 const CARD_BLURB_LENGTH = 160;
 
 export function PostCard({ post, priority = false }: { post: PostSummary; priority?: boolean }) {
-  const blurbSource = post.excerpt || post.autoExcerpt;
+  // Both derived from the same plain-text pass over post.bodyBlocks, so a
+  // Quote-Grid-heavy post's blurb and reading time stay consistent with
+  // each other and with the post page's own count (see bodyBlocks' comment
+  // in queries.ts for why this isn't GROQ's pt::text() instead).
+  const bodyPlainText = post.bodyBlocks ? portableTextToPlainText(post.bodyBlocks) : "";
+  const blurbSource = post.excerpt || bodyPlainText;
   const blurb = blurbSource ? truncateText(blurbSource, CARD_BLURB_LENGTH) : undefined;
-  const readingTime = post.bodyPlainText ? estimateReadingTimeFromText(post.bodyPlainText) : undefined;
+  const readingTime = bodyPlainText ? estimateReadingTimeFromText(bodyPlainText) : undefined;
 
   return (
     <article className="border-b border-amber-faint pb-12 last:border-none">

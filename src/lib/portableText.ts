@@ -5,7 +5,7 @@
  * it once here keeps the two from silently drifting apart.
  */
 
-type PortableTextBlock = {
+export type PortableTextBlock = {
   _type?: string;
   children?: { text?: string }[];
   text?: string;
