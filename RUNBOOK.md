@@ -597,7 +597,94 @@ turns up outside the post body later (an author photo, a category card image, et
 
 ---
 
-## Instagram embed block (shipped 2026-08-04)
+## Quote Grid: names/photos/quotes together, three layouts (shipped 2026-08-06)
+
+A new block type in the post body editor: **Quote Grid** (`quoteGrid` in
+`src/sanity/schemaTypes/blockContentType.ts`), built for exactly the "J Factor Afterthoughts" case Asher
+raised -- a post with several people's names, photos, and comments that had no good way to lay out besides a
+plain list. Each entry has a **Photo** (optional -- a plain initial circle stands in when there isn't one), a
+**Name**, an optional **Role / context** line (e.g. "Workshop attendee"), and the **Quote** text itself.
+
+**Three genuinely different visual treatments, picked via the block's own Layout field, not one fixed look** --
+Asher specifically wanted room to try a few designs rather than commit to a single "photo, line, text" layout:
+
+- **Cards** -- a responsive grid of bordered cards, each with a large faint decorative quotation mark in the
+  corner. Reads as a testimonial wall.
+- **Spotlight** -- full-width rows that alternate left/right, larger avatar, the quote set in bigger italic
+  display type. More editorial and dynamic; best for a handful of quotes rather than a long list, since each
+  row takes real vertical space.
+- **Minimal** -- a clean divided list, closer to a pull-quote than a card. Big quotation marks carry the
+  visual weight instead of borders; the avatar shrinks to a small inline byline under each quote.
+
+All three are rendered by `src/components/asher/blog/QuoteGrid.tsx` (`CardsLayout`/`SpotlightLayout`/
+`MinimalLayout`, dispatched by the `layout` prop), wired into `portableTextComponents.tsx`'s `quoteGrid` type.
+Switching Layout on an already-written Quote Grid re-renders the *same* entries in the new style immediately
+-- nothing about the data changes, only which of the three components renders it, so trying different designs
+on the same content is just picking a different dropdown value, not re-entering anything.
+
+**Not a spreadsheet-style table.** Explicitly scoped this way after discussing it directly: a true
+rows-and-columns table with merged cells and per-cell backgrounds/borders is a much bigger, more fragile
+build, and tables are genuinely poor on mobile (either shrink unreadably or force horizontal scroll). Quote
+Grid solves the actual case in front of Asher; a general-purpose table stays a separate, larger, not-yet-built
+idea if a real rows/columns need shows up later (not logged in `IDEAS.md` as its own entry, since it wasn't
+asked for on its own merits -- only came up as one option while scoping Quote Grid).
+
+---
+
+## Embed block: YouTube + Instagram merged into one, with YouTube anti-distraction params (shipped 2026-08-06)
+
+**The two separate "YouTube embed" / "Instagram embed" buttons in the post editor's insert menu are now one:
+`embed`** (`src/sanity/schemaTypes/blockContentType.ts`). Paste either kind of URL into its one `url` field
+and `portableTextComponents.tsx`'s `embed` renderer figures out which platform it is
+(`isInstagramUrl()`/`getYouTubeId()`) and dispatches to the right embed automatically -- one thing to reach
+for instead of two, per Asher's ask to streamline the editor further.
+
+**The old `youtube`/`instagramEmbed` types are still registered in the schema, deliberately not removed or
+hidden.** A true "down to one button, nothing else" merge needs either confirming no post already uses the
+old types, or migrating any that do — and this shipped from a session with no live Sanity read/write access
+(confirmed blocked: `oj9eajjd.apicdn.sanity.io` returns a network-level 403 from this sandbox), so neither
+check was possible. Deleting a type outright while content still references it turns those specific blocks
+into "Unknown type" in Studio's editor (the live site would keep rendering them fine either way, since
+`portableTextComponents.tsx` still has both renderers) — a real risk not worth taking blind. Net effect right
+now: **the insert menu still technically shows three embed-related buttons** (Embed, YouTube embed (legacy),
+Instagram embed (legacy)), but only the first one is meant to be used going forward — the legacy two are
+there purely so anything already published stays renderable and editable. `src/sanity/lib/autoEmbedPaste.ts`
+(paste a bare URL onto an empty line) was updated in the same change to insert the new `embed` type, not the
+old ones, so that path doesn't quietly keep creating legacy blocks going forward either.
+
+**Next step, needs a session with real Sanity access:** check whether any post actually uses the old
+`youtube`/`instagramEmbed` types; if so, migrate them to `embed` (same shape migration pattern as the
+Image/imageGallery merge on 2026-08-04); then delete both legacy types from the schema for real. That's what
+actually gets the toolbar down to one button.
+
+**YouTube embeds (both the new `embed` type and the legacy `youtube` type) now carry anti-distraction
+parameters, per Asher's question about how much control exists over what YouTube shows around an embedded
+video** — this is a pure rendering change (`YouTubeEmbed()` in `portableTextComponents.tsx`), so it applies
+to every already-published post's existing embeds too, with no data migration needed:
+- `rel=0` -- scopes the end-of-video "suggested next" overlay to videos from the *same* channel instead of an
+  arbitrary other creator's. Real, but imperfect: YouTube has narrowed what `rel` actually restricts over the
+  years, and it's their product surface, not something this site fully controls.
+- `loop=1` (paired with `playlist=<id>`, YouTube's required way to loop one single video) -- the more
+  reliable lever. A looping video never reaches the true "ended" state that triggers the full-screen
+  suggestion overlay in the first place, rather than just curating what that overlay would show.
+- Already on `youtube-nocookie.com` (privacy-enhanced mode, unchanged) and `modestbranding=1` (minimizes the
+  YouTube logo -- cosmetic only).
+- **What this can't fully prevent:** the player itself always has a visible "Watch on YouTube" affordance and
+  YouTube's own on-screen controls, since it's YouTube's iframe UI, not something rendered by this site.
+  There's no parameter that removes that.
+
+**Instagram's embed, by contrast, was already comparatively low-risk here and needed no changes** — Instagram's
+official oEmbed widget (`InstagramEmbed.tsx`) shows one specific post only, with a single explicit "View this
+post on Instagram" link/caption-click as the only way out. Unlike YouTube, there's no autoplay-into-a-feed-of-
+other-content mechanism built into the widget itself.
+
+---
+
+## Instagram embed block (shipped 2026-08-04, its own insert-menu button retired 2026-08-06)
+
+**Superseded as an insert-menu option by the merged `embed` type** (see "Embed block" above) — everything
+below about how the actual embed renders (`InstagramEmbed.tsx`, the official `embed.js` widget) is still
+accurate and unchanged; only how a *new* Instagram embed gets created has moved.
 
 A new block type in the post body editor: **Instagram embed** (`instagramEmbed` in
 `src/sanity/schemaTypes/blockContentType.ts`). Paste a post URL (e.g.
@@ -614,9 +701,10 @@ scrollable list of comments — that's only available through Meta's Graph API, 
 requires app review. If a real comment thread ever becomes a firm requirement, that's the path, but it's a
 meaningfully bigger lift than this block.
 
-**Pasting a bare URL onto an empty line auto-embeds it (shipped 2026-08-05).** Paste a YouTube or Instagram
-post URL onto its own blank line and the real `youtube`/`instagramEmbed` block is inserted immediately, no
-need to open the block-insert menu first. `src/sanity/lib/autoEmbedPaste.ts` exports `onPasteAutoEmbed`, wired
+**Pasting a bare URL onto an empty line auto-embeds it (shipped 2026-08-05; inserts the merged `embed` type
+since 2026-08-06 -- see "Embed block" above).** Paste a YouTube or Instagram post URL onto its own blank line
+and the real embed block is inserted immediately, no need to open the block-insert menu first.
+`src/sanity/lib/autoEmbedPaste.ts` exports `onPasteAutoEmbed`, wired
 via Sanity's documented `onPaste` prop on `PortableTextInput`
 (https://www.sanity.io/docs/studio/customizing-block-content, "Custom paste handler"). It's threaded through
 `DistractionFreeWritingPanel.tsx`'s existing `renderDefault({...props, onPaste: onPasteAutoEmbed})` call rather
@@ -639,11 +727,10 @@ paste-to-link never should be.
 The two regexes (`YOUTUBE_URL`/`INSTAGRAM_URL`) are anchored start-to-end — they check whether the *whole*
 pasted clipboard string is just the URL, not whether a URL appears somewhere inside a longer paste. Pasting a
 sentence that happens to contain a YouTube link leaves it as plain text, unchanged; only a bare link on an
-empty line gets converted. Returning `{insert: [{_type: 'youtube', url: text}]}` inserts the block directly
-rather than wrapping it as `{_type: 'block', children: [...]}`, because `youtube`/`instagramEmbed` are
-registered as top-level block members in `blockContentType.ts`'s `of` array (siblings of `{type: 'block'}`),
-not inline objects — an easy mistake to make copying Sanity's own doc example, which demonstrates an *inline*
-object instead.
+empty line gets converted. Returning `{insert: [{_type: 'embed', url: text}]}` inserts the block directly
+rather than wrapping it as `{_type: 'block', children: [...]}`, because `embed` is registered as a top-level
+block member in `blockContentType.ts`'s `of` array (a sibling of `{type: 'block'}`), not an inline object —
+an easy mistake to make copying Sanity's own doc example, which demonstrates an *inline* object instead.
 
 **Known limit:** this only fires on an actual clipboard paste event. Typing a URL by hand and pressing space
 or Enter does not trigger it. That would need Sanity's newer, still-`@beta`/undocumented-for-this-exact-use

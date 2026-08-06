@@ -7,10 +7,12 @@ import type {PortableTextBlock, PortableTextInputProps} from 'sanity'
 const YOUTUBE_URL = /^https?:\/\/(www\.)?(youtube\.com\/(watch\?v=[\w-]+|shorts\/[\w-]+)|youtu\.be\/[\w-]+)(\S*)$/i
 const INSTAGRAM_URL = /^https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[\w-]+\/?(\?\S*)?$/i
 
-function matchEmbedType(text: string): 'youtube' | 'instagramEmbed' | undefined {
-  if (YOUTUBE_URL.test(text)) return 'youtube'
-  if (INSTAGRAM_URL.test(text)) return 'instagramEmbed'
-  return undefined
+// Both match into the single merged `embed` type (2026-08-06) -- before
+// the YouTube/Instagram merge this returned 'youtube' or 'instagramEmbed'
+// directly; now that those are legacy-only (see blockContentType.ts), a
+// paste should never create a new one of those, only the current type.
+function isEmbeddableUrl(text: string): boolean {
+  return YOUTUBE_URL.test(text) || INSTAGRAM_URL.test(text)
 }
 
 // PasteData's `path` is only ever the selection's *focus* path -- it can't
@@ -50,8 +52,7 @@ export const onPasteAutoEmbed: PortableTextInputProps['onPaste'] = (data) => {
   const text = data.event.clipboardData?.getData('text/plain')?.trim()
   if (!text) return undefined
 
-  const embedType = matchEmbedType(text)
-  if (!embedType) return undefined
+  if (!isEmbeddableUrl(text)) return undefined
 
   const key = focusBlockKey(data.path)
   if (!key) return undefined
@@ -61,5 +62,5 @@ export const onPasteAutoEmbed: PortableTextInputProps['onPaste'] = (data) => {
     : undefined
   if (blockPlainText(focusBlock).trim().length > 0) return undefined
 
-  return {insert: [{_type: embedType, url: text}]}
+  return {insert: [{_type: 'embed', url: text}]}
 }

@@ -8,6 +8,7 @@ import {LinkIcon} from '@sanity/icons/Link'
 import {DocumentIcon} from '@sanity/icons/Document'
 import {TagIcon} from '@sanity/icons/Tag'
 import {HeartFilledIcon} from '@sanity/icons/HeartFilled'
+import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
 
 /**
@@ -281,6 +282,91 @@ export const blockContentType = defineType({
       fields: [defineField({name: 'style', type: 'string', hidden: true, initialValue: 'divider'})],
       preview: {prepare: () => ({title: '— Divider —'})},
     }),
+    // A named-quote alternative to a plain bulleted list -- built for
+    // laying out several people's names/photos/comments together (e.g. a
+    // roundup of reactions to a post), not a spreadsheet-style rows/columns
+    // table. "Layout" picks between three genuinely different visual
+    // treatments (see QuoteGrid.tsx) rather than one fixed look, so the
+    // same set of quotes can be tried a few ways before deciding what fits
+    // a given post best.
+    defineArrayMember({
+      type: 'object',
+      name: 'quoteGrid',
+      title: 'Quote Grid',
+      icon: DoubleQuoteIcon,
+      fields: [
+        defineField({
+          name: 'layout',
+          title: 'Layout',
+          type: 'string',
+          options: {
+            list: [
+              {title: 'Cards (grid of bordered cards)', value: 'cards'},
+              {title: 'Spotlight (alternating rows, larger type)', value: 'spotlight'},
+              {title: 'Minimal (clean divided list, pull-quote style)', value: 'minimal'},
+            ],
+          },
+          initialValue: 'cards',
+        }),
+        defineField({
+          name: 'entries',
+          title: 'Quotes',
+          type: 'array',
+          of: [
+            defineArrayMember({
+              type: 'object',
+              name: 'quoteEntry',
+              fields: [
+                defineField({
+                  name: 'photo',
+                  title: 'Photo (optional)',
+                  type: 'image',
+                  options: {hotspot: true},
+                  description: 'Leave blank to show a plain initial circle instead.',
+                  fields: [
+                    defineField({name: 'alt', type: 'string', title: 'Alternative text'}),
+                  ],
+                }),
+                defineField({name: 'name', title: 'Name', type: 'string', validation: (rule) => rule.required()}),
+                defineField({
+                  name: 'role',
+                  title: 'Role / context (optional)',
+                  type: 'string',
+                  description: 'Shown under the name, e.g. "Workshop attendee" or "Friend since college".',
+                }),
+                defineField({
+                  name: 'quote',
+                  title: 'Quote',
+                  type: 'text',
+                  rows: 3,
+                  validation: (rule) => rule.required(),
+                }),
+              ],
+              preview: {
+                select: {name: 'name', quote: 'quote', media: 'photo'},
+                prepare: ({name, quote, media}) => ({title: name || 'Untitled', subtitle: quote, media}),
+              },
+            }),
+          ],
+          validation: (rule) => rule.min(1).error('Add at least one quote.'),
+        }),
+      ],
+      preview: {
+        select: {entries: 'entries', layout: 'layout'},
+        prepare: ({entries, layout}) => {
+          const count = (entries as unknown[] | undefined)?.length ?? 0
+          const layoutLabel = layout === 'spotlight' ? 'Spotlight' : layout === 'minimal' ? 'Minimal' : 'Cards'
+          // `as any` (not flagged by this project's no-explicit-any rule --
+          // that only catches explicit `: any` annotations, not casts): the
+          // real type is PreviewValue['media'], which only allows React
+          // nodes, but Studio actually resolves an image-asset preview from
+          // this plain-object shape at runtime. Same pattern as the Image
+          // block's own preview above.
+          const media = (entries as any[] | undefined)?.[0]?.photo
+          return {title: `Quote Grid — ${layoutLabel} (${count} ${count === 1 ? 'quote' : 'quotes'})`, media}
+        },
+      },
+    }),
     defineArrayMember({
       type: 'object',
       name: 'codeBlock',
@@ -354,15 +440,69 @@ export const blockContentType = defineType({
     }),
     // Embeds a *reference* to a Reusable Snippet document, not a copy of
     // its content -- editing the snippet updates every post that inserts
-    // it. `to: [{type: 'snippet'}]` on an array member (rather than a
-    // nested reference field) is what makes Sanity store this directly as
-    // a `{_type: 'snippetRef', _ref: ...}` item in the body array itself.
+    // One button instead of two -- pick between "YouTube embed" and
+    // "Instagram embed" was removed as a decision Asher had to make every
+    // time; the URL itself already says which platform it's from, so this
+    // one type figures that out at render time (isInstagramUrl() /
+    // getYouTubeId() in portableTextComponents.tsx) instead of asking.
     // Ordered ahead of Reusable snippet -- Asher reaches for this often
     // enough that it was getting buried in the toolbar's "..." overflow.
     defineArrayMember({
       type: 'object',
+      name: 'embed',
+      title: 'Embed (YouTube / Instagram)',
+      icon: PlayIcon,
+      fields: [
+        defineField({
+          name: 'url',
+          title: 'URL',
+          type: 'url',
+          description: 'Paste a YouTube video URL or an Instagram post URL -- which one it is gets figured out automatically.',
+          validation: (rule) => rule.required(),
+        }),
+      ],
+      preview: {
+        select: {url: 'url'},
+        prepare: ({url}) => {
+          const platform = /instagram\.com/i.test(url || '') ? 'Instagram' : 'YouTube'
+          return {title: `${platform} embed`, subtitle: url}
+        },
+      },
+    }),
+    defineArrayMember({
+      type: 'reference',
+      name: 'snippetRef',
+      title: 'Reusable snippet',
+      icon: ComponentIcon,
+      to: [{type: 'snippet'}],
+    }),
+    // Superseded by the single "Embed" type above (2026-08-06) -- for new
+    // content, reach for that one instead of either of these. Both are
+    // still kept registered here (rather than deleted, and deliberately
+    // *not* marked `hidden`) purely so any post that already has one of
+    // these blocks keeps rendering *and* stays editable in Studio;
+    // removing a type from this schema entirely while content still
+    // references it turns those specific blocks into "Unknown type" in
+    // the editor, even though the live site would still render them fine
+    // via portableTextComponents.tsx. Not marking them `hidden` either --
+    // couldn't verify from this session (no live Studio access) whether
+    // Sanity's `hidden` on an array-member type suppresses only the
+    // insert-menu button or the already-existing blocks too, and guessing
+    // wrong on Studio editor-chrome behavior has broken things here before
+    // (see RUNBOOK.md's imageAssetAlt incident). Net effect right now: the
+    // toolbar still shows these two alongside the new Embed button, they
+    // just aren't the ones to use going forward. A proper migration
+    // (rewrite any existing youtube/instagramEmbed blocks to the new embed
+    // shape, then delete these two for real, hiding them from the toolbar
+    // for good) is the next step, but needs a session with live Sanity
+    // read/write access to run safely -- this one
+    // didn't have that, so this is the conservative version of the merge:
+    // new content only ever needs one button, nothing old was touched or
+    // risked.
+    defineArrayMember({
+      type: 'object',
       name: 'youtube',
-      title: 'YouTube embed',
+      title: 'YouTube embed (legacy)',
       icon: PlayIcon,
       fields: [
         defineField({
@@ -374,15 +514,8 @@ export const blockContentType = defineType({
       ],
       preview: {
         select: {url: 'url'},
-        prepare: ({url}) => ({title: 'YouTube embed', subtitle: url}),
+        prepare: ({url}) => ({title: 'YouTube embed (legacy)', subtitle: url}),
       },
-    }),
-    defineArrayMember({
-      type: 'reference',
-      name: 'snippetRef',
-      title: 'Reusable snippet',
-      icon: ComponentIcon,
-      to: [{type: 'snippet'}],
     }),
     // Instagram's own free, official embed (blockquote + embed.js) --
     // shows the real photo, caption, account, and like count, with a
@@ -393,7 +526,7 @@ export const blockContentType = defineType({
     defineArrayMember({
       type: 'object',
       name: 'instagramEmbed',
-      title: 'Instagram embed',
+      title: 'Instagram embed (legacy)',
       icon: HeartFilledIcon,
       fields: [
         defineField({
@@ -405,7 +538,7 @@ export const blockContentType = defineType({
       ],
       preview: {
         select: {url: 'url'},
-        prepare: ({url}) => ({title: 'Instagram embed', subtitle: url}),
+        prepare: ({url}) => ({title: 'Instagram embed (legacy)', subtitle: url}),
       },
     }),
   ],

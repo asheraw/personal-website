@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (yet another continuation) — Quote Grid block, and YouTube/Instagram merged into one Embed type
+
+**Quote Grid**, a new post-body block for the "several people's names/photos/comments together" case Asher
+raised (his real example: "J Factor Afterthoughts"). Not a spreadsheet-style table -- explicitly scoped away
+from that, since a true rows/columns table with merged cells is a much bigger build and tables are genuinely
+bad on mobile. Each entry gets a photo (optional), name, role, and quote; three layouts to pick between and
+compare -- **Cards** (bordered grid), **Spotlight** (alternating full-width rows, larger italic type), and
+**Minimal** (a clean divided list, pull-quote style) -- since Asher specifically wanted room to experiment
+with how it looks, not one fixed design.
+
+**YouTube and Instagram embeds merged into one "Embed" block** in the insert menu -- paste either kind of URL
+and it figures out which platform automatically. The old two types are still in the schema (not deleted or
+hidden) purely so already-published posts stay renderable and editable; a real migration to get the toolbar
+down to one visible button needs a session with live Sanity access, which this one didn't have. Every YouTube
+embed (new and legacy alike, since this part is a pure rendering change) now also carries `rel=0` +
+`loop=1` -- the loop trick in particular means a video never reaches the "ended" state that triggers
+YouTube's full-screen suggested-videos overlay, addressing Asher's question about how much control exists
+over where an embedded video might send a reader next.
+
+---
+
 ## 2026-08-06 (continued yet again) — Image Small/Medium: fixed pixel caps that had a real bug, switched to percentages
 
 Asher asked whether the Small/Medium/Original image-size options being hardcoded pixel values had a real

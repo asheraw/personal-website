@@ -7,6 +7,7 @@ import { Accordion } from "@/components/asher/blog/Accordion";
 import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
 import { SizedImage, type DisplaySize } from "@/components/asher/blog/SizedImage";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
+import { QuoteGrid, type QuoteEntry, type QuoteGridLayout } from "@/components/asher/blog/QuoteGrid";
 import { isTextColorValue } from "@/lib/textColors";
 
 function getYouTubeId(url: string): string | null {
@@ -14,6 +15,36 @@ function getYouTubeId(url: string): string | null {
     /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
   );
   return match ? match[1] : null;
+}
+
+function isInstagramUrl(url: string): boolean {
+  return /instagram\.com/i.test(url);
+}
+
+// Shared by both the new "Embed" block and the legacy "youtube" block, so
+// an already-published post gets these same anti-distraction params for
+// free the next time it renders, without needing any data migration.
+// `rel=0` scopes the end-of-video suggestions YouTube shows to videos from
+// the *same* channel rather than an arbitrary other creator's -- a real
+// but imperfect lever, since YouTube's own handling of `rel` has narrowed
+// over the years and isn't a setting this site controls. `loop=1` (paired
+// with `playlist=<id>`, YouTube's required way to loop a single video) is
+// the more reliable one: looping means the video never reaches the true
+// "ended" state that triggers the full-screen suggestion overlay in the
+// first place, rather than just curating what that overlay would show.
+function YouTubeEmbed({ id }: { id: string }) {
+  const params = new URLSearchParams({ rel: "0", modestbranding: "1", loop: "1", playlist: id });
+  return (
+    <div className="my-8 aspect-video overflow-hidden rounded-lg border border-amber-faint">
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`}
+        title="YouTube video"
+        className="h-full w-full"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    </div>
+  );
 }
 
 const CALLOUT_STYLES: Record<string, { label: string; classes: string }> = {
@@ -212,6 +243,12 @@ export const postBodyComponents: PortableTextComponents = {
       );
     },
     accordion: ({ value }) => <Accordion title={value?.title} content={value?.content} />,
+    quoteGrid: ({ value }) => (
+      <QuoteGrid
+        entries={(value?.entries ?? []) as QuoteEntry[]}
+        layout={(value?.layout as QuoteGridLayout) ?? "cards"}
+      />
+    ),
     // Renders a Reusable Snippet inserted into this post -- `snippetData`
     // is the dereferenced snippet document (see POST_BY_SLUG_QUERY), never
     // a copy: editing the snippet in Studio updates every post that uses
@@ -252,20 +289,23 @@ export const postBodyComponents: PortableTextComponents = {
           );
       }
     },
+    // New, single embed type -- figures out YouTube vs Instagram from the
+    // URL itself instead of asking which one it is up front. Falls back to
+    // rendering nothing (not an error) for a URL that matches neither, so
+    // a typo'd or unsupported link never breaks the rest of the post.
+    embed: ({ value }) => {
+      const url = value?.url as string | undefined;
+      if (!url) return null;
+      if (isInstagramUrl(url)) return <InstagramEmbed url={url} />;
+      const id = getYouTubeId(url);
+      return id ? <YouTubeEmbed id={id} /> : null;
+    },
+    // Legacy, kept only for posts that already used these two separate
+    // types before the merge above -- see blockContentType.ts for why
+    // they're still registered instead of deleted.
     youtube: ({ value }) => {
       const id = value?.url ? getYouTubeId(value.url as string) : null;
-      if (!id) return null;
-      return (
-        <div className="my-8 aspect-video overflow-hidden rounded-lg border border-amber-faint">
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${id}`}
-            title="YouTube video"
-            className="h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      );
+      return id ? <YouTubeEmbed id={id} /> : null;
     },
     instagramEmbed: ({ value }) => {
       const url = value?.url as string | undefined;
