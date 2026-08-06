@@ -30,6 +30,29 @@ now" list, separate from the actual phase roadmap. Check there before re-proposi
 
 ---
 
+## Starting a new post: one click, not three (shipped 2026-08-06)
+
+**Studio sidebar → "New Post"** (top of the list, above "Posts") opens straight into a blank post editor in
+one click, instead of "Posts → + → New Post." Asher's own ask, mid-build on an unrelated task — his single
+most frequent action was two clicks longer than it needed to be.
+
+**Not the old WordPress "auto-draft on page load" pattern**, which Asher specifically flagged wanting to
+avoid (WordPress silently creates a real database row the instant you open the new-post screen, even if you
+never type anything, leaving abandoned drafts behind). This doesn't do that: opening the pane doesn't write
+anything. Sanity's own document model already works this way for every "+ New" button in Studio — nothing is
+created in the dataset until the first real edit happens (the first patch triggers the first mutation). This
+shortcut inherits that for free; it isn't a new mechanism, just a new entry point into the same one.
+
+**Implementation note for future changes here:** the child resolver (`structure.tsx`) generates a fresh
+`crypto.randomUUID()` **inside the function body**, called fresh on every navigation into the item — not a
+module-level constant computed once per Studio load. That distinction matters: a static id would mean a
+second click within the same Studio session reopens whatever got typed and abandoned on the first click,
+instead of a genuinely blank one. If this ever needs the SEO Preview tab or any other per-post view added,
+mirror it from the "Posts" list item's own `.child()` just below it in the same file — they're meant to stay
+in sync.
+
+---
+
 ## Writing posts: image upload / alt text issues in Studio
 
 **"I click Image in the post body but can't upload a new file, only pick an existing one":** this is a known,
@@ -1925,6 +1948,119 @@ blog content.
 - The actual blog content lives entirely in **Sanity** — that's the one and only source of truth. A separate Postgres database (via Prisma) exists only for contact form submissions.
 - A leftover, unused `Post` table used to exist in that Postgres database from the original site template. It was removed from the app's schema on 2026-07-28 because it was a second, disconnected place blog content *could* have been stored, which risks confusion later. Nothing in the app ever read from it. If you ever see a database error mentioning a `Post` table, that's a sign someone (or some AI-generated code) is trying to reintroduce it — don't; use Sanity instead.
 - If you ever see `@prisma/client did not initialize yet`, the database client wasn't generated after installing dependencies. This should self-heal automatically now (`"postinstall": "prisma generate"` runs after every install), but if it reappears, running `npx prisma generate` fixes it immediately.
+
+---
+
+## Security headers: CSP and friends (shipped 2026-08-06)
+
+`next.config.ts`'s `headers()` sets a real Content-Security-Policy plus X-Frame-Options, X-Content-Type-Options,
+Referrer-Policy, Permissions-Policy, and HSTS on the public site — added after a direct audit found none of
+this was in place at all. **Deliberately excludes `/studio`** (the `source` pattern is
+`/((?!studio).*)`, same negative-match idiom `middleware.ts`'s own matcher already used) — Sanity Studio is a
+complex authenticated SPA that needs far broader script/style/connect permissions than the public site's CSP
+allows (dynamic imports, its own realtime connection to Sanity, etc.), and a wrong guess there risks breaking
+Asher's own daily editing tool, not a visitor's page.
+
+**The CSP's allowlist is host-specific, not wildcard-everything** — every external script/image/frame/connect
+domain the public site actually needs, gathered by grepping this codebase's own components first, then
+corrected **twice** against what a real browser actually tried to reach, because grepping alone missed real
+things:
+1. Against a local **production build** (`next build && next start`, not `next dev` — dev mode's own Fast
+   Refresh uses `eval()`, which would have shown as a false-positive CSP violation that doesn't exist in what
+   actually ships): caught `<SanityLive/>`'s (`next-sanity/live`, mounted in `(site)/layout.tsx`) own real-time
+   connection to `*.api.sanity.io` — a library-internal component, not something grepping this repo's own
+   source would ever find.
+2. Against the **actual live site** (asheraw.com): caught `static.cloudflareinsights.com`, a beacon script
+   Vercel's own hosting infrastructure injects automatically on every page — not from this repo, any of its
+   dependencies, or anything readable by grepping source at all. Only found by loading the real deployed page
+   with a headless browser and watching the console.
+
+If a CSP violation ever shows up in a real visitor's console for a legitimate resource, the fix is always the
+same shape: find the exact domain in the browser's console error, add it to the relevant directive in
+`PUBLIC_SITE_CSP` in `next.config.ts`, redeploy, and re-verify against the live site the same way (not just a
+local build — see point 2 above for why that's not sufficient on its own).
+
+**`'unsafe-inline'` on `script-src` and `style-src` is a deliberate, stated tradeoff, not an oversight.**
+Google Tag Manager's bootstrap snippet and Microsoft Clarity's loader (`Analytics.tsx`) and the JSON-LD
+structured data (`StructuredData.tsx`) are all inline `<script>` tags with no nonce wiring anywhere in this
+codebase — a strict `script-src` without `'unsafe-inline'` would have broken all three outright. A real
+nonce-based setup (Next.js has a documented pattern for this: a per-request nonce generated in middleware,
+threaded through every inline script via `headers()`) would close this gap, but it's a genuinely bigger,
+riskier change (touches `middleware.ts`, `Analytics.tsx`, `StructuredData.tsx`, and every layout in between) —
+not attempted here. What this CSP **does** still meaningfully block: loading a script/resource from an
+attacker-controlled domain, which is the most common real-world XSS vector. What it **doesn't** fully close:
+an inline-script-injection XSS payload would still execute, since `'unsafe-inline'` permits it.
+
+**If GTM, Clarity, YouTube, or Instagram embeds ever stop working after this**, check the browser console for
+a CSP violation first before assuming a code regression — the fix is almost always adding one missing domain
+to the allowlist above, not a deeper bug.
+
+---
+
+## Error monitoring: JS errors from real visitors (shipped 2026-08-06)
+
+**Studio → Site Admin → Error Log** — same overview-page, Pending/Ignored/Fixed triage pattern as 404 Hits
+(`ErrorLogTool.tsx`, mirrors `NotFoundHitsTool.tsx` closely on purpose). Added after a direct audit: "if
+something throws on a real visitor's browser, you'd never know" was a real, confirmed gap — everything else
+on this site (404s, broken links, search misses) gets tracked, but JS runtime errors didn't.
+
+**Chose first-party (a new `errorLog` Sanity document type) over a third-party service like Sentry**,
+consistent with every other tracking feature already in this codebase (404 hits, search queries, shares) —
+no new external account for Asher to sign up for, configure, and remember to check; it shows up in the one
+place he already looks. The real tradeoff against Sentry: no stack-trace symbolication against source maps,
+no breadcrumbs, no session replay, no alerting. If error volume ever grows enough that those matter, Sentry
+(or similar) is the natural upgrade path — this isn't meant to be the permanent ceiling, just the thing that
+closes the "currently nothing at all" gap cheaply.
+
+**Three sources, covering different categories of JS error** (React's error-boundary mechanism only catches
+render-phase errors — it can't see an error thrown inside a click handler, or an unhandled promise rejection):
+- `error` — uncaught script errors (`window.addEventListener('error', ...)`), e.g. a bug inside an `onClick`
+  handler. Captured by `ErrorMonitor.tsx`, mounted site-wide in `(site)/layout.tsx`, consent-independent (same
+  reasoning as 404/search-query tracking — this reports bugs in the site's own code, never anything about the
+  visitor, and never logs an IP address).
+- `unhandledrejection` — an async function that threw without a `.catch()`. Same `ErrorMonitor.tsx`.
+- `render` — a React render-phase error. `(site)/error.tsx` (the existing route-segment error boundary, live
+  since before this session, already showing a friendly "Something went wrong" page and firing a GTM
+  `page_error` event) now **also** POSTs to `/api/track-error` in the same `useEffect` — the GTM event only
+  ever reaches Asher if he goes digging through a GA4 report, and only for consenting visitors; the new POST
+  is the reliable half, unconditional and visible in Studio.
+
+**Grouped by error message** (`/api/track-error`, same createIfNotExists + read-modify-write pattern as
+`/api/track-404`) — a deterministic id hashed from `source + message` means the same recurring error lands on
+one document with an incrementing `occurrenceCount`, not a flood of near-duplicates. Capped at the 200 most
+recent occurrences per error, same unbounded-growth protection as 404 Hits' 500-hit cap.
+
+**Deliberately client-side only.** Server-side errors (a failed Sanity write, an API route throwing) already
+land in Vercel's own function logs — folding those into this same log too would mean routing every existing
+`try/catch` through it as well, a separate, larger change not attempted here.
+
+`/privacy` updated in the same change to disclose this, same pattern as the search-query-logging disclosure.
+
+---
+
+## Rate limiting on public forms (shipped 2026-08-06)
+
+`/api/comments` and `/api/contact` — the two public write endpoints that create real content and, for
+contact, send an actual email — now reject a flood from the same IP outright (429, with a friendly message
+the existing form UI already knows how to display, since both forms already just check `result.success`/
+`result.error` from the JSON body regardless of HTTP status). Added after a direct audit: the honeypot and
+math-captcha on both forms stop naive bots, but neither actually throttles a script that solves the captcha
+once and then posts straight to the API endpoint repeatedly, bypassing the form's own page entirely.
+
+**`src/lib/rateLimit.ts`'s `isRateLimited()`** counts recent submissions of a given `_type` by IP within a
+time window, via a plain Sanity `count(*[...])` query — the exact same shape of query
+`comments/route.ts`'s pre-existing "known spammer" check already runs. Deliberately **not** a separate Redis/
+Upstash store (the more typical serverless-rate-limiting setup) — no new external account for Asher to set
+up, and one extra Sanity read per submission is a non-issue at this site's traffic level. `ip === "unknown"`
+(no `x-forwarded-for` header at all, mostly a local-dev-only case) is exempted, same reasoning as the
+known-spammer check's own exemption — treating every visitor missing that header as one shared bucket would
+risk blocking unrelated people together.
+
+**Current limits:** comments — 5 per 10 minutes per IP (`createdAt` field, since `comment` has one). Contact
+— 3 per 15 minutes per IP (`_createdAt`, Sanity's own automatic field, since `contactSubmission` has no
+custom timestamp field). Both are conservative enough that no real human would realistically hit them, tuned
+loose deliberately since there's no real traffic yet to calibrate against — if a genuine visitor ever reports
+being blocked, loosen the specific threshold in the relevant route rather than removing the check.
 
 ---
 

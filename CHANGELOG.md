@@ -11,6 +11,59 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-06 (continued once again) — Security headers, first-party error monitoring, rate limiting, one-click New Post
+
+Four pieces of work from the same session: three from a direct audit ("what other feature is missing?"),
+one a workflow ask that came in mid-build.
+
+**Security headers.** A real Content-Security-Policy plus X-Frame-Options, Referrer-Policy,
+Permissions-Policy, and HSTS, added via `next.config.ts`'s `headers()` — applied to the public site only,
+`/studio` deliberately excluded since Sanity Studio needs far broader permissions to function and getting
+that wrong risks breaking Asher's own daily editing tool. The CSP's allowlist was built by grepping every
+external URL this codebase's own components touch, then corrected **twice** against what a real browser
+actually did — first against a local production build (caught `<SanityLive/>`'s own connection to
+`*.api.sanity.io`, a library-internal component, not this codebase's own code), then against the actual
+live site (caught `static.cloudflareinsights.com`, a beacon Vercel's own hosting injects automatically —
+impossible to find by reading source at all). Both real gaps, both things static grepping alone would have
+missed and shipped broken. `'unsafe-inline'` for scripts/styles is a stated, deliberate tradeoff, not an
+oversight — GTM's bootstrap snippet, Clarity's loader, and the JSON-LD structured data are all inline
+`<script>` tags with no nonce wiring in this codebase, and a strict script-src would have broken them
+outright. Full writeup and the tradeoff explained in RUNBOOK.md.
+
+**Error monitoring — first-party, not Sentry.** New Studio → Site Admin → Error Log, same
+Pending/Ignored/Fixed triage pattern as 404 Hits. Catches the three kinds of JS error a real visitor's
+browser can hit: uncaught script errors and unhandled promise rejections (a new `ErrorMonitor.tsx`,
+mounted site-wide), and React render errors (the existing `(site)/error.tsx` now also reports, alongside
+what it already did). Chose first-party over a third-party service like Sentry to match every other
+tracking feature already in this codebase (404s, search queries, shares) — no new account for Asher to
+sign up for and remember to check, browsable in the one place he already looks. Doesn't cover server-side
+errors (a failed API call, a bad Sanity write) — those already land in Vercel's own function logs; folding
+those in too would be a separate, bigger change.
+
+**Rate limiting on comments and contact.** The two public endpoints that create real content and (for
+contact) send an actual email — a flood does real damage the honeypot/captcha alone don't stop, since a
+script that solves the captcha and posts straight to the API skips both entirely. A shared helper
+(`src/lib/rateLimit.ts`) counts recent submissions by IP against Sanity itself rather than pulling in a
+separate Redis/Upstash account — reuses the exact same kind of IP-matching query comments/route.ts's
+existing spam-flagging already does. 5 comments per 10 minutes, 3 contact messages per 15 minutes, per IP.
+
+**One-click "New Post."** Asher's own ask, mid-build: "Posts → + → New Post" was two clicks for his most
+frequent action. New sidebar entry opens straight into a blank post editor in one click. Deliberately not
+the old WordPress "auto-draft on page load" pattern he was specifically wary of repeating — this only opens
+a pane, Sanity itself doesn't write anything to the dataset until a real edit happens (same as the existing
+"+" button already behaves). The draft id is generated fresh inside the click handler on every single
+navigation, not once per Studio session, so a second click doesn't reopen whatever got typed and abandoned
+the first time.
+
+Verified: `tsc`/`build` clean (only the same pre-existing, unrelated baseline errors), Studio schema loads
+with no errors, `/api/track-error` round-tripped against real Sanity data and cleaned up after, the
+rate-limit queries ran against real data, and the CSP was checked with a headless browser against the real
+live site — a post with all 5 of its YouTube/Instagram embeds, the homepage, `/privacy`, and `/connect` —
+zero console CSP violations after both fixes above. Also logged the AI spam-check-for-comments idea
+(raised earlier the same session) in IDEAS.md.
+
+---
+
 ## 2026-08-06 (continued, for real this time) — Legacy embed migration actually run; the two old buttons are gone
 
 The script logged just below was written but never run (no live Sanity access in that session). Ran it for
