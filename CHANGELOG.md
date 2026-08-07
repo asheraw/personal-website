@@ -11,6 +11,38 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 — Post editor: grouped fields, SEO action moved onto its own tab, session timer fix
+
+Asked to analyze the post editor page for grouping/clarity, then to implement the result, plus a follow-up
+fix raised in the same conversation.
+
+**Fields grouped into fieldsets, not reordered.** `postType.ts` was one flat list of 17 fields with zero
+visual separation. Added five fieldsets (Organize, Publishing, Search & Sharing, Discussion, PLAY mode) at
+the seams that were already implicit in the field order's own existing logic (there's a long-standing
+comment explaining that order matches how Asher actually writes) — nothing moved, just divided and
+labeled. PLAY mode collapses by default since it's off for most posts; everything else stays open, since
+its fields are either touched on every post or matter enough to stay visible without an extra click.
+
+**"Suggest SEO & Excerpt" now also lives on the SEO Preview tab**, right above the "Worth a look"
+checklist it directly acts on (it patches `seoTitle`/`excerpt`/`tags` — confirmed by reading what it
+actually does, not assumed). Previously it only lived in the Publish button's overflow menu, one tab away
+from the thing it fixes. Extracted the whole dialog (fetch logic, every result card) into
+`SuggestSeoShared.tsx` so the document action and the new tab button are two entry points into one real
+implementation — same suggestion, same "Use this" buttons, either way in.
+
+**Session timer now starts on the first real edit, not on mount.** Asher: didn't like that opening a post
+to reread it already showed time elapsed. `DistractionFreeWritingPanel.tsx`'s timer now waits until the
+body's plain text differs from a snapshot taken when the panel first mounted, then starts counting from
+that moment — one-way (doesn't un-start if everything typed gets deleted again). Compares plain text
+rather than the raw Portable Text array, since Sanity's own editor can re-key that array on mount without
+any real edit happening, which would have started the clock on a false positive.
+
+Verified: `tsc`/`build` clean (only the same pre-existing baseline errors), Studio schema loads with no
+errors both locally and confirmed against the real live site (zero console errors, a clean login screen —
+no crash from the schema changes).
+
+---
+
 ## 2026-08-06 (continued once again) — Security headers, first-party error monitoring, rate limiting, one-click New Post
 
 Four pieces of work from the same session: three from a direct audit ("what other feature is missing?"),

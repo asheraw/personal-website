@@ -53,6 +53,28 @@ in sync.
 
 ---
 
+## Post editor: fieldsets (shipped 2026-08-08)
+
+`postType.ts`'s 17 fields (excluding body/title/slug/main image, at the very top) are grouped into five
+named `fieldsets` -- **Organize** (categories, primary category, tags), **Publishing** (author, published
+date, scheduled date), **Search & Sharing** (excerpt, SEO title, social image, branded card toggle,
+hide-from-search toggle), **Discussion** (lock comments), and **PLAY mode** (collapsed by default, since
+it's off for most posts). Came from a direct UX audit Asher asked for ("analyse the editor page... suggest
+if any of them should be grouped together").
+
+**Field order is unchanged on purpose.** There's a long-standing comment at the top of the file explaining
+that the order already matches how Asher actually writes (body first, then title, then everything
+downstream). The fieldsets just add a visible divider + heading at seams that were already implicit in
+that ordering logic -- nothing was moved to make this work, which is also why every fieldset's fields are
+already contiguous in the array (Sanity groups a fieldset's fields together regardless of array position,
+but keeping them contiguous is far easier to read in the schema file itself).
+
+**If a new field gets added to the post schema later**, decide which existing fieldset it belongs to (or
+whether it genuinely needs a new one) rather than leaving it ungrouped by default -- an ungrouped field
+still renders fine, it just quietly falls back to the old flat-list problem this change was meant to fix.
+
+---
+
 ## Writing posts: image upload / alt text issues in Studio
 
 **"I click Image in the post body but can't upload a new file, only pick an existing one":** this is a known,
@@ -177,7 +199,8 @@ post — no setup needed. If the post is missing a featured image, an excerpt, a
 overly-long title, a dialog lists what's missing with a choice to go fix it or publish anyway. If nothing's
 flagged, publishing works exactly as before with no extra step.
 
-**"Suggest SEO & Excerpt"** (in the "..." menu next to Publish) drafts 3 options each for SEO title and
+**"Suggest SEO & Excerpt"** (in the "..." menu next to Publish, **and** as its own button on the SEO
+Preview tab below since 2026-08-08) drafts 3 options each for SEO title and
 excerpt from the post's own content using Google's Gemini API — shown for review, never applied
 automatically; picking one just fills that field, still fully editable afterward. Uses `gemini-3.6-flash`,
 which is on Gemini's free tier (1,500 requests/day, no credit card) — at personal-blog volume this should
@@ -195,6 +218,16 @@ pending edits — the action was only reading the *draft* version of the documen
 post has no draft at all. Fixed by falling back to the published version when there's no draft. If this
 exact symptom ever reappears, check `src/sanity/actions/suggestSeo.tsx` still reads
 `props.draft ?? props.published`, not `props.draft` alone.
+
+**One dialog, two entry points (shipped 2026-08-08).** The whole "Suggest SEO & Excerpt" experience -- the
+fetch to `/api/ai/suggest-seo`, every result card (title/excerpt/tags/headlines/pull quotes/FAQs), the
+"Use this" patch logic -- lives in `src/sanity/components/SuggestSeoShared.tsx`. Both
+`suggestSeo.tsx` (the document action next to Publish) and `SuggestSeoButton.tsx` (the button on the SEO
+Preview tab) import from it rather than each having their own copy; only the surrounding chrome differs --
+the document action returns Sanity's own action-framework `dialog` shape, the tab button renders a plain
+`@sanity/ui` `Dialog` itself. **If a suggestion result ever looks wrong or a patch doesn't apply, the fix
+belongs in `SuggestSeoShared.tsx`** -- fixing it in only one of the two callers would silently leave the
+other one still broken.
 
 **Model name changes fast on Gemini's side:** this already broke once (2026-07-30) — `gemini-2.5-flash`
 returned a 404 "no longer available to new users" despite being listed as a stable model in Google's own
@@ -231,7 +264,9 @@ draft autosaves via Sanity's own `useEditState` hook — not a fixed snapshot, n
 Complements, doesn't replace, the pre-publish dialog: that one's a last-chance popup right before Publish,
 this one's visible the whole time you're actually writing. Both share one function
 (`getChecklistIssues`, exported from `prepareForPublish.tsx`) for what counts as "worth a look," so the two
-can't quietly disagree with each other.
+can't quietly disagree with each other. **Also has its own "Suggest SEO & Excerpt" button right above the
+checklist since 2026-08-08** — Asher pointed out the action that fixes what the checklist flags shouldn't
+live in a different menu entirely; see the "One dialog, two entry points" note above.
 
 ---
 
@@ -1299,9 +1334,20 @@ case a writer wants one specific link to replace the current page. `link` mark's
 ## Distraction-free writing: what's actually there
 
 The body field (Studio) now shows a small stats bar above the editor: live word count, estimated reading
-time, and a session timer (time since the document was opened — resets on page reload, it's not a persistent
-streak counter). Below that, a collapsible **Outline** lists every heading in the post with a best-effort
-click-to-jump (scrolls the editor to that heading if found).
+time, and a session timer (resets on page reload, it's not a persistent streak counter). Below that, a
+collapsible **Outline** lists every heading in the post with a best-effort click-to-jump (scrolls the editor
+to that heading if found).
+
+**The session timer starts on the first real edit, not the moment the field mounts (fixed 2026-08-08).**
+Originally it started counting from `Date.now()` at mount, so just opening a post to reread it, or clicking
+into the body field and back out, already showed time elapsed on a "writing session" nothing was actually
+written in -- Asher's own complaint. `DistractionFreeWritingPanel.tsx` now takes a plain-text snapshot of
+whatever's in the field the moment it mounts, and only starts the clock once the current plain text differs
+from that snapshot. Deliberately compares **plain text**, not the raw Portable Text `value` array directly --
+Sanity's own editor can re-key or otherwise normalize that array on mount with no real edit involved, which
+would have started the clock on a false positive. Also deliberately one-way: once started, it keeps running
+even if everything typed gets deleted again, since a session quietly un-starting mid-rewrite would be more
+surprising than it simply continuing.
 
 **Scope decision, on purpose:** the PRD also describes a fade-non-active-paragraph focus mode and a
 cursor-centering typewriter scroll. Neither is built. Both require patching the Portable Text editor's own
