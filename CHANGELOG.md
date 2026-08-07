@@ -11,6 +11,18 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued) — Media library: fixed a real crash, and a spacing typo
+
+Asher reported updating an image's default alt text crashed the page. Root cause: `saveAlt()` in
+`MediaLibraryTool.tsx` had no `catch` block at all, only a bare `try {} finally {}` — any write failure
+became an unhandled promise rejection instead of a visible message. Confirmed the actual write works fine
+against real data (tested `createOrReplace` directly), so the bug was the missing error handling, not the
+mutation itself. Now catches and shows the real error inline. Also fixed "0not currently used in any
+post" — rewrote that line as an explicit template string rather than relying on JSX's line-wrapping
+whitespace collapsing to insert the space correctly.
+
+---
+
 ## 2026-08-08 — Post editor: grouped fields, SEO action moved onto its own tab, session timer fix
 
 Asked to analyze the post editor page for grouping/clarity, then to implement the result, plus a follow-up

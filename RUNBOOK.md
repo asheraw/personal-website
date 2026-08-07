@@ -1049,6 +1049,16 @@ ever needs to point at an image asset directly (not via the normal `image` field
 should just use), don't reference `sanity.imageAsset` by name — use a plain string ID instead, the way this
 field does.
 
+**"Saving alt text crashed the page" (fixed 2026-08-08):** `saveAlt()` had no `catch` block at all — only a
+bare `try {} finally {}`. Any write failure (a permissions hiccup, a dropped connection) became an unhandled
+promise rejection instead of a message Asher could see, which is the most likely explanation for a single
+failed save looking like the whole tool had crashed. Confirmed the write itself works fine against real data
+(tested directly with `createOrReplace` against a real asset) — the bug was the missing error handling, not
+the mutation itself. Now catches and shows the actual error inline via the shared `ErrorMessage` component,
+same pattern used everywhere else in Studio. **If this exact symptom ever reappears with a visible error
+message this time**, the message itself should say why (e.g. a permissions or network issue) rather than
+needing to guess again.
+
 ---
 
 ## Export: Markdown, JSON, HTML, EPUB, PDF — per-post and full-archive (shipped 2026-08-05)
