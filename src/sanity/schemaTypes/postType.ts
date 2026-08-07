@@ -15,6 +15,27 @@ export const postType = defineType({
   // the title (slug), then the image (made manually, after the content is
   // settled), then category/tags, then the stuff that's basically automatic
   // (author) or decided right before hitting Publish (date, SEO, social).
+  //
+  // Fieldsets add visual dividers/headings on top of that same order --
+  // deliberately not reordering anything, just marking where one concern
+  // ends and another begins on what was previously one unbroken scroll of
+  // 17 fields. Body/title/slug/main image stay ungrouped on purpose: they're
+  // the very first thing in the form, so there's nothing above them to
+  // visually separate them from. Only PLAY mode collapses by default -- it's
+  // off for most posts; every other fieldset stays open since its fields are
+  // either touched on every post (Organize, Publishing) or matter enough to
+  // stay visible without an extra click (Search & Sharing, Discussion).
+  fieldsets: [
+    {name: 'organize', title: 'Organize'},
+    {name: 'publishing', title: 'Publishing'},
+    {
+      name: 'seoSharing',
+      title: 'Search & Sharing',
+      description: 'These are exactly the fields the "SEO Preview" tab (next to Editor, above) previews.',
+    },
+    {name: 'discussion', title: 'Discussion'},
+    {name: 'playMode', title: 'PLAY mode', options: {collapsible: true, collapsed: true}},
+  ],
   fields: [
     defineField({
       name: 'body',
@@ -49,6 +70,7 @@ export const postType = defineType({
     defineField({
       name: 'categories',
       type: 'array',
+      fieldset: 'organize',
       description: 'Pick from existing categories. To add a brand-new category, do that from the Categories tab in the left sidebar, then come back here to pick it.',
       of: [defineArrayMember({type: 'reference', to: {type: 'category'}, options: {disableNew: true}})],
       components: {input: CategoryCheckboxInput},
@@ -57,6 +79,7 @@ export const postType = defineType({
       name: 'primaryCategory',
       title: 'Primary category (for breadcrumb)',
       type: 'reference',
+      fieldset: 'organize',
       to: {type: 'category'},
       description:
         "Which category should show in the breadcrumb and drive this post's main topic. Only matters if you picked more than one category above — leave blank to just use the first one.",
@@ -71,6 +94,7 @@ export const postType = defineType({
     defineField({
       name: 'tags',
       type: 'array',
+      fieldset: 'organize',
       of: [defineArrayMember({type: 'string'})],
       description: 'Free-form topic labels, separate from categories. Existing tags are suggested as you type, to avoid near-duplicates.',
       components: {input: TagsAutocompleteInput},
@@ -78,6 +102,7 @@ export const postType = defineType({
     defineField({
       name: 'author',
       type: 'reference',
+      fieldset: 'publishing',
       to: {type: 'author'},
       // Reads the default author from the Site Settings singleton (Studio
       // sidebar -> Site Settings), configurable there instead of hardcoded.
@@ -98,6 +123,7 @@ export const postType = defineType({
     defineField({
       name: 'publishedAt',
       type: 'datetime',
+      fieldset: 'publishing',
       description: 'Defaults to the moment you create the post. Change it any time — your change is always kept.',
       options: {dateFormat: 'YYYY-MMM-DD'},
       initialValue: () => new Date().toISOString(),
@@ -106,6 +132,7 @@ export const postType = defineType({
       name: 'scheduledPublishAt',
       title: 'Schedule for later (optional)',
       type: 'datetime',
+      fieldset: 'publishing',
       options: {dateFormat: 'YYYY-MMM-DD'},
       description:
         'Set a date on an unpublished draft and it publishes itself automatically -- no need to come back and click Publish by hand. Checked once a day, so treat this as "goes live sometime that day," not an exact time (a Vercel Hobby-plan limit, not a choice). Has no effect on an already-published post -- only unpublished drafts get auto-published.',
@@ -114,6 +141,7 @@ export const postType = defineType({
       name: 'excerpt',
       title: 'Excerpt / SEO description',
       type: 'text',
+      fieldset: 'seoSharing',
       rows: 3,
       description:
         'Shown on the blog listing AND used as the search-engine/social description — one summary, doing both jobs. Keep it under 160 characters; anything past that gets cut off in Google results and doesn’t help clicks anyway.',
@@ -123,6 +151,7 @@ export const postType = defineType({
       name: 'seoTitle',
       title: 'SEO title (optional)',
       type: 'string',
+      fieldset: 'seoSharing',
       description: 'Overrides the page title shown in search results and browser tabs. Leave blank to use the post title.',
       validation: (rule) => rule.max(70),
     }),
@@ -130,6 +159,7 @@ export const postType = defineType({
       name: 'socialImage',
       title: 'Social sharing image (optional)',
       type: 'image',
+      fieldset: 'seoSharing',
       description: 'Overrides the image shown when this post is shared on social media. Leave blank to use the featured image.',
       options: {
         hotspot: true,
@@ -139,6 +169,7 @@ export const postType = defineType({
       name: 'useBrandedSocialCard',
       title: 'Use branded social card instead of the photo',
       type: 'boolean',
+      fieldset: 'seoSharing',
       description:
         'Turn on to show a generated title/category/author card (site colors and type) when this post is shared, instead of the featured photo — useful for posts without a strong photo, or ones you’d rather represent with text. Off by default; existing behavior (the photo) is unaffected unless you turn this on.',
       initialValue: false,
@@ -147,6 +178,7 @@ export const postType = defineType({
       name: 'noIndex',
       title: 'Hide from search engines',
       type: 'boolean',
+      fieldset: 'seoSharing',
       description: 'Turn on to keep this post out of Google and other search results (it stays visible on your site).',
       initialValue: false,
     }),
@@ -154,6 +186,7 @@ export const postType = defineType({
       name: 'commentsLocked',
       title: 'Lock comments',
       type: 'boolean',
+      fieldset: 'discussion',
       description:
         'Turn on to stop new comments and replies on this post -- existing comments stay exactly as they are, just no new ones can be added. Can also be toggled per-post from Studio -> Comments, right where you already moderate.',
       initialValue: false,
@@ -172,6 +205,7 @@ export const postType = defineType({
       name: 'play',
       title: 'PLAY mode',
       type: 'object',
+      fieldset: 'playMode',
       description: 'An optional, interactive alternative way to experience this post. Off by default -- every post works perfectly well without it.',
       fields: [
         defineField({name: 'enabled', title: 'Enabled', type: 'boolean', initialValue: false}),

@@ -38,18 +38,41 @@ function formatElapsed(ms: number): string {
  */
 export function DistractionFreeWritingPanel(props: ArrayOfObjectsInputProps) {
   const {value, renderDefault} = props
-  const [sessionStart] = useState(() => Date.now())
+  const [sessionStart, setSessionStart] = useState<number | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [outlineOpen, setOutlineOpen] = useState(false)
-
-  useEffect(() => {
-    const id = setInterval(() => setElapsed(Date.now() - sessionStart), 1000)
-    return () => clearInterval(id)
-  }, [sessionStart])
 
   const blocks = useMemo(() => (Array.isArray(value) ? (value as PTBlock[]) : []), [value])
 
   const plainText = useMemo(() => portableTextToPlainText(blocks), [blocks])
+
+  // Captured once, from whatever's already in the field the moment this
+  // panel mounts (an existing post's real content, or nothing for a new
+  // one) -- the baseline the timer waits for a real change against.
+  // Comparing plain text rather than the raw `value` array itself: Sanity's
+  // own Portable Text editor can re-key/normalize that array on mount
+  // without any real edit happening, which would have started the clock on
+  // a false positive.
+  const [initialPlainText] = useState(plainText)
+
+  // Starts the clock on the first real edit, not the moment the field
+  // mounts -- Asher's own ask: opening a post to reread it, or just
+  // clicking into the body field and back out, shouldn't already show
+  // several seconds/minutes on a "writing session" nothing was written in.
+  // One-way: once started, staying started even if everything typed gets
+  // deleted again (a false restart on a deliberate rewrite would be more
+  // surprising than a session simply continuing to run).
+  useEffect(() => {
+    if (sessionStart === null && plainText !== initialPlainText) {
+      setSessionStart(Date.now())
+    }
+  }, [plainText, initialPlainText, sessionStart])
+
+  useEffect(() => {
+    if (sessionStart === null) return
+    const id = setInterval(() => setElapsed(Date.now() - sessionStart), 1000)
+    return () => clearInterval(id)
+  }, [sessionStart])
   const wordCount = useMemo(
     () => (plainText.trim() ? plainText.trim().split(/\s+/).length : 0),
     [plainText],
