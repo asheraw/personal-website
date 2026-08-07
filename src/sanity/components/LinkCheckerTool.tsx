@@ -177,10 +177,13 @@ export function LinkCheckerTool() {
         </Flex>
         <Text size={1} muted>
           Every link inside a post or reusable snippet&rsquo;s own text, checked live and re-checked
-          automatically once a week. Links that come back 401/403/429 show under &ldquo;Possibly
+          automatically once a day. Links that come back 401/403/429 show under &ldquo;Possibly
           Blocked&rdquo; instead of Broken -- those codes usually mean a site is refusing an automated
           check specifically (Instagram does this to almost all non-browser traffic), not that the page is
-          actually gone. Hover any status badge for what it means.
+          actually gone. A link that briefly fails gets one automatic retry before it&rsquo;s ever recorded
+          as broken, so a server having one bad second doesn&rsquo;t get flagged. Hover any status badge for
+          what it means. Removed or changed a link and don&rsquo;t want to wait for tomorrow&rsquo;s
+          automatic check? Click Check now to refresh immediately.
           {lastChecked && ` Last checked ${new Date(lastChecked).toLocaleString()}.`}
         </Text>
         {checkError && <ErrorMessage>{checkError}</ErrorMessage>}

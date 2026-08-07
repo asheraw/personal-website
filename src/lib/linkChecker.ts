@@ -75,7 +75,16 @@ const BOT_BLOCK_STATUS_CODES = new Set([401, 403, 429])
 
 type CheckResult = {ok: boolean; statusCode?: number; error?: string; blocked: boolean}
 
-async function checkUrl(url: string): Promise<CheckResult> {
+// A one-off transient hiccup -- a server having a bad second, a dropped
+// connection -- shouldn't get permanently reported as "broken" from a
+// single unlucky request. Confirmed as a real problem, not a hypothetical
+// one: a real check run recorded webmd.com as a 500, but the exact same
+// URL came back a clean 200 moments later when re-checked directly. A
+// non-2xx/5xx-shaped failure gets one retry, after a short pause, before
+// it's actually recorded as broken.
+const RETRY_DELAY_MS = 3000
+
+async function attemptCheck(url: string): Promise<CheckResult> {
   for (const method of ['HEAD', 'GET'] as const) {
     try {
       const res = await fetch(url, {
@@ -98,6 +107,13 @@ async function checkUrl(url: string): Promise<CheckResult> {
     }
   }
   return {ok: false, error: 'Request failed', blocked: false}
+}
+
+async function checkUrl(url: string): Promise<CheckResult> {
+  const first = await attemptCheck(url)
+  if (first.ok) return first
+  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS))
+  return attemptCheck(url)
 }
 
 async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
