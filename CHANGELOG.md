@@ -11,6 +11,42 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more) — Media library: search, pagination, mass upload, trash, Masonry gallery mode
+
+Followed up the crash fix below with the design discussion Asher asked for directly: how other CMS handle
+a growing media library, whether mass upload/select/delete were possible, and whether image embeds could
+hold many photos at once (album/masonry). Answered with a plan, then built all of it.
+
+**Media library is lightweight at scale now, not just at 44 images.** A search box (by filename,
+debounced), pagination (60 at a time via "Load more" instead of fetching every asset unconditionally), and
+`loading="lazy"` on every thumbnail — the same handful of techniques WordPress/Contentful/Cloudinary all
+converge on once a library grows past a trivial size.
+
+**Mass upload.** A button and a whole-tool drag-and-drop zone, uploading multiple files at once via the
+client's own asset upload API (`client.assets.upload`) — one bad file doesn't block the rest, with visible
+per-file progress.
+
+**Mass select + trash, matching Comments' existing pattern exactly** — a "Select" mode reveals checkboxes,
+a floating bar trashes the selection, a "Trash" view lists what's there with Restore/Delete Forever per
+item. Real constraint worked around the same way default alt text already does:
+`sanity.imageAsset` is a Sanity system type that can't hold a custom `trashedAt` field directly, so
+trashing writes a companion `imageAssetTrash` document instead (`assetId` + `trashedAt`). The daily purge
+cron that already sweeps 30-day-old trashed comments now also sweeps 30-day-old trashed images — but
+re-confirms nothing references the asset first, so a post that started using a trashed image again doesn't
+lose it out from under itself.
+
+**A fourth gallery display style: Masonry grid.** Alongside Carousel/Slideshow/Scrolling strip, for a post
+with many photos shown all at once rather than one-at-a-time — pure CSS multi-column layout, no JS layout
+library, each photo keeping its own natural aspect ratio, opening the same lightbox every other mode
+already uses.
+
+Verified against real data throughout: pagination/search queries, a real upload, and a full
+trash-then-restore round trip run directly against the live dataset and cleaned up after; Masonry mode
+verified with a real throwaway post (created, screenshotted with all 8 images and a working lightbox,
+deleted).
+
+---
+
 ## 2026-08-08 (continued) — Media library: fixed a real crash, and a spacing typo
 
 Asher reported updating an image's default alt text crashed the page. Root cause: `saveAlt()` in

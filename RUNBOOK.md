@@ -1059,6 +1059,57 @@ same pattern used everywhere else in Studio. **If this exact symptom ever reappe
 message this time**, the message itself should say why (e.g. a permissions or network issue) rather than
 needing to guess again.
 
+**Search, pagination, and lazy-loading (shipped 2026-08-08).** The library query used to fetch every
+`sanity.imageAsset` unconditionally — fine at 44 images, a real problem once it grows into the hundreds.
+Now paginates 60 at a time via GROQ's own slice syntax (`[offset...offset+PAGE_SIZE+1]`, fetching one extra
+to know whether a "Load more" button should show, rather than a separate `count()` query), with a
+debounced filename search (`originalFilename match $term`) that bypasses pagination entirely and just
+returns up to 100 matches — a real search narrows results enough that a second page is never realistically
+needed. Thumbnails got `loading="lazy"` added, which they never had before.
+
+**Mass upload (shipped 2026-08-08).** A button (native file input, `multiple accept="image/*"`) and a
+whole-tool drag-and-drop zone, both funneling into the same `uploadFiles()` — uploads each file via
+`client.assets.upload('image', file, {filename})`, one at a time in sequence (not `Promise.all` in
+parallel) specifically so a progress count (`"Uploading 3/10…"`) means something real, and so one failed
+file doesn't take the rest down with it in an unhandled Promise.all rejection. Non-image files dropped into
+the zone are silently filtered out (`file.type.startsWith('image/')`) rather than attempted and failed.
+
+**Mass select + Trash (shipped 2026-08-08).** A "Select" button toggles checkbox mode on every tile
+(overlaid on the thumbnail, top-left) and reveals a floating action bar; "Move to Trash" on a selection
+that includes an image still used by a post shows an explicit confirm step first (trashing doesn't break
+anything immediately, but flags what happens later). **Same system-type constraint as default alt
+text**: `sanity.imageAsset` can't hold a custom field, so "trashed" is a companion document
+(`imageAssetTrashType.ts`, one per trashed asset, `assetId` + `trashedAt`) rather than a field on the asset
+itself — the library query's own `NOT_TRASHED_FILTER` excludes any asset with such a companion doc via a
+GROQ subquery-in-filter (`!(_id in *[_type == "imageAssetTrash"].assetId)`), so a just-trashed image
+disappears from both the paginated view and search immediately.
+
+**Trash view** (toggled the same way Comments' own Trash view works) lists every trashed asset with a
+"Restore" (deletes the companion doc) or "Delete Forever" (behind its own confirm step) per item, each
+showing the same 30-day auto-delete date `TrashedCommentCard` already shows for comments.
+
+**The daily purge cron (`/api/cron/purge-trash`) now sweeps images too, not just comments** — extended in
+the same request rather than a second cron entry, since it already runs daily. **The one thing images need
+that comments don't**: before actually deleting a 30-day-old trashed image, it re-checks
+`count(*[_type == "post" && references($assetId)])` and skips deletion (leaving it trashed, not un-trashing
+it) if that count is anything but zero. Comments can't be "re-referenced" after being trashed, but an image
+genuinely can — a post could start using a trashed image again (restored elsewhere, re-inserted from an
+old export) before the 30 days are up, and deleting the real asset out from under a post that still points
+at it would leave a permanently broken image on the live site. **If a trashed image ever seems stuck in
+Trash past 30 days**, this check is almost certainly why — it's still referenced somewhere; check the Trash
+row's own "Still used in N posts" note before assuming the cron is broken.
+
+**Masonry grid — a fourth image-block display style (shipped 2026-08-08).** Alongside Carousel/Slideshow/
+Scrolling strip, for a post with a genuinely large batch of photos shown all at once rather than
+one-at-a-time. `MasonryGrid` in `ImageCarousel.tsx` — pure CSS multi-column layout (Tailwind's
+`columns-2 sm:columns-3` + `break-inside-avoid` per item), not a JS masonry library: the browser handles
+the Pinterest-style staggered flow on its own, which is both the simplest correct implementation and the
+lightest one (no layout-measurement JS running on scroll/resize). Each photo keeps its own natural aspect
+ratio rather than being cropped into a uniform grid — same "show the photo as taken" spirit as every other
+display mode on this block. Opens the same single-image `ImageLightbox` as every other mode on click; no
+next/prev navigation was added inside the lightbox itself, consistent with how Carousel/Slideshow/
+Scrolling strip already only ever show one enlarged photo at a time too.
+
 ---
 
 ## Export: Markdown, JSON, HTML, EPUB, PDF — per-post and full-archive (shipped 2026-08-05)
