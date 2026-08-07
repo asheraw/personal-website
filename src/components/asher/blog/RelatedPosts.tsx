@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { urlFor } from "@/sanity/lib/image";
 import type { RelatedPost } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
@@ -20,28 +23,36 @@ export function RelatedPosts({ posts }: { posts: RelatedPost[] }) {
         Related Reading
       </h2>
       <div className="mt-6 grid gap-8 sm:grid-cols-3">
-        {posts.map((post) => {
+        {posts.map((post, i) => {
           const blurbSource = post.excerpt || post.autoExcerpt;
           const blurb = blurbSource ? truncateText(blurbSource, BLURB_LENGTH) : undefined;
           return (
-            <Link key={post._id} href={`/blog/${post.slug}`} className="group block">
-              {post.mainImage && (
-                <div className="mb-3 overflow-hidden rounded-lg">
-                  <Image
-                    src={urlFor(post.mainImage).width(500).height(300).fit("crop").crop("focalpoint").format("jpg").quality(75).url()}
-                    alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
-                    width={500}
-                    height={300}
-                    loading="lazy"
-                    className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                  />
-                </div>
-              )}
-              <h3 className="font-display text-base font-semibold leading-snug text-ivory transition-colors group-hover:text-spotlight">
-                {post.title}
-              </h3>
-              {blurb && <p className="mt-1.5 text-sm leading-relaxed text-stone/75">{blurb}</p>}
-            </Link>
+            <motion.div
+              key={post._id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Link href={`/blog/${post.slug}`} className="group block">
+                {post.mainImage && (
+                  <div className="mb-3 overflow-hidden rounded-lg">
+                    <Image
+                      src={urlFor(post.mainImage).width(500).height(300).fit("crop").crop("focalpoint").format("jpg").quality(75).url()}
+                      alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
+                      width={500}
+                      height={300}
+                      loading="lazy"
+                      className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                )}
+                <h3 className="font-display text-base font-semibold leading-snug text-ivory transition-colors group-hover:text-spotlight">
+                  {post.title}
+                </h3>
+                {blurb && <p className="mt-1.5 text-sm leading-relaxed text-stone/75">{blurb}</p>}
+              </Link>
+            </motion.div>
           );
         })}
       </div>

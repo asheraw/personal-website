@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
@@ -22,7 +25,13 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
   const readingTime = bodyPlainText ? estimateReadingTimeFromText(bodyPlainText) : undefined;
 
   return (
-    <article className="border-b border-amber-faint pb-12 last:border-none">
+    <motion.article
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="border-b border-amber-faint pb-12 last:border-none"
+    >
       {post.mainImage && (
         <Link href={`/blog/${post.slug}`} className="block mb-5">
           <Image
@@ -78,6 +87,6 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
       >
         Read more <span aria-hidden="true">→</span>
       </Link>
-    </article>
+    </motion.article>
   );
 }

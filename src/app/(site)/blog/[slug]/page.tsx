@@ -7,6 +7,7 @@ import { isMobileUserAgent } from "@/lib/device";
 import { PortableText } from "@portabletext/react";
 import { sanityFetch } from "@/sanity/lib/live";
 import { POST_BY_SLUG_QUERY, RELATED_POSTS_QUERY, type RelatedPost } from "@/sanity/lib/queries";
+import { Reveal } from "@/components/asher/primitives";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { BlogReadingBar } from "@/components/asher/blog/BlogReadingBar";
 import { createPostBodyComponents } from "@/components/asher/blog/portableTextComponents";
@@ -245,27 +246,29 @@ export default async function PostPage({ params }: PageProps) {
         </nav>
 
         <article id="post-article">
-          <h1 className="font-display text-4xl font-semibold tracking-[-0.01em] text-ivory sm:text-5xl">
-            {post.title}
-          </h1>
+          <Reveal y={16}>
+            <h1 className="font-display text-4xl font-semibold tracking-[-0.01em] text-ivory sm:text-5xl">
+              {post.title}
+            </h1>
 
-          {(post.publishedAt || readingTime) && (
-            <div className="mt-5 flex flex-wrap items-center gap-x-3 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
-              {post.publishedAt && (
-                <time dateTime={post.publishedAt}>
-                  {new Date(post.publishedAt).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </time>
-              )}
-              {post.publishedAt && <span aria-hidden="true">·</span>}
-              <span>{readingTime} min read</span>
-              {!!post.commentCount && <span aria-hidden="true" className="print:hidden">·</span>}
-              <CommentCountBadge slug={post.slug} count={post.commentCount} />
-            </div>
-          )}
+            {(post.publishedAt || readingTime) && (
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
+                {post.publishedAt && (
+                  <time dateTime={post.publishedAt}>
+                    {new Date(post.publishedAt).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </time>
+                )}
+                {post.publishedAt && <span aria-hidden="true">·</span>}
+                <span>{readingTime} min read</span>
+                {!!post.commentCount && <span aria-hidden="true" className="print:hidden">·</span>}
+                <CommentCountBadge slug={post.slug} count={post.commentCount} />
+              </div>
+            )}
+          </Reveal>
 
           {showPlayLink && (
             <Link
@@ -277,11 +280,13 @@ export default async function PostPage({ params }: PageProps) {
           )}
 
           {post.mainImage && (
-            <FeaturedImage
-              src={urlFor(post.mainImage).width(1200).url()}
-              fullSrc={urlFor(post.mainImage).width(2400).url()}
-              alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
-            />
+            <Reveal delay={0.1}>
+              <FeaturedImage
+                src={urlFor(post.mainImage).width(1200).url()}
+                fullSrc={urlFor(post.mainImage).width(2400).url()}
+                alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
+              />
+            </Reveal>
           )}
 
           {bodyHasAffiliateLinks(post.body) && <AffiliateDisclosure />}

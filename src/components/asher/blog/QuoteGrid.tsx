@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { urlFor } from "@/sanity/lib/image";
 
 export type QuoteEntry = {
@@ -91,9 +94,13 @@ function CardsLayout({
   const quoteSizeClass = size === "small" ? "text-xs" : "text-sm";
   return (
     <div className="my-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {entries.map((entry) => (
-        <div
+      {entries.map((entry, i) => (
+        <motion.div
           key={entry._key}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ delay: i * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="group relative overflow-hidden rounded-2xl border border-amber-faint bg-stage/40 p-5 transition-colors hover:border-spotlight/40"
         >
           <span
@@ -114,7 +121,7 @@ function CardsLayout({
           <p className={`relative mt-4 whitespace-pre-wrap leading-relaxed text-ivory/90 ${quoteSizeClass} ${quoteWeightClass}`}>
             {entry.quote}
           </p>
-        </div>
+        </motion.div>
       ))}
     </div>
   );
@@ -149,8 +156,12 @@ function SpotlightLayout({
       {entries.map((entry, i) => {
         const reversed = i % 2 === 1;
         return (
-          <div
+          <motion.div
             key={entry._key}
+            initial={{ opacity: 0, x: reversed ? 24 : -24 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className={`flex flex-col items-center gap-5 sm:items-start ${
               reversed ? "sm:flex-row-reverse" : "sm:flex-row"
             }`}
@@ -165,7 +176,7 @@ function SpotlightLayout({
                 {entry.role && <span className="font-normal text-stone/60"> — {entry.role}</span>}
               </p>
             </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>
@@ -188,7 +199,7 @@ function MinimalLayout({
   const quoteSizeClass = size === "small" ? "text-lg" : "text-xl";
   return (
     <div className="my-8 divide-y divide-amber-faint border-y border-amber-faint">
-      {entries.map((entry) => (
+      {entries.map((entry, i) => (
         // Between-entry gap stays py-6, unchanged -- the complaint was
         // specifically the outer top/bottom rules, not the spacing between
         // quotes. Previously `first:pt-0 last:pb-0` zeroed out padding
@@ -198,7 +209,14 @@ function MinimalLayout({
         // since the outer rule reads as a stronger visual break than the
         // divider between two quotes and looked tight even at equal
         // padding.
-        <div key={entry._key} className="py-6 first:pt-8 last:pb-8">
+        <motion.div
+          key={entry._key}
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ delay: i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="py-6 first:pt-8 last:pb-8"
+        >
           <p className={`italic leading-snug text-ivory/95 ${quoteSizeClass} ${quoteWeightClass}`}>
             <span className="text-spotlight" aria-hidden="true">
               &ldquo;
@@ -215,7 +233,7 @@ function MinimalLayout({
               {entry.role ? ` · ${entry.role}` : ""}
             </p>
           </div>
-        </div>
+        </motion.div>
       ))}
     </div>
   );

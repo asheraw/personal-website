@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Twitter, Facebook, Linkedin, MessageCircle, Mail, Link2, Check, Share2 } from "lucide-react";
 import { track } from "@/lib/analytics";
 
@@ -119,9 +120,33 @@ export function ShareBar({ url, title, slug }: { url: string; title: string; slu
           onClick={copyLink}
           aria-label={copied ? "Link copied" : "Copy link"}
           title={copied ? "Link copied" : "Copy link"}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:bg-spotlight/5 hover:text-spotlight"
+          className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-faint text-stone/80 transition-all hover:border-spotlight/50 hover:bg-spotlight/5 hover:text-spotlight"
         >
-          {copied ? <Check size={16} className="text-spotlight" /> : <Link2 size={16} />}
+          <AnimatePresence mode="wait" initial={false}>
+            {copied ? (
+              <motion.span
+                key="check"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="inline-flex text-spotlight"
+              >
+                <Check size={16} />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="link"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className="inline-flex"
+              >
+                <Link2 size={16} />
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
       </div>
     </div>
