@@ -327,25 +327,39 @@ check, cleared automatically the moment it passes again). A URL that's been remo
 it used to appear in has its `linkCheck` document deleted on the next run — the registry only ever reflects
 what's actually in current content, never stale history.
 
-**Monitoring, not just an on-demand audit.** `vercel.json` runs `/api/cron/check-links` weekly (same
-`CRON_SECRET` auth as `/api/cron/purge-trash` — already configured, nothing new to set up). **Check now** in
-the tool itself calls `/api/check-links` (no cron secret needed — same no-extra-auth pattern as the AI
-suggestion routes, since reaching Studio is the access control on this solo-owner site) to run the identical
-check on demand.
+**Monitoring, not just an on-demand audit.** `vercel.json` runs `/api/cron/check-links` **daily** (bumped
+from weekly 2026-08-08 — see below; same `CRON_SECRET` auth as `/api/cron/purge-trash` — already
+configured, nothing new to set up). **Check now** in the tool itself calls `/api/check-links` (no cron
+secret needed — same no-extra-auth pattern as the AI suggestion routes, since reaching Studio is the access
+control on this solo-owner site) to run the identical check on demand.
 
-**"Possibly Blocked" is a real, separate classification, not just a caveat in the copy (fixed 2026-08-05).**
-Some sites — Instagram most aggressively, but also Vercel's own bot protection occasionally blocking this
-checker's distinctive User-Agent on `asheraw.com`'s own pages — return `401`/`403`/`429` to
-automated-looking requests specifically, regardless of whether the page is actually fine for a real visitor.
-Those three status codes get a `blocked: true` flag computed once at check time
-(`BOT_BLOCK_STATUS_CODES` in `linkChecker.ts`) and persisted on the document, so they show under their own
-amber **Possibly Blocked** section instead of being lumped in with genuine `404`s/dead domains under
-**Broken**. Asher flagged this directly after seeing several Instagram profile links reported broken that
-weren't — verified the fix by running the real production check against live content and re-checking the
-exact URLs from his screenshot: all came back `200`, confirming they were never actually broken, just
-transiently blocked at check time. **A "Possibly Blocked" result is still worth a quick manual click before
-assuming it's fine** — the classification is a strong signal, not a guarantee, since a small number of
-sites could plausibly return one of these codes for a genuinely-gone page too.
+**"A link I removed/changed still shows up" almost always means cadence, not a bug (confirmed 2026-08-08).**
+The cleanup logic above (deleting a `linkCheck` doc once its URL no longer appears anywhere) only runs
+*during* a check — it can't retroactively notice an edit that happened after the last one. If this ever
+comes up again: check `lastCheckedAt` on the affected row (or the tool's own "Last checked" line) before
+assuming the cleanup itself is broken — if it predates the edit, click **Check now** rather than waiting
+for tomorrow's automatic run.
+
+**A failed check retries once before being recorded as broken at all (shipped 2026-08-08).** Confirmed on a
+real case: `webmd.com` was recorded as a 500, but came back a clean 200 moments later — a check run
+shouldn't permanently flag something broken over one bad second. `checkUrl()` in `linkChecker.ts` now waits
+`RETRY_DELAY_MS` (3s) and tries again once before giving up. Verified this doesn't mask real breakage — a
+genuinely 404'd URL stays broken through the retry in a direct test.
+
+**"Possibly Blocked" is a real, separate classification, not just a caveat in the copy (fixed 2026-08-05,
+extended 2026-08-08).** Some sites — Instagram most aggressively, but also Vercel's own bot protection
+occasionally blocking this checker's distinctive User-Agent on `asheraw.com`'s own pages — return
+`401`/`403`/`429` to automated-looking requests specifically, regardless of whether the page is actually
+fine for a real visitor. **`500` joined this set 2026-08-08**, on the same kind of direct evidence as the
+original three, not a guess: `webmd.com` consistently returned `500` from Vercel's own serverless IPs
+specifically (even after the retry above), while the identical URL came back a clean `200` from a
+different network every single time — a persistent IP-reputation block (common for CDNs/WAFs against
+datacenter/cloud IP ranges), not a real broken link. All four status codes get a `blocked: true` flag
+computed once at check time (`BOT_BLOCK_STATUS_CODES` in `linkChecker.ts`) and persisted on the document,
+so they show under their own amber **Possibly Blocked** section instead of being lumped in with genuine
+`404`s/dead domains under **Broken**. **A "Possibly Blocked" result is still worth a quick manual click
+before assuming it's fine** — the classification is a strong signal, not a guarantee, since a small number
+of sites could plausibly return one of these codes for a genuinely-gone page too.
 
 **Hover a status badge to see what it means.** `STATUS_MEANINGS` in `LinkCheckerTool.tsx` is a plain-English,
 one-line explanation per HTTP code this checker actually encounters (400/401/403/404/410/429/500/502/503/504)

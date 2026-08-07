@@ -11,6 +11,31 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued yet again) — Link Checker: real fixes for "shows 500 but opens fine" and stale entries
+
+Asher flagged two things about Content Health's Link Checker. Investigated both against the real live
+data rather than guessing.
+
+**"Shows http 500 but opens fine for me."** Checked the actual `linkCheck` documents: `webmd.com` was
+recorded as a 500 from the last run. Re-tested it directly and got a clean 200 — then re-tested again
+specifically from Vercel's own serverless IPs (via a live production request) and got 500 again,
+consistently, while a different network got 200 every time. That's a persistent IP-reputation block (a
+CDN/WAF treating cloud/datacenter IP ranges differently), not a real broken link and not even a transient
+hiccup — added 500 to the same "Possibly Blocked" classification 401/403/429 already get. Also added a
+general resilience fix regardless of cause: any failed check now retries once after a short pause before
+being recorded as broken at all, verified against both a genuinely-404 URL (stays broken, retry doesn't
+mask real breakage) and a working one (succeeds immediately, no added delay).
+
+**"Removed/changed links still stay listed."** The cleanup logic that deletes a `linkCheck` doc once its
+URL no longer appears in any post/snippet is correct — read it directly, no bug found. Traced instead to
+cadence: the automatic check only ran once a week (every Monday), so anything edited after the last run
+just hadn't been re-checked yet. Bumped to daily, matching the other two crons already running daily, and
+added a line to the tool's own copy pointing at "Check now" for anyone who wants results sooner than that.
+Ran a real check against the live site immediately after shipping both fixes to refresh Asher's data right
+away rather than leaving it stale until the next automatic run.
+
+---
+
 ## 2026-08-08 (continued once more) — Media library: search, pagination, mass upload, trash, Masonry gallery mode
 
 Followed up the crash fix below with the design discussion Asher asked for directly: how other CMS handle
