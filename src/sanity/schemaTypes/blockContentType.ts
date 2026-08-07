@@ -236,6 +236,7 @@ export const blockContentType = defineType({
               {title: 'Carousel (reader clicks through)', value: 'carousel'},
               {title: 'Slideshow (auto-advances on its own)', value: 'slideshow'},
               {title: 'Scrolling strip (variable width, auto-scrolls)', value: 'scroll-strip'},
+              {title: 'Masonry grid (many photos at once, Pinterest-style)', value: 'masonry'},
             ],
           },
           initialValue: 'carousel',
@@ -268,7 +269,9 @@ export const blockContentType = defineType({
               ? 'Slideshow'
               : displayStyle === 'scroll-strip'
                 ? 'Scrolling strip'
-                : 'Carousel';
+                : displayStyle === 'masonry'
+                  ? 'Masonry grid'
+                  : 'Carousel';
           return {title: `Image ${label} (${extra + 1} photos)`, media};
         },
       },

@@ -204,6 +204,7 @@ export const structure: StructureResolver = (S) =>
             'aiOutputLog',
             'linkCheck',
             'imageAssetAlt',
+            'imageAssetTrash',
             'bulkOperationLog',
             'searchQueryLog',
             'errorLog',

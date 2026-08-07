@@ -33,7 +33,7 @@ export type GalleryImage = {
   caption?: string;
 };
 
-export type DisplayStyle = "carousel" | "slideshow" | "scroll-strip";
+export type DisplayStyle = "carousel" | "slideshow" | "scroll-strip" | "masonry";
 
 // Renders every multi-photo Image block. "Carousel" and "Slideshow" show
 // one photo at a time (arrows, dots) -- the only difference between them is
@@ -54,6 +54,7 @@ export function ImageCarousel({
 }) {
   if (!images?.length) return null;
   if (mode === "scroll-strip") return <ScrollStrip images={images} size={size} />;
+  if (mode === "masonry") return <MasonryGrid images={images} />;
   return <SlideCarousel images={images} mode={mode} size={size} />;
 }
 
@@ -182,6 +183,53 @@ function SlideCarousel({
         />
       )}
     </figure>
+  );
+}
+
+// "Masonry grid" -- for a genuinely large batch of photos (a post with
+// dozens of them) shown all at once rather than one-at-a-time through a
+// carousel. Pure CSS multi-column layout (`columns-*` + `break-inside-avoid`
+// per item), not a JS layout library -- the browser handles the staggered
+// Pinterest-style flow on its own, which is both the simplest correct way
+// to do this and the lightest: no layout-measurement JS running on scroll
+// or resize. Each photo keeps its own natural aspect ratio (unlike a
+// uniform cropped grid), same "show the photo as taken" spirit as every
+// other display mode on this block. Opens the same single-image
+// ImageLightbox as every other mode on click -- no next/prev arrows added
+// inside the lightbox itself, consistent with how Carousel/Slideshow/
+// Scrolling strip already only ever show one enlarged photo at a time too.
+function MasonryGrid({ images }: { images: GalleryImage[] }) {
+  const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null);
+
+  return (
+    <div className="my-8 columns-2 gap-3 sm:columns-3">
+      {images.map((img) =>
+        img.asset ? (
+          <figure key={img._key} className="mb-3 break-inside-avoid">
+            <button type="button" onClick={() => setLightboxImage(img)} aria-label="View full size" className="block w-full cursor-zoom-in">
+              <img
+                src={urlFor(img).width(800).url()}
+                alt={img.alt ?? ""}
+                className="w-full rounded-lg border border-amber-faint object-cover"
+                loading="lazy"
+              />
+            </button>
+            {img.caption && (
+              <figcaption className="mt-1.5 text-center font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60">
+                {img.caption}
+              </figcaption>
+            )}
+          </figure>
+        ) : null
+      )}
+      {lightboxImage?.asset && (
+        <ImageLightbox
+          src={urlFor(lightboxImage).width(2400).url()}
+          alt={lightboxImage.alt ?? ""}
+          onClose={() => setLightboxImage(null)}
+        />
+      )}
+    </div>
   );
 }
 

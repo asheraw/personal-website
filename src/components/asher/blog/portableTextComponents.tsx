@@ -205,7 +205,7 @@ export const postBodyComponents: PortableTextComponents = {
           ...additional,
         ];
         const mode: DisplayStyle =
-          value.displayStyle === "slideshow" || value.displayStyle === "scroll-strip"
+          value.displayStyle === "slideshow" || value.displayStyle === "scroll-strip" || value.displayStyle === "masonry"
             ? value.displayStyle
             : "carousel";
         return <ImageCarousel images={images} mode={mode} size={size} />;
