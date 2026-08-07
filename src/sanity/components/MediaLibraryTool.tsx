@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from 'react'
 import {Card, Flex, Grid, Text, Stack, Badge, Spinner, Box, TextInput, Button} from '@sanity/ui'
 import {useClient} from 'sanity'
+import {ErrorMessage} from './ErrorMessage'
 
 type UsedByPost = {title: string; slug: string | null}
 type ImageAsset = {
@@ -34,6 +35,7 @@ export function MediaLibraryTool() {
   const [error, setError] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const load = useCallback(() => {
     return client.fetch<ImageAsset[]>(
@@ -64,6 +66,7 @@ export function MediaLibraryTool() {
 
   async function saveAlt(assetId: string, altText: string) {
     setSavingId(assetId)
+    setSaveError(null)
     try {
       const trimmed = altText.trim()
       if (trimmed) {
@@ -81,6 +84,13 @@ export function MediaLibraryTool() {
       setAssets((prev) =>
         prev ? prev.map((a) => (a._id === assetId ? {...a, defaultAlt: trimmed || null} : a)) : prev,
       )
+    } catch (err) {
+      // Previously uncaught -- a failed write here (a permissions hiccup, a
+      // dropped connection) became an unhandled promise rejection instead
+      // of a message Asher could actually see, which is the most likely
+      // explanation for this looking like the whole page had crashed
+      // rather than one save quietly failing.
+      setSaveError(err instanceof Error ? err.message : 'Something went wrong saving that alt text.')
     } finally {
       setSavingId(null)
     }
@@ -114,12 +124,13 @@ export function MediaLibraryTool() {
             Media library
           </Text>
           <Text size={1} muted>
-            {assets.length} image{assets.length === 1 ? '' : 's'} uploaded · {unused.length} not currently used
-            in any post. Set a default alt text here to fill the gap automatically on any post that uses this
-            image as its Featured Image and hasn&rsquo;t written its own — writing one for a specific post
-            always takes priority over this.
+            {`${assets.length} image${assets.length === 1 ? '' : 's'} uploaded · ${unused.length} not currently used in any post.`}{' '}
+            Set a default alt text here to fill the gap automatically on any post that uses this image as its
+            Featured Image and hasn&rsquo;t written its own — writing one for a specific post always takes
+            priority over this.
           </Text>
         </Stack>
+        {saveError && <ErrorMessage>Couldn&rsquo;t save that alt text: {saveError}</ErrorMessage>}
         <Grid columns={[2, 3, 4, 5]} gap={3}>
           {assets.map((asset) => (
             <Card key={asset._id} radius={2} shadow={1} padding={2} tone={asset.usedBy.length === 0 ? 'caution' : 'default'}>
