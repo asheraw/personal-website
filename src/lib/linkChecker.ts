@@ -71,7 +71,17 @@ export async function collectLinks(): Promise<LinkEntry[]> {
 // traffic. Flagging these separately from a real 404/dead-domain failure
 // is the difference between "broken" meaning something trustworthy versus
 // crying wolf on links that are perfectly fine for an actual visitor.
-const BOT_BLOCK_STATUS_CODES = new Set([401, 403, 429])
+//
+// 500 joins this set on real, confirmed evidence, not a guess: webmd.com
+// consistently returned 500 to this checker (from Vercel's own serverless
+// IPs, even after the retry above), while the exact same URL came back a
+// clean 200 from a different network every time it was tested directly --
+// a persistent IP-reputation block (common for CDNs/WAFs against
+// datacenter/cloud IP ranges specifically), not a real broken link. A
+// genuinely dead page returning 500 would still get caught -- it just
+// shows under "Possibly Blocked" instead of "Broken," same tradeoff
+// already accepted for 401/403/429.
+const BOT_BLOCK_STATUS_CODES = new Set([401, 403, 429, 500])
 
 type CheckResult = {ok: boolean; statusCode?: number; error?: string; blocked: boolean}
 

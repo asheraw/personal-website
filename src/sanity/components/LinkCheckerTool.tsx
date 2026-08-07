@@ -52,7 +52,7 @@ const STATUS_MEANINGS: Record<number, string> = {
   404: "Not Found — the page genuinely doesn't exist at this address anymore.",
   410: 'Gone — deliberately, permanently removed by the site.',
   429: 'Too Many Requests — rate-limited. The site is blocking automated checks, not necessarily broken.',
-  500: 'Internal Server Error — something is wrong on their end.',
+  500: 'Internal Server Error — often the site genuinely erroring, but confirmed on real cases to also be an automated-traffic block, same as 403/429.',
   502: 'Bad Gateway — a server/proxy issue in front of their site, often temporary.',
   503: 'Service Unavailable — temporarily down or overloaded.',
   504: 'Gateway Timeout — the server took too long to respond.',
