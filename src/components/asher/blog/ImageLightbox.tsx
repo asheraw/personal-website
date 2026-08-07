@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
@@ -8,6 +8,34 @@ import { X } from "lucide-react";
 // regardless of overflow/transform on whatever container (a carousel's
 // Embla viewport, in particular) happens to trigger it.
 export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  // On mobile, a reader's instinct to leave the lightbox is an edge-swipe
+  // "back" gesture, same as leaving any full-screen view -- without this,
+  // that gesture falls straight through to the browser's real back
+  // navigation and dumps them off the article entirely. Pushing a dummy
+  // history entry on open gives that gesture somewhere to land first: the
+  // popstate it fires closes the lightbox instead of leaving the page.
+  const closedByPopStateRef = useRef(false);
+
+  useEffect(() => {
+    history.pushState({ lightbox: true }, "", location.href);
+    const onPopState = () => {
+      closedByPopStateRef.current = true;
+      onClose();
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      // Closed via the X button, Escape, or backdrop click rather than a
+      // back gesture -- the dummy entry above is still sitting in history
+      // and needs clearing out, or the *next* back gesture would just hit
+      // that instead of actually leaving the page. Skipped when a real
+      // popstate already consumed it (the branch above), since going back
+      // a second time would then skip past the page the reader meant to
+      // land on.
+      if (!closedByPopStateRef.current) history.back();
+    };
+  }, [onClose]);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
