@@ -10,6 +10,7 @@ import {
   FAITH_VALUES, PRINCIPLES, PERSONALITY, COACHING_PHILOSOPHY_QUOTE,
   CONTACT_INFO, SOCIALS, STAGE_PILLARS, PHILOSOPHY_CLOSING_NOTE, COACHING_INTRO,
 } from "../data";
+import { CyclingCallingWord } from "../CyclingCallingWord";
 
 type IconType = React.ComponentType<{ size?: number; className?: string }>;
 const ICONS: Record<string, IconType> = {
@@ -79,7 +80,7 @@ export function PlaySections() {
           <div className="rounded-xl border border-amber-faint bg-stage/40 p-4 text-center"><GraduationCap size={24} className="mx-auto text-spotlight" /><p className="mt-2 font-display text-base font-semibold text-ivory">The Studio</p><p className="mt-1 text-sm text-stone/60">15+ years of marketing</p></div>
         </div>
         <p className="mt-5 text-center font-display text-lg italic leading-snug text-ivory">&ldquo;Two callings. One instinct: help people say the truest thing in the clearest way.&rdquo;</p>
-        <p className="mt-4 text-base leading-relaxed text-stone/70">Actor, coach, marketer, storyteller — each role makes the others sharper. Theatre taught presence, timing, and emotional truth. Marketing taught clarity and positioning. Coaching is where they meet.</p>
+        <p className="mt-4 text-base leading-relaxed text-stone/70"><CyclingCallingWord /> — each role makes the others sharper. Theatre taught presence, timing, and emotional truth. Marketing taught clarity and positioning. Coaching is where they meet.</p>
         <p className="mt-3 text-base leading-relaxed text-stone/70">Whether the audience is a thousand-seat auditorium or a one-to-one Zoom call, the conviction doesn&rsquo;t change.</p>
       </Section>
 

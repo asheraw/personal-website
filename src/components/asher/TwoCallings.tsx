@@ -3,6 +3,15 @@
 import { motion } from "framer-motion";
 import { Reveal, Eyebrow } from "./primitives";
 import { Drama, GraduationCap, ArrowRight } from "lucide-react";
+import { CyclingCallingWord } from "./CyclingCallingWord";
+
+// Placed on this section's own body copy rather than the hero headline --
+// the hero's "An actor who teaches. A teacher who acts." reads as an
+// instant mirror when both halves show at once, and animating that away
+// in favor of a slower one-at-a-time reveal would have cost more than it
+// added. This section's "many roles" framing is a more natural fit for
+// cycling, since it's literally about the plurality of roles rather than
+// a two-way mirror. See CyclingCallingWord.tsx for the effect itself.
 
 export function TwoCallings() {
   return (
@@ -28,7 +37,7 @@ export function TwoCallings() {
               <span className="italic text-ivory-gradient">craft.</span>
             </h2>
             <p className="max-w-2xl text-base leading-relaxed text-stone/85 sm:text-lg">
-              Actor, coach, marketer, storyteller — each role makes the others sharper.
+              <CyclingCallingWord /> — each role makes the others sharper.
             </p>
           </div>
         </Reveal>
