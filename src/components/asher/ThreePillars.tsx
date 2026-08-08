@@ -3,6 +3,15 @@
 import { motion } from "framer-motion";
 import { Drama, GraduationCap, Church } from "lucide-react";
 import { Reveal, Eyebrow, fadeUp, staggerParent } from "./primitives";
+import { CyclingWordSlot, useCyclingIndex } from "./CyclingCallingWord";
+
+// "story" pairs with "telling", "voice" pairs with "hearing" -- same array
+// index in both lists, driven by one shared index (useCyclingIndex below)
+// rather than two independently-timed slots, which would drift out of sync
+// almost immediately and read as a mismatched "a story worth hearing".
+const SUBJECT_WORDS = ["story", "voice"];
+const PREDICATE_WORDS = ["telling", "hearing"];
+const PREMISE_INTERVAL_MS = 1800;
 
 const PILLARS = [
   {
@@ -26,6 +35,8 @@ const PILLARS = [
 ];
 
 export function ThreePillars() {
+  const {index, reduceMotion} = useCyclingIndex(SUBJECT_WORDS.length, PREMISE_INTERVAL_MS);
+
   return (
     <section
       id="three-pillars"
@@ -47,12 +58,21 @@ export function ThreePillars() {
               Finding Your Voice
             </p>
             <h2 className="mt-4 font-display text-5xl font-semibold leading-[0.98] tracking-[-0.02em] text-ivory sm:text-6xl lg:text-7xl">
-              a story
-              <br />
-              worth telling
-              <br />
-              <span className="italic text-spotlight-gradient">a voice</span> worth
-              hearing
+              You have a{" "}
+              <CyclingWordSlot
+                words={SUBJECT_WORDS}
+                index={index}
+                reduceMotion={reduceMotion}
+                wordClassName="italic text-spotlight-gradient"
+              />{" "}
+              worth{" "}
+              <CyclingWordSlot
+                words={PREDICATE_WORDS}
+                index={index}
+                reduceMotion={reduceMotion}
+                wordClassName="italic text-spotlight-gradient"
+              />
+              .
             </h2>
           </Reveal>
 
