@@ -47,8 +47,15 @@ export function CyclingCallingWord({
   // keeps whatever follows this span from shifting as the word cycles.
   const minWidthClass = withArticle ? "min-w-[13ch]" : "min-w-[8ch]";
 
+  // Matches the surrounding text's natural line height as closely as
+  // possible -- an earlier version reserved 1.3em "for descenders," but
+  // that made the box meaningfully taller than one line of text, and since
+  // each word renders flush to the box's top while align-bottom anchors
+  // the box's BOTTOM to the surrounding line, the extra height pushed the
+  // visible word noticeably out of vertical alignment with static text
+  // beside it (e.g. "Asher is" sitting higher than the cycling word).
   return (
-    <span className={`relative inline-block h-[1.3em] ${minWidthClass} align-bottom overflow-hidden`}>
+    <span className={`relative inline-block h-[1em] ${minWidthClass} align-bottom overflow-hidden`}>
       {CALLING_WORDS.map((word, i) => (
         <motion.span
           key={word}
