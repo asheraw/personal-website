@@ -2279,6 +2279,13 @@ Verified against the live dataset: the original share-count tracking (clicked X-
 post, confirmed counts updated correctly) 2026-08-03; the "add note" flow (`createIfNotExists` + append)
 tested against a real post with no prior share record 2026-08-04. Test data removed both times.
 
+**"Share this post" (shipped 2026-08-08).** Each post row now has a button that drafts AI social captions
+right there, the same flow "Draft Social Copy" already gives from inside a post's own editor — see the "One
+implementation, two entry points" note under **AI Workspace: social copy drafting** below for how the two
+share code. `SharePanel.tsx` fetches the post's `body` on demand (not eagerly for the whole list — Distribution
+only loads `_id`/`title`/`slug`/`publishedAt` per post normally, kept light since it loads every post at
+once) the first time this panel is opened for a given post, then calls the same suggestion flow.
+
 ---
 
 ## AI Workspace: social copy drafting (shipped 2026-08-04)
@@ -2293,13 +2300,31 @@ with a Copy button per option — nothing is posted anywhere or written to the d
 *reader* reshare a post that already exists). This is for when Asher himself is about to announce a new post
 on his own X/LinkedIn/Facebook accounts and wants a drafted starting point rather than a blank composer.
 
-**The generated text never includes the actual URL** — X/LinkedIn/Facebook all generate their own link
-preview card from a pasted URL, so baking the link into the caption text itself is redundant and eats into
-X's character budget for nothing. Asher pastes the caption, then the link, separately.
+**The generated text never includes the actual URL.** Originally (2026-08-04) this was framed as "the
+platforms generate their own link preview card from a pasted URL, so repeating it in the caption is
+redundant." **Reframed 2026-08-08, on Asher's own ask**: the caption is now written to stand completely on
+its own with no link attached to the post at all — not even as a preview card — because X and LinkedIn both
+measurably favor posts without an outbound link attached directly. The link gets pasted into a reply/first
+comment instead, once the post is up, which is the standard workaround for that reach penalty. The prompt
+now explicitly instructs against writing anything that reads like it's missing a link ("link in comments,"
+"link below") too, since that telegraphs the workaround and defeats the point — the caption has to actually
+read as a complete post. See `SOCIAL_TASK_INSTRUCTIONS` in `suggest-social/route.ts` for the exact wording.
 
 New route: `src/app/api/ai/suggest-social/route.ts`, same `gemini-3.6-flash` + `responseSchema` structured-
 JSON pattern as `suggest-seo`. New action: `src/sanity/actions/suggestSocialCopy.tsx`, registered in
 `sanity.config.ts` right next to `createSuggestSeoAction()`.
+
+**One implementation, two entry points (shipped 2026-08-08).** The actual fetch/state logic and every
+result card (per-platform captions, copy buttons, the "Open X to post" link) live in
+`src/sanity/components/SuggestSocialCopyShared.tsx` — shared between this document action and the new
+**"Share this post"** panel on the Distribution dashboard (`SharePanel.tsx`, see the Distribution section
+above), so drafting from inside a post's editor and drafting from Distribution are two doors into the same
+real code, not two copies of it. **X gets a genuine one-click "Open X to post"** — its own compose intent
+(`https://twitter.com/intent/tweet?text=...`) supports real pre-filled text with no URL attached, matching
+the link-in-comment flow exactly. **LinkedIn and Facebook don't get an equivalent** — both platforms'
+official share endpoints only accept a `url` param, not custom caption text (an anti-spam restriction on
+their end, not something to work around), so a copy button is the honest affordance there rather than a
+button that looks like one-click posting but silently can't carry the caption.
 
 *(Update, same day: this section originally said the prompt instructions were hardcoded here specifically
 to avoid drifting into "tone/voice controls" — that item shipped a few hours later, see below. The
@@ -2388,6 +2413,27 @@ type. UI additions in `src/sanity/actions/suggestSeo.tsx`: `HeadlineOption` (tit
 Verified against the real Gemini API before shipping: real post content produced sensible alternative
 headlines and FAQ pairs, both pull quotes confirmed as exact substrings of the source text, and the
 `aiOutputLog` entry confirmed to store all three new fields correctly — then the test log entry was deleted.
+
+**"Make image" on a pull quote (shipped 2026-08-08).** Generates a shareable quote-card graphic via a new
+edge route, `src/app/api/og/quote/route.tsx` — same brand palette (`#0a0807` background, `#f0b865` gold
+accent, `#f5efe4` text) and Playfair Display font-loading technique as the existing branded social card
+(`/api/og/[slug]/route.tsx`), on purpose: a functional, on-brand default, not a finished design system —
+Asher's own framing was that he'll experiment with the actual style later. Query-param driven
+(`?text=...&attribution=...`) rather than tied to a post's slug, since a quote isn't a property of the post
+document itself. 1200×1200 (square) — a deliberately platform-neutral shape rather than optimizing for one
+specific network's preferred aspect ratio.
+
+**Real bug caught only by rendering test images, not by reading the code:** the "asheraw.com" attribution
+line initially rendered with a silent font switch mid-word ("ashera" in Playfair, "w.com" in a fallback).
+Cause: Google Fonts' `text=` parameter subsets the font file to only the exact characters requested, and the
+font was only being loaded for the quote + attribution text — not the literal "asheraw.com" string that's
+*always* rendered regardless of what's passed in. Whether the bug showed at all depended entirely on
+whether the quote/attribution happened to already contain every letter in "asheraw.com" — it was invisible
+on some test inputs and glaring on others, exactly the kind of thing that looks fine reading the code and
+only breaks in a real render. **Fixed by including the literal domain string in the font-loading request
+regardless of what the actual quote contains** — if this route is ever changed to render any other
+always-present text (a new label, a watermark), that text needs to go into the same font-load call too, or
+this exact bug reappears for it.
 
 ---
 

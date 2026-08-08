@@ -11,6 +11,35 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more still) — Distribution: a real Share panel, and quote-card images
+
+Asked whether Distribution could help post out to socials directly, with the link going in a follow-up
+comment rather than attached to the post (common practice for X/LinkedIn specifically, since both
+measurably favor posts without an outbound link attached) — confirmed that's still current, not something
+that's been resolved away, and built the answer.
+
+**"Share this post"** on the Distribution dashboard drafts AI captions on demand — the same flow the
+existing "Draft Social Copy" document action already gave from inside a post's own editor, now also
+available from where Asher actually decides what to share. Extracted the shared fetch/render logic into
+`SuggestSocialCopyShared.tsx` so both are one real implementation. **The AI prompt itself changed**: it
+previously assumed the link gets attached directly to the post (producing a link-preview card); now it
+explicitly assumes the caption stands alone and the URL gets pasted into a follow-up reply/comment
+afterward. X gets a genuine one-click "Open X to post" (its compose intent supports real pre-filled text);
+LinkedIn/Facebook don't — their own share dialogs only accept a URL param, not custom caption text, so
+copy-and-paste is the honest affordance there rather than a fake one-click button.
+
+**Quote-card images.** A "Make image" button next to each AI-drafted pull quote in "Suggest SEO & Excerpt"
+generates a shareable graphic (new edge route `/api/og/quote`, same brand palette/font as the existing
+branded social card). Caught a real bug by actually rendering test images rather than trusting the code:
+the "asheraw.com" line silently switched fonts mid-word, because Google Fonts' character-subsetting only
+covered the quote/attribution text passed in, not the literal domain string that's always rendered too.
+Fixed, reverified with a fresh render — consistent now, confirmed on the live site as well as locally.
+
+**Deliberately skipped, Asher's own call:** Pinterest (wrong platform for his audience) and resurfacing old
+posts (he's published across more than a decade and doesn't want that implying anything needs revisiting).
+
+---
+
 ## 2026-08-08 (continued yet again) — Link Checker: real fixes for "shows 500 but opens fine" and stale entries
 
 Asher flagged two things about Content Health's Link Checker. Investigated both against the real live
