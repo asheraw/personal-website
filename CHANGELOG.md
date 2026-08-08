@@ -11,6 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more again, round six) — Compression as an option when uploading inside a post too
+
+Asher asked whether uploading a photo directly inside a post — not through Media — gets the same
+compression. It didn't; that's a completely separate upload path Studio owns itself.
+
+Deliberately didn't make it automatic there the way Media's own uploads are. Fully replacing Studio's
+built-in upload behavior for every image field on the site isn't something that could be safely verified
+without actually logging into Studio and clicking through it for real, and getting a detail of that wrong
+risked disrupting the exact tool used to write every post. Asked directly, and the safer route won: instead
+of replacing the default, a second option — **Upload (compressed)** — now sits right alongside the existing
+"Upload" on every image field, unchanged and untouched. Pick the compressed one when it's wanted; the
+regular one still works exactly as it always has.
+
+---
+
 ## 2026-08-08 (continued once more again, round five) — Media library: compress the photos already there too
 
 Follow-up to automatic upload compression: Asher asked whether the photos already sitting in the library —

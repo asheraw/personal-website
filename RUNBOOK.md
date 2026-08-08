@@ -1132,10 +1132,35 @@ Asher's own preference when this was scoped.
 **Only covers uploads made through Media library's own upload/replace flows** — a photo uploaded directly
 inside a post's own image field (clicking "Upload" on the Featured Image, an inline body image, an author
 avatar) goes through Sanity Studio's default image input widget instead, which this doesn't touch, so it
-stays uncompressed. Asher asked about this directly; noted here rather than silently left as a gap. A true
-site-wide fix would mean overriding the default image input component (or `form.image.assetSources`) at
-the Studio config level so every image field anywhere gets the same treatment — bigger blast radius than
-this feature (every image field, not just Media's own upload buttons), not yet built.
+stays uncompressed by default. Asher asked about this directly. See "Upload (compressed)" below for what
+shipped in response — a deliberately additive option, not a silent global override.
+
+**"Upload (compressed)" — the same squeeze available on every image field, opt-in (shipped 2026-08-08).**
+Closing the gap above outright — overriding Studio's default upload mechanism for every image field
+site-wide — was ruled out specifically because it can't be safely verified in an environment without a real,
+authenticated Studio login: this sandbox has none, so the actual picker UI could never be clicked through
+before shipping, and a subtle mistake there risks breaking the exact tool Asher writes every post with. Went
+with the lower-risk route instead: `src/sanity/components/CompressedUploadSource.tsx` defines a genuinely
+*additional* `AssetSource` — Sanity's public, non-beta contract for a custom "add image" entry — registered
+via `form.image.assetSources: (prev) => [...prev, compressedUploadSource]` in `sanity.config.ts`, which
+appends to whatever sources already exist rather than replacing them. Every image field on the site (post
+images, author avatar, site settings) now shows **both** the original, completely untouched "Upload" and a
+new "Upload (compressed)" sitting beside it — pick the compressed one when it's wanted, or ignore it and
+nothing about the existing flow changes at all.
+
+The component itself is a small drag-drop-or-choose UI (same shape as Media library's own upload zone),
+running the file through the same `compressImageFile` and `client.assets.upload()` already proven elsewhere
+in this feature, then handing the result back via `onSelect([{kind: 'assetDocumentId', value: uploaded._id}])`
+— note this uses the *stable* `AssetFromSource`/`onSelect` contract (marked `@public` in `@sanity/types`),
+not the newer `AssetSourceUploader`/picker-mode API (marked `@beta`), specifically to build against the
+surface least likely to shift under a future Sanity upgrade.
+
+**Verification ceiling, stated plainly**: typechecked against Sanity's real `AssetSource`/
+`AssetSourceComponentProps` types (not guessed from memory), a full production build, and confirming
+Studio's own config/schema bootstrap still loads with zero errors after adding the `assetSources` resolver.
+**Could not click through the actual picker and see "Upload (compressed)" appear next to "Upload" on a real
+field** — that specific, final check needs an actual login this sandbox doesn't have. If it doesn't show up
+as expected, the resolver in `sanity.config.ts`'s `form.image.assetSources` is the first place to look.
 
 **"Compress Library" — a one-time pass for photos already there (shipped 2026-08-08).** Automatic
 compression above only ever applied going forward. Asher asked whether the photos already in the library
