@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-09 (continued once more) — Fixed a real styling bug, then The Premise gets its own dual cycle
+
+Asher flagged that the Two Callings headline looked off in a screenshot — the cycling word sat visibly out
+of alignment with "Asher is" next to it. Traced it to a real cause, not guessed: the word's box was reserving
+noticeably more height than one line of text actually needs (leftover headroom from an earlier "just in case
+a letter has a tail" decision), and that extra height pushed the word out of position relative to text
+sitting in a normal line height beside it. Fixed the box to match the real line height.
+
+Then a follow-up ask: the same effect on "The Premise" section, but with two words cycling in one sentence —
+"You have a [story/voice] worth [telling/hearing]" — where the pairing has to stay locked. Story always with
+telling, voice always with hearing, never crossed. Built that by having both words driven by one shared timer
+instead of two separate ones (two independent timers would drift out of sync almost immediately), and
+checked it programmatically over several full cycles, not just by eye, to make sure the pairing never
+slipped.
+
+Testing that on a phone-sized screen surfaced a second real bug in the part shipped earlier the same week:
+the space reserved for each cycling word was a rough guess that didn't quite match this font, leaving an
+odd gap before whatever text came right after it — invisible on the Two Callings headline (nothing follows
+the word there), obvious here. Rebuilt the underlying piece properly this time — it now measures the actual
+words instead of guessing, so this can't happen again for any future word list, not just this one.
+
+---
+
 ## 2026-08-09 (continued) — Two Callings: the cycling word moves into the headline
 
 Follow-up to the cycling-word effect shipped earlier the same day. Asher asked to restructure it: the big

@@ -2742,11 +2742,61 @@ Two new props on the shared component support this without hardcoding the new ph
 hardcoded per-word lookup, so a future edit to `CALLING_WORDS` can't silently ship the wrong article) as one
 animated unit, and **`wordClassName`** lets each caller style the word to fit its own context (italic +
 `text-spotlight-gradient` at headline scale in `TwoCallings.tsx`/`PlaySections.tsx`'s title now, vs. the
-original plain body-copy styling still available as the default for any future body-copy usage). The
-reserved minimum width also grew from `8ch` to `13ch` when `withArticle` is set, since "a Storyteller" is
-meaningfully wider than bare "Storyteller." Play mode's `Section` component needed its `title` prop widened
-from `string` to `React.ReactNode` to hold the embedded component — a safe widening, since every existing
-plain-string `title` usage stays valid without any other changes.
+original plain body-copy styling still available as the default for any future body-copy usage). Play mode's
+`Section` component needed its `title` prop widened from `string` to `React.ReactNode` to hold the embedded
+component — a safe widening, since every existing plain-string `title` usage stays valid without any other
+changes. (The width-reservation approach mentioned in earlier drafts of this section — a hand-guessed
+`min-w-[Nch]` — was replaced entirely by the CSS Grid rewrite below; there's no width prop to reason about
+anymore.)
+
+**Vertical misalignment, fixed (shipped 2026-08-09, later the same day).** Asher flagged from a screenshot
+that the cycling word looked visibly out of alignment with "Asher is" beside it. Root cause, confirmed with
+real DOM measurements rather than a visual guess: the word's container reserved `h-[1.3em]` — extra headroom
+added when the component first shipped, "in case a descender like the 'y' in Storyteller needs room." At
+headline scale that made the box a full ~20px taller than the surrounding text's actual line height. Each
+word renders flush to the *top* of its box, while `align-bottom` anchors the box's *bottom* edge to the
+line — so the oversized box pushed the visible word noticeably out of position relative to text sitting in
+the normal (much shorter) line height beside it. First fix: shrunk to `h-[1em]`, confirmed via measurement
+that the `<h2>`'s own line-box height dropped from 93.6px back to 73.4px (exactly matching the surrounding
+text's natural line height). Superseded a few hours later by the Grid rewrite below, which fixes this same
+class of problem more fundamentally rather than by tuning a second guessed number.
+
+**"The Premise" gets a synced two-slot version (shipped 2026-08-09, later the same day).** Asher asked for
+the same effect on `ThreePillars.tsx`'s headline ("00 · The Premise"), but with two words cycling in the
+same sentence — "You have a **story** worth **telling**" / "You have a **voice** worth **hearing**" — where
+the pairing must stay locked: story always with telling, voice always with hearing, never crossed into "a
+story worth hearing." **No Play-mode equivalent exists for this section** (`PlaySections.tsx` has no
+"three-pillars"/"00 · Premise" section — its own "00" is a different thing, the Welcome/hero section), so
+this one is Story-mode only, unlike every other `CyclingCallingWord`-family usage on the site.
+
+Solved by extracting the timer logic `CyclingCallingWord` already had into its own hook,
+**`useCyclingIndex(length, intervalMs)`** (returns `{index, reduceMotion}`), and having `ThreePillars.tsx`
+call it *once* with `length: 2`, then render **two** `CyclingWordSlot`s (`SUBJECT_WORDS = ["story","voice"]`,
+`PREDICATE_WORDS = ["telling","hearing"]`) both driven by that *same* `index`. Two independently-timed slots
+— even started together — would drift out of sync within a cycle or two, since `setTimeout` drift
+accumulates independently per timer; one shared index makes desync structurally impossible rather than just
+unlikely. **Verified programmatically, not just by eye**: sampled each slot's active word via computed
+`opacity` every 400ms across multiple full cycles and asserted the pairing (`story→telling`, `voice→hearing`)
+held on every sample — zero mismatches.
+
+**`CyclingWordSlot` rewritten to use CSS Grid stacking, fixing a real bug the mobile check for the above
+surfaced.** The original implementation (`position: absolute` + a hand-guessed `min-w-[Nch]`) worked fine
+when nothing followed the slot on the same line (Two Callings' "Asher is *[word]*" has nothing after it),
+but broke visibly here: "worth" and "." both follow a slot on the same line, and the `ch`-based width guess
+didn't match this italic serif display font's actual glyph widths, leaving a visible empty gap before
+whatever came next — worse, the mismatch was large enough to push the *second* slot onto its own line
+unnecessarily on a narrow viewport. Fixed by giving every word the *same* `grid-area` inside an
+`inline-grid` container: CSS Grid auto-sizes a cell to whichever item sharing it is actually
+widest/tallest, using real rendered glyph metrics instead of a guessed unit — solving both the width bug
+found here **and** the height/alignment bug found earlier in the same rewrite, since both were really the
+same root problem (a hand-tuned size estimate that doesn't match real text) wearing two different
+disguises. `transform: translateY` (paint-time) still drives the slide animation and doesn't affect what
+Grid uses for sizing (layout-time), so the animation itself is unchanged. **`minWidthClass` no longer
+exists as a prop** — there's nothing left for a caller to guess. Re-verified after the rewrite: the sync
+check above still passed with zero mismatches, Two Callings was re-screenshotted to confirm no regression,
+and the Premise headline was checked on both a 1400px desktop and a 390px mobile viewport — mobile
+specifically, since that's where the width guess had broken down; it now wraps as "You have a voice" /
+"worth hearing." with no gap and no orphaned punctuation.
 
 **First component in this codebase to call `useReducedMotion()` directly** (from `framer-motion`), rather
 than the raw CSS `@media (prefers-reduced-motion: reduce)` block `PlayLoader`'s keyframes use. Worth calling
