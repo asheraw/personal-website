@@ -15,7 +15,22 @@ import { motion, useReducedMotion } from "framer-motion";
 export const CALLING_WORDS = ["Actor", "Coach", "Marketer", "Storyteller"];
 const CALLING_WORD_INTERVAL_MS = 1800;
 
-export function CyclingCallingWord() {
+// Only "Actor" needs "an" out of the current word list, but computed
+// rather than hardcoded so a future word list edit can't silently leave
+// the wrong article in place.
+function articleFor(word: string): string {
+  return /^[aeiou]/i.test(word) ? "an" : "a";
+}
+
+export function CyclingCallingWord({
+  withArticle = false,
+  wordClassName = "font-medium text-spotlight-gradient",
+}: {
+  /** Prefixes each word with "a"/"an" as one animated unit -- used for "Asher is a/an Actor" headline-style copy. */
+  withArticle?: boolean;
+  /** Overrides the animated word's own classes -- callers style it to match their own surrounding text (headline vs. body copy). */
+  wordClassName?: string;
+} = {}) {
   const [index, setIndex] = useState(0);
   const reduceMotion = useReducedMotion();
 
@@ -27,12 +42,17 @@ export function CyclingCallingWord() {
     return () => clearTimeout(id);
   }, [index, reduceMotion]);
 
+  // "a Storyteller" (13 chars incl. article) is meaningfully wider than
+  // bare "Storyteller" -- reserving more room when an article is shown
+  // keeps whatever follows this span from shifting as the word cycles.
+  const minWidthClass = withArticle ? "min-w-[13ch]" : "min-w-[8ch]";
+
   return (
-    <span className="relative inline-block h-[1.3em] min-w-[8ch] align-bottom overflow-hidden">
+    <span className={`relative inline-block h-[1.3em] ${minWidthClass} align-bottom overflow-hidden`}>
       {CALLING_WORDS.map((word, i) => (
         <motion.span
           key={word}
-          className="absolute inset-x-0 left-0 font-medium text-spotlight-gradient"
+          className={`absolute inset-x-0 left-0 ${wordClassName}`}
           initial={false}
           animate={
             reduceMotion
@@ -43,7 +63,7 @@ export function CyclingCallingWord() {
           }
           transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 60, damping: 14 }}
         >
-          {word}
+          {withArticle ? `${articleFor(word)} ${word}` : word}
         </motion.span>
       ))}
     </span>

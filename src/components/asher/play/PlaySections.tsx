@@ -18,7 +18,7 @@ const ICONS: Record<string, IconType> = {
   chart: BarChart3, masks: Drama, book: BookOpen, pen: PenLine,
 };
 
-function Section({ id, eyebrow, title, iconKey, children }: { id: string; eyebrow: string; title: string; iconKey: string; children: React.ReactNode; }) {
+function Section({ id, eyebrow, title, iconKey, children }: { id: string; eyebrow: string; title: React.ReactNode; iconKey: string; children: React.ReactNode; }) {
   const Icon = ICONS[iconKey] || Sparkles;
   return (
     <section id={`play-${id}`} data-section-id={id} className="flex flex-col justify-start scroll-mt-4 border-b border-amber-faint px-8 py-10 sm:px-10 sm:py-12">
@@ -73,14 +73,20 @@ export function PlaySections() {
         <p className="mt-6 text-base leading-relaxed text-stone/70">Marketing and theatre, running in parallel for more than a decade and a half — both pointing at the same instinct: communicate ideas that move people. A quick snapshot of the work so far.</p>
       </Section>
 
-      <Section id="callings" eyebrow="05 · Two Callings" title="Many roles, one craft." iconKey="drama">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <Section
+        id="callings"
+        eyebrow="05 · Two Callings"
+        title={<>Asher is <CyclingCallingWord withArticle wordClassName="italic text-spotlight-gradient" /></>}
+        iconKey="drama"
+      >
+        <p className="text-base leading-relaxed text-stone/85">Many roles, one craft. Each role sharpens the other.</p>
+        <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           <div className="rounded-xl border border-amber-faint bg-stage/40 p-4 text-center"><Drama size={24} className="mx-auto text-spotlight" /><p className="mt-2 font-display text-base font-semibold text-ivory">The Stage</p><p className="mt-1 text-sm text-stone/60">10+ years of theatre</p></div>
           <span className="font-display text-xl font-semibold text-spotlight">&amp;</span>
           <div className="rounded-xl border border-amber-faint bg-stage/40 p-4 text-center"><GraduationCap size={24} className="mx-auto text-spotlight" /><p className="mt-2 font-display text-base font-semibold text-ivory">The Studio</p><p className="mt-1 text-sm text-stone/60">15+ years of marketing</p></div>
         </div>
         <p className="mt-5 text-center font-display text-lg italic leading-snug text-ivory">&ldquo;Two callings. One instinct: help people say the truest thing in the clearest way.&rdquo;</p>
-        <p className="mt-4 text-base leading-relaxed text-stone/70"><CyclingCallingWord /> — each role makes the others sharper. Theatre taught presence, timing, and emotional truth. Marketing taught clarity and positioning. Coaching is where they meet.</p>
+        <p className="mt-4 text-base leading-relaxed text-stone/70">Theatre taught presence, timing, and emotional truth. Marketing taught clarity and positioning. Coaching is where they meet.</p>
         <p className="mt-3 text-base leading-relaxed text-stone/70">Whether the audience is a thousand-seat auditorium or a one-to-one Zoom call, the conviction doesn&rsquo;t change.</p>
       </Section>
 
