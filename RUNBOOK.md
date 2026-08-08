@@ -1040,9 +1040,12 @@ snippet "Posts" tabs — a GROQ `references()` query — just applied at the ima
 specific document. Component: `src/sanity/components/MediaLibraryTool.tsx`, registered as a Studio tool in
 `sanity.config.ts`.
 
-**If the "Used in" counts look wrong:** the query only checks the `post` document type. If a future feature
-lets other document types (e.g. author bios) hold images too, this tool's query needs `_type == "post"`
-widened to match — currently by design, since posts are the only place images live today.
+**If the "Used in" counts look wrong:** the displayed badge only counts the `post` document type by design
+— it's meant as a quick "is this safe to delete from a post's perspective" signal, not an exhaustive index.
+The safety-critical checks are broader, though (see "Replace image" below): both `deleteForever` and the
+purge cron check `references($id)` across *every* document type, not just posts, since an author avatar or
+site settings image can hold a reference too and a narrower check there could let a still-used asset get
+deleted.
 
 **Default alt text per image (shipped 2026-08-04):** each image tile now has an editable "Default alt text"
 field, saved to a companion `imageAssetAlt` document (`src/sanity/schemaTypes/imageAssetAltType.ts`) —
@@ -1105,13 +1108,14 @@ showing the same 30-day auto-delete date `TrashedCommentCard` already shows for 
 **The daily purge cron (`/api/cron/purge-trash`) now sweeps images too, not just comments** — extended in
 the same request rather than a second cron entry, since it already runs daily. **The one thing images need
 that comments don't**: before actually deleting a 30-day-old trashed image, it re-checks
-`count(*[_type == "post" && references($assetId)])` and skips deletion (leaving it trashed, not un-trashing
-it) if that count is anything but zero. Comments can't be "re-referenced" after being trashed, but an image
-genuinely can — a post could start using a trashed image again (restored elsewhere, re-inserted from an
-old export) before the 30 days are up, and deleting the real asset out from under a post that still points
-at it would leave a permanently broken image on the live site. **If a trashed image ever seems stuck in
-Trash past 30 days**, this check is almost certainly why — it's still referenced somewhere; check the Trash
-row's own "Still used in N posts" note before assuming the cron is broken.
+`count(*[references($assetId)])` (any document type, since 2026-08-08 — see "Replace image" below) and
+skips deletion (leaving it trashed, not un-trashing it) if that count is anything but zero. Comments can't
+be "re-referenced" after being trashed, but an image genuinely can — a post could start using a trashed
+image again (restored elsewhere, re-inserted from an old export, or repointed there by "Replace image")
+before the 30 days are up, and deleting the real asset out from under something that still points at it
+would leave a permanently broken image on the live site. **If a trashed image ever seems stuck in Trash
+past 30 days**, this check is almost certainly why — it's still referenced somewhere; check the Trash row's
+own "Still used in N posts" note before assuming the cron is broken.
 
 **Masonry grid — a fourth image-block display style (shipped 2026-08-08).** Alongside Carousel/Slideshow/
 Scrolling strip, for a post with a genuinely large batch of photos shown all at once rather than
@@ -1123,6 +1127,51 @@ ratio rather than being cropped into a uniform grid — same "show the photo as 
 display mode on this block. Opens the same single-image `ImageLightbox` as every other mode on click; no
 next/prev navigation was added inside the lightbox itself, consistent with how Carousel/Slideshow/
 Scrolling strip already only ever show one enlarged photo at a time too.
+
+**Replace image (shipped 2026-08-08).** Asher asked whether a photo could be swapped out without
+re-uploading and manually re-placing it in every post. Sanity's assets are immutable and content-addressed
+— there's no "overwrite this file's bytes" API call — so "replace" is really: upload the new file as its
+own new asset, then find and repoint every reference to the old one. Pure logic lives in
+`src/lib/imageReplace.ts`, deliberately separate from the React/Sanity-client wiring the same way
+`bulkOperations.ts` is, so it can be (and was) exercised directly with `npx tsx` against real data before
+ever touching the UI.
+
+**`computeImageReplaceChanges(doc, oldAssetId, newAssetId)`** walks a whole fetched document generically —
+not a hardcoded field list like `mainImage`/`body`/`socialImage` — recursively replacing any `_ref` that
+matches the old asset id, anywhere in the tree (a body portable-text image, a gallery array member, an
+author's avatar, a site settings image), and returns one whole-field change per top-level field that
+actually changed. **Why generic instead of a field list**: a hardcoded list would silently miss whichever
+field isn't on it yet — a Masonry gallery block, say — and this is exactly the kind of bug that's invisible
+until someone notices a photo didn't actually get swapped everywhere it should have.
+
+**The Media tile's "Replace" button** (`MediaLibraryTool.tsx`) opens a small dialog: pick a new file, it
+uploads immediately, then every document referencing the old asset (`*[references($id)]`, any type) gets
+fetched and diffed, and a confirm step shows exactly which documents will change before anything commits —
+same "show what will happen, then confirm" shape as Bulk Operations' own edit flow. On confirm: changes are
+grouped **by document first** (a post could have the same photo in both its main image and a body gallery
+— two separate field changes on the *same* document — and a transaction patch can only call `.set()` once
+per document, not once per field, the same gotcha `categoryDeleteGuard.tsx` and `BulkOperationsTool.tsx`
+already document), one `.set({field1: ..., field2: ...})` per affected document, all in a single
+transaction alongside carrying the old image's alt text over to the new asset and sending the old asset to
+Trash (the existing 30-day-recovery mechanism, not an outright delete).
+
+**Logs into the existing `bulkOperationLog`/History mechanism** (`BulkOperationsTool.tsx`'s History tab)
+as `operationType: "replaceImage"` — same whole-field-snapshot shape the tag/category/author/search-replace
+operations already use (`postId`/`postTitle`/`fieldPath`/`previousValue` per change), so Undo works for
+free with no new mechanism: replaying `previousValue` back onto `fieldPath` for each change restores the
+original references. (The log's `postId`/`postTitle` field names predate this feature and now hold *any*
+document id, not just a post's — noted directly in the schema's own field description.)
+
+**Verified against real Sanity data, not just typechecked**: created a real test post with the same test
+image in both its main image and a body gallery block, set a real alt text on it, ran the actual
+`computeImageReplaceChanges` + transaction-commit + log-creation logic used by the UI, then re-fetched the
+post fresh from the API and confirmed both fields were repointed to the new asset, the alt text carried
+over, the old asset was trashed, the "still referenced" safety check was correctly scoped, and replaying
+the log's `previousValue`s (the same thing History's Undo button does) correctly restored the original
+references — then cleaned up every test document and asset afterward. **Couldn't verify through Studio's
+own browser UI in this sandbox**: it requires an authenticated login session that a fresh headless
+Playwright context doesn't have, so this exercises the real shipped logic directly against the live API
+instead — the same approach already used for this repo's other Studio-side write operations.
 
 ---
 

@@ -11,6 +11,31 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more again, round three) — Media library: replace an image everywhere at once
+
+Asher asked whether a photo in Media could be swapped out without re-uploading and manually re-placing it
+in every post. Sanity's images are immutable and content-addressed — there's no "overwrite this file's
+bytes" call — so a true in-place replace isn't possible. What's genuinely possible, and now built: upload
+the new photo once, and every place the old one appears (main image, a body gallery, an author's avatar,
+site settings — a generic deep search rather than a fixed list of fields, so nothing gets quietly missed)
+gets repointed to it automatically.
+
+Click "Replace" on any photo in Media, pick the new file, and a confirm step shows exactly which posts (or
+other places) will update before anything actually happens. The old photo's alt text carries over to the
+new one, and the old photo itself goes to Trash afterward — the same 30-day recovery net everything else in
+Media already has, not an outright delete. It also plugs into the Bulk Operations tool's existing History
+tab, so a replace shows up there with a real Undo button, the same as a bulk tag or category edit would.
+
+Verified against real data end-to-end before shipping: a real test post with the same test photo used in
+two different places, alt text and all, run through the exact logic the button uses, then re-checked
+straight from the API afterward — both places correctly repointed, alt text carried over, old photo
+trashed, and Undo correctly put everything back. Also tightened a related safety check while in there: the
+"don't delete a trashed photo that's secretly still in use" guard (both the daily cleanup and the manual
+delete button) used to only check posts — now checks everywhere, since this feature means a photo can end
+up referenced by an author bio or site settings too.
+
+---
+
 ## 2026-08-08 (continued once more again, round two) — PLAY 3D: the walking freeze had a second cause
 
 Asher confirmed the first freeze fix (deferring `handleZoneEnter`'s DOM measurement) wasn't the whole
