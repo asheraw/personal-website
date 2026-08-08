@@ -2,22 +2,27 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { GameCanvas, ZONE_LABELS } from "./GameCanvas";
+import { ZONE_LABELS } from "./GameCanvas";
 import { ZONE_LABELS_3D } from "./World3D";
 import { PlaySections } from "./PlaySections";
+import { PlayLoader } from "./PlayLoader";
 import { track } from "@/lib/analytics";
 
-// Lazy-load the 3D world so it doesn't affect initial page load
+// Both dynamically imported -- the heaviest parts of the site, per Asher's
+// own read of it, and neither needs to be in the initial page bundle: only
+// one of the two ever renders at a time (the 2D/3D toggle below), so there
+// was never a reason to ship both up front. World3D pulls in
+// @react-three/fiber + three.js on top of its own component code; GameCanvas
+// is lighter (plain 2D canvas API) but still gets the same treatment for a
+// consistent loading experience switching between the two, not because it
+// needs the code-split as urgently.
 const World3D = dynamic(() => import("./World3D").then(m => m.World3D), {
   ssr: false,
-  loading: () => (
-    <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-amber-faint bg-stage">
-      <div className="text-center">
-        <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-spotlight/30 border-t-spotlight" />
-        <p className="font-mono-stage text-xs uppercase tracking-[0.2em] text-stone/60">Loading 3D world…</p>
-      </div>
-    </div>
-  ),
+  loading: () => <PlayLoader label="Loading 3D world…" />,
+});
+const GameCanvas = dynamic(() => import("./GameCanvas").then(m => m.GameCanvas), {
+  ssr: false,
+  loading: () => <PlayLoader label="Loading 2D world…" />,
 });
 
 type PlayVersion = "v1" | "v3";
@@ -65,17 +70,32 @@ export function PlayMode() {
       setActiveSection("directions");
       return;
     }
-    const root = contentRef.current; if (!root) return;
-    const el = root.querySelector(`[data-section-id="${zoneId}"]`); if (!el) return;
-    isProgrammaticScroll.current = true;
-    const target = el as HTMLElement;
-    const rootRect = root.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const offset = targetRect.top - rootRect.top + root.scrollTop;
-    root.scrollTo({ top: offset, behavior: "smooth" });
     setActiveSection(zoneId);
     track({ action: "play_zone_enter", category: "play", label: zoneId });
-    window.setTimeout(() => { isProgrammaticScroll.current = false; }, 900);
+    // The DOM measurement below (getBoundingClientRect x2) forces a
+    // synchronous layout reflow -- cheap on its own, but this function is
+    // called directly from inside World3D's useFrame loop and GameCanvas's
+    // own requestAnimationFrame loop, every time the character crosses a
+    // zone boundary. Forcing a reflow mid-frame, on top of that frame's own
+    // Three.js/canvas render work, is exactly what caused the reported
+    // freeze when walking toward a zone whose content sits far down the
+    // page (more DOM below = more to lay out). setTimeout(0) pushes this
+    // past the current frame's paint instead of blocking it -- confirmed
+    // by reading both render loops, not a guess: neither loads any
+    // image/model/texture per zone (everything is procedural geometry), so
+    // there was never anything to actually "finish loading" here, just a
+    // reflow that had nowhere good to run.
+    window.setTimeout(() => {
+      const root = contentRef.current; if (!root) return;
+      const el = root.querySelector(`[data-section-id="${zoneId}"]`); if (!el) return;
+      isProgrammaticScroll.current = true;
+      const target = el as HTMLElement;
+      const rootRect = root.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const offset = targetRect.top - rootRect.top + root.scrollTop;
+      root.scrollTo({ top: offset, behavior: "smooth" });
+      window.setTimeout(() => { isProgrammaticScroll.current = false; }, 900);
+    }, 0);
   }, []);
 
   const zoneLabels = playVersion === "v3" ? ZONE_LABELS_3D : ZONE_LABELS;
