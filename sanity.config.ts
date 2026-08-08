@@ -21,6 +21,7 @@ import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImageP
 import {createExportAction} from './src/sanity/actions/exportPost'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
+import {compressedUploadSource} from './src/sanity/components/CompressedUploadSource'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
 import {CommentsToolIcon} from './src/sanity/components/CommentsToolIcon'
 import {StudioNavbar} from './src/sanity/components/StudioNavbar'
@@ -51,6 +52,19 @@ export default defineConfig({
       // of which tool is open -- see StudioNavbar/CommentsNavbarBadge for
       // why this replaced relying on the Comments tool's own icon slot.
       navbar: StudioNavbar,
+    },
+  },
+  form: {
+    // Adds "Upload (compressed)" as a SECOND option alongside Studio's own
+    // default "Upload" on every image field site-wide (post images, author
+    // avatar, site settings) -- deliberately additive, not a replacement.
+    // See CompressedUploadSource.tsx for why: replacing the default upload
+    // mechanism everywhere isn't something that can be interactively
+    // verified without a real Studio login, too risky for the editor Asher
+    // uses daily. This only ever appends; the existing default source and
+    // its behavior are completely untouched.
+    image: {
+      assetSources: (prev) => [...prev, compressedUploadSource],
     },
   },
   document: {
