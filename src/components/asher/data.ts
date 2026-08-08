@@ -81,18 +81,30 @@ export const PRINCIPLES = [
   "Stories connect people more deeply than information alone.",
   "Great communication is a skill that can be learned.",
   "Authenticity creates more lasting influence than performance alone.",
-  "Every individual has experiences that can positively impact others.",
+  "Most people are sitting on experience they've forgotten — and it could help someone else.",
   "Confidence grows through action and repetition.",
-  "Lifelong learning is essential for personal and professional growth.",
+  "Growth means learning, unlearning, and relearning — especially through life's hardest seasons.",
 ];
 
 export const PERSONALITY = [
-  "Calm", "Thoughtful", "Curious", "Analytical", "Creative",
-  "Approachable", "Patient", "Encouraging", "Observant", "Reflective",
+  "Curious", "Analytical", "Creative", "Approachable", "Encouraging", "Observant",
 ];
 
 export const COACHING_PHILOSOPHY_QUOTE =
   "Communicate in a way that feels natural. Don't try to imitate louder personalities — find the version of you that the room actually wants to hear.";
+
+// Shared between Philosophy.tsx (Story mode) and PlaySections.tsx (Play
+// mode) -- previously each hardcoded its own near-identical copy, which is
+// exactly how the "Not rules. Not a manifesto." wording drifted into only
+// one of the two. One string now, imported by both.
+export const PHILOSOPHY_CLOSING_NOTE =
+  "He enjoys understanding why people think the way they do, and finding better ways to communicate complex ideas simply. These are the beliefs that quietly shape how Asher chooses projects, runs workshops, and answers the question every coach gets asked sooner or later — “What should I say?”";
+
+// Shared between CoachingSection.tsx and PlaySections.tsx for the same
+// reason -- one line instead of two copies that can quietly say different
+// things.
+export const COACHING_INTRO =
+  "You learn to communicate as yourself, only clearer. Practical, encouraging, and built on one idea: confidence comes from doing the rep, not from hearing the theory.";
 
 export const CONTACT_INFO = {
   email: "hello@asheraw.com",

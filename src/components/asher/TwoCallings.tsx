@@ -28,8 +28,7 @@ export function TwoCallings() {
               <span className="italic text-ivory-gradient">craft.</span>
             </h2>
             <p className="max-w-2xl text-base leading-relaxed text-stone/85 sm:text-lg">
-              Actor, coach, marketer, storyteller. Each role informs the next.
-              Each role makes the others sharper. Nothing is wasted.
+              Actor, coach, marketer, storyteller — each role makes the others sharper.
             </p>
           </div>
         </Reveal>
@@ -92,9 +91,9 @@ export function TwoCallings() {
           <div className="mt-12 mx-auto max-w-3xl text-center">
             <p className="font-display text-2xl italic leading-snug text-ivory sm:text-3xl">
               &ldquo;Whether the audience is a thousand-seat auditorium or a
-              one-to-one Zoom call —{" "}
+              one-to-one Zoom call, the job doesn&rsquo;t change.{" "}
               <span className="text-spotlight-gradient not-italic font-medium">
-                stories connect people more deeply than information alone.
+                Say the true thing, clearly.
               </span>
               &rdquo;
             </p>

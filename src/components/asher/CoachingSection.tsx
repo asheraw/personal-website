@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Reveal, Eyebrow } from "./primitives";
 import { useTheme } from "./ThemeProvider";
+import { COACHING_INTRO } from "./data";
 
 const TOPICS = [
   { icon: Award, title: "Personal Branding", body: "A brand voice that feels like you." },
@@ -102,11 +103,7 @@ export function CoachingSection() {
               becoming someone else.
             </h2>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-stone/85 sm:text-lg">
-              You learn to communicate as yourself, only clearer. Practical,
-              encouraging, and grounded in three beliefs: stories connect people
-              more deeply than information alone. Great communication is a skill
-              that can be learned. And confidence grows through action and
-              repetition.
+              {COACHING_INTRO}
             </p>
           </Reveal>
         </div>

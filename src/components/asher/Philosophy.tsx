@@ -2,20 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Reveal, Eyebrow } from "./primitives";
-
-const PRINCIPLES = [
-  { n: "01", text: "Stories connect people more deeply than information alone." },
-  { n: "02", text: "Great communication is a skill that can be learned." },
-  { n: "03", text: "Authenticity creates more lasting influence than performance alone." },
-  { n: "04", text: "Every individual has experiences that can positively impact others." },
-  { n: "05", text: "Confidence grows through action and repetition." },
-  { n: "06", text: "Lifelong learning is essential for personal and professional growth." },
-];
-
-const PERSONALITY = [
-  "Calm", "Thoughtful", "Curious", "Analytical", "Creative",
-  "Approachable", "Patient", "Encouraging", "Observant", "Reflective",
-];
+import { PRINCIPLES, PERSONALITY, PHILOSOPHY_CLOSING_NOTE } from "./data";
 
 export function Philosophy() {
   return (
@@ -58,9 +45,9 @@ export function Philosophy() {
                   {"/* principles that hold, in any room */"}
                 </p>
                 <ul className="grid gap-0 sm:grid-cols-2">
-                  {PRINCIPLES.map((p, i) => (
+                  {PRINCIPLES.map((text, i) => (
                     <motion.li
-                      key={p.n}
+                      key={text}
                       initial={{ opacity: 0, x: -8 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true }}
@@ -68,10 +55,10 @@ export function Philosophy() {
                       className="group flex gap-4 border-b border-amber-faint/40 px-2 py-4 sm:border-r sm:border-amber-faint/30 sm:last:border-r-0 sm:[&:nth-child(2n)]:border-r-0"
                     >
                       <span className="font-mono-stage text-xs text-spotlight/70 sm:text-sm">
-                        {p.n}
+                        {String(i + 1).padStart(2, "0")}
                       </span>
                       <p className="font-display text-base font-medium leading-snug text-ivory transition-colors group-hover:text-spotlight">
-                        {p.text}
+                        {text}
                       </p>
                     </motion.li>
                   ))}
@@ -107,8 +94,7 @@ export function Philosophy() {
               </div>
 
               <p className="mt-8 border-t border-amber-faint/60 pt-6 text-xs leading-relaxed text-stone/60">
-                He enjoys understanding why people think the way they do, and
-                finding better ways to communicate complex ideas simply.
+                {PHILOSOPHY_CLOSING_NOTE}
               </p>
             </div>
           </Reveal>
