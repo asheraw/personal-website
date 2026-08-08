@@ -2714,6 +2714,40 @@ an accident. **If Story and Play ever visibly disagree about a fact** (a stat, a
 belief), check whether the relevant component is importing from `data.ts` or has its own local copy first —
 that mismatch is the most likely cause, per this exact bug.
 
+**Cycling-word effect on Two Callings (shipped 2026-08-09).** Asher found a cycling-word hero effect on
+21st.dev (stacked, absolutely-positioned words, spring-animated in/out of a fixed slot) and wanted to use it
+somewhere, tied to the duality he likes about the hero's "An actor who teaches. A teacher who acts." line.
+**Deliberately not placed on the hero itself**: that line currently shows both halves of its mirror
+structure simultaneously, which is what makes it read instantly — cycling it into a one-at-a-time reveal
+would trade that immediacy for a slower payoff, a real cost, not a free upgrade. Two Callings' "many roles"
+framing fit the effect better on its own merits: it's about plurality of roles, not a two-way mirror, and
+already names the same four roles (Actor, Coach, Marketer, Storyteller) in its own static body copy — the
+cycling word just replaces that static list with the same four words shown one at a time.
+
+`src/components/asher/CyclingCallingWord.tsx` — adapted from the reference's *technique*, not its code: the
+21st.dev demo is built on shadcn's `Button` and generic Tailwind tokens that don't exist in this codebase,
+so the actual animation (a `relative inline-block` container with `overflow-hidden`, each word an
+`absolute inset-x-0`-positioned `motion.span` animating `y`/`opacity` via a spring transition, cycling on a
+plain `setTimeout` loop) was rebuilt against this site's real styling from scratch. `inset-x-0` (not a fixed
+pixel width) is what keeps the trailing " — each role makes the others sharper." text from jumping
+horizontally as word length changes between "Actor" and "Storyteller" — the box always spans the full
+available width regardless of which word is showing, so only the text's own natural left-alignment inside
+it changes, not the box itself.
+
+**First component in this codebase to call `useReducedMotion()` directly** (from `framer-motion`), rather
+than the raw CSS `@media (prefers-reduced-motion: reduce)` block `PlayLoader`'s keyframes use. Worth calling
+out as the reason for the different approach: this is a continuous, indefinite loop (a much clearer
+`prefers-reduced-motion` case than the rest of this codebase's `whileInView` scroll-triggered fades, which
+fire once and settle). When reduced motion is preferred, the interval never starts and the component simply
+renders the first word (`"Actor"`) with zero animation, rather than looping forever regardless of the
+setting.
+
+**Shared between Story mode (`TwoCallings.tsx`) and Play mode (`PlaySections.tsx`) as one component from the
+start** — both import the same `CyclingCallingWord`, rather than each getting its own copy that could drift
+the way `PRINCIPLES`/`PERSONALITY` did before being fixed earlier the same day. If this effect is ever
+extended to a new section, extract shared state (the word list, the interval, the reduced-motion check) into
+`CyclingCallingWord.tsx` rather than copy-pasting the component's internals into the new spot.
+
 ---
 
 ## PLAY mode, per-post (shipped 2026-08-04)

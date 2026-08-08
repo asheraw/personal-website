@@ -11,6 +11,28 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-09 — Two Callings: a cycling-word effect, borrowed and adapted
+
+Asher found a cycling-word hero effect on 21st.dev and wanted to explore it for the site, tied to the
+duality he specifically likes about the "An actor who teaches. A teacher who acts." headline.
+
+Talked through where it should actually go before building anything, since the obvious first instinct —
+put it right on that headline — would have made things worse, not better. That line currently shows both
+halves of the mirror at once, which is exactly what makes it land in one glance; animating it into a
+one-at-a-time cycle trades that instant read for a slower reveal. Went with Two Callings instead, whose
+"many roles" framing is a much more natural fit for cycling — it's literally about plurality, not a two-way
+mirror, and it already names Actor, Coach, Marketer, and Storyteller in its own copy. Now those four words
+rotate through one at a time right where the text already listed them statically.
+
+Adapted the technique from the reference rather than pasting its code — the 21st.dev demo uses shadcn's
+Button and generic Tailwind, neither of which this site uses, so the actual animation logic (stacked
+positioning, spring transition) was rebuilt against this site's real styling. Also respects a visitor's
+"reduce motion" setting properly — freezes on one word instead of looping forever for anyone with that
+preference — and shows the same effect in both Story mode and the interactive 3D/2D Play mode from day one,
+rather than adding it to one and forgetting the other.
+
+---
+
 ## 2026-08-08 (continued once more again, round seven) — Homepage copy pass, using no-ai-slop
 
 Asher asked for a pass over the homepage copy specifically to catch anything that reads AI-drafted, using
