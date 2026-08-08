@@ -18,6 +18,7 @@ import {UploadIcon} from '@sanity/icons/Upload'
 import {SyncIcon} from '@sanity/icons/Sync'
 import {ErrorMessage} from './ErrorMessage'
 import {computeImageReplaceChanges, summarizeImageReplace, type ImageFieldChange} from '../../lib/imageReplace'
+import {compressImageFile} from '../../lib/imageCompress'
 
 type UsedByPost = {title: string; slug: string | null}
 type ImageAsset = {
@@ -53,6 +54,10 @@ function altDocId(assetId: string): string {
 }
 function trashDocId(assetId: string): string {
   return `imgtrash-${assetId}`
+}
+
+function formatBytes(bytes: number): string {
+  return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`
 }
 
 const PAGE_SIZE = 60
@@ -105,12 +110,14 @@ export function MediaLibraryTool() {
   const [uploadProgress, setUploadProgress] = useState<{done: number; total: number} | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [compressionResults, setCompressionResults] = useState<{filename: string; originalSize: number; compressedSize: number}[] | null>(null)
 
   const replaceFileInputRef = useRef<HTMLInputElement>(null)
   const [replacingAsset, setReplacingAsset] = useState<ImageAsset | null>(null)
   const [replaceStep, setReplaceStep] = useState<'pick' | 'confirm' | 'working'>('pick')
   const [replaceNewAsset, setReplaceNewAsset] = useState<{_id: string; url: string; originalFilename: string | null} | null>(null)
   const [replaceChanges, setReplaceChanges] = useState<ImageFieldChange[] | null>(null)
+  const [replaceCompression, setReplaceCompression] = useState<{originalSize: number; compressedSize: number} | null>(null)
   const [replaceBusy, setReplaceBusy] = useState(false)
   const [replaceError, setReplaceError] = useState<string | null>(null)
 
@@ -327,15 +334,22 @@ export function MediaLibraryTool() {
     setUploading(true)
     setUploadError(null)
     setUploadProgress({done: 0, total: imageFiles.length})
+    setCompressionResults(null)
     const uploaded: ImageAsset[] = []
     const failures: string[] = []
+    const shrunk: {filename: string; originalSize: number; compressedSize: number}[] = []
     for (const file of imageFiles) {
       try {
-        const result = await client.assets.upload('image', file, {filename: file.name})
+        // Compressed automatically, same squeeze tinypng.com does, just
+        // in-browser at upload time -- nothing on the site ever displays
+        // an image bigger than this needs to be (see imageCompress.ts).
+        const {file: toUpload, compressed, originalSize, compressedSize} = await compressImageFile(file)
+        if (compressed) shrunk.push({filename: file.name, originalSize, compressedSize})
+        const result = await client.assets.upload('image', toUpload, {filename: toUpload.name})
         uploaded.push({
           _id: result._id,
           url: result.url,
-          originalFilename: result.originalFilename ?? file.name,
+          originalFilename: result.originalFilename ?? toUpload.name,
           size: result.size,
           usedBy: [],
           defaultAlt: null,
@@ -345,6 +359,7 @@ export function MediaLibraryTool() {
       }
       setUploadProgress((prev) => (prev ? {done: prev.done + 1, total: prev.total} : prev))
     }
+    if (shrunk.length > 0) setCompressionResults(shrunk)
     if (uploaded.length > 0) {
       setAssets((prev) => (prev ? [...uploaded, ...prev] : uploaded))
     }
@@ -360,6 +375,7 @@ export function MediaLibraryTool() {
     setReplaceStep('pick')
     setReplaceNewAsset(null)
     setReplaceChanges(null)
+    setReplaceCompression(null)
     setReplaceError(null)
   }
 
@@ -368,6 +384,7 @@ export function MediaLibraryTool() {
     setReplaceStep('pick')
     setReplaceNewAsset(null)
     setReplaceChanges(null)
+    setReplaceCompression(null)
     setReplaceError(null)
     setReplaceBusy(false)
   }
@@ -383,10 +400,12 @@ export function MediaLibraryTool() {
     setReplaceError(null)
     try {
       const oldId = replacingAsset._id
-      const uploaded = await client.assets.upload('image', file, {filename: file.name})
+      const {file: toUpload, compressed, originalSize, compressedSize} = await compressImageFile(file)
+      if (compressed) setReplaceCompression({originalSize, compressedSize})
+      const uploaded = await client.assets.upload('image', toUpload, {filename: toUpload.name})
       const referencingDocs = await client.fetch<Record<string, unknown>[]>(`*[references($id)]`, {id: oldId})
       const changes = referencingDocs.flatMap((doc) => computeImageReplaceChanges(doc, oldId, uploaded._id))
-      setReplaceNewAsset({_id: uploaded._id, url: uploaded.url, originalFilename: uploaded.originalFilename ?? file.name})
+      setReplaceNewAsset({_id: uploaded._id, url: uploaded.url, originalFilename: uploaded.originalFilename ?? toUpload.name})
       setReplaceChanges(changes)
       setReplaceStep('confirm')
     } catch (err) {
@@ -524,7 +543,8 @@ export function MediaLibraryTool() {
             <Text size={1} muted>
               Set a default alt text here to fill the gap automatically on any post that uses an image as its
               Featured Image and hasn&rsquo;t written its own — writing one for a specific post always takes
-              priority over this. Drag photos anywhere on this page to upload them.
+              priority over this. Drag photos anywhere on this page to upload them — large ones are
+              compressed automatically on the way in.
             </Text>
           </Stack>
           <Flex gap={2} wrap="wrap">
@@ -567,6 +587,24 @@ export function MediaLibraryTool() {
           </Card>
         )}
         {uploadError && <ErrorMessage>{uploadError}</ErrorMessage>}
+        {compressionResults && compressionResults.length > 0 && (
+          <Card padding={3} radius={2} tone="positive" border>
+            <Stack space={2}>
+              <Flex align="center" justify="space-between">
+                <Text size={1} weight="medium">
+                  Compressed on the way in, same as tinypng.com would — total saved:{' '}
+                  {formatBytes(compressionResults.reduce((sum, r) => sum + (r.originalSize - r.compressedSize), 0))}
+                </Text>
+                <Button text="Dismiss" mode="bleed" fontSize={0} onClick={() => setCompressionResults(null)} />
+              </Flex>
+              {compressionResults.map((r) => (
+                <Text key={r.filename} size={0} muted>
+                  · {r.filename}: {formatBytes(r.originalSize)} → {formatBytes(r.compressedSize)}
+                </Text>
+              ))}
+            </Stack>
+          </Card>
+        )}
         {saveError && <ErrorMessage>{saveError}</ErrorMessage>}
 
         {!viewingTrash && (
@@ -741,6 +779,12 @@ export function MediaLibraryTool() {
                       style={{width: 48, height: 48, borderRadius: 4, objectFit: 'cover'}}
                     />
                   </Flex>
+                  {replaceCompression && (
+                    <Text size={0} muted>
+                      Compressed on the way in, same as tinypng.com would: {formatBytes(replaceCompression.originalSize)} →{' '}
+                      {formatBytes(replaceCompression.compressedSize)}
+                    </Text>
+                  )}
                   {replaceChanges.length === 0 ? (
                     <Text size={1}>
                       This photo isn&rsquo;t currently used anywhere, so replacing it will just swap it in the
