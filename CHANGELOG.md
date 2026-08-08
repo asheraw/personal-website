@@ -11,6 +11,23 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-09 (continued) — Two Callings: the cycling word moves into the headline
+
+Follow-up to the cycling-word effect shipped earlier the same day. Asher asked to restructure it: the big
+headline now reads "Asher is a/an [role]" — Actor, Coach, Marketer, or Storyteller, cycling through with the
+article changing correctly each time (an Actor, but a Coach, a Marketer, a Storyteller) — with "Many roles,
+one craft. Each role sharpens the other." moved down to the smaller subtext line underneath.
+
+Same shared component, extended rather than duplicated: it now takes an optional flag to animate the
+correct article in as one unit with the word, and a style override so it can match a big headline in one
+place and small body copy in another. Both Story mode and the interactive Play mode version of this section
+got the update together, and Play mode's own separate mention of the same four roles further down in its
+body copy came out — no reason to name the same thing twice in one section now that the headline does it.
+
+Checked all four role/article combinations by eye in both versions of the site before calling it done.
+
+---
+
 ## 2026-08-09 — Two Callings: a cycling-word effect, borrowed and adapted
 
 Asher found a cycling-word hero effect on 21st.dev and wanted to explore it for the site, tied to the

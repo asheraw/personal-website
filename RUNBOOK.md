@@ -2729,10 +2729,24 @@ cycling word just replaces that static list with the same four words shown one a
 so the actual animation (a `relative inline-block` container with `overflow-hidden`, each word an
 `absolute inset-x-0`-positioned `motion.span` animating `y`/`opacity` via a spring transition, cycling on a
 plain `setTimeout` loop) was rebuilt against this site's real styling from scratch. `inset-x-0` (not a fixed
-pixel width) is what keeps the trailing " — each role makes the others sharper." text from jumping
-horizontally as word length changes between "Actor" and "Storyteller" — the box always spans the full
-available width regardless of which word is showing, so only the text's own natural left-alignment inside
-it changes, not the box itself.
+pixel width) is what keeps whatever follows the cycling word from jumping horizontally as word length
+changes between "Actor" and "Storyteller" — the box always spans the full available width regardless of
+which word is showing, so only the text's own natural left-alignment inside it changes, not the box itself.
+
+**Moved into the headline itself, with a dynamic article (shipped 2026-08-09, same day).** Asher asked for
+a restructure: the big headline now reads "Asher is a/an [role]" (the cycling word, with the correct article
+animated in as one unit — "an Actor" but "a Coach"/"a Marketer"/"a Storyteller"), with the section's static
+text ("Many roles, one craft. Each role sharpens the other.") moved down to the subtext line underneath.
+Two new props on the shared component support this without hardcoding the new phrasing into it directly:
+**`withArticle`** prefixes each word with `articleFor(word)` (checks for a leading vowel — computed, not a
+hardcoded per-word lookup, so a future edit to `CALLING_WORDS` can't silently ship the wrong article) as one
+animated unit, and **`wordClassName`** lets each caller style the word to fit its own context (italic +
+`text-spotlight-gradient` at headline scale in `TwoCallings.tsx`/`PlaySections.tsx`'s title now, vs. the
+original plain body-copy styling still available as the default for any future body-copy usage). The
+reserved minimum width also grew from `8ch` to `13ch` when `withArticle` is set, since "a Storyteller" is
+meaningfully wider than bare "Storyteller." Play mode's `Section` component needed its `title` prop widened
+from `string` to `React.ReactNode` to hold the embedded component — a safe widening, since every existing
+plain-string `title` usage stays valid without any other changes.
 
 **First component in this codebase to call `useReducedMotion()` directly** (from `framer-motion`), rather
 than the raw CSS `@media (prefers-reduced-motion: reduce)` block `PlayLoader`'s keyframes use. Worth calling
