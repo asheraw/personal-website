@@ -36,6 +36,7 @@ export const bulkOperationLogType = defineType({
           {title: 'Change category', value: 'changeCategory'},
           {title: 'Change author', value: 'changeAuthor'},
           {title: 'Search & replace', value: 'searchReplace'},
+          {title: 'Replace image', value: 'replaceImage'},
         ],
       },
     }),
@@ -56,13 +57,16 @@ export const bulkOperationLogType = defineType({
           type: 'object',
           fields: [
             // Plain string, not a reference -- a post later deleted
-            // shouldn't break this log or block it from displaying.
-            defineField({name: 'postId', title: 'Post ID', type: 'string'}),
+            // shouldn't break this log or block it from displaying. Named
+            // for the common case, but holds any document id -- "Replace
+            // image" (MediaLibraryTool.tsx) can also touch an author or
+            // site settings document.
+            defineField({name: 'postId', title: 'Document ID', type: 'string'}),
             defineField({
               name: 'postTitle',
-              title: 'Post title',
+              title: 'Document title',
               type: 'string',
-              description: 'Snapshotted at the time -- stays accurate even if the post is later retitled.',
+              description: 'Snapshotted at the time -- stays accurate even if the document is later retitled.',
             }),
             defineField({
               name: 'fieldPath',

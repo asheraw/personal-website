@@ -38,9 +38,11 @@ export async function GET(request: NextRequest) {
   // nothing references the asset anymore before actually deleting it. A
   // post could have started using an image again after it was trashed
   // (restored elsewhere, re-inserted from an old export) -- deleting the
-  // real asset out from under a post that still points at it would leave
+  // real asset out from under a document that still points at it would leave
   // a broken image on the live site, so a still-referenced asset is left
   // trashed (not un-trashed, just not purged yet) rather than deleted.
+  // Checks every document type, not just posts -- Media Library's "Replace
+  // image" can repoint an author avatar or site settings image too.
   const trashDocs: { _id: string; assetId: string }[] = await writeClient.fetch(
     `*[_type == "imageAssetTrash" && defined(trashedAt) && trashedAt < $cutoff]{_id, assetId}`,
     { cutoff }
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
   let imagesDeleted = 0;
   let imagesSkipped = 0;
   for (const doc of trashDocs) {
-    const stillUsed: number = await writeClient.fetch(`count(*[_type == "post" && references($id)])`, {
+    const stillUsed: number = await writeClient.fetch(`count(*[references($id)])`, {
       id: doc.assetId,
     });
     if (stillUsed > 0) {

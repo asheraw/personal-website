@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Checkbox,
+  Dialog,
   Flex,
   Grid,
   Spinner,
@@ -14,7 +15,9 @@ import {
 } from '@sanity/ui'
 import {useClient} from 'sanity'
 import {UploadIcon} from '@sanity/icons/Upload'
+import {SyncIcon} from '@sanity/icons/Sync'
 import {ErrorMessage} from './ErrorMessage'
+import {computeImageReplaceChanges, summarizeImageReplace, type ImageFieldChange} from '../../lib/imageReplace'
 
 type UsedByPost = {title: string; slug: string | null}
 type ImageAsset = {
@@ -102,6 +105,14 @@ export function MediaLibraryTool() {
   const [uploadProgress, setUploadProgress] = useState<{done: number; total: number} | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+
+  const replaceFileInputRef = useRef<HTMLInputElement>(null)
+  const [replacingAsset, setReplacingAsset] = useState<ImageAsset | null>(null)
+  const [replaceStep, setReplaceStep] = useState<'pick' | 'confirm' | 'working'>('pick')
+  const [replaceNewAsset, setReplaceNewAsset] = useState<{_id: string; url: string; originalFilename: string | null} | null>(null)
+  const [replaceChanges, setReplaceChanges] = useState<ImageFieldChange[] | null>(null)
+  const [replaceBusy, setReplaceBusy] = useState(false)
+  const [replaceError, setReplaceError] = useState<string | null>(null)
 
   const loadPage = useCallback(
     (offset: number) => {
@@ -287,17 +298,16 @@ export function MediaLibraryTool() {
   async function deleteForever(trashDoc: TrashedAsset) {
     setTrashActionBusyId(trashDoc._id)
     try {
-      // Same safety check the daily purge cron runs -- a post could have
+      // Same safety check the daily purge cron runs -- a document could have
       // started using this image again after it was trashed (restored
-      // elsewhere, or re-inserted from an old export), and deleting the
-      // real asset out from under a post that still points at it would
-      // leave a broken image on the live site.
-      const stillUsed = await client.fetch<number>(
-        `count(*[_type == "post" && references($id)])`,
-        {id: trashDoc.assetId},
-      )
+      // elsewhere, re-inserted from an old export, or repointed here by
+      // "Replace image"), and deleting the real asset out from under
+      // something that still points at it would leave a broken image on
+      // the live site. Checks every document type, not just posts -- an
+      // author avatar or site settings image can reference it too.
+      const stillUsed = await client.fetch<number>(`count(*[references($id)])`, {id: trashDoc.assetId})
       if (stillUsed > 0) {
-        setSaveError('That image is now used by a post again -- restore it instead of deleting.')
+        setSaveError('That image is now used again -- restore it instead of deleting.')
         return
       }
       const tx = client.transaction().delete(trashDoc._id).delete(trashDoc.assetId)
@@ -345,6 +355,113 @@ export function MediaLibraryTool() {
     setUploadProgress(null)
   }
 
+  function openReplaceDialog(asset: ImageAsset) {
+    setReplacingAsset(asset)
+    setReplaceStep('pick')
+    setReplaceNewAsset(null)
+    setReplaceChanges(null)
+    setReplaceError(null)
+  }
+
+  function closeReplaceDialog() {
+    setReplacingAsset(null)
+    setReplaceStep('pick')
+    setReplaceNewAsset(null)
+    setReplaceChanges(null)
+    setReplaceError(null)
+    setReplaceBusy(false)
+  }
+
+  // Uploads the new file as its own asset (Sanity assets are immutable --
+  // there's no "overwrite this asset's bytes" call), then finds every
+  // document referencing the OLD asset and computes what would need to
+  // change to repoint each one -- shown as a confirm step before anything
+  // is actually written.
+  async function handleReplaceFileSelected(file: File) {
+    if (!replacingAsset) return
+    setReplaceBusy(true)
+    setReplaceError(null)
+    try {
+      const oldId = replacingAsset._id
+      const uploaded = await client.assets.upload('image', file, {filename: file.name})
+      const referencingDocs = await client.fetch<Record<string, unknown>[]>(`*[references($id)]`, {id: oldId})
+      const changes = referencingDocs.flatMap((doc) => computeImageReplaceChanges(doc, oldId, uploaded._id))
+      setReplaceNewAsset({_id: uploaded._id, url: uploaded.url, originalFilename: uploaded.originalFilename ?? file.name})
+      setReplaceChanges(changes)
+      setReplaceStep('confirm')
+    } catch (err) {
+      setReplaceError(err instanceof Error ? err.message : 'Something went wrong uploading that file.')
+    } finally {
+      setReplaceBusy(false)
+    }
+  }
+
+  async function confirmReplace() {
+    if (!replacingAsset || !replaceNewAsset || !replaceChanges) return
+    setReplaceStep('working')
+    setReplaceError(null)
+    try {
+      const oldId = replacingAsset._id
+      const newId = replaceNewAsset._id
+      const now = new Date().toISOString()
+
+      // Every change is grouped by document first -- a single post can have
+      // both, say, its mainImage AND a body gallery pointing at the same
+      // photo, and a transaction patch can only call .set() once per
+      // document, not once per field.
+      const byDoc = new Map<string, ImageFieldChange[]>()
+      for (const c of replaceChanges) {
+        const list = byDoc.get(c.documentId) ?? []
+        list.push(c)
+        byDoc.set(c.documentId, list)
+      }
+      const tx = client.transaction()
+      for (const [docId, docChanges] of byDoc) {
+        const setObj: Record<string, unknown> = {}
+        for (const c of docChanges) setObj[c.fieldPath] = c.newValue
+        tx.patch(client.patch(docId).set(setObj))
+      }
+      // Carries the old image's default alt text over to the new asset, and
+      // sends the old one to Trash rather than deleting it outright --
+      // same 30-day safety net as everything else here, in case a
+      // replacement turns out to be wrong.
+      if (replacingAsset.defaultAlt) {
+        tx.createOrReplace({_id: altDocId(newId), _type: 'imageAssetAlt', assetId: newId, altText: replacingAsset.defaultAlt})
+      }
+      tx.createOrReplace({_id: trashDocId(oldId), _type: 'imageAssetTrash', assetId: oldId, trashedAt: now})
+      await tx.commit()
+
+      await client.create({
+        _type: 'bulkOperationLog',
+        performedAt: now,
+        operationType: 'replaceImage',
+        summary: summarizeImageReplace(replacingAsset.originalFilename ?? 'image', replaceChanges),
+        changes: replaceChanges.map((c) => ({
+          postId: c.documentId,
+          postTitle: c.documentTitle,
+          fieldPath: c.fieldPath,
+          previousValue: JSON.stringify(c.previousValue),
+        })),
+      })
+
+      const newAssetEntry: ImageAsset = {
+        _id: newId,
+        url: replaceNewAsset.url,
+        originalFilename: replaceNewAsset.originalFilename,
+        size: 0,
+        usedBy: replacingAsset.usedBy,
+        defaultAlt: replacingAsset.defaultAlt,
+      }
+      const swap = (list: ImageAsset[]) => [newAssetEntry, ...list.filter((a) => a._id !== oldId)]
+      setAssets((prev) => (prev ? swap(prev) : prev))
+      setSearchResults((prev) => (prev ? swap(prev) : prev))
+      closeReplaceDialog()
+    } catch (err) {
+      setReplaceError(err instanceof Error ? err.message : 'Something went wrong replacing that image -- nothing was changed.')
+      setReplaceStep('confirm')
+    }
+  }
+
   if (error) {
     return (
       <Box padding={4}>
@@ -384,6 +501,17 @@ export function MediaLibraryTool() {
         style={{display: 'none'}}
         onChange={(e) => {
           uploadFiles(Array.from(e.target.files ?? []))
+          e.target.value = ''
+        }}
+      />
+      <input
+        ref={replaceFileInputRef}
+        type="file"
+        accept="image/*"
+        style={{display: 'none'}}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleReplaceFileSelected(file)
           e.target.value = ''
         }}
       />
@@ -535,6 +663,7 @@ export function MediaLibraryTool() {
                   saving={savingId === asset._id}
                   saveDisabled={drafts[asset._id] === undefined || drafts[asset._id] === (asset.defaultAlt ?? '')}
                   onSave={() => saveAlt(asset._id, drafts[asset._id] ?? '')}
+                  onReplace={() => openReplaceDialog(asset)}
                 />
               ))}
             </Grid>
@@ -546,6 +675,113 @@ export function MediaLibraryTool() {
           </>
         )}
       </Stack>
+
+      {replacingAsset && (
+        <Dialog
+          id="replace-image"
+          header="Replace image"
+          onClose={replaceStep === 'working' ? undefined : closeReplaceDialog}
+          width={1}
+        >
+          <Box padding={4}>
+            <Stack space={4}>
+              <Flex align="center" gap={3}>
+                <img
+                  src={`${replacingAsset.url}?w=100&h=100&fit=crop`}
+                  alt=""
+                  style={{width: 64, height: 64, borderRadius: 4, objectFit: 'cover', flexShrink: 0}}
+                />
+                <Stack space={2} style={{flex: 1, minWidth: 0}}>
+                  <Text size={1} weight="medium" textOverflow="ellipsis">
+                    {replacingAsset.originalFilename ?? 'Untitled'}
+                  </Text>
+                  <Text size={0} muted>
+                    {replacingAsset.usedBy.length > 0
+                      ? `Used in ${replacingAsset.usedBy.length} post${replacingAsset.usedBy.length === 1 ? '' : 's'}`
+                      : 'Not currently used anywhere'}
+                  </Text>
+                </Stack>
+              </Flex>
+
+              {replaceError && <ErrorMessage>{replaceError}</ErrorMessage>}
+
+              {replaceStep === 'pick' && (
+                <Stack space={3}>
+                  <Text size={1} muted>
+                    Sanity can&rsquo;t overwrite a photo&rsquo;s file in place, but this uploads a new one and
+                    swaps it in everywhere the old one is used — main image, body galleries, anywhere else it
+                    appears — so nothing needs re-placing by hand. The old photo moves to Trash afterward
+                    (recoverable for 30 days), and its alt text carries over automatically.
+                  </Text>
+                  <Button
+                    text={replaceBusy ? 'Uploading…' : 'Choose new photo'}
+                    tone="primary"
+                    icon={SyncIcon}
+                    loading={replaceBusy}
+                    disabled={replaceBusy}
+                    onClick={() => replaceFileInputRef.current?.click()}
+                  />
+                </Stack>
+              )}
+
+              {(replaceStep === 'confirm' || replaceStep === 'working') && replaceNewAsset && replaceChanges && (
+                <Stack space={3}>
+                  <Flex align="center" gap={3}>
+                    <img
+                      src={`${replacingAsset.url}?w=80&h=80&fit=crop`}
+                      alt=""
+                      style={{width: 48, height: 48, borderRadius: 4, objectFit: 'cover'}}
+                    />
+                    <Text size={1} muted>
+                      →
+                    </Text>
+                    <img
+                      src={`${replaceNewAsset.url}?w=80&h=80&fit=crop`}
+                      alt=""
+                      style={{width: 48, height: 48, borderRadius: 4, objectFit: 'cover'}}
+                    />
+                  </Flex>
+                  {replaceChanges.length === 0 ? (
+                    <Text size={1}>
+                      This photo isn&rsquo;t currently used anywhere, so replacing it will just swap it in the
+                      library — nothing else needs to change.
+                    </Text>
+                  ) : (
+                    <Stack space={2}>
+                      <Text size={1}>
+                        This will update {new Set(replaceChanges.map((c) => c.documentId)).size} document
+                        {new Set(replaceChanges.map((c) => c.documentId)).size === 1 ? '' : 's'}:
+                      </Text>
+                      {[...new Map(replaceChanges.map((c) => [c.documentId, c.documentTitle])).values()]
+                        .slice(0, 8)
+                        .map((title, i) => (
+                          <Text key={i} size={0} muted>
+                            · {title}
+                          </Text>
+                        ))}
+                      {new Set(replaceChanges.map((c) => c.documentId)).size > 8 && (
+                        <Text size={0} muted>
+                          +{new Set(replaceChanges.map((c) => c.documentId)).size - 8} more
+                        </Text>
+                      )}
+                    </Stack>
+                  )}
+                  <Flex gap={2}>
+                    <Button
+                      text={replaceStep === 'working' ? 'Replacing…' : 'Replace'}
+                      tone="primary"
+                      loading={replaceStep === 'working'}
+                      disabled={replaceStep === 'working'}
+                      onClick={confirmReplace}
+                    />
+                    <Button text="Cancel" mode="ghost" disabled={replaceStep === 'working'} onClick={closeReplaceDialog} />
+                  </Flex>
+                </Stack>
+              )}
+            </Stack>
+          </Box>
+        </Dialog>
+      )}
     </Box>
   )
 }
@@ -560,6 +796,7 @@ function AssetCard({
   saving,
   saveDisabled,
   onSave,
+  onReplace,
 }: {
   asset: ImageAsset
   selectMode: boolean
@@ -570,6 +807,7 @@ function AssetCard({
   saving: boolean
   saveDisabled: boolean
   onSave: () => void
+  onReplace: () => void
 }) {
   return (
     <Card
@@ -631,6 +869,7 @@ function AssetCard({
               onChange={(event) => onDraftChange(event.currentTarget.value)}
             />
             <Button text={saving ? 'Saving…' : 'Save'} mode="ghost" fontSize={0} padding={2} disabled={saving || saveDisabled} onClick={onSave} />
+            <Button text="Replace" icon={SyncIcon} mode="ghost" fontSize={0} padding={2} onClick={onReplace} />
           </Stack>
         )}
       </Stack>
