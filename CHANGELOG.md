@@ -11,6 +11,40 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-09 (continued twice more) — Four fixes: scroll motion, mobile reflow, "To Serve," and a real quote
+
+More feedback on the cycling-word work, all four addressed in one pass:
+
+**The animation had quietly turned into a fade.** The previous fix (rendering one word at a time to solve
+the descender and width bugs) used a small slide distance that read as a fade rather than the original
+scrolling motion. Restored the original full-height scroll — the trick that made it safe to bring back
+without reintroducing the descender clipping: a bit of extra padding gives the letter genuine room, and an
+equal negative margin cancels that same padding out for alignment purposes, so the surrounding text still
+lines up correctly. Confirmed with a burst of screenshots mid-transition — the outgoing word is visibly
+sliding out and getting clipped at the edge, a real scroll, not a cross-fade.
+
+**A real mobile bug, caught and fixed.** On a phone screen, "Asher is an Actor" fits on one line but
+"Asher is a Storyteller" doesn't — meaning the whole page was shifting up and down as the word cycled,
+since everything below follows the headline's own height. Forced a permanent two-line break on mobile only,
+so the height never changes no matter which word is showing. Measured it directly across a full cycle: the
+exact same height, every single time.
+
+**"The Studio" renamed to "To Serve."** Not quite capturing what that half of the work actually is anymore
+— now explicitly named around serving, with its description spelling out marketing, teaching at Nas
+Academy, corporate workshops, and coaching. Same change made in both the regular homepage and the
+interactive version, so they don't quietly drift apart again.
+
+**The pull-quote rewritten in Asher's own words**, replacing the AI-drafted original with what he actually
+meant: whichever room he's in, whether a thousand-seat hall or a one-to-one Zoom call, it's the same
+calling — to serve, presenting everything he has, as authentically as he can.
+
+**Also checked and confirmed a real gap**: the interactive 3D/2D version of the site has no section
+matching the homepage's "The Premise" — by design, since adding a real one would mean new geometry in the
+walkable world itself, not just a text change. Folded the core idea into the existing welcome area instead
+of building a whole new stop, at Asher's own call.
+
+---
+
 ## 2026-08-09 (continued once more) — Fixed a real styling bug, then The Premise gets its own dual cycle
 
 Asher flagged that the Two Callings headline looked off in a screenshot — the cycling word sat visibly out

@@ -2812,6 +2812,72 @@ the way `PRINCIPLES`/`PERSONALITY` did before being fixed earlier the same day. 
 extended to a new section, extract shared state (the word list, the interval, the reduced-motion check) into
 `CyclingCallingWord.tsx` rather than copy-pasting the component's internals into the new spot.
 
+**Round 3 — the single-active-word fix regressed the animation itself (shipped 2026-08-09, same day).**
+The Grid-rewrite fix above solved descenders and the width gap correctly, but rendering only the active word
+via `AnimatePresence`/`layout` with a small `0.4em` slide offset (no `overflow-hidden`, since the box's
+height now tracked the active word's own unclipped natural size) meant the motion read as a fade — opacity
+dominated a slide too small to register as scrolling. Asher flagged this directly: "it used to scroll up/
+down but now it fades in/out... keep to what it was before."
+
+**Fix, without giving back the descender/width correctness**: `pb-[0.28em]` on the wrapper gives real,
+unclipped room below the text for a descender; `-mb-[0.28em]` cancels that exact amount so the box's outer
+margin edge — the thing sibling inline content actually aligns against — lands exactly where it would with
+no padding at all. Padding protects the glyph from the (now-restored) `overflow-hidden` clip; the matching
+negative margin protects the alignment from the padding. With that in place, `overflow-hidden` could safely
+come back, and the slide distance went back to a full `y: "100%"`/`"-100%"` (each word travels its own
+whole height, matching the original scrolling-reel character) rather than the small `0.4em` nudge.
+**Verified by capturing a burst of screenshots across an actual transition** (not just resting-state
+before/after frames): the outgoing word is visibly sliding out and getting clipped at the box edge mid-
+frame — a real scroll, confirmed visually, not assumed from the code.
+
+**Round 3 also fixed a real mobile layout-shift bug**, unrelated to the animation itself: `TwoCallings.tsx`'s
+headline has no explicit line break, so "Asher is an Actor" (fits on one line at mobile width) and "Asher is
+a Storyteller" (wraps to two) gave the `<h2>` a *different total height* depending on which word happened to
+be showing — meaning every section below it shifted up and down as the word cycled, a real, visible
+annoyance on a phone. Fixed with `Asher is<br className="sm:hidden" /> <CyclingCallingWord .../>` — a
+permanent two-line break below the `sm` breakpoint only (desktop has room for every combination on one line
+already, so no break there). **Verified by measuring `h2.getBoundingClientRect().height` directly** across a
+full cycle, including mid-transition frames where two words briefly overlap in the DOM: exactly `73.4px`
+(precisely 2× the mobile line-height) on every single sample, never once different. Play mode's own
+`CyclingCallingWord` usage didn't need the same fix — Play mode never renders on mobile at all (`page.tsx`
+forces `effectiveMode = "story"` below the mobile breakpoint), so this is scoped to `TwoCallings.tsx` only.
+
+**"Calling 02" renamed "The Studio" → "To Serve" (shipped 2026-08-09, same day, content decision not a
+bug).** Asher: the framing of two callings (Stage + Serve) is still accurate, but "The Studio" no longer
+fit what that second calling actually covers — 15 years in marketing, current trainer at Nas Academy,
+corporate workshops, and 1:1 coaching. First proposed "The Serve" to match "The Stage"'s naming pattern;
+corrected directly to **"To Serve"**. Updated in both `TwoCallings.tsx` and `PlaySections.tsx`'s "callings"
+section for the same reason every other piece of shared content in this file gets updated in both places at
+once — this is exactly the kind of fact that drifted before (see the `PRINCIPLES`/`PERSONALITY` note
+earlier in this file) if only one copy gets touched.
+
+**The pull-quote rewritten from Asher's own words, not AI-drafted (shipped 2026-08-09, same day).** The
+original — *"Whether the audience is a thousand-seat auditorium or a one-to-one Zoom call, the job doesn't
+change. Say the true thing, clearly."* — was flagged directly as something that had been generated, not
+said. Replaced with a line built from Asher's own explanation of what he actually means (**"whether it's in
+a 1,000-seat hall or a 1-to-1 Zoom call, it is to serve by presenting all I have, as authentically as I
+can"**), lightly shaped to fit the existing quote/emphasis-span structure: *"Whether it's a thousand-seat
+hall or a one-to-one Zoom call, it's the same calling — to serve. **Presenting all I have, as authentically
+as I can.**"* Play mode's own closing line (a variant, not identical wording even before this round —
+see the note near the top of this section on Story/Play prose intentionally differing) got the same
+"to serve, presenting all I have" reframing for consistency, without literally duplicating Story mode's
+exact sentence.
+
+**Play mode has no zone for Story mode's "00 · The Premise" (confirmed, scope decision made 2026-08-09).**
+Asher asked directly whether this was missing. Confirmed: `PlaySections.tsx` has no section corresponding to
+`ThreePillars.tsx` — Play's own "00" slot is `id="hero"`/`eyebrow="00 · Welcome"`, a different zone serving a
+different purpose (the actor/teacher tagline + bio), not a Premise equivalent. **Why this isn't a quick
+fix**: Play mode's sections are each tied to a real, physical position in the walkable 3D (`World3D.tsx`)
+and 2D (`GameCanvas.tsx`) worlds via `data-section-id` — adding a genuine new zone means new geometry in
+both, plus renumbering every zone from `01`–`07` to `02`–`08`. Given the choice between that and folding the
+core idea into the existing Welcome zone, Asher chose the smaller change: `PlaySections.tsx`'s hero section
+now opens with a short "Finding Your Voice" line + "You have a story worth telling, and a voice worth
+hearing" statement, right before its existing bio paragraph — representing the same idea Story mode's
+dedicated section states more elaborately, without any new 3D/2D geometry or zone renumbering. **If a real,
+fully independent Premise zone is ever wanted later**, budget for World3D.tsx/GameCanvas.tsx geometry work
+specifically, not just a `PlaySections.tsx` text change — that's the part that makes this different from
+every other copy-only fix in this file.
+
 ---
 
 ## PLAY mode, per-post (shipped 2026-08-04)
