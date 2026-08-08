@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more again, round five) — Media library: compress the photos already there too
+
+Follow-up to automatic upload compression: Asher asked whether the photos already sitting in the library —
+uploaded before that feature existed — were compressed too, and whether a one-time pass could catch them,
+skipping anything already small. Checked the real numbers first: 28 of the library's 49 photos are 300KB or
+larger, together accounting for 20.6 of the library's 22.8 MB total. Those 28 never got the automatic
+treatment.
+
+"Compress Library" (next to Upload Photos) scans the whole library, skips anything small enough not to
+need it, and shows a real preview — which photos, how much each would shrink, how much total space it'd
+free up — before anything happens. Confirm, and every photo that benefits gets the same treatment a single
+"Replace image" gets: swapped in everywhere it's used, alt text carried over, original sent to Trash
+(recoverable for 30 days, not deleted outright), the whole batch logged as one Undo-able entry rather than
+a flood of separate ones.
+
+The one real wrinkle: a single post can have more than one oversized photo in it, both getting compressed
+in the same pass — needed a bit of extra care so the second swap doesn't accidentally erase the first one's
+change when they land on the same field. Verified against real test data end-to-end before shipping,
+including that exact scenario, plus a case where two different posts share the same photo, confirming both
+correctly picked up the swap and Undo correctly puts everything back.
+
+---
+
 ## 2026-08-08 (continued once more again, round four) — Media library: photos compress themselves on upload
 
 Asher asked if there was something like tinypng.com or imagecompressor.com built in. Turns out most of that

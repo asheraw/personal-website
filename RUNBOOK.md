@@ -1129,6 +1129,57 @@ each. Shows the actual before/after size when a file was compressed (a `compress
 after mass upload; inline in the confirm step for a single replace) rather than compressing silently, per
 Asher's own preference when this was scoped.
 
+**Only covers uploads made through Media library's own upload/replace flows** — a photo uploaded directly
+inside a post's own image field (clicking "Upload" on the Featured Image, an inline body image, an author
+avatar) goes through Sanity Studio's default image input widget instead, which this doesn't touch, so it
+stays uncompressed. Asher asked about this directly; noted here rather than silently left as a gap. A true
+site-wide fix would mean overriding the default image input component (or `form.image.assetSources`) at
+the Studio config level so every image field anywhere gets the same treatment — bigger blast radius than
+this feature (every image field, not just Media's own upload buttons), not yet built.
+
+**"Compress Library" — a one-time pass for photos already there (shipped 2026-08-08).** Automatic
+compression above only ever applied going forward. Asher asked whether the photos already in the library
+before that shipped were compressed too — checked against real data: 28 of 49 images were 300KB or larger,
+together 20.6 of the library's 22.8 MB total, none of them touched by the new-upload-only feature — and
+whether a one-time catch-up pass could compress those, skipping ones already small. Built as a new "Compress
+Library" button (`MediaLibraryTool.tsx`, next to Upload Photos), in three phases:
+
+1. **Scan** (`scanLibraryForCompression`): fetches every non-trashed asset `size >= MIN_SIZE_TO_COMPRESS`
+   directly in the GROQ filter — cheap, since it's Sanity's own already-known metadata, no point downloading
+   a photo's bytes just to learn it was always going to be skipped. For each candidate, downloads the real
+   bytes (`fetch(asset.url)` — works fine from Studio specifically because `/studio/*` carries no CSP at
+   all, unlike the public site's deliberately restrictive one; confirmed by comparing the two routes' actual
+   response headers, not assumed) and runs it through the exact same `compressImageFile` used for new
+   uploads. Anything that doesn't end up meaningfully smaller is silently left out of the results.
+2. **Preview**: shows every candidate with its real before/after size and a total, before anything commits
+   — same "show what will happen, then confirm" shape as Replace image and Bulk Operations.
+3. **Compress**: uploads every compressed photo as its own new asset first, then does ONE combined
+   reference-repoint pass across the whole batch (not one Replace-image cycle per photo run sequentially) —
+   see `computeBatchReplaceChanges` below for why that distinction matters — followed by one transaction
+   (new-reference patches + alt-text carryover + trashing every original) and one `bulkOperationLog` entry
+   covering the whole run, so History shows "Compressed N photos" once with one Undo, not N separate lines.
+
+**`computeBatchReplaceChanges(docs, swaps)`** (`src/lib/imageReplace.ts`) is the one genuinely new piece of
+logic this needed, versus just calling the single-image `computeImageReplaceChanges` once per photo. A
+single document can easily be affected by more than one swap in the same batch run — a post with two
+different oversized photos, both getting compressed in the same pass, is a completely ordinary case, not an
+edge case. Computing each swap independently against the same stale document snapshot would silently lose
+whichever swap got computed last, since only one final value ever gets written per field. This instead
+layers each swap onto the *previous* swap's result for that document (a working copy updated step by step),
+while `previousValue` on the returned change always stays pinned to the true pre-batch original — not
+whatever the document looked like mid-batch — so Undo still restores the actual starting point in one step.
+Uses `references($ids)` with an array argument (matches a document referencing *any* of the ids) to fetch
+every affected document in one query rather than once per swap.
+
+**Verified in three separate layers before shipping**, each catching something the others couldn't: the
+merge logic in isolation via `npx tsx` (a document hit by two swaps on two different fields, and the
+trickier case of two swaps landing on the *same* array field — confirming neither swap gets lost); that the
+cross-origin fetch of real CDN bytes genuinely works from Studio's own page context (not assumed from the
+public site's more restrictive CSP); and the full orchestration end-to-end against real Sanity data — two
+real posts, one sharing a photo with the other, one with two different photos each getting swapped in the
+same run — confirming the shared-photo fan-out, the same-document merge, alt-text carryover, trashing, and
+Undo all landed correctly on real documents, not just synthetic ones.
+
 **Mass select + Trash (shipped 2026-08-08).** A "Select" button toggles checkbox mode on every tile
 (overlaid on the thumbnail, top-left) and reveals a floating action bar; "Move to Trash" on a selection
 that includes an image still used by a post shows an explicit confirm step first (trashing doesn't break
