@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more again, round four) — Media library: photos compress themselves on upload
+
+Asher asked if there was something like tinypng.com or imagecompressor.com built in. Turns out most of that
+was already happening automatically and invisibly: every image the site actually shows already gets
+resized and compressed on the fly by Sanity's own image delivery, tailored to exactly where it's shown —
+arguably more thorough than a one-time tinypng pass, since a thumbnail and a full-width hero photo each get
+their own appropriately-sized, appropriately-compressed version, never the same file. What wasn't happening:
+the original file uploaded to Media stayed at full size. Never mattered for what a visitor saw, but did
+mean slower uploads (especially with the new mass-upload) and more storage used than necessary.
+
+That gap's closed now. Large photos are automatically resized and re-compressed right in the browser the
+moment they're uploaded — quietly if a photo's already a sensible size, visibly (a real "reduced from X to
+Y" note) when it actually made a difference. A photo with real transparency is left as a PNG rather than
+getting flattened onto a solid background; everything else becomes a JPEG, which is where the real size
+savings come from. Same behavior wired into both mass upload and the new "Replace image" feature. Verified
+against real test images generated on the spot, including a worst-case one designed to be as
+incompressible as possible (pure random noise, nothing like a real photo) just to make sure the numbers
+held up even under conditions much harder than any real photo would ever be.
+
+---
+
 ## 2026-08-08 (continued once more again, round three) — Media library: replace an image everywhere at once
 
 Asher asked whether a photo in Media could be swapped out without re-uploading and manually re-placing it

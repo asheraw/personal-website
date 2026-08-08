@@ -1091,6 +1091,44 @@ parallel) specifically so a progress count (`"Uploading 3/10…"`) means somethi
 file doesn't take the rest down with it in an unhandled Promise.all rejection. Non-image files dropped into
 the zone are silently filtered out (`file.type.startsWith('image/')`) rather than attempted and failed.
 
+**Automatic compression on upload (shipped 2026-08-08).** Asher asked whether something like tinypng.com
+or imagecompressor.com could be built in. Most of that turned out to already be true on the *serving* side:
+every image the site displays already gets resized and re-compressed per usage context by Sanity's own CDN
+(`urlFor(...).width().quality()`, see "Media library: which posts use an image" above and
+`src/sanity/lib/image.ts`) — actually more thorough than a one-time tinypng pass, since each display size
+gets its own appropriately-sized file rather than one fixed compressed original. The real gap was the
+*original* file sitting in storage, which stayed at full size — never affected what a visitor saw, but did
+mean slower uploads (especially the mass-upload flow above) and needless storage growth over time.
+
+`src/lib/imageCompress.ts` closes that gap, client-side, automatically, at upload time. **Can't be tested
+with `npx tsx`** the way this repo's other pure-logic modules (`bulkOperations.ts`, `imageReplace.ts`) are
+— it needs real browser APIs (`Image`, `<canvas>`) that don't exist in Node — so it was verified instead
+with a standalone Playwright script that transcribes the exact same algorithm into a real browser page and
+runs it against real generated test images, including a deliberately worst-case one (pure random noise —
+much less compressible than any real photo) to make sure the numbers held up under harder conditions than
+anything real would ever produce.
+
+- **Resize**: caps the longest dimension at 2560px — comfortably above the widest `.width()` call anywhere
+  on the site (`portableTextComponents.tsx`'s lightbox `fullSrc` at 2400px) — via `<canvas>`, preserving
+  aspect ratio. Anything already smaller is left at its original dimensions.
+- **Re-encode**: JPEG at quality 0.85 for anything that's safe to flatten — JPEG/WebP sources, and PNGs
+  that turn out to have no real transparency (a screenshot, a flattened export) — since that's where the
+  actual size win comes from. **A PNG that genuinely uses transparency stays PNG** (checked by scanning the
+  decoded pixel data's alpha channel for any value under 255) rather than being flattened onto a solid
+  background, which would be a real visible bug, not just a missed optimization.
+- **Skipped entirely**: files under 300KB (small enough that re-encoding risks costing more in visible
+  quality than it saves in bytes), and any file type other than JPEG/PNG/WebP — specifically GIFs (canvas
+  would flatten an animation to a single frame) and SVGs (vector; rasterizing one defeats the point).
+- **Never makes things worse**: if the recompressed blob ends up the same size or larger than the original
+  (can happen with an already-well-optimized small-ish file just above the threshold), the original file is
+  used untouched instead.
+
+Wired into both `uploadFiles()` (mass upload) and `handleReplaceFileSelected()` (the "Replace image" flow
+below) — same function, same behavior, called right before the actual `client.assets.upload()` call in
+each. Shows the actual before/after size when a file was compressed (a `compressionResults` summary card
+after mass upload; inline in the confirm step for a single replace) rather than compressing silently, per
+Asher's own preference when this was scoped.
+
 **Mass select + Trash (shipped 2026-08-08).** A "Select" button toggles checkbox mode on every tile
 (overlaid on the thumbnail, top-left) and reveals a floating action bar; "Move to Trash" on a selection
 that includes an image still used by a post shows an explicit confirm step first (trashing doesn't break
