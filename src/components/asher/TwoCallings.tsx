@@ -33,7 +33,15 @@ export function TwoCallings() {
           <div className="flex flex-col gap-6 border-b border-amber-faint pb-12">
             <Eyebrow index="05" label="Two Callings, One Story" />
             <h2 className="max-w-5xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-7xl">
-              Asher is <CyclingCallingWord withArticle wordClassName="italic text-spotlight-gradient" />
+              {/* Forced break on mobile only: without it, "Asher is a
+              Storyteller" wraps to two lines while shorter words like
+              "Asher is an Actor" fit on one -- the headline's own height
+              changing based on which word happens to be showing pushes
+              every section below it up and down as the word cycles. A
+              fixed break makes the height constant on mobile regardless
+              of word length. Desktop has enough width that every
+              combination already fits on one line, so no break there. */}
+              Asher is<br className="sm:hidden" /> <CyclingCallingWord withArticle wordClassName="italic text-spotlight-gradient" />
             </h2>
             <p className="max-w-2xl text-base leading-relaxed text-stone/85 sm:text-lg">
               Many roles, one craft. Each role sharpens the other.
@@ -83,12 +91,12 @@ export function TwoCallings() {
                 Calling 02
               </p>
               <h3 className="mt-2 font-display text-2xl font-semibold text-ivory sm:text-3xl">
-                The Studio
+                To Serve
               </h3>
               <p className="mt-3 text-sm leading-relaxed text-stone/75">
                 Fifteen years of marketing. Current trainer at Nas Academy.
-                Corporate workshops, 1:1 coaching — communication as a
-                teachable, repeatable craft.
+                Corporate workshops, 1:1 coaching — serving through the
+                practical, teachable side of communication.
               </p>
             </div>
           </Reveal>
@@ -98,10 +106,10 @@ export function TwoCallings() {
         <Reveal delay={0.1}>
           <div className="mt-12 mx-auto max-w-3xl text-center">
             <p className="font-display text-2xl italic leading-snug text-ivory sm:text-3xl">
-              &ldquo;Whether the audience is a thousand-seat auditorium or a
-              one-to-one Zoom call, the job doesn&rsquo;t change.{" "}
+              &ldquo;Whether it&rsquo;s a thousand-seat hall or a one-to-one
+              Zoom call, it&rsquo;s the same calling — to serve.{" "}
               <span className="text-spotlight-gradient not-italic font-medium">
-                Say the true thing, clearly.
+                Presenting all I have, as authentically as I can.
               </span>
               &rdquo;
             </p>

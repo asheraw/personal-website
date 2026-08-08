@@ -26,33 +26,32 @@ export function useCyclingIndex(length: number, intervalMs: number): {index: num
 
 // Purely presentational: only the ACTIVE word is ever in the document at
 // once (AnimatePresence handles the outgoing one exiting), which is what
-// makes this correct rather than the two earlier approaches:
+// makes the WIDTH correct -- the box sizes to whichever word is actually
+// showing, not the widest of every possible word, so nothing that follows
+// the slot on the same line (e.g. a trailing period) ever sits with an
+// odd gap in front of it.
 //
-// v1 (position:absolute + a guessed min-w-[Nch]) left a visible gap before
-// whatever followed the slot on the same line, since the box was sized to
-// the WIDEST possible word, not whichever word was actually showing.
+// Two earlier versions got this far but not further: v1 (position:absolute
+// + a guessed min-w-[Nch]) had exactly that gap problem. v2 (CSS Grid
+// stacking all 4 words in one cell) fixed the width, but stacking every
+// word simultaneously under `overflow-hidden` meant the box's height came
+// from whichever word rendered tallest under the surrounding heading's own
+// (sometimes tight, e.g. leading-[0.98]) line-height -- clipping a
+// descender like the "y" in "Storyteller" against that same boundary.
 //
-// v2 (CSS Grid stacking all 4 words in one cell) fixed the width guess by
-// measuring real content, but stacking all 4 words simultaneously meant
-// the grid cell's height came from whichever word rendered tallest under
-// `overflow-hidden` -- and since every word inherited the surrounding
-// heading's own (sometimes quite tight, e.g. leading-[0.98]) line-height,
-// a descender like the "y" in "Storyteller" or the "g" in "telling" could
-// get visibly clipped by that same overflow-hidden boundary that was
-// needed to hide the sliding neighbors.
-//
-// This version renders exactly one word at a time, in completely normal
-// inline flow -- no overflow-hidden, no manual height/width reservation.
-// It behaves exactly like any other word in the sentence (same line-height,
-// same baseline, glyphs never clipped) because, at rest, it IS just plain
-// text. `layout` on the wrapper smoothly animates the width change as
-// shorter/longer words swap in; `AnimatePresence mode="popLayout"` lets the
-// outgoing word slide/fade away without holding up the incoming word's
-// layout. Inspired by a cycling-word hero effect Asher found on 21st.dev,
-// adapted to this site's actual visual language rather than copied
-// wholesale. Takes `index` as a prop rather than owning its own timer, so
-// multiple slots (ThreePillars.tsx's story/voice + telling/hearing pair)
-// can be driven by the SAME index and stay in sync.
+// This version still masks the slide with `overflow-hidden` (needed for
+// the scrolling-reel look, not a plain cross-fade), but gives the box
+// `pb-[0.28em]` genuine extra room below the text for descenders, then
+// cancels that same amount with `-mb-[0.28em]` so the box's OUTER edge --
+// what the surrounding line actually aligns against -- lands exactly where
+// it would with no padding at all. The descender gets real, unclipped
+// room; the alignment with sibling text (e.g. "Asher is") is unaffected.
+// `layout="size"` on the wrapper animates the width smoothly as shorter/
+// longer words swap in. Inspired by a cycling-word hero effect Asher found
+// on 21st.dev, adapted to this site's actual visual language rather than
+// copied wholesale. Takes `index` as a prop rather than owning its own
+// timer, so multiple slots (ThreePillars.tsx's story/voice +
+// telling/hearing pair) can be driven by the SAME index and stay in sync.
 export function CyclingWordSlot({
   words,
   index,
@@ -71,15 +70,18 @@ export function CyclingWordSlot({
   const word = words[index];
   const rendered = transform ? transform(word) : word;
   return (
-    <motion.span layout="size" className="relative inline-block">
+    <motion.span
+      layout="size"
+      className="relative inline-block align-bottom overflow-hidden pb-[0.28em] -mb-[0.28em]"
+    >
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={word}
           className={`inline-block ${wordClassName}`}
-          initial={reduceMotion ? false : {y: "0.4em", opacity: 0}}
-          animate={{y: "0em", opacity: 1}}
-          exit={reduceMotion ? {opacity: 0} : {y: "-0.4em", opacity: 0}}
-          transition={reduceMotion ? {duration: 0} : {type: "spring", stiffness: 300, damping: 28}}
+          initial={reduceMotion ? false : {y: "100%", opacity: 0}}
+          animate={{y: "0%", opacity: 1}}
+          exit={reduceMotion ? {opacity: 0} : {y: "-100%", opacity: 0}}
+          transition={reduceMotion ? {duration: 0} : {type: "spring", stiffness: 200, damping: 24}}
         >
           {rendered}
         </motion.span>

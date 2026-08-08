@@ -38,7 +38,16 @@ export function PlaySections() {
   return (
     <div className="divide-y divide-amber-faint">
       <Section id="hero" eyebrow="00 · Welcome" title="An actor who teaches. A teacher who acts." iconKey="sparkles">
-        <p className="text-base leading-relaxed text-stone/85">Theatre actor, communications coach, and storyteller based in Singapore. 15+ years in marketing. 10+ years on stage. One quiet conviction — that <span className="text-spotlight">everyone has a story worth telling</span>, and that authenticity moves people further than volume ever will.</p>
+        {/* Story mode has a dedicated "00 · The Premise" zone (ThreePillars.tsx)
+        for this same idea, right after the hero. Play mode's world has no
+        physical zone standing in for it -- adding a real one means new
+        geometry in both World3D.tsx and GameCanvas.tsx plus renumbering
+        every zone after it, scope Asher asked to skip for now. Folded the
+        core idea into this zone instead, right where Story mode's version
+        would otherwise sit. */}
+        <p className="font-mono-stage text-xs uppercase tracking-[0.25em] text-spotlight/70">Finding Your Voice</p>
+        <p className="mt-2 text-base leading-relaxed text-stone/85">You have a story worth telling, and a voice worth hearing.</p>
+        <p className="mt-4 text-base leading-relaxed text-stone/85">Theatre actor, communications coach, and storyteller based in Singapore. 15+ years in marketing. 10+ years on stage. One quiet conviction — that <span className="text-spotlight">everyone has a story worth telling</span>, and that authenticity moves people further than volume ever will.</p>
         <div className="mt-5 flex flex-wrap gap-2">{["Singapore", "15+ yrs marketing", "10+ yrs stage"].map((t) => (<span key={t} className="rounded-full border border-amber-faint/60 px-3 py-1.5 font-mono-stage text-xs uppercase tracking-[0.18em] text-stone/80">{t}</span>))}</div>
         <p className="mt-6 text-base leading-relaxed text-stone/70">Across theatre, coaching, marketing, and ministry — the work has always been the same. To help someone say the truest thing in the clearest way. To find the line that makes a room lean in. To perform not for applause, but for connection.</p>
         <p className="mt-4 text-base leading-relaxed text-stone/70">Asher believes effective communication comes from authenticity, not volume. That introverts can become outstanding communicators without pretending to be extroverts. That every individual has experiences that can positively impact others.</p>
@@ -83,11 +92,11 @@ export function PlaySections() {
         <div className="mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           <div className="rounded-xl border border-amber-faint bg-stage/40 p-4 text-center"><Drama size={24} className="mx-auto text-spotlight" /><p className="mt-2 font-display text-base font-semibold text-ivory">The Stage</p><p className="mt-1 text-sm text-stone/60">10+ years of theatre</p></div>
           <span className="font-display text-xl font-semibold text-spotlight">&amp;</span>
-          <div className="rounded-xl border border-amber-faint bg-stage/40 p-4 text-center"><GraduationCap size={24} className="mx-auto text-spotlight" /><p className="mt-2 font-display text-base font-semibold text-ivory">The Studio</p><p className="mt-1 text-sm text-stone/60">15+ years of marketing</p></div>
+          <div className="rounded-xl border border-amber-faint bg-stage/40 p-4 text-center"><GraduationCap size={24} className="mx-auto text-spotlight" /><p className="mt-2 font-display text-base font-semibold text-ivory">To Serve</p><p className="mt-1 text-sm text-stone/60">15+ years of marketing</p></div>
         </div>
         <p className="mt-5 text-center font-display text-lg italic leading-snug text-ivory">&ldquo;Two callings. One instinct: help people say the truest thing in the clearest way.&rdquo;</p>
         <p className="mt-4 text-base leading-relaxed text-stone/70">Theatre taught presence, timing, and emotional truth. Marketing taught clarity and positioning. Coaching is where they meet.</p>
-        <p className="mt-3 text-base leading-relaxed text-stone/70">Whether the audience is a thousand-seat auditorium or a one-to-one Zoom call, the conviction doesn&rsquo;t change.</p>
+        <p className="mt-3 text-base leading-relaxed text-stone/70">Whether it&rsquo;s a thousand-seat hall or a one-to-one Zoom call, it&rsquo;s the same calling — to serve, presenting all I have, as authentically as I can.</p>
       </Section>
 
       <Section id="philosophy" eyebrow="06 · Philosophy" title="Six quiet convictions." iconKey="book">
