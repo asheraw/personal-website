@@ -530,6 +530,12 @@ function Scene({ activeSection, onZoneEnter }: { activeSection: string; onZoneEn
   const lastReportedZone = useRef<string>("hero");
   const onZoneEnterRef = useRef(onZoneEnter);
   const isClickWalking = useRef(false);
+  // Which zone a deferred setCurrentZone call is already queued for -- see
+  // the useFrame callback below. Guards against scheduling a new
+  // setTimeout every single frame while waiting for the first one to land
+  // (the `zoneId !== currentZone` check below stays true on every frame
+  // until that deferred update actually applies React state).
+  const pendingZoneRef = useRef<string | null>(null);
 
   useEffect(() => { onZoneEnterRef.current = onZoneEnter; }, [onZoneEnter]);
   useEffect(() => { charPosRef.current = charPos; }, [charPos]);
@@ -585,7 +591,25 @@ function Scene({ activeSection, onZoneEnter }: { activeSection: string; onZoneEn
     const zone = ZONES_3D.find(z => { const ddx = charPosRef.current[0] - z.position[0]; const ddz = charPosRef.current[2] - z.position[2]; return Math.sqrt(ddx * ddx + ddz * ddz) < 1.8; });
     // If on arrow tile and not on a real zone, show "directions"
     const zoneId = zone ? zone.id : (onArrow ? "directions" : null);
-    if (zoneId !== currentZone) setCurrentZone(zoneId || "hero");
+    // Deferred, not called synchronously here -- setCurrentZone drives
+    // `active={zone.id === currentZone}` on Ground and all 8
+    // ZoneStructures, which is what actually shows/hides each zone's
+    // active-only lights and (for "At a Glance" specifically) mounts a new
+    // Sparkles particle system. That's real work -- geometry + shader
+    // material allocation for Sparkles isn't free -- and doing it
+    // synchronously inside useFrame, on the same tick as this frame's own
+    // Three.js render, is exactly the kind of thing that produces a
+    // momentary freeze on the specific frame a zone changes. Deferring
+    // past the current frame's paint (same technique as PlayMode.tsx's
+    // handleZoneEnter) lets the walk itself stay smooth; the zone
+    // highlight/effects land a frame or so later, imperceptibly.
+    if (zoneId !== currentZone && pendingZoneRef.current !== zoneId) {
+      pendingZoneRef.current = zoneId;
+      setTimeout(() => {
+        pendingZoneRef.current = null;
+        setCurrentZone(zoneId || "hero");
+      }, 0);
+    }
     // Report zone changes (including "directions") to update the status bar
     if (zoneId && zoneId !== lastReportedZone.current && !charTargetRef.current) { lastReportedZone.current = zoneId; onZoneEnterRef.current(zoneId); }
   });
