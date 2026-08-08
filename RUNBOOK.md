@@ -2437,6 +2437,61 @@ this exact bug reappears for it.
 
 ---
 
+## PLAY mode: the homepage's 3D/2D walking world (freeze fixed + loading state added 2026-08-08)
+
+**Not the per-post registry documented below.** This is the homepage's own PLAY toggle (`page.tsx`'s
+`mode` state — client-only, no URL param, gated off entirely on mobile) — a single, fixed, hand-built
+walking scene, not a Sanity-driven registry. `src/components/asher/play/PlayMode.tsx` owns the toggle
+between two versions of the same experience: `World3D.tsx` (`@react-three/fiber` + three.js, real 3D) and
+`GameCanvas.tsx` (plain 2D canvas API). Both share the exact same zone data shape and the same
+`handleZoneEnter` callback, passed down as a prop — the character crossing into a zone calls it, which
+updates the "Currently in" status and smooth-scrolls the content panel (`PlaySections.tsx`) to the matching
+section.
+
+**The walking freeze (fixed 2026-08-08).** Asher reported a brief freeze walking toward a zone whose
+content sits far down the page. **Confirmed by reading both render loops directly, not assumed:** neither
+version loads any image/model/texture per zone — every 3D zone structure (`ZoneStructure` in `World3D.tsx`)
+is built from primitive Three.js geometries defined inline and is *already* mounted for all 8 zones at
+once, so there's genuinely nothing async happening when the character enters a new one. The real cause:
+`handleZoneEnter` called `getBoundingClientRect()` twice (once on the scroll container, once on the target
+section) to compute a scroll offset — a call that forces the browser to synchronously recalculate layout
+for anything currently "dirty." Both `World3D.tsx`'s `useFrame` and `GameCanvas.tsx`'s own
+`requestAnimationFrame` loop called this function **directly, synchronously, inside their own per-frame
+update** — forcing that reflow mid-frame, stacked on top of the frame's own render work, every single time
+the character crossed a zone boundary. Reflow cost scales with total DOM complexity, which is why a longer
+`PlaySections.tsx` (more content below) meant a more noticeable freeze — exactly what Asher described.
+
+**Fix:** the DOM-measuring, scroll-triggering part of `handleZoneEnter` now runs inside `window.setTimeout(
+fn, 0)` rather than synchronously in the caller. This pushes the layout-forcing work to the next macrotask,
+after the current animation frame has had a chance to paint, instead of blocking it. **The `setActiveSection`
+state update and the `track()` analytics call stay synchronous** (cheap, no DOM reads) — only the two
+`getBoundingClientRect()` calls and the actual `scrollTo()` are deferred. **If a similar freeze ever
+reappears on zone entry**, check first whether something new was added to `handleZoneEnter` (or a similar
+per-frame callback) that reads layout (`getBoundingClientRect`, `offsetHeight`, `offsetTop`, etc.)
+synchronously — that's the actual failure mode here, not "something is loading slowly."
+
+**Loading state (shipped 2026-08-08).** Both `World3D` and `GameCanvas` are dynamically imported in
+`PlayMode.tsx` (`next/dynamic`, `ssr: false`) — a real async gap, since only one of 2D/3D ever renders at a
+time and there's no reason to ship both in the initial bundle. `PlayLoader.tsx` (an animated pencil,
+[Uiverse.io by AnnaVAnTiM](https://uiverse.io/AnnaVAnTiM/rare-pug-90), the HSL-brown variant Asher picked)
+is the shared `loading:` fallback for both. **Real dark-mode bug fixed in the source snippet**: the
+graphite tip was a hardcoded `hsl(223,10%,10%)` (near-black) that nearly disappeared against this site's
+near-black dark background — changed to `fill="currentColor"` so it reads off the same value as the drawn
+stroke line (which already used `currentColor`), both set via `.pencil { color: var(--spotlight); }` in
+`globals.css` — correct in either theme automatically, no `.light`-specific override needed since
+`--spotlight` itself already resolves differently per theme. Also added `prefers-reduced-motion` handling
+(freezes each part at its own resting keyframe rather than removing the pencil entirely), which the
+original Uiverse snippet didn't have. **GameCanvas is dynamically imported for the first time here too** —
+previously it was a plain static import, always bundled into the initial page load even on visits that
+never open PLAY mode at all, unlike `World3D` which already had this treatment.
+
+Verified end-to-end with Playwright against both a local build and the live site: clicked into PLAY,
+caught the loader mid-animation on both 2D and 3D (screenshotted, not assumed), then walked with arrow keys
+across a zone boundary and confirmed the content panel updates correctly with zero console errors either
+way.
+
+---
+
 ## PLAY mode, per-post (shipped 2026-08-04)
 
 **Not the homepage's 3D world.** That's a single, fixed, hand-built experience with no Sanity registry and no

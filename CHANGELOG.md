@@ -11,6 +11,40 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more again) — PLAY mode: fixed the real walking freeze, added a loading state
+
+Asher reported a brief freeze walking toward a zone whose content sits far down the page, and separately
+asked about wiring in a loading screen (a specific Uiverse.io "pencil" animation he'd found) for PLAY's 3D
+and 2D parts, "the heaviest load of my site." Traced the freeze before assuming the loader would fix it —
+it wouldn't have.
+
+**The real cause, confirmed by reading both render loops directly:** neither the 3D world nor the 2D
+canvas loads any image/model/texture per zone — everything is procedural geometry, so there was never
+anything to actually finish loading when walking. `handleZoneEnter` (`PlayMode.tsx`) calls
+`getBoundingClientRect()` twice to compute a scroll offset, and it's called directly from inside both
+World3D's `useFrame` loop and GameCanvas's own `requestAnimationFrame` loop — forcing a synchronous layout
+reflow mid-frame, every time the character crosses a zone boundary, on top of that frame's own render
+work. Cost scales with how much DOM exists in the content panel below — exactly matching what Asher
+noticed. **A loading screen genuinely could not have masked this** — it's a blocking main-thread reflow,
+not a network load, so a CSS-animated loader would have frozen right along with everything else. Fixed the
+actual cause: the DOM measurement now runs via `setTimeout(0)`, deferred past the current frame's paint.
+Verified by actually walking through both versions with Playwright (arrow keys, real zone crossings) and
+confirming the content panel still updates correctly with zero console errors — on the live site too, not
+just locally.
+
+**The loading state Asher did ask for** is genuinely useful, just not for that freeze — both World3D and
+GameCanvas are dynamically imported (code-split out of the initial page bundle), which is a real async gap.
+Built `PlayLoader.tsx` from the Uiverse.io snippet he picked (the HSL-brown "pencil" variant), fixing a real
+dark-mode bug in the source along the way: the graphite tip was a hardcoded near-black that would have
+nearly vanished against this site's dark background. Changed it to `currentColor`, matching the drawn
+stroke line, both now reading off `var(--spotlight)` — correct in either theme automatically, no manual
+dark/light override needed. Added `prefers-reduced-motion` handling, which the original snippet didn't
+have. GameCanvas is now dynamically imported for the first time too (previously always bundled into the
+initial load even though only one of 2D/3D ever renders at once) — caught mid-load and screenshotted on
+both versions to confirm the loader actually shows and looks right, not just that the code compiles.
+
+---
+
 ## 2026-08-08 (continued once more still) — Distribution: a real Share panel, and quote-card images
 
 Asked whether Distribution could help post out to socials directly, with the link going in a follow-up
