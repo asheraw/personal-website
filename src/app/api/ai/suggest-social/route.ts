@@ -25,9 +25,9 @@ const SOCIAL_TASK_INSTRUCTIONS = `You are helping a blogger draft social caption
 
 Never invent facts, quotes, numbers, or details that aren't actually in the post.
 
-Do not include the actual URL in any of the text -- assume the link will be attached separately when the author posts it (X shows a link preview card, LinkedIn/Facebook do too), so repeating it in the caption is redundant. Do not use hashtags unless the post's own content makes a specific one obviously relevant -- most posts don't need any.
+Do not include the actual URL in any of the text, and do not write as if a link preview card will appear directly under the post. The author posts the caption on its own with no link attached, then pastes the URL into a reply/first comment separately -- posts with an outbound link attached directly get meaningfully less reach on X and LinkedIn specifically, so the caption needs to work as a complete, standalone post that gives a real reason to click through, not one that reads like it's missing a link. Never write something like "link in comments" or "link below" either -- that undercuts the same goal by telegraphing the workaround; the caption should just read as a complete thought on its own. Do not use hashtags unless the post's own content makes a specific one obviously relevant -- most posts don't need any.
 
-X (Twitter): short and punchy, 240 characters or fewer each (leaves comfortable room for a link card). A hook, not a summary -- give a reason to click, don't give away the whole point.
+X (Twitter): short and punchy, 240 characters or fewer each. A hook, not a summary -- give a reason to click, don't give away the whole point.
 
 LinkedIn: more room to work with -- 2-4 short paragraphs, professional but still personal, the way someone actually talks, not corporate-speak. Can open with a specific moment, question, or claim from the post rather than "I just published a new post."
 

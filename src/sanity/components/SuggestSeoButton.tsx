@@ -37,6 +37,7 @@ export function SuggestSeoButton({documentId, source}: {documentId: string; sour
             suggestions={suggestions}
             error={error}
             currentTags={currentTags}
+            postTitle={source?.title}
             onRetry={runSuggestion}
             onClose={() => setDialogOpen(false)}
             onUseTitle={(text, logId) => {

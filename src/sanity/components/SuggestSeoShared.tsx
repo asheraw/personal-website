@@ -1,5 +1,6 @@
 import {useState} from 'react'
 import {Box, Button, Card, Flex, Heading, Spinner, Stack, Text} from '@sanity/ui'
+import {ImageIcon} from '@sanity/icons/Image'
 import {portableTextToPlainText} from '../../lib/portableText'
 import {ErrorMessage} from './ErrorMessage'
 
@@ -227,6 +228,7 @@ export function SuggestSeoDialogBody({
   suggestions,
   error,
   currentTags,
+  postTitle,
   onRetry,
   onUseTitle,
   onUseExcerpt,
@@ -238,6 +240,7 @@ export function SuggestSeoDialogBody({
   suggestions: Suggestions | null
   error: string
   currentTags: string[]
+  postTitle?: string
   onRetry: () => void
   onUseTitle: (text: string, logId: string | null | undefined) => void
   onUseExcerpt: (text: string, logId: string | null | undefined) => void
@@ -299,11 +302,22 @@ export function SuggestSeoDialogBody({
             <Stack space={3}>
               <Heading size={1}>Pull quotes — copy one to highlight in the post body</Heading>
               {suggestions.pullQuotes.map((quote) => (
-                <CopyTextOption
-                  key={quote}
-                  text={quote}
-                  onCopy={() => logUsage(suggestions.logId, `Copied pull quote: "${quote}"`)}
-                />
+                <Stack space={2} key={quote}>
+                  <CopyTextOption text={quote} onCopy={() => logUsage(suggestions.logId, `Copied pull quote: "${quote}"`)} />
+                  <Flex justify="flex-end">
+                    <Button
+                      as="a"
+                      href={`/api/og/quote?text=${encodeURIComponent(quote)}&attribution=${encodeURIComponent(postTitle ?? '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      text="Make image"
+                      icon={ImageIcon}
+                      mode="ghost"
+                      fontSize={1}
+                      onClick={() => logUsage(suggestions.logId, `Generated quote image: "${quote}"`)}
+                    />
+                  </Flex>
+                </Stack>
               ))}
             </Stack>
           )}
@@ -322,8 +336,9 @@ export function SuggestSeoDialogBody({
           <Text size={1} muted>
             Picking a title or excerpt replaces whatever&rsquo;s currently there; tags get added to whatever&rsquo;s
             already set, not replaced. Pull quotes and FAQs copy to your clipboard — paste them into the post
-            body yourself, wherever they fit best. You can still edit any of it afterward — these are starting
-            points, not final copy.
+            body yourself, wherever they fit best. &ldquo;Make image&rdquo; on a pull quote opens a
+            ready-to-share graphic in a new tab — right-click to save it. You can still edit any of it
+            afterward — these are starting points, not final copy.
           </Text>
           <Flex justify="flex-end">
             <Button text="Close" mode="ghost" onClick={onClose} />

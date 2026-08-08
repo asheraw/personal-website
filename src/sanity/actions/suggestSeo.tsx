@@ -57,6 +57,7 @@ export function createSuggestSeoAction(): DocumentActionComponent {
                 status={status}
                 suggestions={suggestions}
                 error={error}
+                postTitle={source?.title}
                 currentTags={currentTags}
                 onRetry={runSuggestion}
                 onClose={() => setDialogOpen(false)}

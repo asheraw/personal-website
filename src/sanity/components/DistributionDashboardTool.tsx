@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react'
 import {Badge, Box, Button, Card, Flex, Select, Spinner, Stack, Text, TextArea} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {openPostInStudio} from '../lib/openPostInStudio'
+import {SharePanel} from './SharePanel'
 
 type Post = {_id: string; title: string; slug: string; publishedAt?: string}
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
@@ -138,7 +139,10 @@ export function DistributionDashboardTool() {
           <Text size={1} muted>
             Every post — whether social copy&rsquo;s been drafted, how many times it&rsquo;s actually been
             shared, and a place to jot down engagement by hand (a reply, a comment elsewhere) since none of
-            that gets pulled automatically from X/LinkedIn/Facebook.
+            that gets pulled automatically from X/LinkedIn/Facebook. &ldquo;Share this post&rdquo; drafts
+            captions on demand, written to stand alone with no link attached — post the caption first, then
+            paste the link as a follow-up reply/comment, which is what actually gets more reach on X and
+            LinkedIn specifically.
           </Text>
           <Flex gap={3} wrap="wrap">
             <Badge tone="primary" fontSize={0}>
@@ -182,6 +186,8 @@ export function DistributionDashboardTool() {
                       />
                     </Flex>
                   </Flex>
+
+                  <SharePanel postId={post._id} title={post.title} slug={post.slug} />
 
                   <Text
                     size={0}
