@@ -2691,6 +2691,29 @@ before/after timing number here to prove the freeze duration actually dropped �
 correct architecture (no synchronous state update left inside the render loop) plus clean functional
 behavior, not a benchmark.
 
+**Story mode and Play mode content: `data.ts` is meant to be the single source of truth, but wasn't fully
+one (found and fixed 2026-08-08).** `src/components/asher/data.ts` exists specifically so Story mode's
+components and `PlaySections.tsx` read the same underlying content rather than each maintaining their own
+copy — its own file header says as much. In practice, list-type content (`ROLES`, `STAGE_STATS`, `BRANDS`,
+`COACHING_TOPICS`, `FAITH_VALUES`, etc.) was consistently imported by both. Prose paragraphs and headlines
+were not: several Story-mode components (`Philosophy.tsx` most notably) hardcoded their own local copy of
+content that also existed in `data.ts`, rather than importing it. `Philosophy.tsx`'s local `PRINCIPLES`/
+`PERSONALITY` matched `data.ts`'s version by coincidence, not by design — and that's exactly how Play
+mode's Philosophy closing paragraph ended up with a whole extra sentence Story mode's version never had:
+someone (or something) edited one copy and not the other, with nothing to catch the drift.
+
+**Fixed for the pieces touched during a copy-editing pass (2026-08-08):** `Philosophy.tsx` now imports
+`PRINCIPLES`/`PERSONALITY` from `data.ts` instead of re-declaring them. Two new shared constants,
+`PHILOSOPHY_CLOSING_NOTE` and `COACHING_INTRO`, hold paragraphs that were previously separately hardcoded
+in both `Philosophy.tsx`/`CoachingSection.tsx` (Story) and `PlaySections.tsx` (Play) with already-diverged
+wording — now each is one string, imported by both. **Not a full audit**: other prose (Two Callings'
+pull-quotes, Faith section's paragraphs, Stage's intro) still has separate Story/Play copies that happen to
+say similar-but-not-identical things by original design, not drift — left alone rather than force-merged,
+since Story and Play are allowed to phrase the same idea differently when that's an intentional choice, not
+an accident. **If Story and Play ever visibly disagree about a fact** (a stat, a credential, a stated
+belief), check whether the relevant component is importing from `data.ts` or has its own local copy first —
+that mismatch is the most likely cause, per this exact bug.
+
 ---
 
 ## PLAY mode, per-post (shipped 2026-08-04)

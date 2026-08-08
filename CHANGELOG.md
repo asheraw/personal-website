@@ -11,6 +11,33 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more again, round seven) — Homepage copy pass, using no-ai-slop
+
+Asher asked for a pass over the homepage copy specifically to catch anything that reads AI-drafted, using
+the no-ai-slop skill — with one explicit instruction: the "An actor who teaches. A teacher who acts."
+tagline stays exactly as it is, untouched.
+
+Found and fixed, with Asher shaping the two rewritten lines himself rather than anything invented: two
+generic Philosophy principles that could've belonged to anyone's LinkedIn bio, now specific to what he
+actually means; the same sentence ("Stories connect people more deeply than information alone") repeated
+verbatim in three different sections, now living in one place with the other two saying something else;
+a triple-fragment sentence in Two Callings trimmed to one line, same fix applied to an even longer version
+of it in Play mode; two "not X, not Y, just Z" constructions in Play mode rewritten as plain statements;
+the page switching between first and third person depending on the section, now third person throughout;
+and a ten-word personality list trimmed to six after cutting real overlaps.
+
+Along the way, found a real quiet bug this review was worth doing for on its own: Philosophy.tsx had its
+own separately hardcoded copy of the site's core beliefs and personality list, instead of importing the
+ones already sitting in the shared data file that Play mode actually uses. They matched today by luck, not
+by design — which is exactly how Play mode's closing paragraph ended up with a sentence Story mode's
+version never had. Fixed to import from the same source, and pulled two more paragraphs that had quietly
+diverged between Story and Play into shared constants too, so this can't happen again.
+
+Read every changed line back on the actual rendered page — both Story and Play mode, screenshots and raw
+HTML — before calling it done, not just checking that the build passed.
+
+---
+
 ## 2026-08-08 (continued once more again, round six) — Compression as an option when uploading inside a post too
 
 Asher asked whether uploading a photo directly inside a post — not through Media — gets the same
