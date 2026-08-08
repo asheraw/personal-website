@@ -21,7 +21,11 @@ const MAX_DIMENSION = 2560;
 const JPEG_QUALITY = 0.85;
 // Below this a photo is already small enough that re-encoding risks
 // costing more in visible quality than it saves in bytes -- skip it.
-const MIN_SIZE_TO_COMPRESS = 300 * 1024;
+// Exported so MediaLibraryTool's one-time "Compress existing photos" scan
+// can pre-filter by Sanity's already-known asset size before downloading
+// anything, rather than fetching a photo's bytes just to find out it was
+// always going to be skipped.
+export const MIN_SIZE_TO_COMPRESS = 300 * 1024;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

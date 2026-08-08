@@ -16,9 +16,17 @@ import {
 import {useClient} from 'sanity'
 import {UploadIcon} from '@sanity/icons/Upload'
 import {SyncIcon} from '@sanity/icons/Sync'
+import {DocumentZipIcon} from '@sanity/icons/DocumentZip'
 import {ErrorMessage} from './ErrorMessage'
-import {computeImageReplaceChanges, summarizeImageReplace, type ImageFieldChange} from '../../lib/imageReplace'
-import {compressImageFile} from '../../lib/imageCompress'
+import {
+  computeImageReplaceChanges,
+  computeBatchReplaceChanges,
+  summarizeImageReplace,
+  summarizeBatchCompress,
+  type ImageFieldChange,
+  type AssetSwap,
+} from '../../lib/imageReplace'
+import {compressImageFile, MIN_SIZE_TO_COMPRESS} from '../../lib/imageCompress'
 
 type UsedByPost = {title: string; slug: string | null}
 type ImageAsset = {
@@ -111,6 +119,26 @@ export function MediaLibraryTool() {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [compressionResults, setCompressionResults] = useState<{filename: string; originalSize: number; compressedSize: number}[] | null>(null)
+
+  // ---- One-time "Compress existing photos" scan -- unlike the automatic
+  // per-upload compression above, this walks the WHOLE library once,
+  // compressing anything already-uploaded that's still full-size.
+  type CompressCandidate = {
+    assetId: string
+    url: string
+    originalFilename: string | null
+    originalSize: number
+    compressedFile: File
+    compressedSize: number
+  }
+  const [compressLibraryOpen, setCompressLibraryOpen] = useState(false)
+  const [libraryScanPhase, setLibraryScanPhase] = useState<'idle' | 'scanning' | 'preview' | 'working' | 'done'>('idle')
+  const [libraryScanProgress, setLibraryScanProgress] = useState<{done: number; total: number} | null>(null)
+  const [libraryCandidates, setLibraryCandidates] = useState<CompressCandidate[] | null>(null)
+  const [librarySkippedCount, setLibrarySkippedCount] = useState(0)
+  const [libraryWorkProgress, setLibraryWorkProgress] = useState<{done: number; total: number} | null>(null)
+  const [libraryDoneSummary, setLibraryDoneSummary] = useState<{imageCount: number; savedBytes: number; docCount: number} | null>(null)
+  const [libraryError, setLibraryError] = useState<string | null>(null)
 
   const replaceFileInputRef = useRef<HTMLInputElement>(null)
   const [replacingAsset, setReplacingAsset] = useState<ImageAsset | null>(null)
@@ -481,6 +509,158 @@ export function MediaLibraryTool() {
     }
   }
 
+  function openCompressLibrary() {
+    setCompressLibraryOpen(true)
+    setLibraryScanPhase('idle')
+    setLibraryCandidates(null)
+    setLibrarySkippedCount(0)
+    setLibraryDoneSummary(null)
+    setLibraryError(null)
+  }
+
+  function closeCompressLibrary() {
+    setCompressLibraryOpen(false)
+    setLibraryScanPhase('idle')
+    setLibraryScanProgress(null)
+    setLibraryCandidates(null)
+    setLibrarySkippedCount(0)
+    setLibraryWorkProgress(null)
+    setLibraryDoneSummary(null)
+    setLibraryError(null)
+  }
+
+  // Scans the WHOLE library once, pre-filtering by Sanity's already-known
+  // asset size (no point downloading a photo just to learn it's already
+  // small) before actually fetching+compressing candidates. Anything that
+  // doesn't end up meaningfully smaller (compressImageFile's own
+  // shrink-or-skip check) is silently left out of the results rather than
+  // shown as a candidate that wouldn't really help.
+  async function scanLibraryForCompression() {
+    setLibraryScanPhase('scanning')
+    setLibraryError(null)
+    try {
+      const all = await client.fetch<{_id: string; url: string; originalFilename: string | null; size: number}[]>(
+        `*[_type == "sanity.imageAsset" && ${NOT_TRASHED_FILTER} && size >= ${MIN_SIZE_TO_COMPRESS}]{_id, url, originalFilename, size}`,
+      )
+      setLibraryScanProgress({done: 0, total: all.length})
+      const candidates: CompressCandidate[] = []
+      let skipped = 0
+      for (const asset of all) {
+        try {
+          const res = await fetch(asset.url)
+          const blob = await res.blob()
+          const sourceFile = new File([blob], asset.originalFilename ?? 'photo', {type: blob.type})
+          const result = await compressImageFile(sourceFile)
+          if (result.compressed) {
+            candidates.push({
+              assetId: asset._id,
+              url: asset.url,
+              originalFilename: asset.originalFilename,
+              originalSize: result.originalSize,
+              compressedFile: result.file,
+              compressedSize: result.compressedSize,
+            })
+          } else {
+            skipped++
+          }
+        } catch {
+          skipped++
+        }
+        setLibraryScanProgress((prev) => (prev ? {done: prev.done + 1, total: prev.total} : prev))
+      }
+      setLibraryCandidates(candidates)
+      setLibrarySkippedCount(skipped)
+      setLibraryScanPhase('preview')
+    } catch (err) {
+      setLibraryError(err instanceof Error ? err.message : 'Something went wrong scanning the library.')
+      setLibraryScanPhase('idle')
+    }
+  }
+
+  async function confirmCompressLibrary() {
+    if (!libraryCandidates || libraryCandidates.length === 0) return
+    setLibraryScanPhase('working')
+    setLibraryError(null)
+    setLibraryWorkProgress({done: 0, total: libraryCandidates.length})
+    try {
+      const swaps: AssetSwap[] = []
+      const uploadedByOldId = new Map<string, {_id: string; url: string; originalFilename: string | null}>()
+      for (const c of libraryCandidates) {
+        const uploaded = await client.assets.upload('image', c.compressedFile, {filename: c.compressedFile.name})
+        swaps.push({oldAssetId: c.assetId, newAssetId: uploaded._id})
+        uploadedByOldId.set(c.assetId, {_id: uploaded._id, url: uploaded.url, originalFilename: uploaded.originalFilename ?? c.compressedFile.name})
+        setLibraryWorkProgress((prev) => (prev ? {done: prev.done + 1, total: prev.total} : prev))
+      }
+
+      const oldIds = swaps.map((s) => s.oldAssetId)
+      const referencingDocs = await client.fetch<Record<string, unknown>[]>(`*[references($ids)]`, {ids: oldIds})
+      const changes = computeBatchReplaceChanges(referencingDocs, swaps)
+
+      const byDoc = new Map<string, ImageFieldChange[]>()
+      for (const c of changes) {
+        const list = byDoc.get(c.documentId) ?? []
+        list.push(c)
+        byDoc.set(c.documentId, list)
+      }
+      const tx = client.transaction()
+      for (const [docId, docChanges] of byDoc) {
+        const setObj: Record<string, unknown> = {}
+        for (const c of docChanges) setObj[c.fieldPath] = c.newValue
+        tx.patch(client.patch(docId).set(setObj))
+      }
+      const now = new Date().toISOString()
+      for (const c of libraryCandidates) {
+        const newAsset = uploadedByOldId.get(c.assetId)!
+        const existingAlt = (await client.getDocument(altDocId(c.assetId)).catch(() => null)) as {altText?: string} | null
+        if (existingAlt?.altText) {
+          tx.createOrReplace({_id: altDocId(newAsset._id), _type: 'imageAssetAlt', assetId: newAsset._id, altText: existingAlt.altText})
+        }
+        tx.createOrReplace({_id: trashDocId(c.assetId), _type: 'imageAssetTrash', assetId: c.assetId, trashedAt: now})
+      }
+      await tx.commit()
+
+      await client.create({
+        _type: 'bulkOperationLog',
+        performedAt: now,
+        operationType: 'replaceImage',
+        summary: summarizeBatchCompress(libraryCandidates.length, changes),
+        changes: changes.map((c) => ({
+          postId: c.documentId,
+          postTitle: c.documentTitle,
+          fieldPath: c.fieldPath,
+          previousValue: JSON.stringify(c.previousValue),
+        })),
+      })
+
+      const savedBytes = libraryCandidates.reduce((sum, c) => sum + (c.originalSize - c.compressedSize), 0)
+      const newEntries: ImageAsset[] = libraryCandidates.map((c) => {
+        const newAsset = uploadedByOldId.get(c.assetId)!
+        return {
+          _id: newAsset._id,
+          url: newAsset.url,
+          originalFilename: newAsset.originalFilename,
+          size: c.compressedSize,
+          usedBy: [],
+          defaultAlt: null,
+        }
+      })
+      const oldIdSet = new Set(oldIds)
+      const swapList = (list: ImageAsset[]) => [...newEntries, ...list.filter((a) => !oldIdSet.has(a._id))]
+      setAssets((prev) => (prev ? swapList(prev) : prev))
+      setSearchResults((prev) => (prev ? swapList(prev) : prev))
+
+      setLibraryDoneSummary({
+        imageCount: libraryCandidates.length,
+        savedBytes,
+        docCount: new Set(changes.map((c) => c.documentId)).size,
+      })
+      setLibraryScanPhase('done')
+    } catch (err) {
+      setLibraryError(err instanceof Error ? err.message : 'Something went wrong compressing the library -- some photos may already be done; check before retrying.')
+      setLibraryScanPhase('preview')
+    }
+  }
+
   if (error) {
     return (
       <Box padding={4}>
@@ -563,6 +743,9 @@ export function MediaLibraryTool() {
                 mode={selectMode ? 'default' : 'ghost'}
                 onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
               />
+            )}
+            {!viewingTrash && (
+              <Button text="Compress Library" icon={DocumentZipIcon} mode="ghost" onClick={openCompressLibrary} />
             )}
             {!viewingTrash && (
               <Button
@@ -820,6 +1003,105 @@ export function MediaLibraryTool() {
                     />
                     <Button text="Cancel" mode="ghost" disabled={replaceStep === 'working'} onClick={closeReplaceDialog} />
                   </Flex>
+                </Stack>
+              )}
+            </Stack>
+          </Box>
+        </Dialog>
+      )}
+
+      {compressLibraryOpen && (
+        <Dialog
+          id="compress-library"
+          header="Compress existing photos"
+          onClose={libraryScanPhase === 'scanning' || libraryScanPhase === 'working' ? undefined : closeCompressLibrary}
+          width={1}
+        >
+          <Box padding={4}>
+            <Stack space={4}>
+              {libraryError && <ErrorMessage>{libraryError}</ErrorMessage>}
+
+              {libraryScanPhase === 'idle' && (
+                <Stack space={3}>
+                  <Text size={1} muted>
+                    Automatic compression only applies to new uploads — this checks every photo already in
+                    the library (300KB or larger; anything smaller is skipped) and offers to shrink whichever
+                    ones would actually benefit, the same way &ldquo;Replace image&rdquo; does one photo at a
+                    time, just for all of them at once. A confirm step shows exactly what would change before
+                    anything happens.
+                  </Text>
+                  <Button text="Scan library" tone="primary" icon={DocumentZipIcon} onClick={scanLibraryForCompression} />
+                </Stack>
+              )}
+
+              {libraryScanPhase === 'scanning' && (
+                <Flex align="center" gap={3}>
+                  <Spinner />
+                  <Text size={1}>
+                    Checking {libraryScanProgress?.done ?? 0}/{libraryScanProgress?.total ?? 0}…
+                  </Text>
+                </Flex>
+              )}
+
+              {(libraryScanPhase === 'preview' || libraryScanPhase === 'working') && libraryCandidates && (
+                <Stack space={3}>
+                  {libraryCandidates.length === 0 ? (
+                    <Text size={1}>
+                      Nothing to do — every photo in the library is either already small or wouldn&rsquo;t
+                      shrink meaningfully by recompressing.
+                      {librarySkippedCount > 0 && ` (${librarySkippedCount} checked, none needed it.)`}
+                    </Text>
+                  ) : (
+                    <>
+                      <Text size={1}>
+                        {libraryCandidates.length} photo{libraryCandidates.length === 1 ? '' : 's'} can be
+                        compressed, saving{' '}
+                        {formatBytes(libraryCandidates.reduce((sum, c) => sum + (c.originalSize - c.compressedSize), 0))}
+                        {librarySkippedCount > 0 &&
+                          ` (${librarySkippedCount} other${librarySkippedCount === 1 ? '' : 's'} already small enough, left alone)`}
+                        . Same safety net as Replace image: alt text carries over, originals go to Trash
+                        (recoverable for 30 days), and this shows up in Bulk Operations &rsquo; History with a
+                        real Undo.
+                      </Text>
+                      <Box style={{maxHeight: 240, overflowY: 'auto'}}>
+                        <Stack space={1}>
+                          {libraryCandidates.map((c) => (
+                            <Text key={c.assetId} size={0} muted textOverflow="ellipsis">
+                              · {c.originalFilename ?? 'Untitled'}: {formatBytes(c.originalSize)} →{' '}
+                              {formatBytes(c.compressedSize)}
+                            </Text>
+                          ))}
+                        </Stack>
+                      </Box>
+                      {libraryScanPhase === 'working' ? (
+                        <Flex align="center" gap={3}>
+                          <Spinner />
+                          <Text size={1}>
+                            Compressing {libraryWorkProgress?.done ?? 0}/{libraryWorkProgress?.total ?? 0}…
+                          </Text>
+                        </Flex>
+                      ) : (
+                        <Flex gap={2}>
+                          <Button text="Compress all" tone="primary" onClick={confirmCompressLibrary} />
+                          <Button text="Cancel" mode="ghost" onClick={closeCompressLibrary} />
+                        </Flex>
+                      )}
+                    </>
+                  )}
+                </Stack>
+              )}
+
+              {libraryScanPhase === 'done' && libraryDoneSummary && (
+                <Stack space={3}>
+                  <Text size={1}>
+                    Done — compressed {libraryDoneSummary.imageCount} photo
+                    {libraryDoneSummary.imageCount === 1 ? '' : 's'}, saving{' '}
+                    {formatBytes(libraryDoneSummary.savedBytes)}
+                    {libraryDoneSummary.docCount > 0 &&
+                      ` across ${libraryDoneSummary.docCount} document${libraryDoneSummary.docCount === 1 ? '' : 's'}`}
+                    .
+                  </Text>
+                  <Button text="Done" mode="ghost" onClick={closeCompressLibrary} />
                 </Stack>
               )}
             </Stack>

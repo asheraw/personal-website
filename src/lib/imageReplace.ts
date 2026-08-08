@@ -86,3 +86,50 @@ export function summarizeImageReplace(filename: string, changes: ImageFieldChang
   const docs = new Set(changes.map((c) => c.documentId)).size;
   return `Replaced "${filename}" in ${docs} place${docs === 1 ? "" : "s"}`;
 }
+
+export type AssetSwap = { oldAssetId: string; newAssetId: string };
+
+// The one-time "Compress existing photos" scan (MediaLibraryTool.tsx) can
+// swap out MANY images in a single run, and a single document can easily be
+// affected by more than one of them -- a post with two different photos,
+// both over the compression threshold, both getting replaced in the same
+// batch. Computing each swap independently against the same stale document
+// snapshot would silently lose whichever swap got computed last, since only
+// one final value would ever get written per field. This layers each swap
+// on top of the previous one's result for that document instead, so every
+// swap that touches a document is reflected in the field's final value --
+// while `previousValue` on the returned change always stays the EARLIEST
+// (true pre-batch) value seen for that field, so Undo restores the actual
+// starting point in one step, not an intermediate one.
+export function computeBatchReplaceChanges(
+  docs: Record<string, unknown>[],
+  swaps: AssetSwap[],
+): ImageFieldChange[] {
+  const finalByKey = new Map<string, ImageFieldChange>();
+
+  for (const doc of docs) {
+    let working: Record<string, unknown> = doc;
+    for (const { oldAssetId, newAssetId } of swaps) {
+      const stepChanges = computeImageReplaceChanges(working, oldAssetId, newAssetId);
+      if (stepChanges.length === 0) continue;
+      working = { ...working };
+      for (const c of stepChanges) {
+        working[c.fieldPath] = c.newValue;
+        const key = `${c.documentId}:${c.fieldPath}`;
+        const earlier = finalByKey.get(key);
+        finalByKey.set(key, {
+          ...c,
+          previousValue: earlier ? earlier.previousValue : c.previousValue,
+        });
+      }
+    }
+  }
+  return [...finalByKey.values()];
+}
+
+export function summarizeBatchCompress(imageCount: number, changes: ImageFieldChange[]): string {
+  const docs = new Set(changes.map((c) => c.documentId)).size;
+  return `Compressed ${imageCount} existing photo${imageCount === 1 ? "" : "s"}${
+    docs > 0 ? `, updating ${docs} document${docs === 1 ? "" : "s"}` : ""
+  }`;
+}
