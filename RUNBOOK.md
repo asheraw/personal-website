@@ -2437,7 +2437,7 @@ this exact bug reappears for it.
 
 ---
 
-## PLAY mode: the homepage's 3D/2D walking world (freeze fixed + loading state added 2026-08-08)
+## PLAY mode: the homepage's 3D/2D walking world (freeze fixed twice + loading state added 2026-08-08)
 
 **Not the per-post registry documented below.** This is the homepage's own PLAY toggle (`page.tsx`'s
 `mode` state — client-only, no URL param, gated off entirely on mobile) — a single, fixed, hand-built
@@ -2489,6 +2489,44 @@ Verified end-to-end with Playwright against both a local build and the live site
 caught the loader mid-animation on both 2D and 3D (screenshotted, not assumed), then walked with arrow keys
 across a zone boundary and confirmed the content panel updates correctly with zero console errors either
 way.
+
+**The walking freeze, round two (fixed 2026-08-08).** Asher reported the freeze was still there walking to
+"At a Glance" or "Contact" specifically, meaning the `handleZoneEnter` fix above was real but incomplete.
+First attempted to measure it directly — a Playwright script injecting a `PerformanceObserver({entryTypes:
+['longtask']})` during a real walk to "At a Glance" captured ~30 long tasks spread continuously through the
+whole walk. Before trusting that as a signal, ran a control with zero zone crossings (wiggling in place
+within one zone) and got an almost identical noise pattern. **This sandbox's headless Chromium has no real
+GPU access**, so `longtask` timing here is dominated by software-rendering noise, not a genuine per-
+transition signal — a real limitation of this environment for any future perf investigation, not just this
+one. Went back to reading `Scene`'s `useFrame` callback in `World3D.tsx` instead of trying to measure
+further.
+
+**The actual second cause:** `setCurrentZone(zoneId || "hero")` was called **synchronously inside
+`useFrame`**, on the same tick as Three.js's own per-frame render. That's a React state update, and it
+drives `active={zone.id === currentZone}` on `Ground` and all 8 `ZoneStructure`s — so every zone crossing
+re-rendered all 8 zones' active-only lights, plus (for "At a Glance" specifically) mounted a fresh
+`Sparkles` particle system (`MagnifierZone`'s `{active && <Sparkles .../>}`) — real geometry and shader
+material allocation, not free. Confirmed this is exclusive to the 3D version by reading `GameCanvas.tsx`:
+its equivalent logic (`if (inZone !== currentZoneRef.current) currentZoneRef.current = inZone;`) already
+uses a plain ref, never triggers a React re-render at all.
+
+**Fix:** added a `pendingZoneRef = useRef<string | null>(null)` alongside `currentZone` in `Scene`, and
+changed the `useFrame` callback so `setCurrentZone` is only ever called from inside a `setTimeout(fn, 0)` —
+same deferral technique as `handleZoneEnter` above — guarded by `pendingZoneRef` so a new zone doesn't
+get a fresh `setTimeout` scheduled on every single frame while the first deferred call is still pending.
+**If a similar freeze reappears on zone entry in the 3D version specifically** (not 2D), check first
+whether a new `set*` React state call has been added directly inside `useFrame` — that pattern (a
+synchronous React re-render competing with Three.js's own per-frame work, on the same tick) is the
+recurring failure mode here, and the fix is always to push the state update to the next macrotask via
+`setTimeout(0)`, not to try to make the render work itself faster.
+
+Verified with `tsc --noEmit` and `npm run build` (clean), then a local Playwright walk to both "At a
+Glance" and back toward "Welcome" (screenshotted mid-walk both times, zero new console errors), then
+re-verified the same walk against the live production site after deploying — same result. **Honest caveat
+on confidence level:** because this sandbox has no real GPU, there's no way to get a reliable hard
+before/after timing number here to prove the freeze duration actually dropped — confidence here rests on
+correct architecture (no synchronous state update left inside the render loop) plus clean functional
+behavior, not a benchmark.
 
 ---
 

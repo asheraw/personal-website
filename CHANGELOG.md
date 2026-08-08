@@ -11,6 +11,36 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-08 (continued once more again, round two) — PLAY 3D: the walking freeze had a second cause
+
+Asher confirmed the first freeze fix (deferring `handleZoneEnter`'s DOM measurement) wasn't the whole
+story: "I still see the brief momentary freeze when I walk from the center to 'At a glance' or 'Contact'."
+
+First tried to measure it directly with a Playwright `PerformanceObserver` capturing `longtask` entries
+during a real walk — got ~30 long tasks spread through the whole walk, not concentrated at the zone
+crossing. Ran a control test with zero zone crossings (just wiggling in place) before trusting that data,
+and got an almost identical pattern. **Headless Chromium has no real GPU access in this sandbox**, so that
+measurement approach was just software-rendering noise — told Asher directly that it was a dead end here,
+rather than presenting noisy numbers as a real signal.
+
+Went back to reading `World3D.tsx`'s `Scene` component instead. Found a second, distinct cause:
+`setCurrentZone` — a real React state update — was called synchronously inside `useFrame` on every zone
+crossing, re-rendering `Ground` and all 8 `ZoneStructure`s on the same tick as Three.js's own frame render.
+"At a Glance" is the worst case, since it's the one zone that conditionally mounts a `Sparkles` particle
+system (actual geometry + shader allocation) only while active. Confirmed the 2D version never had this
+problem — `GameCanvas.tsx` already tracks the current zone in a plain ref, not React state.
+
+**Fix:** deferred the `setCurrentZone` call with the same `setTimeout(0)` technique as the first fix, with
+a `pendingZoneRef` guard so it doesn't get rescheduled every single frame while the deferred update is
+still in flight. Verified with `tsc`/build, a fresh local Playwright walk (zero new console errors), and
+then again against the live site after deploying — walked to both "At a Glance" and back toward "Welcome,"
+screenshotted mid-walk both times, zero console errors either way. Being upfront about the limits of this
+verification: the sandbox's lack of GPU access means there's no reliable way to get a hard before/after
+timing number here — this is confirmed by correct architecture (no more synchronous state update inside
+the render loop) and clean functional behavior, not a benchmark.
+
+---
+
 ## 2026-08-08 (continued once more again) — PLAY mode: fixed the real walking freeze, added a loading state
 
 Asher reported a brief freeze walking toward a zone whose content sits far down the page, and separately
