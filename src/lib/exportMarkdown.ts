@@ -60,9 +60,21 @@ const calloutRenderer: PortableTextTypeRenderer<{ _type: string; style?: string;
   return `> **${label}:** ${value.text ?? ""}`;
 };
 
-const accordionRenderer: PortableTextTypeRenderer<{ _type: string; title?: string; content?: string }> = ({
+// `content` used to be a plain string; it's now an array of simple-
+// rich-text blocks (see blockContentType.ts) -- rendered through the same
+// portableTextToMarkdown/markdownOptions used for the post body and for a
+// resolved snippet's content below, so formatting inside an accordion
+// matches the same formatting anywhere else in the export. The plain
+// string case is kept as a fallback for any post whose accordions haven't
+// been migrated to the new shape yet.
+const accordionRenderer: PortableTextTypeRenderer<{ _type: string; title?: string; content?: string | unknown[] }> = ({
   value,
-}) => `<details>\n<summary>${value.title ?? ""}</summary>\n\n${value.content ?? ""}\n\n</details>`;
+}) => {
+  const inner = Array.isArray(value.content)
+    ? portableTextToMarkdown(value.content as never, markdownOptions)
+    : String(value.content ?? "");
+  return `<details>\n<summary>${value.title ?? ""}</summary>\n\n${inner}\n\n</details>`;
+};
 
 const youtubeRenderer: PortableTextTypeRenderer<{ _type: string; url?: string }> = ({ value }) =>
   value?.url ? `[▶ Watch on YouTube](${value.url})` : "";

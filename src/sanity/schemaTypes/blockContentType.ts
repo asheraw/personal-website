@@ -463,7 +463,53 @@ export const blockContentType = defineType({
       title: 'Accordion (show/hide)',
       fields: [
         defineField({name: 'title', title: 'Heading (always visible)', type: 'string'}),
-        defineField({name: 'content', title: 'Content (hidden until clicked)', type: 'text', rows: 4}),
+        // A deliberately smaller version of the top-level block config
+        // above, not a re-use of it -- "simple rich text" means bold,
+        // italic, underline, links, and lists, not headings/blockquotes/
+        // code/the custom internalLink/affiliateLink/textColor annotations
+        // or nested embeds. Was a plain `type: 'text'` string field before;
+        // existing accordions were migrated to this array shape (one
+        // 'normal' block per paragraph) rather than left to break -- see
+        // RUNBOOK.md's Accordion section for the migration script.
+        defineField({
+          name: 'content',
+          title: 'Content (hidden until clicked)',
+          type: 'array',
+          of: [
+            defineArrayMember({
+              type: 'block',
+              styles: [{title: 'Normal', value: 'normal'}],
+              lists: [
+                {title: 'Bullet', value: 'bullet'},
+                {title: 'Numbered', value: 'number'},
+              ],
+              marks: {
+                decorators: [
+                  {title: 'Strong', value: 'strong'},
+                  {title: 'Emphasis', value: 'em'},
+                  {title: 'Underline', value: 'underline'},
+                ],
+                annotations: [
+                  {
+                    title: 'URL',
+                    name: 'link',
+                    type: 'object',
+                    icon: LinkIcon,
+                    fields: [
+                      {title: 'URL', name: 'href', type: 'url'},
+                      {
+                        title: 'Open in the same tab instead',
+                        name: 'openInSameTab',
+                        type: 'boolean',
+                        initialValue: false,
+                      },
+                    ],
+                  },
+                ],
+              },
+            }),
+          ],
+        }),
       ],
       preview: {
         select: {title: 'title'},

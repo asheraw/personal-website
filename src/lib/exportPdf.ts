@@ -231,9 +231,22 @@ async function renderNode(doc: PDFKit.PDFDocument, node: Block) {
     case "accordion": {
       // No fold/unfold in a static document -- always shown expanded,
       // the only sensible behavior for something meant to be printed/read
-      // linearly.
+      // linearly. `content` used to be a plain string; it's now an array
+      // of simple-rich-text blocks (see blockContentType.ts) -- rendered
+      // through the same renderNode used for the post body itself, one
+      // block at a time, so bold/italic/underline/links inside an
+      // accordion get the same treatment as anywhere else in the export.
+      // The plain string case is kept as a fallback for any post whose
+      // accordions haven't been migrated to the new shape yet.
       doc.font("Helvetica-Bold").fontSize(11).text(String(node.title ?? ""));
-      doc.font("Helvetica").fontSize(11).text(String(node.content ?? ""));
+      doc.moveDown(0.2);
+      if (Array.isArray(node.content)) {
+        for (const child of node.content as Block[]) {
+          await renderNode(doc, child);
+        }
+      } else {
+        doc.font("Helvetica").fontSize(11).text(String(node.content ?? ""));
+      }
       doc.moveDown(0.5);
       return;
     }

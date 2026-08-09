@@ -9,22 +9,37 @@ export type PortableTextBlock = {
   _type?: string;
   children?: { text?: string }[];
   text?: string;
-  content?: string;
+  content?: string | PortableTextBlock[];
   entries?: { name?: string; quote?: string }[];
 };
+
+// A single "block" node's own text, ignoring marks/annotations -- shared
+// by the top-level walk below and by an accordion's nested `content`
+// array (its own restricted block config, see blockContentType.ts), so
+// both extract text the same way rather than two slightly different
+// implementations drifting apart.
+function blockText(block: PortableTextBlock): string {
+  return block._type === "block" && Array.isArray(block.children)
+    ? block.children.map((c) => c.text || "").join("")
+    : "";
+}
 
 export function portableTextToPlainText(blocks: unknown): string {
   if (!Array.isArray(blocks)) return "";
   return (blocks as PortableTextBlock[])
     .map((block) => {
       if (!block || typeof block !== "object") return "";
-      if (block._type === "block" && Array.isArray(block.children)) {
-        return block.children.map((c) => c.text || "").join("");
-      }
+      if (block._type === "block") return blockText(block);
       // Callouts and accordions carry real prose too -- worth counting
       // toward reading time even though they're not "block" type.
       if (block._type === "callout") return block.text || "";
-      if (block._type === "accordion") return block.content || "";
+      if (block._type === "accordion") {
+        // `content` used to be a plain string; now it's an array of
+        // simple-rich-text blocks (see blockContentType.ts) -- handling
+        // both here rather than assuming every already-published post has
+        // been migrated to the new shape by the time this runs.
+        return Array.isArray(block.content) ? block.content.map(blockText).join(" ") : block.content || "";
+      }
       // A Quote Grid's actual content is entirely inside its entries, not
       // on the block itself -- missed the first time this was written,
       // which meant a post built mostly out of Quote Grids (real prose,

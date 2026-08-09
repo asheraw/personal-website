@@ -82,9 +82,22 @@ const calloutType: PortableTextTypeComponent<{ _type: string; style?: string; te
   return `<div class="callout callout-${escapeHTML(value.style ?? "note")}"><strong>${label}:</strong> ${escapeHTML(value.text ?? "")}</div>`;
 };
 
-const accordionType: PortableTextTypeComponent<{ _type: string; title?: string; content?: string }> = ({
+// `content` used to be a plain string; it's now an array of simple-
+// rich-text blocks (see blockContentType.ts) -- rendered through the same
+// toHTML/htmlComponents used for the post body and for a resolved
+// snippet's content below, so bold/italic/underline/links inside an
+// accordion get identical HTML to the same formatting anywhere else,
+// rather than a second, differently-behaved mini-renderer. The plain
+// string case is kept as a fallback for any post whose accordions
+// haven't been migrated to the new shape yet.
+const accordionType: PortableTextTypeComponent<{ _type: string; title?: string; content?: string | unknown[] }> = ({
   value,
-}) => `<details><summary>${escapeHTML(value.title ?? "")}</summary><div>${escapeHTML(value.content ?? "")}</div></details>`;
+}) => {
+  const inner = Array.isArray(value.content)
+    ? toHTML(value.content as never, { components: htmlComponents })
+    : `<p>${escapeHTML(value.content ?? "")}</p>`;
+  return `<details><summary>${escapeHTML(value.title ?? "")}</summary><div>${inner}</div></details>`;
+};
 
 const youtubeType: PortableTextTypeComponent<{ _type: string; url?: string }> = ({ value }) => {
   const id = value?.url ? youtubeVideoId(value.url) : null;
