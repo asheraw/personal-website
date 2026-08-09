@@ -831,6 +831,75 @@ other-content mechanism built into the widget itself.
 
 ---
 
+## Accordion block: simple rich text instead of a plain text box (shipped 2026-08-10)
+
+**The accordion's hidden content field (`content` in the `accordion` array member,
+`src/sanity/schemaTypes/blockContentType.ts`) used to be a plain `type: 'text'` string** — no bold, italic,
+or links at all, rendered with `white-space: pre-wrap` (`Accordion.tsx`) purely as a way to at least show
+line breaks, since that was the only structure a plain string could carry. Asher asked directly whether it
+could support "simple rich text" instead.
+
+**Now a restricted Portable Text array, not the full block config.** `content` is `type: 'array', of:
+[{type: 'block', ...}]` with a deliberately smaller toolbar than the main post body: `styles: [Normal]` only
+(no h2/h3/h4/blockquote — an accordion is a short aside, not a sub-article), `lists: [Bullet, Numbered]`,
+`marks.decorators: [Strong, Emphasis, Underline]` (no strike-through, no inline code), and exactly one
+annotation — a plain external URL link (`title`/`href`/`openInSameTab`, same shape as the main body's own
+"External URL" annotation) — none of the main body's custom `internalLink`/`affiliateLink`/`textColor`
+annotation types. **Mirrors the same "smaller, self-contained block config for a specific field" approach
+already used for Reusable Snippets' own content** (see `snippetBodyComponents` in
+`portableTextComponents.tsx`), not a new pattern invented for this.
+
+**`Accordion.tsx` renders it with its own local `@portabletext/react` components config**
+(`accordionBodyComponents`), not one imported from `portableTextComponents.tsx` — that file already imports
+`Accordion` itself, so importing a components config back from there would be a two-way circular import for
+a config that isn't reused anywhere else anyway. If a future field ever needs this exact same restricted
+rich-text shape, extract it into its own small shared file rather than copy-pasting `accordionBodyComponents`
+a second time.
+
+**Every other place that reads `accordion.content` needed updating to match, each handling both shapes
+defensively** (an old string *or* the new block array) rather than assuming a hard cutover the moment this
+shipped:
+- **`src/lib/portableText.ts`** (`portableTextToPlainText`, feeds both reading-time estimation and word
+  count) — walks the nested blocks with the same span-joining logic already used for the top-level body,
+  extracted into a small shared `blockText()` helper so both walks can't drift apart from each other.
+- **`src/lib/exportHtml.ts`** / **`src/lib/exportMarkdown.ts`** — `accordionType`/`accordionRenderer` now
+  recursively call the *exact same* `toHTML(..., {components: htmlComponents})` /
+  `portableTextToMarkdown(..., markdownOptions)` already used for the post body and for a resolved snippet's
+  own content (`snippetRefType`/`snippetRefRenderer` — the established recursive-render pattern this file
+  already had, just not yet applied to accordions). A link or bold word inside an accordion now produces
+  identical HTML/Markdown to the same formatting anywhere else in an exported file, rather than a second,
+  differently-behaved mini-renderer.
+- **`src/lib/exportPdf.ts`** — the `"accordion"` case in `renderNode()` now loops `node.content` and calls
+  `await renderNode(doc, child)` per nested block, reusing the exact same span/list/heading rendering the
+  main body uses, instead of flattening straight to `String(node.content)`.
+- **`src/lib/bulkOperations.ts`** — already explicitly excludes accordion content from bulk search & replace
+  (a deliberate prior scope decision, documented in that file's own comment: walking every custom block
+  type's own text fields would be a lot of special-casing for a feature meant to fix a typo across many
+  posts). Confirmed still correct as-is; no change needed.
+
+**`scripts/migrate-accordion-content.mjs`** (new, same `--dry-run`-first / patch-by-`_key` / draft-and-
+published-migrate-independently pattern as `migrate-legacy-embeds.mjs`) converts an old plain-string
+`content` into the new block-array shape — splits on blank lines (`\n\s*\n`) into one `normal`-style
+paragraph block per paragraph, collapsing any single line break inside a paragraph to a space (matching how
+a plain `<p>` renders anyway, now that paragraph breaks carry real structure instead of raw whitespace being
+the only signal). **Run for real 2026-08-10**: found 6 accordion blocks with the old string shape across 3
+already-published posts; before running for real, pulled two of the real strings directly and inspected
+their actual newline structure (one had zero line breaks at all — correctly became a single paragraph block;
+one had exactly 18 blank-line separators — correctly became 19 paragraph blocks with nothing collapsed or
+lost) to confirm the split logic wouldn't silently mangle real content before trusting it against production
+data. The real run's own built-in re-check confirmed zero accordion blocks still had string-shaped content
+afterward. Safe to re-run anytime — a no-op ("nothing to migrate") once nothing is left in the old shape.
+
+**Verified against real data end-to-end, not just typechecked**: rendered the actual migrated post live and
+clicked the accordion open to confirm paragraphs display correctly with real spacing; ran the real
+`buildHtmlFile`/`buildMarkdownFile`/`buildPdfBuffer` functions against the migrated post and confirmed each
+produced genuine formatted output (an HTML `<p>`, clean Markdown prose, a 685KB PDF) rather than
+`[object Object]` or a thrown error; confirmed `portableTextToPlainText` still picks up the migrated
+accordion's text for reading-time purposes; and confirmed Studio's own schema/config bootstrap still loads
+with zero errors after the schema change.
+
+---
+
 ## Instagram embed block (shipped 2026-08-04, its own insert-menu button retired 2026-08-06)
 
 **Superseded as an insert-menu option by the merged `embed` type** (see "Embed block" above) — everything

@@ -11,6 +11,26 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-10 — Accordions can hold real formatting now
+
+Asher asked whether the hidden content inside an Accordion block could support simple rich text — it
+couldn't; that field was a plain text box with no bold, italic, or link support at all.
+
+It can now: bold, italic, underline, bullet/numbered lists, and links — kept deliberately smaller than the
+main writing area's full toolbar (no headings, no code blocks, none of the special link types), matching
+what "simple" actually means rather than just turning on everything.
+
+The real work was making sure nothing quietly broke for posts that already had accordions written the old
+way. Checked first, found 6 real accordions across 3 already-published posts using the old plain-text
+format, and ran a proper migration — converted each into the new format, split cleanly into paragraphs,
+verified nothing was lost by actually reading two of the real originals first (one had no line breaks at
+all, one had eighteen clean paragraph breaks) to make sure the conversion logic wouldn't mangle either kind.
+Also checked and fixed every other place that reads an accordion's content, so word count, reading time, and
+every export format (Markdown, HTML, PDF) all still work correctly with the new format, not just the page
+itself.
+
+---
+
 ## 2026-08-09 (continued twice more) — Four fixes: scroll motion, mobile reflow, "To Serve," and a real quote
 
 More feedback on the cycling-word work, all four addressed in one pass:
