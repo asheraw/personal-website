@@ -1026,14 +1026,22 @@ CDN (`useCdn: true` on the shared client) can lag a write by up to roughly a min
 just-published change doesn't appear instantly on a hard refresh; it's cache catch-up, not a bug.
 
 **Layout deliberately mirrors Instagram's own profile grid**, not `/connect`'s stacked-card style the first
-version used: `grid-cols-3 gap-0.5`, each tile a plain `aspect-square` `<a>` with the image as a `fill`
-background (`urlFor(...).width(600).height(600).fit('crop').crop('focalpoint')`, respecting whatever hotspot
-Asher sets on the image) and the resolved headline overlaid at the bottom via a `bg-gradient-to-t` scrim —
-asked for directly, since readers arrive here straight from an Instagram bio link and the familiar grid
-format reads instantly. `resolveCard()` in the page component decides per-card whether to link internally
+version used: `grid-cols-3 gap-0.5`, each tile a plain `aspect-[3/4]` `<a>` (portrait, matching how
+Instagram itself crops grid tiles -- not square, fixed after Asher compared it directly) with the image as
+a `fill` background (`urlFor(...).width(600).height(800).fit('crop').crop('focalpoint')`, respecting
+whatever hotspot Asher sets on the image) and the resolved headline overlaid at the bottom via a
+`bg-gradient-to-t` scrim. `resolveCard()` in the page component decides per-card whether to link internally
 (same tab, no `target`) or externally (`target="_blank"`) and skips rendering a tile entirely if its
 destination can't resolve (a deleted post reference, a blank external URL mid-edit) rather than showing a
 dead link.
+
+**No border/background wraps the grid as a group** -- it did in the first version, and that was a real bug:
+CSS grid always reserves all `grid-template-columns` tracks for a row regardless of how many children
+actually exist in it, so a border drawn around the whole `grid-cols-3` container visibly framed the *empty*
+tracks whenever the item count wasn't a multiple of 3 (looked like broken/blank tiles). Fixed by moving the
+background (`bg-stage/60`, shown briefly while an image loads) onto each individual tile instead of the
+group -- an incomplete row now just shows real tiles against the plain page background, same as Instagram's
+own grid.
 
 **No third-party embed.** Every tile is this site's own data (an image from Sanity + a resolved link) —
 not an embedded Instagram widget, not a live screenshot of the actual Instagram post, and not a redirect
