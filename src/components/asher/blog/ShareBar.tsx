@@ -1,15 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Twitter, Facebook, Linkedin, MessageCircle, Mail, Link2, Check, Share2 } from "lucide-react";
+import { siThreads } from "simple-icons/icons";
 import { track } from "@/lib/analytics";
 
 type LinkTarget = {
   label: string;
-  icon: typeof Twitter;
+  icon: ComponentType<{ size?: number }>;
   href: string;
 };
+
+// lucide-react has no Threads glyph (it isn't one of its supported brands),
+// so this renders the real mark from simple-icons instead of standing in
+// some unrelated outline icon -- a reader should be able to recognize the
+// platform at a glance, same as every other button in this row.
+function ThreadsIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path d={siThreads.path} />
+    </svg>
+  );
+}
 
 // One central place a reader is nudged to actually reshare a post, rather
 // than needing to copy the URL out of the address bar by hand. Every link
@@ -24,6 +44,7 @@ function buildTargets(url: string, title: string): LinkTarget[] {
     { label: "Facebook", icon: Facebook, href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}` },
     { label: "LinkedIn", icon: Linkedin, href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}` },
     { label: "WhatsApp", icon: MessageCircle, href: `https://api.whatsapp.com/send?text=${encodedTitle}%20${encodedUrl}` },
+    { label: "Threads", icon: ThreadsIcon, href: `https://www.threads.net/intent/post?text=${encodedTitle}%20${encodedUrl}` },
     { label: "Email", icon: Mail, href: `mailto:?subject=${encodedTitle}&body=${encodedUrl}` },
   ];
 }
