@@ -28,10 +28,12 @@ import {StudioNavbar} from './src/sanity/components/StudioNavbar'
 import {DistributionDashboardTool} from './src/sanity/components/DistributionDashboardTool'
 import {EditorialCalendarTool} from './src/sanity/components/EditorialCalendarTool'
 import {ContentHealthTool} from './src/sanity/components/ContentHealthTool'
+import {DashboardTool} from './src/sanity/components/DashboardTool'
 import {ImageIcon} from '@sanity/icons/Image'
 import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {ShareIcon} from '@sanity/icons/Share'
 import {CalendarIcon} from '@sanity/icons/Calendar'
+import {HomeIcon} from '@sanity/icons/Home'
 
 export default defineConfig({
   basePath: '/studio',
@@ -140,6 +142,12 @@ export default defineConfig({
   // nothing lost, just organized by how often each one actually gets
   // opened rather than all flattened into one bar.
   tools: (prev) => [
+    // Prepended, not appended -- Studio renders whichever tool is first in
+    // this array as the default view at the bare /studio root. Everything
+    // else keeps its exact existing route (name-based, e.g. /studio/comments),
+    // only what loads with no path changes. Asher's own ask (2026-08-11):
+    // land on an overview instead of Structure/Posts by default.
+    {name: 'dashboard', title: 'Dashboard', icon: HomeIcon, component: DashboardTool},
     ...prev,
     // A custom top-nav tool (not a document-type list, since image assets
     // aren't browsed that way) showing every uploaded image and which

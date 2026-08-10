@@ -127,17 +127,28 @@ export const structure: StructureResolver = (S) =>
       // in the top nav since those are daily/frequent, not occasional.
       S.listItem()
         .title('Site Admin')
+        .id('siteAdmin')
         .icon(WrenchIcon)
         .child(
           S.list()
             .title('Site Admin')
             .items([
+              // Explicit .id() on every item below (2026-08-11, added for
+              // DashboardTool.tsx's deep links) -- an unset id defaults to
+              // camelCase(title) (verified by reading Sanity's own
+              // ListItemBuilder source, not assumed), which is fine until a
+              // title with a leading digit like "404 Hits" makes the exact
+              // output genuinely unpredictable. Setting it explicitly here
+              // means the dashboard's links are built from ids this file
+              // controls directly, not a guess about Sanity's slugifier.
               S.listItem()
                 .title('404 Hits')
+                .id('notFoundHits')
                 .icon(LinkRemovedIcon)
                 .child(S.component(NotFoundHitsTool).title('404 Hits')),
               S.listItem()
                 .title('Contact Submissions')
+                .id('contactSubmissions')
                 .icon(EnvelopeIcon)
                 .child(S.component(ContactSubmissionsTool).title('Contact Submissions')),
               S.listItem()
@@ -150,10 +161,12 @@ export const structure: StructureResolver = (S) =>
                 .child(S.component(BulkOperationsTool).title('Bulk Operations')),
               S.listItem()
                 .title('Search Queries')
+                .id('searchQueries')
                 .icon(SearchIcon)
                 .child(S.component(SearchQueriesTool).title('Search Queries')),
               S.listItem()
                 .title('Error Log')
+                .id('errorLog')
                 .icon(BugIcon)
                 .child(S.component(ErrorLogTool).title('Error Log')),
               // Moved in from its own top-level slot (2026-08-11 cleanup) --
@@ -161,6 +174,7 @@ export const structure: StructureResolver = (S) =>
               // everything else in this folder, not something checked daily.
               S.listItem()
                 .title('Cookie Consent Log')
+                .id('cookieConsentLog')
                 .icon(BarChartIcon)
                 .child(S.document().schemaType('consentLog').documentId('consentLog')),
             ]),
