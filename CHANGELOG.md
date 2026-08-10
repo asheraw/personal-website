@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-11 — /link grid fix, orphaned-field cleanup, and a Studio sidebar tidy-up
+
+Asher spotted the `/link` grid leaving what looked like blank tiles whenever the card count wasn't a
+multiple of three — turned out to be a border wrapping the whole grid, which CSS always draws around all
+3 column tracks in a row regardless of how many tiles are actually in it. Moved the border/background onto
+each tile individually instead; an incomplete row now just shows real tiles against the plain page
+background, the way Instagram's own grid does. Also switched the crop from square to portrait 3:4, closer
+to Instagram's actual proportions.
+
+He also caught Studio flagging an "unknown field" warning on the Link Page item — leftover data from a
+field removed earlier the same day. Cleaned that up, plus an equivalent leftover on the post from the very
+first (now-replaced) version of the feature.
+
+Separately tidied the Studio sidebar: AI Suggestion Settings and AI Output Log were two unrelated-looking
+top-level items for what's really one feature's settings and its own log — grouped into one "AI Workspace"
+folder. Cookie Consent Log moved into the existing Site Admin folder, since it's an occasional-glance number
+like everything else already living there.
+
 ## 2026-08-10 — A link-in-bio page for Instagram (asheraw.com/link)
 
 Asher wants to point his Instagram bio link at something like lnk.bio — specifically the layout
