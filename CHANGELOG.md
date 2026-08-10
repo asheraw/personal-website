@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-11 — A Studio landing dashboard
+
+Asher's question after the sidebar cleanup: with this much now in Studio, would a dashboard showing what
+matters at a glance — as the actual first screen after logging in — make sense? Gave him the honest
+tradeoff (real new build, not just reorganizing, and only useful if it shows the right handful of things)
+and asked what he'd actually want to see rather than guess.
+
+He gave a clear, ordered list: quick actions (new post, schedule one), comments/contact needing a reply,
+distribution status, pending issues (Content Health, 404s, errors), and stats (cookie consent, search
+queries, and traffic — "if [Google Analytics] can't be pulled in automatically, skip it"). Checked first:
+no GA integration exists in this project at all, so that one's a plain "not connected" note rather than a
+fake number.
+
+Built as the new first screen in Studio — every count on it reuses the exact same query logic its real tool
+already shows, just surfaced sooner, with each card linking straight through. See RUNBOOK for how the
+deep-links were verified against Sanity's actual source rather than guessed (this codebase already got
+burned by a guessed Studio URL once, back on 2026-08-05).
+
 ## 2026-08-11 — /link grid fix, orphaned-field cleanup, and a Studio sidebar tidy-up
 
 Asher spotted the `/link` grid leaving what looked like blank tiles whenever the card count wasn't a

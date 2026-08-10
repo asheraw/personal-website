@@ -422,6 +422,55 @@ plausible.
 
 ---
 
+## Studio landing dashboard (shipped 2026-08-11)
+
+**`src/sanity/components/DashboardTool.tsx`**, wired in via `sanity.config.ts`'s `tools: (prev) => [...]`
+callback — prepended *before* `...prev`, not appended after like every other custom tool. Studio renders
+whichever tool is first in the final array as the default view at the bare `/studio` root, so this one
+line is the entire mechanism that makes it the landing screen; nothing else about tool routing changed,
+every other tool keeps its exact existing `/studio/<name>` path.
+
+**Every number on it is a re-query of data an existing tool already shows** — pending comments
+(`usePendingCommentCount`), unread contact submissions (`usePendingContactCount`), Content Health issues
+(same `linkCheck`/audit logic as `ContentHealthTool.tsx`, computed the same way, not cached differently),
+404/error-log pending counts, cookie consent totals, scheduled-post count. Deliberately not a second source
+of truth — if a tool's own count and the dashboard's count ever disagree, that's a bug, not two systems
+that are allowed to drift.
+
+**Deep-linking required real research, not another guess** — this project already shipped one broken
+Studio URL once (see "Open post links: the real fix" above). Two genuinely different link mechanisms are
+used here, and they're not interchangeable:
+- **Top-level tools** (Comments, Distribution, Editorial Calendar, Content Health) → plain `/studio/<name>`,
+  matching each tool's registered `name` in `sanity.config.ts`. This is Studio's top-level router matching
+  a name directly — stable regardless of how `structure.tsx`'s pane tree is shaped.
+- **Nested Structure items** (Site Admin's own sub-items — 404 Hits, Contact Submissions, Error Log, Search
+  Queries, Cookie Consent Log) → `/studio/structure/siteAdmin;<childId>`. Confirmed by reading Sanity's own
+  router source (`encodePanesSegment` in the installed `sanity` package) rather than assumed: nested pane
+  groups are joined by `;` in the URL, one segment per depth. The part that's *not* guessable from outside
+  is the actual id string each pane resolves to — unset, a list item's id defaults to `camelCase(title)`
+  (verified in `ListItemBuilder`'s source), which is fine for "Contact Submissions" but genuinely ambiguous
+  for a title starting with a digit like "404 Hits". Fixed at the source: every item the dashboard links to
+  now has an explicit `.id(...)` set in `structure.tsx` itself, so the dashboard's links are built from
+  strings this codebase controls directly, not Sanity's slugifier.
+- **"New post"** uses neither — it's the existing `openDocumentInStudio('post', crypto.randomUUID())`
+  helper (`src/sanity/lib/openPostInStudio.ts`), Sanity's documented intent-URL scheme, same mechanism the
+  "Open post" fix above already established for opening a specific document from outside the structure tree.
+
+**Same verification limit as that earlier fix, stated the same way**: no real Studio login exists in this
+sandbox to click every link and confirm it lands exactly right — the CORS gate on `/studio` blocks that
+regardless of any code change. What's different from a plain guess: the URL *format* is confirmed from
+Sanity's own source, and the *ids* are no longer inferred at all, they're set explicitly by this same
+commit. Worth an actual click-through after deploying to catch anything this couldn't verify statically.
+
+**Google Analytics traffic is a plain text note, not a stat** — Asher asked for it "if it can't be pulled in
+automatically, skip it." Checked first: no `@google-analytics/data` or `googleapis` dependency, no
+service-account env vars, nothing server-side beyond the client-side `gtag()` event calls in
+`src/lib/analytics.ts`. Wiring up real GA4 Data API access is a genuine new integration (a Google Cloud
+service account, new credentials Asher would need to create and hand over) — out of scope for a dashboard
+layout decision, left as an honest placeholder rather than invented.
+
+---
+
 ## Social Images: focal-point crops, branded cards, DreamLab prompts (shipped 2026-08-04)
 
 **Focal point actually matters now.** Every image field (`mainImage`, `socialImage`, author photo) has had
