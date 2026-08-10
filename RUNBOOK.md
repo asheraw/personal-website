@@ -1000,35 +1000,48 @@ button in the row without a special case.
 
 ---
 
-## Link-in-bio page: /link (shipped 2026-08-10)
+## Link-in-bio page: /link (shipped 2026-08-10, rebuilt same day)
 
-**`src/app/(site)/link/page.tsx`** — a self-contained lnk.bio-style hub for Instagram/Threads bio links.
-Server component, fetches `LINK_PAGE_POSTS_QUERY` (`src/sanity/lib/queries.ts`) plus a small `siteSettings`
-projection (`siteDescription`, `defaultAuthor->{name, image}`) directly via `client.fetch` (same `next-sanity`
-client every other page route uses) rather than going through `POST_SUMMARY_PROJECTION` — this page only ever
-renders a thumbnail, title, and excerpt per card, so the heavier projection's reading-time/comment-count/tag
-fields would just be wasted work. Inherits the site-wide `revalidate = 60` from `(site)/layout.tsx` (not set
-locally on the page) — the same 60-second ISR window every other post-listing page already relies on, so a
-newly-toggled post shows up on `/link` within a minute of publishing, no extra revalidation wiring needed.
+**`src/sanity/schemaTypes/linkPageType.ts`** — a singleton document (`linkPage`, registered in Studio's
+sidebar next to Site Settings, same `S.document().schemaType(...).documentId(...)` pattern) holding a
+manually-ordered `items` array. Each `linkItem` has its own `image` (any asset from Media, hotspot enabled),
+a `linkType` (`'post'` or `'external'`), and either a `post` reference or an `externalUrl` — whichever field
+is relevant shows in Studio via `hidden: ({parent}) => parent.linkType !== '...'`, same conditional-field
+pattern `blockContentType.ts`'s `displayStyle` already uses. No manual title/caption fields — deliberately:
+an internal card's headline comes straight from `post->title` at render time, so there's nothing to
+duplicate or let drift out of sync with the post's real title.
 
-**`showOnLinkPage`** (`postType.ts`, Search & Sharing fieldset) is a plain boolean, default `false`, deliberately
-opt-in rather than "every published post shows here automatically." The page is meant specifically for "what
-Asher just shared to Instagram," not a second blog index — auto-including years of older posts would bury the
-one or two actually worth a tap-through. Turn it on per-post in Studio when sharing to Instagram/Threads.
+**Superseded its own first version, shipped a few hours earlier the same day**, which auto-built the page
+from a `showOnLinkPage` boolean toggle on `postType.ts` (reusing whatever a post's Main Image happened to
+be). Reasonable as a first guess, but not what Asher actually wanted once he saw it — he asked for real
+per-card control and an Instagram-grid layout instead of a stacked list. That boolean field has been removed
+from `postType.ts` entirely; any post that still carries the old `showOnLinkPage: true` property in the
+dataset has an inert, unused field on it (harmless, just orphaned data, safe to ignore).
 
-**Visual design deliberately mirrors `/connect`** (same radial spotlight gradient, `border-amber-faint` cards,
-`font-mono-stage` uppercase labels, `ArrowUpRight` hover affordance) rather than a generic link-in-bio
-template — reuses `ConfigureSiteChrome` with `context="connect"` (no dedicated `"link"` `SiteContext` variant
-exists yet; add one in `SiteChromeConfig.tsx` if `/link` ever needs its own chrome behavior instead of
-piggybacking on connect's).
+**`src/app/(site)/link/page.tsx`** — fetches `LINK_PAGE_QUERY` (`src/sanity/lib/queries.ts`) plus a small
+`siteSettings` projection for the profile header, both via `client.fetch` directly (same `next-sanity` client
+every other page route uses). Inherits the site-wide `revalidate = 60` from `(site)/layout.tsx` — a newly
+added or reordered card shows up within a minute of publishing, no extra revalidation wiring needed. Sanity's
+CDN (`useCdn: true` on the shared client) can lag a write by up to roughly a minute too — worth knowing if a
+just-published change doesn't appear instantly on a hard refresh; it's cache catch-up, not a bug.
 
-**No third-party embed.** Every card is this site's own data (post thumbnail + title + excerpt from Sanity)
-linking straight to the real post — not an embedded Instagram widget, not a screenshot of the actual
-Instagram post, and not a redirect through an external link-in-bio service. Matches the same "no SDK, no
-third-party embed" stance already established for `ShareBar.tsx`.
+**Layout deliberately mirrors Instagram's own profile grid**, not `/connect`'s stacked-card style the first
+version used: `grid-cols-3 gap-0.5`, each tile a plain `aspect-square` `<a>` with the image as a `fill`
+background (`urlFor(...).width(600).height(600).fit('crop').crop('focalpoint')`, respecting whatever hotspot
+Asher sets on the image) and the resolved headline overlaid at the bottom via a `bg-gradient-to-t` scrim —
+asked for directly, since readers arrive here straight from an Instagram bio link and the familiar grid
+format reads instantly. `resolveCard()` in the page component decides per-card whether to link internally
+(same tab, no `target`) or externally (`target="_blank"`) and skips rendering a tile entirely if its
+destination can't resolve (a deleted post reference, a blank external URL mid-edit) rather than showing a
+dead link.
+
+**No third-party embed.** Every tile is this site's own data (an image from Sanity + a resolved link) —
+not an embedded Instagram widget, not a live screenshot of the actual Instagram post, and not a redirect
+through an external link-in-bio service. Matches the same "no SDK, no third-party embed" stance already
+established for `ShareBar.tsx`.
 
 **`robots: { index: false }`** in the page's metadata — it's a bio-link utility page for people already
-coming from Instagram/Threads, not something meant to independently rank in search.
+coming from Instagram, not something meant to independently rank in search.
 
 ---
 

@@ -11,22 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
-## 2026-08-10 — A link-in-bio page for Instagram/Threads (asheraw.com/link)
+## 2026-08-10 — A link-in-bio page for Instagram (asheraw.com/link)
 
-Asher wants to point his Instagram bio link at something like lnk.bio — a hub that shows people which of
-his posts to read, with each one tapping through to the real article on his own site. Asked for it to be
-self-contained (his own domain, not a third-party service), and wanted a local preview before deciding on
-the look.
+Asher wants to point his Instagram bio link at something like lnk.bio — specifically the layout
+`lnk.bio/mothership` uses: a grid of square tiles, each showing a photo with its headline overlaid, tapping
+through to the real article. Self-contained on his own domain, not a third-party service.
 
-Built as `/link`: a profile header (his existing author photo, name, and site bio — nothing new to write)
-above a stacked list of post cards, each with a thumbnail, title, and excerpt, linking straight to the real
-post. Styled to match `/connect`, not a generic template.
+Shipped in two passes the same day. The first version auto-built the page from a simple "show this post"
+toggle on each post, reusing whatever that post's Main Image happened to be — reasonable as a first guess,
+but not what he actually wanted once he saw it: he asked for real per-card control (pick any image from
+Media, choose exactly where each card goes) and for the layout to actually look like Instagram's own grid,
+not a stacked list.
 
-Every post now has a **"Show on Link-in-bio page"** toggle in Studio (Search & Sharing), off by default —
-deliberately opt-in rather than listing every post automatically, so the handful of posts actually shared to
-Instagram don't get buried under years of older posts that were never meant for this page. Reviewed and
-approved locally before shipping; live now, currently showing the empty state until a post gets the toggle
-turned on.
+Rebuilt properly as a **Link Page** singleton in Studio — a hand-curated, manually-ordered list of cards,
+each with its own image (any image from Media, not tied to a post) and a destination: a post on this site,
+or an external URL. No manual title field — an internal card's headline comes straight from the linked
+post's own title, so there's nothing to duplicate or keep in sync by hand. `/link` renders these as a real
+three-square-tiles-per-row Instagram-style grid, headline overlaid on the photo, matching the format readers
+already know from the platform they're arriving from.
 
 ## 2026-08-10 — Threads added to the share row
 
