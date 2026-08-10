@@ -156,6 +156,13 @@ export const structure: StructureResolver = (S) =>
                 .title('Error Log')
                 .icon(BugIcon)
                 .child(S.component(ErrorLogTool).title('Error Log')),
+              // Moved in from its own top-level slot (2026-08-11 cleanup) --
+              // an occasional glance-at-the-numbers log, same category as
+              // everything else in this folder, not something checked daily.
+              S.listItem()
+                .title('Cookie Consent Log')
+                .icon(BarChartIcon)
+                .child(S.document().schemaType('consentLog').documentId('consentLog')),
             ]),
         ),
       S.divider(),
@@ -169,27 +176,39 @@ export const structure: StructureResolver = (S) =>
         .title('Link Page (asheraw.com/link)')
         .icon(LinkIcon)
         .child(S.document().schemaType('linkPage').documentId('linkPage')),
+      // Grouped together (2026-08-11 cleanup) -- two views of the same
+      // thing, the AI features' settings and the log of what those settings
+      // actually produced, previously two unrelated-looking top-level items.
       S.listItem()
-        .title('AI Suggestion Settings')
+        .title('AI Workspace')
         .icon(SparklesIcon)
-        .child(S.document().schemaType('aiPromptSettings').documentId('aiPromptSettings')),
-      // Review queue for AI Workspace -- every suggestion either AI feature
-      // has made, and whether it was actually used. Not a queue that
-      // blocks anything, purely a browsable record.
-      S.listItem()
-        .title('AI Output Log')
-        .icon(DocumentsIcon)
-        .schemaType('aiOutputLog')
         .child(
-          S.documentTypeList('aiOutputLog')
-            .title('AI Output Log')
-            .defaultOrdering([{field: '_createdAt', direction: 'desc'}]),
+          S.list()
+            .title('AI Workspace')
+            .items([
+              S.listItem()
+                .title('Suggestion Settings')
+                .icon(SparklesIcon)
+                .child(S.document().schemaType('aiPromptSettings').documentId('aiPromptSettings')),
+              // Review queue -- every suggestion either AI feature has made,
+              // and whether it was actually used. Not a queue that blocks
+              // anything, purely a browsable record.
+              S.listItem()
+                .title('Output Log')
+                .icon(DocumentsIcon)
+                .schemaType('aiOutputLog')
+                .child(
+                  S.documentTypeList('aiOutputLog')
+                    .title('AI Output Log')
+                    .defaultOrdering([{field: '_createdAt', direction: 'desc'}]),
+                ),
+            ]),
         ),
-      S.listItem()
-        .title('Cookie Consent Log')
-        .icon(BarChartIcon)
-        .child(S.document().schemaType('consentLog').documentId('consentLog')),
-      S.divider(),
+      // Defensive fallback, not currently reachable: every document type
+      // this schema defines is explicitly placed somewhere above, so this
+      // spread is empty as of 2026-08-11. Left in deliberately -- if a
+      // future schema type gets added without a spot picked for it here,
+      // it surfaces here instead of vanishing from the sidebar silently.
       ...S.documentTypeListItems().filter(
         (item) =>
           item.getId() &&
