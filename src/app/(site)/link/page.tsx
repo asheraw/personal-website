@@ -90,22 +90,28 @@ export default async function LinkPage() {
             No cards yet — add one in Studio &rarr; Link Page.
           </p>
         ) : (
-          // Instagram's own profile grid: three even square tiles per row,
-          // hairline gaps, full-bleed cropped image with the headline
-          // overlaid at the bottom rather than sitting in text beside a
-          // small thumbnail -- deliberately mirrors that familiar look
-          // since readers are arriving here straight from Instagram.
-          <div className="mt-10 grid grid-cols-3 gap-0.5 overflow-hidden rounded-xl border border-amber-faint">
+          // Instagram's own profile grid: three tiles per row, hairline
+          // gaps, full-bleed cropped image with the headline overlaid at
+          // the bottom -- portrait 3:4 crop (not square), same ratio
+          // Instagram itself shows in its grid, per Asher's own comparison.
+          // No border/background wraps the *group* -- CSS grid always
+          // reserves all 3 column tracks for a row regardless of how many
+          // tiles actually exist in it, so a wrapping border around an
+          // incomplete row used to visibly frame empty space. Individual
+          // tiles carry their own background instead, so an incomplete
+          // last row just shows real tiles against the page background,
+          // not a bordered box with dead space in it.
+          <div className="mt-10 grid grid-cols-3 gap-0.5">
             {cards.map(({ item, resolved }) => (
               <a
                 key={item._key}
                 href={resolved!.href}
                 target={resolved!.external ? "_blank" : undefined}
                 rel={resolved!.external ? "noreferrer" : undefined}
-                className="group relative block aspect-square overflow-hidden bg-stage/60"
+                className="group relative block aspect-[3/4] overflow-hidden bg-stage/60"
               >
                 <Image
-                  src={urlFor(item.image!).width(600).height(600).fit("crop").crop("focalpoint").url()}
+                  src={urlFor(item.image!).width(600).height(800).fit("crop").crop("focalpoint").url()}
                   alt={item.imageAlt ?? resolved!.label ?? ""}
                   fill
                   sizes="(max-width: 512px) 33vw, 170px"
