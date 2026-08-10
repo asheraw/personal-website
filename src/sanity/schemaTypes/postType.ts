@@ -183,6 +183,15 @@ export const postType = defineType({
       initialValue: false,
     }),
     defineField({
+      name: 'showOnLinkPage',
+      title: 'Show on Link-in-bio page (asheraw.com/link)',
+      type: 'boolean',
+      fieldset: 'seoSharing',
+      description:
+        'Turn on when you share this post to Instagram or Threads, so it appears on your link-in-bio page for people to tap through from your profile. Off by default -- older posts written before this existed don\'t flood the page unless you turn them on too.',
+      initialValue: false,
+    }),
+    defineField({
       name: 'commentsLocked',
       title: 'Lock comments',
       type: 'boolean',

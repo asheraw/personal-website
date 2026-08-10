@@ -54,6 +54,24 @@ export const PAGINATED_POSTS_QUERY = `
 
 export const POSTS_COUNT_QUERY = `count(*[_type == "post" && defined(slug.current)])`;
 
+// Link-in-bio page (/link) -- deliberately opt-in (showOnLinkPage == true),
+// not every post, so older posts written before this existed don't flood a
+// page meant specifically for "what I just shared to Instagram/Threads."
+// A much leaner projection than POST_SUMMARY_PROJECTION: this page only
+// ever renders a thumbnail, title, and date per card, not reading time or
+// comment counts.
+export const LINK_PAGE_POSTS_QUERY = `
+  *[_type == "post" && defined(slug.current) && showOnLinkPage == true] | order(publishedAt desc) {
+    _id,
+    title,
+    "slug": slug.current,
+    excerpt,
+    publishedAt,
+    mainImage,
+    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)
+  }
+`;
+
 // Lightweight index for BlogSearch -- title/blurb/tags/categories only, no
 // image or comment count, and (unlike the paginated query above)
 // deliberately *not* paginated: search has to be able to find a post
