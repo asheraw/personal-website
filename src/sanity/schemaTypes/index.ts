@@ -20,7 +20,8 @@ import {bulkOperationLogType} from './bulkOperationLogType'
 import {searchQueryLogType} from './searchQueryLogType'
 import {errorLogType} from './errorLogType'
 import {imageAssetTrashType} from './imageAssetTrashType'
+import {linkPageType} from './linkPageType'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType, shareLogType, aiOutputLogType, linkCheckType, imageAssetAltType, bulkOperationLogType, searchQueryLogType, errorLogType, imageAssetTrashType],
+  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType, shareLogType, aiOutputLogType, linkCheckType, imageAssetAltType, bulkOperationLogType, searchQueryLogType, errorLogType, imageAssetTrashType, linkPageType],
 }

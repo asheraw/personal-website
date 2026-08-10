@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
-import { LINK_PAGE_POSTS_QUERY } from "@/sanity/lib/queries";
+import { LINK_PAGE_QUERY } from "@/sanity/lib/queries";
 import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
 
 const SITE_URL = "https://asheraw.com";
@@ -19,14 +18,13 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", site: "@AsherAw", creator: "@AsherAw", title: TITLE, description: DESCRIPTION },
 };
 
-type LinkPagePost = {
-  _id: string;
-  title: string;
-  slug: string;
-  excerpt?: string;
-  publishedAt?: string;
-  mainImage?: { asset?: { _ref: string } };
-  mainImageAlt?: string;
+type LinkItem = {
+  _key: string;
+  image?: { asset?: { _ref: string } };
+  imageAlt?: string;
+  linkType: "post" | "external";
+  post?: { title?: string; slug?: string };
+  externalUrl?: string;
 };
 
 type SiteSettings = {
@@ -35,17 +33,31 @@ type SiteSettings = {
 };
 
 async function getData() {
-  const [posts, settings] = await Promise.all([
-    client.fetch<LinkPagePost[]>(LINK_PAGE_POSTS_QUERY),
+  const [linkPage, settings] = await Promise.all([
+    client.fetch<{ items?: LinkItem[] } | null>(LINK_PAGE_QUERY),
     client.fetch<SiteSettings>(`*[_type == "siteSettings"][0]{siteDescription, defaultAuthor->{name, image}}`),
   ]);
-  return { posts, settings };
+  return { items: linkPage?.items ?? [], settings };
+}
+
+// A card only ever renders once it has an image and a resolved destination
+// -- a "Links to: Post" card whose reference got deleted, or an "External
+// URL" card left blank mid-edit, shouldn't produce a dead tile on the live
+// page even though Studio already nudges against saving it that way. The
+// headline shown on the tile comes from the linked post's own title for an
+// internal card; an external card (no document to pull a title from) just
+// shows the image with no overlay text.
+function resolveCard(item: LinkItem): { href: string; label: string | null; external: boolean } | null {
+  if (item.linkType === "external" && item.externalUrl) return { href: item.externalUrl, label: null, external: true };
+  if (item.linkType === "post" && item.post?.slug) return { href: `/blog/${item.post.slug}`, label: item.post.title ?? null, external: false };
+  return null;
 }
 
 export default async function LinkPage() {
-  const { posts, settings } = await getData();
+  const { items, settings } = await getData();
   const authorName = settings.defaultAuthor?.name ?? "Asher Aw";
   const authorImage = settings.defaultAuthor?.image;
+  const cards = items.map((item) => ({ item, resolved: resolveCard(item) })).filter((c) => c.resolved && c.item.image?.asset);
 
   return (
     <main id="main-content" className="relative min-h-screen overflow-hidden bg-stage px-5 pt-28 pb-16 text-ivory sm:px-8 sm:pt-32 sm:pb-24">
@@ -73,39 +85,41 @@ export default async function LinkPage() {
           )}
         </div>
 
-        <div className="mt-10 space-y-3">
-          {posts.length === 0 && (
-            <p className="rounded-2xl border border-amber-faint bg-stage/40 p-6 text-center text-sm text-stone/60">
-              No posts marked for this page yet — turn on &ldquo;Show on Link-in-bio page&rdquo; on a post in Studio to see it here.
-            </p>
-          )}
-          {posts.map((post) => (
-            <a
-              key={post._id}
-              href={`/blog/${post.slug}`}
-              className="group flex items-center gap-4 overflow-hidden rounded-2xl border border-amber-faint bg-stage/40 p-3 transition-all hover:border-spotlight/40 hover:bg-spotlight/[0.03]"
-            >
-              {post.mainImage?.asset ? (
-                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-                  <Image
-                    src={urlFor(post.mainImage).width(200).height(200).fit("crop").crop("focalpoint").url()}
-                    alt={post.mainImageAlt ?? post.title}
-                    width={200}
-                    height={200}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-              ) : (
-                <div className="h-20 w-20 shrink-0 rounded-xl bg-spotlight/10" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-base font-medium text-ivory transition-colors group-hover:text-spotlight">{post.title}</p>
-                {post.excerpt && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-stone/60">{post.excerpt}</p>}
-              </div>
-              <ArrowUpRight size={16} className="shrink-0 self-start text-stone/40 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-spotlight" />
-            </a>
-          ))}
-        </div>
+        {cards.length === 0 ? (
+          <p className="mt-10 rounded-2xl border border-amber-faint bg-stage/40 p-6 text-center text-sm text-stone/60">
+            No cards yet — add one in Studio &rarr; Link Page.
+          </p>
+        ) : (
+          // Instagram's own profile grid: three even square tiles per row,
+          // hairline gaps, full-bleed cropped image with the headline
+          // overlaid at the bottom rather than sitting in text beside a
+          // small thumbnail -- deliberately mirrors that familiar look
+          // since readers are arriving here straight from Instagram.
+          <div className="mt-10 grid grid-cols-3 gap-0.5 overflow-hidden rounded-xl border border-amber-faint">
+            {cards.map(({ item, resolved }) => (
+              <a
+                key={item._key}
+                href={resolved!.href}
+                target={resolved!.external ? "_blank" : undefined}
+                rel={resolved!.external ? "noreferrer" : undefined}
+                className="group relative block aspect-square overflow-hidden bg-stage/60"
+              >
+                <Image
+                  src={urlFor(item.image!).width(600).height(600).fit("crop").crop("focalpoint").url()}
+                  alt={item.imageAlt ?? resolved!.label ?? ""}
+                  fill
+                  sizes="(max-width: 512px) 33vw, 170px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                {resolved!.label && (
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 pt-6">
+                    <p className="line-clamp-3 text-[11px] font-semibold leading-tight text-white">{resolved!.label}</p>
+                  </div>
+                )}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

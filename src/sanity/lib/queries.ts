@@ -54,21 +54,25 @@ export const PAGINATED_POSTS_QUERY = `
 
 export const POSTS_COUNT_QUERY = `count(*[_type == "post" && defined(slug.current)])`;
 
-// Link-in-bio page (/link) -- deliberately opt-in (showOnLinkPage == true),
-// not every post, so older posts written before this existed don't flood a
-// page meant specifically for "what I just shared to Instagram/Threads."
-// A much leaner projection than POST_SUMMARY_PROJECTION: this page only
-// ever renders a thumbnail, title, and date per card, not reading time or
-// comment counts.
-export const LINK_PAGE_POSTS_QUERY = `
-  *[_type == "post" && defined(slug.current) && showOnLinkPage == true] | order(publishedAt desc) {
-    _id,
-    title,
-    "slug": slug.current,
-    excerpt,
-    publishedAt,
-    mainImage,
-    "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)
+// Link-in-bio page (/link) -- reads the linkPage singleton (linkPageType.ts),
+// a hand-curated array of cards rather than "every post with a flag set."
+// Each card is just an image + where it goes -- no manual title/caption;
+// the overlay headline on an internal card comes straight from the linked
+// post's own title (`post->title` below), so `post->{title, "slug": ...}`
+// and `externalUrl` are always fetched and the page component picks
+// whichever one `linkType` says to use at render time, since GROQ
+// conditionally dereferencing a possibly-null reference inside `select()`
+// is more fragile than a plain if/else in TypeScript.
+export const LINK_PAGE_QUERY = `
+  *[_type == "linkPage"][0]{
+    items[]{
+      _key,
+      image,
+      "imageAlt": coalesce(image.alt, *[_type == "imageAssetAlt" && assetId == ^.image.asset._ref][0].altText),
+      linkType,
+      "post": post->{title, "slug": slug.current},
+      externalUrl
+    }
   }
 `;
 

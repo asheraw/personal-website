@@ -11,6 +11,7 @@ import {DownloadIcon} from '@sanity/icons/Download'
 import {EditIcon} from '@sanity/icons/Edit'
 import {SearchIcon} from '@sanity/icons/Search'
 import {BugIcon} from '@sanity/icons/Bug'
+import {LinkIcon} from '@sanity/icons/Link'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
@@ -165,6 +166,10 @@ export const structure: StructureResolver = (S) =>
         .icon(CogIcon)
         .child(S.document().schemaType('siteSettings').documentId('siteSettings')),
       S.listItem()
+        .title('Link Page (asheraw.com/link)')
+        .icon(LinkIcon)
+        .child(S.document().schemaType('linkPage').documentId('linkPage')),
+      S.listItem()
         .title('AI Suggestion Settings')
         .icon(SparklesIcon)
         .child(S.document().schemaType('aiPromptSettings').documentId('aiPromptSettings')),
@@ -196,6 +201,7 @@ export const structure: StructureResolver = (S) =>
             'notFoundHit',
             'aiPromptSettings',
             'siteSettings',
+            'linkPage',
             'snippet',
             'comment',
             'redirect',
