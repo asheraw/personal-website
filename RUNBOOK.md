@@ -968,20 +968,35 @@ bare link on an empty line embeds, and that highlighting text and pasting a link
 
 ---
 
-## Share bar: resharing a post to other platforms (shipped 2026-08-02)
+## Share bar: resharing a post to other platforms (shipped 2026-08-02, Threads added 2026-08-10)
 
 Every post page has a **Share this post** row (`src/components/asher/blog/ShareBar.tsx`), placed after the
-post body/tags and before the comment section. Buttons for X, Facebook, LinkedIn, WhatsApp, and Email each
-open that platform's own public share-intent URL with the post's title and URL prefilled — no SDK, no
-third-party embed, nothing that loads or phones home before a reader actually clicks one. A **Copy Link**
-button copies the URL to the clipboard and shows a checkmark for 2 seconds as confirmation. On a device that
-supports the browser's native Web Share API (most mobile browsers, essentially no desktop browsers), an
-extra **Share** button appears first and opens the OS's own share sheet — feature-detected client-side
-*after mount* specifically (not during the initial render) so server-rendered HTML and the client's first
-render always agree; checking `"share" in navigator` directly during render would make Next.js's hydration
-pass disagree with the server output, since `navigator` doesn't exist during server rendering at all. Every
-button fires a `share_click` analytics event (`src/lib/analytics.ts`, same `track()` helper used elsewhere on
-the site) labeled with which platform was used.
+post body/tags and before the comment section. Buttons for X, Facebook, LinkedIn, WhatsApp, Threads, and
+Email each open that platform's own public share-intent URL with the post's title and URL prefilled — no
+SDK, no third-party embed, nothing that loads or phones home before a reader actually clicks one. A **Copy
+Link** button copies the URL to the clipboard and shows a checkmark for 2 seconds as confirmation. On a
+device that supports the browser's native Web Share API (most mobile browsers, essentially no desktop
+browsers), an extra **Share** button appears first and opens the OS's own share sheet — feature-detected
+client-side *after mount* specifically (not during the initial render) so server-rendered HTML and the
+client's first render always agree; checking `"share" in navigator` directly during render would make
+Next.js's hydration pass disagree with the server output, since `navigator` doesn't exist during server
+rendering at all. Every button fires a `share_click` analytics event (`src/lib/analytics.ts`, same `track()`
+helper used elsewhere on the site) labeled with which platform was used.
+
+**Instagram is deliberately not in this row, and can't be added the same way the others were.** Every
+platform above has a public URL that opens a prefilled share dialog (`twitter.com/intent/tweet?...`,
+`threads.net/intent/post?...`, etc.) — Instagram has never offered an equivalent for sharing an arbitrary
+link. The native **Share** button already covers it indirectly: on mobile, Instagram shows up as one of the
+OS's own share-sheet options if the app is installed. There's no way to give it a dedicated one-click button
+the way the rest of the row works.
+
+**Threads' icon isn't from lucide-react** (the icon set every other button in this row uses) — lucide has no
+Threads glyph, so `ThreadsIcon` in `ShareBar.tsx` renders the real mark from the `simple-icons` package
+(`siThreads.path`, solid-fill, `viewBox 0 0 24 24`) instead of standing in some unrelated outline icon.
+Because that component's props don't structurally match lucide's exact `LucideIcon` export type, `LinkTarget.icon`
+is typed as the looser `ComponentType<{ size?: number }>` rather than `typeof Twitter` — both lucide icons and
+the custom SVG component satisfy that shape, so the same `<t.icon size={16} />` call site works for every
+button in the row without a special case.
 
 ---
 

@@ -11,6 +11,22 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-10 — Threads added to the share row
+
+Asher noticed the "Share this post" row skipped Instagram and Threads and asked if that was intentional.
+It wasn't a deliberate choice for either one — but the two turned out to be genuinely different cases.
+
+Threads has a real, public share-intent URL (the same style X, Facebook, and LinkedIn already use), so it
+was just a missing button — added. lucide-react (the icon set every other button in that row uses) doesn't
+include a Threads mark, so this pulls the real brand glyph from `simple-icons` instead of standing in some
+unrelated icon that wouldn't actually read as "Threads" to a reader.
+
+Instagram stays out, and can't really be added the same way: it has no public "share this link" URL at all
+— unlike the platforms already in that row, Instagram has never supported opening a share dialog with a
+link via URL. The native share button that already appears on mobile (the OS's own share sheet) already
+reaches Instagram for anyone with the app installed; there's just no way to add a dedicated one-click button
+for it the way the others work.
+
 ## 2026-08-10 — Accordions can hold real formatting now
 
 Asher asked whether the hidden content inside an Accordion block could support simple rich text — it
