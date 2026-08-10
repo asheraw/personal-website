@@ -1000,6 +1000,38 @@ button in the row without a special case.
 
 ---
 
+## Link-in-bio page: /link (shipped 2026-08-10)
+
+**`src/app/(site)/link/page.tsx`** — a self-contained lnk.bio-style hub for Instagram/Threads bio links.
+Server component, fetches `LINK_PAGE_POSTS_QUERY` (`src/sanity/lib/queries.ts`) plus a small `siteSettings`
+projection (`siteDescription`, `defaultAuthor->{name, image}`) directly via `client.fetch` (same `next-sanity`
+client every other page route uses) rather than going through `POST_SUMMARY_PROJECTION` — this page only ever
+renders a thumbnail, title, and excerpt per card, so the heavier projection's reading-time/comment-count/tag
+fields would just be wasted work. Inherits the site-wide `revalidate = 60` from `(site)/layout.tsx` (not set
+locally on the page) — the same 60-second ISR window every other post-listing page already relies on, so a
+newly-toggled post shows up on `/link` within a minute of publishing, no extra revalidation wiring needed.
+
+**`showOnLinkPage`** (`postType.ts`, Search & Sharing fieldset) is a plain boolean, default `false`, deliberately
+opt-in rather than "every published post shows here automatically." The page is meant specifically for "what
+Asher just shared to Instagram," not a second blog index — auto-including years of older posts would bury the
+one or two actually worth a tap-through. Turn it on per-post in Studio when sharing to Instagram/Threads.
+
+**Visual design deliberately mirrors `/connect`** (same radial spotlight gradient, `border-amber-faint` cards,
+`font-mono-stage` uppercase labels, `ArrowUpRight` hover affordance) rather than a generic link-in-bio
+template — reuses `ConfigureSiteChrome` with `context="connect"` (no dedicated `"link"` `SiteContext` variant
+exists yet; add one in `SiteChromeConfig.tsx` if `/link` ever needs its own chrome behavior instead of
+piggybacking on connect's).
+
+**No third-party embed.** Every card is this site's own data (post thumbnail + title + excerpt from Sanity)
+linking straight to the real post — not an embedded Instagram widget, not a screenshot of the actual
+Instagram post, and not a redirect through an external link-in-bio service. Matches the same "no SDK, no
+third-party embed" stance already established for `ShareBar.tsx`.
+
+**`robots: { index: false }`** in the page's metadata — it's a bio-link utility page for people already
+coming from Instagram/Threads, not something meant to independently rank in search.
+
+---
+
 ## RSS feeds: site-wide and per-channel (shipped 2026-07-31)
 
 The site-wide feed at `/rss.xml` (`src/app/rss.xml/route.ts`) already existed. Added three more, same shape,

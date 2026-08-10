@@ -11,6 +11,23 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-10 — A link-in-bio page for Instagram/Threads (asheraw.com/link)
+
+Asher wants to point his Instagram bio link at something like lnk.bio — a hub that shows people which of
+his posts to read, with each one tapping through to the real article on his own site. Asked for it to be
+self-contained (his own domain, not a third-party service), and wanted a local preview before deciding on
+the look.
+
+Built as `/link`: a profile header (his existing author photo, name, and site bio — nothing new to write)
+above a stacked list of post cards, each with a thumbnail, title, and excerpt, linking straight to the real
+post. Styled to match `/connect`, not a generic template.
+
+Every post now has a **"Show on Link-in-bio page"** toggle in Studio (Search & Sharing), off by default —
+deliberately opt-in rather than listing every post automatically, so the handful of posts actually shared to
+Instagram don't get buried under years of older posts that were never meant for this page. Reviewed and
+approved locally before shipping; live now, currently showing the empty state until a post gets the toggle
+turned on.
+
 ## 2026-08-10 — Threads added to the share row
 
 Asher noticed the "Share this post" row skipped Instagram and Threads and asked if that was intentional.
