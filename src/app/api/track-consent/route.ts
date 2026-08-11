@@ -10,11 +10,14 @@ const DOC_ID = "consentLog";
 // click. This route is a first-party alternative: no IP address, no
 // cookie, nothing that identifies who clicked, just a running tally --
 // same "anonymous count" shape as /api/track-404.
-// Known variant ids from CookieConsent.tsx's own VARIANTS list -- anything
-// else (a stale client build, a hand-crafted request) is dropped rather
-// than stored, so the Dashboard's per-variant breakdown never has to guard
-// against a mystery fourth bucket.
-const KNOWN_VARIANTS = new Set(["current", "formal", "cookieTasting"]);
+// `variant` is a Sanity `_key` from the cookieBannerCopy singleton's own
+// `variants[]` array (see CookieConsent.tsx) -- Asher can add/remove/edit
+// variants freely in Studio, so this can't validate against a fixed list
+// of known ids the way it briefly did. Sanity `_key`s are always short
+// alphanumeric strings (plus "fallback", the hardcoded id used if the
+// Sanity fetch fails); this just guards against something obviously wrong
+// being stored, not against a specific enum.
+const SAFE_VARIANT_KEY = /^[a-zA-Z0-9_-]{1,40}$/;
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
     if (choice !== "accepted" && choice !== "declined") {
       return NextResponse.json({ success: false }, { status: 400 });
     }
-    const safeVariant = typeof variant === "string" && KNOWN_VARIANTS.has(variant) ? variant : undefined;
+    const safeVariant = typeof variant === "string" && SAFE_VARIANT_KEY.test(variant) ? variant : undefined;
 
     const now = new Date().toISOString();
 

@@ -38,7 +38,16 @@ const PUBLIC_SITE_CSP = [
   // straight from the visitor's own browser to keep pages fresh without a
   // full reload -- easy to miss by reading source, since it's inside a
   // library, not this codebase's own components.
-  "connect-src 'self' https://*.api.sanity.io https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://connect.facebook.net https://www.facebook.com https://*.cloudflareinsights.com",
+  // https://*.apicdn.sanity.io -- a genuinely different hostname from
+  // *.api.sanity.io above, not covered by that wildcard (caught the same
+  // way: a real browser console error, not visible from reading source).
+  // CookieConsent.tsx is the first client-side component in this codebase
+  // to fetch from Sanity directly (to pick a random banner-copy variant) --
+  // it uses the same shared `client` (src/sanity/lib/client.ts) every
+  // server component already uses, which has useCdn:true baked in, so its
+  // reads route through Sanity's CDN subdomain specifically, not the plain
+  // API one SanityLive happens to use.
+  "connect-src 'self' https://*.api.sanity.io https://*.apicdn.sanity.io https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://connect.facebook.net https://www.facebook.com https://*.cloudflareinsights.com",
   "frame-src 'self' https://www.youtube-nocookie.com https://www.instagram.com",
   "frame-ancestors 'self'",
   "object-src 'none'",

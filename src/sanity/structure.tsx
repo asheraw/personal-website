@@ -2,7 +2,6 @@ import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {AddDocumentIcon} from '@sanity/icons/AddDocument'
 import {CogIcon} from '@sanity/icons/Cog'
 import {ComponentIcon} from '@sanity/icons/Component'
-import {BarChartIcon} from '@sanity/icons/BarChart'
 import {DocumentsIcon} from '@sanity/icons/Documents'
 import {WrenchIcon} from '@sanity/icons/Wrench'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
@@ -21,6 +20,9 @@ import {ExportTool} from './components/ExportTool'
 import {BulkOperationsTool} from './components/BulkOperationsTool'
 import {SearchQueriesTool} from './components/SearchQueriesTool'
 import {ErrorLogTool} from './components/ErrorLogTool'
+import {CookieInsightsTool} from './components/CookieInsightsTool'
+import {CommentIcon} from '@sanity/icons/Comment'
+import {ListIcon} from '@sanity/icons/List'
 
 // https://www.sanity.io/docs/structure-builder-cheat-sheet
 export const structure: StructureResolver = (S) =>
@@ -160,36 +162,36 @@ export const structure: StructureResolver = (S) =>
                 .icon(EditIcon)
                 .child(S.component(BulkOperationsTool).title('Bulk Operations')),
               S.listItem()
-                .title('Search Queries')
-                .id('searchQueries')
-                .icon(SearchIcon)
-                .child(S.component(SearchQueriesTool).title('Search Queries')),
-              S.listItem()
                 .title('Error Log')
                 .id('errorLog')
                 .icon(BugIcon)
                 .child(S.component(ErrorLogTool).title('Error Log')),
-              // Moved in from its own top-level slot (2026-08-11 cleanup) --
-              // an occasional glance-at-the-numbers log, same category as
-              // everything else in this folder, not something checked daily.
+              // Passive records to review, not queues that need action the
+              // way the items above do -- grouped together on Asher's own
+              // suggestion (2026-08-11) rather than sitting loose at the
+              // same level as Export/Bulk Operations. Cookie Consent Log and
+              // Cookie Taste Feedback merged into one tool here too (see
+              // CookieInsightsTool.tsx) instead of being two separate
+              // entries.
               S.listItem()
-                .title('Cookie Consent Log')
-                .id('cookieConsentLog')
-                .icon(BarChartIcon)
-                .child(S.document().schemaType('consentLog').documentId('consentLog')),
-              // One document per submission (unlike the tally-only Cookie
-              // Consent Log above) -- only reachable from the "cookie
-              // tasting" consent-banner variant's own feedback link, see
-              // CookieTasteFeedback.tsx.
-              S.listItem()
-                .title('Cookie Taste Feedback')
-                .id('cookieFeedback')
-                .icon(ComponentIcon)
-                .schemaType('cookieFeedback')
+                .title('Logs')
+                .id('logs')
+                .icon(ListIcon)
                 .child(
-                  S.documentTypeList('cookieFeedback')
-                    .title('Cookie Taste Feedback')
-                    .defaultOrdering([{field: '_createdAt', direction: 'desc'}]),
+                  S.list()
+                    .title('Logs')
+                    .items([
+                      S.listItem()
+                        .title('Search Queries')
+                        .id('searchQueries')
+                        .icon(SearchIcon)
+                        .child(S.component(SearchQueriesTool).title('Search Queries')),
+                      S.listItem()
+                        .title('Cookie Insights')
+                        .id('cookieInsights')
+                        .icon(CommentIcon)
+                        .child(S.component(CookieInsightsTool).title('Cookie Insights')),
+                    ]),
                 ),
             ]),
         ),
@@ -204,6 +206,15 @@ export const structure: StructureResolver = (S) =>
         .title('Link Page (asheraw.com/link)')
         .icon(LinkIcon)
         .child(S.document().schemaType('linkPage').documentId('linkPage')),
+      // Wording shown in the cookie consent banner -- editable here instead
+      // of hardcoded in CookieConsent.tsx, so Asher can tweak copy (or add/
+      // remove variants) without a code change. See Logs -> Cookie Insights
+      // for how each variant is actually performing.
+      S.listItem()
+        .title('Cookie Banner Copy')
+        .id('cookieBannerCopy')
+        .icon(CommentIcon)
+        .child(S.document().schemaType('cookieBannerCopy').documentId('cookieBannerCopy')),
       // Grouped together (2026-08-11 cleanup) -- two views of the same
       // thing, the AI features' settings and the log of what those settings
       // actually produced, previously two unrelated-looking top-level items.
@@ -250,6 +261,7 @@ export const structure: StructureResolver = (S) =>
             'siteSettings',
             'linkPage',
             'cookieFeedback',
+            'cookieBannerCopy',
             'snippet',
             'comment',
             'redirect',
