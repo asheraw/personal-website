@@ -2636,21 +2636,21 @@ single tab they open (reads as nagging) and made the accept/decline count reflec
 `visible` flips true (re-checks `getConsent()` when the timer fires, not just trusting the closure, in case
 consent changed via another tab during the wait). Previously showed on mount with zero delay.
 
-**Banner copy is editable Studio content, not hardcoded JSX** — Studio → Site Settings section → **Cookie
-Banner Copy** (singleton, `cookieBannerCopyType.ts`, `_id: "cookieBannerCopy"`). Shipped hardcoded first,
-then moved out same day once Asher asked to be able to edit wording (or add/remove variants entirely)
-without a code change each time. `variants[]` is a normal Sanity array of `bannerVariant` objects: `label`
-(Studio-only, never shown to visitors), `body` (restricted Portable Text — bold/italic/link only, no
-headings/lists, matching the same "smallest sensible toolbar" precedent `blockContentType.ts`'s accordion
-content field already set), `declineLabel`/`acceptLabel`, `showTasteLink`. `CookieConsent.tsx` fetches
-`*[_type == "cookieBannerCopy"][0]{variants}` client-side on mount (first-ever client-side Sanity read
-anywhere in this codebase — see the CSP note below), picks one at random each time the banner is about to
-show (`Math.floor(Math.random() * variants.length)`, not stuck to one per visitor, re-rolled on every
-prompt including 7-day re-prompts), and renders that item's `body` through a small restricted
-`PortableTextComponents` config local to the file. The tracked `variant` sent to `/api/track-consent` is
-that array item's own Sanity `_key` — since variants are now dynamic, `/api/track-consent/route.ts` can't
-validate against a fixed enum of known ids anymore; it just checks the value looks like a real key
-(`/^[a-zA-Z0-9_-]{1,40}$/`) before storing it.
+**Banner copy is editable Studio content, not hardcoded JSX** — Studio → Site Admin → **Cookies** (singleton
+edit form inside `CookiesTool.tsx`, backing document `cookieBannerCopyType.ts`, `_id: "cookieBannerCopy"`).
+Shipped hardcoded first, then moved out same day once Asher asked to be able to edit wording (or add/remove
+variants entirely) without a code change each time. `variants[]` is a normal Sanity array of `bannerVariant`
+objects: `label` (Studio-only, never shown to visitors), `declineLabel`/`acceptLabel`, `showTasteLink`.
+**`body` (originally restricted Portable Text) was replaced 2026-08-11 (second pass) with plain `text` /
+`linkText` / `linkHref` / `afterLink` string fields** — see the "Cookies merged into one form" entry below
+for why. `CookieConsent.tsx` fetches `*[_type == "cookieBannerCopy"][0]{variants}` client-side on mount
+(first-ever client-side Sanity read anywhere in this codebase — see the CSP note below), picks one at random
+each time the banner is about to show (`Math.floor(Math.random() * variants.length)`, not stuck to one per
+visitor, re-rolled on every prompt including 7-day re-prompts), and renders `text` + (if `linkText`/
+`linkHref` are set) a link + `afterLink`, all plain JSX interpolation now, no Portable Text renderer. The
+tracked `variant` sent to `/api/track-consent` is that array item's own Sanity `_key` — since variants are
+now dynamic, `/api/track-consent/route.ts` can't validate against a fixed enum of known ids anymore; it just
+checks the value looks like a real key (`/^[a-zA-Z0-9_-]{1,40}$/`) before storing it.
 
 **`FALLBACK_VARIANT`** (hardcoded, in `CookieConsent.tsx`) is used only if the Sanity fetch fails, or the
 document has zero variants (e.g. a fresh dataset before it's been seeded) — a real network hiccup shouldn't
@@ -2660,7 +2660,7 @@ so nothing visibly changed for visitors at the moment of deploy.
 
 **No automatic winner-picking, by design** — Asher's own call, given how few data points a variant can
 realistically collect at this traffic level; an automated switch would flip on noise. Reviewed by hand
-instead, in Studio → Site Admin → **Logs → Cookie Insights** (see below) — a live per-variant accept/decline
+instead, in Studio → Site Admin → **Cookies** (see below) — a live per-variant accept/decline
 breakdown, grouped **client-side** from the raw `consentLog.entries[]` array rather than hardcoded GROQ
 `count()` queries per id, specifically because variants can now be added/removed/renamed at any time; a
 fixed-id breakdown would silently go stale the first time Asher edited the variant list. An entry whose
@@ -2713,6 +2713,13 @@ removed afterward, leaving only genuine visitor data.
 
 ## Cookie Insights: merged consent + feedback, grouped into a new Logs folder (shipped 2026-08-11)
 
+**Superseded the same day, second pass — see "Cookies merged into one form, Logs folder flattened back out"
+below.** `CookieInsightsTool.tsx` no longer exists (replaced by `CookiesTool.tsx`), the "Logs" folder no
+longer exists (flattened back into direct Site Admin children), and "Cookie Insights" + "Banner Copy" are no
+longer two sibling panes (merged into one component). Kept below for the historical reasoning that's still
+accurate — why a stats view replaced the raw entries list, why Redirects moved into Site Admin, the URL
+validation fix — just not the structural specifics.
+
 **`src/sanity/components/CookieInsightsTool.tsx`** replaces two separate Site Admin entries (Cookie Consent
 Log, Cookie Taste Feedback) with one tabbed tool, same `Tab`/`TabList`/`TabPanel` pattern
 `ContentHealthTool.tsx` already established for Content Audit + Link Checker. Asked for directly: the
@@ -2757,6 +2764,77 @@ items above: an active check you run and act on, not a passive record, and it's 
 one-click daily access (see the top-nav cleanup notes elsewhere in this file). The real problem underneath
 Asher's low usage of it turned out to be something else entirely — see Content Audit's own entry above for
 the per-check dismissal that actually fixed it.
+
+---
+
+## Cookies merged into one form, Logs folder flattened back out, Link Checker gets dismissal (shipped 2026-08-11, third pass)
+
+**The "Logs" folder from the previous pass is gone.** Asher's own reversal, hours after suggesting it:
+"Move the 404 hits, error log, search queries, cookie insights... all up one level into site admin. No need
+to put them too far in, you're right." `structure.tsx`'s Site Admin list now has `404 Hits`, `Error Log`,
+`Search Queries`, and `Cookies` as direct children again — same ids as before (`notFoundHits`, `errorLog`,
+`searchQueries`), plus the new `cookies` id. `DashboardTool.tsx`'s `LINKS` deep-link paths were updated to
+match (`/studio/structure/siteAdmin;notFoundHits` etc., one segment shallower than before).
+
+**`src/sanity/components/CookiesTool.tsx`** (new, replaces the deleted `CookieInsightsTool.tsx` and the
+old two-sibling-panes structure) — one component, three stacked sections, no tabs: **Insights** (unchanged
+logic — aggregate accept/decline totals + per-variant breakdown, grouped client-side from
+`consentLog.entries[]` the same way as before), **Copy** (new — an inline editable form for
+`cookieBannerCopy.variants[]`: `TextInput`/`TextArea` per field, edits held in local component state, one
+"Save all changes" button does a single `client.patch('cookieBannerCopy').set({variants}).commit()` for the
+whole array, plus Add/Remove variant buttons), **Feedback** (unchanged logic — average colours/taste/texture
+scores + recent submissions). Asher's own framing: "Call this Cookies and then it shows the insights (which
+is the data) and then the copy." He also flagged uncertainty about the Feedback section's actual value
+("not turning it on for all of them") — left in per his own "we will see if it's actually being used," not
+a removal request.
+
+**Why a genuine single form is now possible, when it wasn't before**: `cookieBannerCopyType.ts`'s `body`
+field moved off Portable Text onto plain `text` / `linkText` / `linkHref` / **`afterLink`** (new) string
+fields. Sanity's rich-text block editor is a document-form-only field type — it can't be mounted inside a
+custom `S.component()` pane, which is exactly why the previous pass had to leave Banner Copy as a separate
+sibling document form rather than truly merging it. Plain string fields render as plain `TextInput`/
+`TextArea` components anywhere, which is what makes the inline Copy section above possible at all.
+
+**`afterLink` exists because all three real variants had wording *after* the link, not just before it** —
+checked directly against the live document before assuming a before-link-only shape would do: "Current" had
+"... here. Click Accept to help me out, thanks!" after the link, "Formal" had a trailing ".", "Cookie
+tasting" had " if you want the fine print." None of these were rephrased to fit a simpler shape; the field
+was added instead so the original approved copy carries over exactly. Render order in
+`CookieConsent.tsx`: `text` (trimmed of its own trailing space) + a manually-injected `" "` + the link (if
+`linkText`/`linkHref` are set) + `afterLink` appended with no extra separator (so it can start with a space,
+punctuation, or nothing, matching whatever the original wording needed).
+
+**Live migration**: the seeded `cookieBannerCopy` document (3 variants: Current, Formal, Cookie tasting) was
+converted from its old Portable Text `body` shape to the new fields via a one-off script (`@sanity/client`
++ `SANITY_API_WRITE_TOKEN` from `.env.local`, deleted after running, same convention as the original seed
+script). Each variant's original `_key` was preserved — `consentLog` entries reference these keys for the
+per-variant accept/decline breakdown, so keeping them is what stops that history from being silently
+orphaned. Verified by reading the document back after the patch and confirming `body` was gone and the new
+fields matched exactly.
+
+**Link Checker (the "broken/blocked links" half of Content Health) gets the same pending/ignored/actioned
+dismissal Content Audit already had.** Re-checking Content Health after the previous pass's fix, Asher
+reported "still no option to mark or change the status" — correct, because that fix only ever covered
+`ContentAuditTool.tsx` (missing metadata); `LinkCheckerTool.tsx` (broken/blocked/affiliate links, the other
+tab) had no `status` field or dismiss control at all. Added: a `status` field on `linkCheckType.ts`, a
+`Select` (Pending/Ignored/Actioned) per row in `LinkCheckerTool.tsx` shown only for Broken/Possibly Blocked
+rows (same `client.patch(id).set({status}).commit()` pattern `NotFoundHitsTool.tsx` already established),
+and the top summary badges now count only non-ignored rows — the row itself stays visible in its section
+regardless, matching this session's standing "dismiss should never make something silently invisible" rule.
+**One real gotcha caught by reading the actual write path first**: `src/lib/linkChecker.ts`'s
+`runLinkCheck()` does a full `createOrReplace` on every `linkCheck` document, on every run (daily cron +
+on-demand Check Now) — a naive `status` addition would've silently reset to `pending` on the very next
+automated check. Fixed by fetching and carrying `status` forward explicitly, the same way the pre-existing
+`brokenSince` field already had to be. `DashboardTool.tsx`'s `linkIssues` count was updated to exclude
+`status == "ignored"` the same way the other counts already do.
+
+**New Error Log entry investigated on request, diagnosed, not a bug**: `Uncaught Error: Error invoking
+postMessage: Java object is gone`, stack trace rooted entirely in `iabjs://navigation_performance_logger_android`
+URLs, user agent confirmed Instagram's in-app browser (Android WebView). This is Instagram's own injected
+JavaScript for its navigation-performance logging, failing to reach a Java bridge object that's already
+been garbage-collected during page teardown — external to this codebase, not fixable here, same category
+as the already-dismissed "ResizeObserver loop completed" entry. Recommended marking it Ignored via the
+existing Error Log dismiss control rather than investigating further.
 
 ---
 

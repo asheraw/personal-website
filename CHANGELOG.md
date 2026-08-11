@@ -11,6 +11,35 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-11 — Cookies merged into one real form, Logs flattened back out, Link Checker gets dismissal
+
+Third follow-up pass the same day, all direct reactions to using the previous pass's changes. Asher's
+verdict on the "Logs" sub-folder from earlier: "no need to put them too far in, you're right" — **404 Hits,
+Error Log, Search Queries, and Cookies are now direct Site Admin children again**, not nested one level
+deeper. The folder idea came from his own suggestion a few hours earlier; reversing it just as readily once
+it didn't feel right in practice is the same kind of call as everything else in this session's Studio
+cleanup — organize by how it's actually used, not by how it sounded on paper.
+
+**Cookie Insights and Cookie Banner Copy are now one genuinely combined form**, renamed "Cookies" — not the
+folder-with-two-sibling-panes structure from the last pass, but a single page showing Insights, then Copy,
+then Feedback, stacked top to bottom. That only became possible by moving the banner copy off Sanity's
+Portable Text editor onto plain text fields (`text`, `linkText`, `linkHref`, and a new `afterLink`) — a real
+rich-text editor can't be mounted inside a custom Studio pane, only a document's own form can host one. All
+three real copy variants turned out to have wording *after* the link (not just before it), so `afterLink`
+was added specifically to carry that over untouched rather than rewording anyone's copy to fit a simpler
+shape. The live document was migrated to the new shape directly, keeping each variant's original tracking
+key so the accept/decline stats stay attributed correctly.
+
+Re-checking Content Health surfaced the real gap: **Link Checker (broken/blocked links) had no dismiss
+option at all** — the per-check dismissal built for Content Audit last pass only ever covered half of
+Content Health. Given the same pending/ignored/actioned control Content Audit and 404 Hits already use;
+the Dashboard's issue count now excludes ignored links the same way.
+
+Also checked a new Error Log entry mentioning `postMessage` on request — it's Instagram's own in-app
+browser (Android WebView) failing to reach a garbage-collected Java bridge object during page teardown,
+from its own injected `iabjs://` navigation-logging script. External to this codebase, same category as
+the already-dismissed "ResizeObserver loop completed" entry — worth marking Ignored rather than chasing.
+
 ## 2026-08-11 — Content Audit can finally be dismissed, and one more Studio tidy-up
 
 Two more follow-ups from the same conversation. First, a real bug: the new Cookie Banner Copy document
