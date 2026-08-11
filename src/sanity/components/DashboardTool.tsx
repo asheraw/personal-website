@@ -12,6 +12,7 @@ import {BugIcon} from '@sanity/icons/Bug'
 import {BarChartIcon} from '@sanity/icons/BarChart'
 import {SearchIcon} from '@sanity/icons/Search'
 import {TrendUpwardIcon} from '@sanity/icons/TrendUpward'
+import {ComponentIcon} from '@sanity/icons/Component'
 import {usePendingCommentCount} from '../hooks/usePendingCommentCount'
 import {usePendingContactCount} from '../hooks/usePendingContactCount'
 import {openDocumentInStudio} from '../lib/openPostInStudio'
@@ -33,6 +34,8 @@ import {openDocumentInStudio} from '../lib/openPostInStudio'
 // new integration (Google Cloud service account, new credentials), not a
 // dashboard-layout decision. Left as a plain note instead of a fake stat.
 
+type VariantStat = {accepted: number; declined: number}
+
 type DashboardData = {
   linkIssues: number
   notFoundPending: number
@@ -40,6 +43,8 @@ type DashboardData = {
   searchPending: number
   scheduledCount: number
   consent: {acceptedCount?: number; declinedCount?: number} | null
+  variantStats: Record<'current' | 'formal' | 'cookieTasting', VariantStat>
+  feedbackCount: number
   auditIssues: number
   socialNeeded: number
 }
@@ -64,19 +69,48 @@ const LINKS = {
   errorLog: '/studio/structure/siteAdmin;errorLog',
   searchQueries: '/studio/structure/siteAdmin;searchQueries',
   cookieConsentLog: '/studio/structure/siteAdmin;cookieConsentLog',
+  cookieFeedback: '/studio/structure/siteAdmin;cookieFeedback',
+}
+
+const VARIANT_IDS = ['current', 'formal', 'cookieTasting'] as const
+const VARIANT_LABELS: Record<(typeof VARIANT_IDS)[number], string> = {
+  current: 'Current ("I\'m making this site better...")',
+  formal: 'Formal ("This site uses cookies...")',
+  cookieTasting: 'Cookie tasting (🍪 + feedback form)',
 }
 
 // Deliberately doesn't also fetch posts/aiOutputLog -- usePostIssueCounts
 // below covers those (audit issues + social-copy-needed both derive from
 // the same two lists, so they share one fetch rather than pulling the same
 // data twice across two hooks).
+//
+// variantStats -- per-variant accept/decline split for the copy-variant
+// review Asher's running manually (see CookieConsent.tsx's VARIANTS and
+// consentLogType.ts's entries[].variant). Only entries logged from
+// 2026-08-11 onward carry a variant at all, so these counts naturally
+// exclude everything recorded before the experiment started.
 const QUERY = `{
   "linkIssues": count(*[_type == "linkCheck" && ok == false]),
   "notFoundPending": count(*[_type == "notFoundHit" && (status == "pending" || !defined(status))]),
   "errorPending": count(*[_type == "errorLog" && (status == "pending" || !defined(status))]),
   "searchPending": count(*[_type == "searchQueryLog" && (status == "pending" || !defined(status))]),
   "scheduledCount": count(*[_id in path("drafts.**") && _type == "post" && defined(scheduledPublishAt)]),
-  "consent": *[_id == "consentLog"][0]{acceptedCount, declinedCount}
+  "consent": *[_id == "consentLog"][0]{acceptedCount, declinedCount},
+  "variantStats": {
+    "current": {
+      "accepted": count(*[_id == "consentLog"][0].entries[variant == "current" && choice == "accepted"]),
+      "declined": count(*[_id == "consentLog"][0].entries[variant == "current" && choice == "declined"])
+    },
+    "formal": {
+      "accepted": count(*[_id == "consentLog"][0].entries[variant == "formal" && choice == "accepted"]),
+      "declined": count(*[_id == "consentLog"][0].entries[variant == "formal" && choice == "declined"])
+    },
+    "cookieTasting": {
+      "accepted": count(*[_id == "consentLog"][0].entries[variant == "cookieTasting" && choice == "accepted"]),
+      "declined": count(*[_id == "consentLog"][0].entries[variant == "cookieTasting" && choice == "declined"])
+    }
+  },
+  "feedbackCount": count(*[_type == "cookieFeedback"])
 }`
 
 function usePostIssueCounts(): {auditIssues: number; socialNeeded: number} | null {
@@ -310,6 +344,42 @@ export function DashboardTool() {
               </Flex>
             </Card>
           </Grid>
+        </Stack>
+
+        <Stack space={3}>
+          <SectionHeading>Cookie copy experiment</SectionHeading>
+          <Text size={1} muted>
+            Three banner variants, picked at random each time it shows. No auto-winner — review by hand,
+            whenever there's enough data to trust.
+          </Text>
+          <Card radius={3} shadow={1} padding={4} as="a" href={LINKS.cookieConsentLog}>
+            <Stack space={3}>
+              {VARIANT_IDS.map((id) => {
+                const stat = counts?.variantStats?.[id]
+                const total = stat ? stat.accepted + stat.declined : 0
+                const rate = total ? Math.round((stat!.accepted / total) * 100) : null
+                return (
+                  <Flex key={id} align="center" justify="space-between" gap={3}>
+                    <Text size={1}>{VARIANT_LABELS[id]}</Text>
+                    <Text size={1} muted>
+                      {stat === undefined
+                        ? '—'
+                        : total === 0
+                          ? 'No data yet'
+                          : `${stat.accepted} accepted · ${stat.declined} declined (${rate}%)`}
+                    </Text>
+                  </Flex>
+                )
+              })}
+            </Stack>
+          </Card>
+          <StatCard
+            icon={ComponentIcon}
+            label="Cookie taste feedback submissions"
+            value={counts?.feedbackCount ?? null}
+            tone="default"
+            href={LINKS.cookieFeedback}
+          />
         </Stack>
       </Stack>
     </Box>

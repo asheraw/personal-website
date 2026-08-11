@@ -177,6 +177,20 @@ export const structure: StructureResolver = (S) =>
                 .id('cookieConsentLog')
                 .icon(BarChartIcon)
                 .child(S.document().schemaType('consentLog').documentId('consentLog')),
+              // One document per submission (unlike the tally-only Cookie
+              // Consent Log above) -- only reachable from the "cookie
+              // tasting" consent-banner variant's own feedback link, see
+              // CookieTasteFeedback.tsx.
+              S.listItem()
+                .title('Cookie Taste Feedback')
+                .id('cookieFeedback')
+                .icon(ComponentIcon)
+                .schemaType('cookieFeedback')
+                .child(
+                  S.documentTypeList('cookieFeedback')
+                    .title('Cookie Taste Feedback')
+                    .defaultOrdering([{field: '_createdAt', direction: 'desc'}]),
+                ),
             ]),
         ),
       S.divider(),
@@ -235,6 +249,7 @@ export const structure: StructureResolver = (S) =>
             'aiPromptSettings',
             'siteSettings',
             'linkPage',
+            'cookieFeedback',
             'snippet',
             'comment',
             'redirect',

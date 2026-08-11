@@ -29,12 +29,19 @@ export const consentLogType = defineType({
           fields: [
             defineField({name: 'choice', type: 'string'}),
             defineField({name: 'timestamp', type: 'datetime', options: {dateFormat: 'YYYY-MMM-DD'}}),
+            // Which of CookieConsent.tsx's VARIANTS copy was shown for this
+            // click -- added 2026-08-11 for the manual copy-variant review
+            // Asher asked for. Absent on entries logged before that date
+            // (nothing to backfill it from), so every count derived from
+            // this field elsewhere (the Dashboard's per-variant breakdown)
+            // only ever reflects entries recorded from here forward.
+            defineField({name: 'variant', type: 'string'}),
           ],
           preview: {
-            select: {choice: 'choice', timestamp: 'timestamp'},
-            prepare: ({choice, timestamp}) => ({
+            select: {choice: 'choice', timestamp: 'timestamp', variant: 'variant'},
+            prepare: ({choice, timestamp, variant}) => ({
               title: choice === 'accepted' ? 'Accepted' : 'Declined',
-              subtitle: timestamp ? new Date(timestamp).toLocaleString() : 'Unknown time',
+              subtitle: `${timestamp ? new Date(timestamp).toLocaleString() : 'Unknown time'}${variant ? ` · ${variant}` : ''}`,
             }),
           },
         }),

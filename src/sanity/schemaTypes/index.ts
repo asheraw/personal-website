@@ -21,7 +21,8 @@ import {searchQueryLogType} from './searchQueryLogType'
 import {errorLogType} from './errorLogType'
 import {imageAssetTrashType} from './imageAssetTrashType'
 import {linkPageType} from './linkPageType'
+import {cookieFeedbackType} from './cookieFeedbackType'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType, shareLogType, aiOutputLogType, linkCheckType, imageAssetAltType, bulkOperationLogType, searchQueryLogType, errorLogType, imageAssetTrashType, linkPageType],
+  types: [blockContentType, categoryType, postType, authorType, contactSubmissionType, aiPromptSettingsType, notFoundHitType, siteSettingsType, snippetType, commentType, redirectType, consentLogType, shareLogType, aiOutputLogType, linkCheckType, imageAssetAltType, bulkOperationLogType, searchQueryLogType, errorLogType, imageAssetTrashType, linkPageType, cookieFeedbackType],
 }
