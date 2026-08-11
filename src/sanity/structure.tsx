@@ -20,9 +20,8 @@ import {ExportTool} from './components/ExportTool'
 import {BulkOperationsTool} from './components/BulkOperationsTool'
 import {SearchQueriesTool} from './components/SearchQueriesTool'
 import {ErrorLogTool} from './components/ErrorLogTool'
-import {CookieInsightsTool} from './components/CookieInsightsTool'
+import {CookiesTool} from './components/CookiesTool'
 import {CommentIcon} from '@sanity/icons/Comment'
-import {ListIcon} from '@sanity/icons/List'
 
 // https://www.sanity.io/docs/structure-builder-cheat-sheet
 export const structure: StructureResolver = (S) =>
@@ -156,69 +155,44 @@ export const structure: StructureResolver = (S) =>
               // (repointing a changed URL), same category as Export/Bulk
               // Operations, not something touched daily.
               S.documentTypeListItem('redirect').title('Redirects'),
-              // All four below share the same shape (an event log with a
-              // pending/ignored/actioned status) and are passive records to
-              // review rather than queues you act on inline the way
-              // Contact Submissions/Export/Bulk Operations are -- grouped
-              // together on Asher's own suggestion (2026-08-11) rather than
-              // sitting loose at the Site Admin level. 404 Hits and Error
-              // Log moved in alongside Search Queries for the same reason
-              // once it was pointed out they're really the same kind of
-              // thing, not meaningfully different from it.
+              // All four below share the same shape -- an event log or
+              // stats view to review rather than a queue you act on inline
+              // the way Contact Submissions/Export/Bulk Operations are.
+              // Previously nested one level deeper inside a "Logs" folder
+              // (2026-08-11); flattened back out the same day on Asher's
+              // own reversal ("no need to put them too far in, you're
+              // right") -- direct Site Admin children, not a sub-folder.
               S.listItem()
-                .title('Logs')
-                .id('logs')
-                .icon(ListIcon)
-                .child(
-                  S.list()
-                    .title('Logs')
-                    .items([
-                      S.listItem()
-                        .title('404 Hits')
-                        .id('notFoundHits')
-                        .icon(LinkRemovedIcon)
-                        .child(S.component(NotFoundHitsTool).title('404 Hits')),
-                      S.listItem()
-                        .title('Error Log')
-                        .id('errorLog')
-                        .icon(BugIcon)
-                        .child(S.component(ErrorLogTool).title('Error Log')),
-                      S.listItem()
-                        .title('Search Queries')
-                        .id('searchQueries')
-                        .icon(SearchIcon)
-                        .child(S.component(SearchQueriesTool).title('Search Queries')),
-                      // A folder, not a single component -- merges the
-                      // read-only insights tool with the editable copy
-                      // document (2026-08-11, Asher's own ask: "can this
-                      // page not merge with Cookie Insights rather than a
-                      // standalone"). A custom S.component() pane and a
-                      // real Sanity document form don't combine into one
-                      // pane technically, so this is the closest genuine
-                      // merge -- one shared entry point, two sibling views,
-                      // instead of scattered in different parts of the tree.
-                      S.listItem()
-                        .title('Cookie Insights')
-                        .id('cookieInsights')
-                        .icon(CommentIcon)
-                        .child(
-                          S.list()
-                            .title('Cookie Insights')
-                            .items([
-                              S.listItem()
-                                .title('Insights')
-                                .id('insights')
-                                .icon(CommentIcon)
-                                .child(S.component(CookieInsightsTool).title('Cookie Insights')),
-                              S.listItem()
-                                .title('Banner Copy')
-                                .id('bannerCopy')
-                                .icon(CommentIcon)
-                                .child(S.document().schemaType('cookieBannerCopy').documentId('cookieBannerCopy')),
-                            ]),
-                        ),
-                    ]),
-                ),
+                .title('404 Hits')
+                .id('notFoundHits')
+                .icon(LinkRemovedIcon)
+                .child(S.component(NotFoundHitsTool).title('404 Hits')),
+              S.listItem()
+                .title('Error Log')
+                .id('errorLog')
+                .icon(BugIcon)
+                .child(S.component(ErrorLogTool).title('Error Log')),
+              S.listItem()
+                .title('Search Queries')
+                .id('searchQueries')
+                .icon(SearchIcon)
+                .child(S.component(SearchQueriesTool).title('Search Queries')),
+              // One genuinely merged form, not a folder with two sibling
+              // panes (2026-08-11, second pass -- Asher's own ask: "call
+              // this Cookies and then it shows the insights... and then the
+              // copy"). Made possible by moving cookieBannerCopy's `body`
+              // off Portable Text onto plain fields (see
+              // cookieBannerCopyType.ts) -- a real Sanity document form
+              // can't be embedded inside a custom pane, but plain inputs
+              // can, so CookiesTool.tsx now edits the copy directly instead
+              // of linking out to a separate document. cookieBannerCopy
+              // stays in the schema and in the defensive fallback list
+              // below -- it's still a real document, just edited from here.
+              S.listItem()
+                .title('Cookies')
+                .id('cookies')
+                .icon(CommentIcon)
+                .child(S.component(CookiesTool).title('Cookies')),
             ]),
         ),
       S.divider(),

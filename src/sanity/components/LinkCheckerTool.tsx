@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useState} from 'react'
-import {Badge, Button, Card, Flex, Spinner, Stack, Text, Tooltip} from '@sanity/ui'
+import {Badge, Button, Card, Flex, Select, Spinner, Stack, Text, Tooltip} from '@sanity/ui'
 import type {CardTone} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {RefreshIcon} from '@sanity/icons/Refresh'
@@ -8,6 +8,7 @@ import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {openDocumentInStudio} from '../lib/openPostInStudio'
 import {ErrorMessage} from './ErrorMessage'
 
+type DismissStatus = 'pending' | 'ignored' | 'actioned'
 type Source = {type: 'post' | 'snippet'; title: string; slug?: string; id: string}
 type LinkCheckRow = {
   _id: string
@@ -20,6 +21,7 @@ type LinkCheckRow = {
   blocked?: boolean
   lastCheckedAt?: string
   brokenSince?: string
+  status?: DismissStatus
 }
 
 type SectionKey = 'broken' | 'blocked' | 'affiliate' | 'healthy'
@@ -87,12 +89,13 @@ export function LinkCheckerTool() {
   const [checking, setChecking] = useState(false)
   const [checkError, setCheckError] = useState('')
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(['broken', 'blocked', 'affiliate']))
+  const [busyId, setBusyId] = useState<string | null>(null)
 
   const load = useCallback(() => {
     client
       .fetch<LinkCheckRow[]>(
         `*[_type == "linkCheck"] | order(url asc){
-          _id, url, isAffiliate, sources, ok, statusCode, error, blocked, lastCheckedAt, brokenSince
+          _id, url, isAffiliate, sources, ok, statusCode, error, blocked, lastCheckedAt, brokenSince, status
         }`,
       )
       .then(setRows)
@@ -101,6 +104,25 @@ export function LinkCheckerTool() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Added 2026-08-11 -- this tool had no dismiss mechanism at all, which
+  // was the actual reason Content Health kept showing the same flagged
+  // links with no way to say "I know, this one's fine" (a 403 from a site
+  // that blocks automated checks, for instance). Same pending/ignored/
+  // actioned pattern NotFoundHitsTool already uses. Rows stay in their
+  // Broken/Possibly Blocked section regardless of status -- only the
+  // top-line "needs attention" counts (here and on the Dashboard) exclude
+  // ignored ones, so nothing is removed from view, just no longer counted
+  // as something to act on.
+  async function setRowStatus(id: string, status: DismissStatus) {
+    setBusyId(id)
+    try {
+      await client.patch(id).set({status}).commit()
+      setRows((prev) => (prev ? prev.map((r) => (r._id === id ? {...r, status} : r)) : prev))
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   async function checkNow() {
     setChecking(true)
@@ -145,6 +167,8 @@ export function LinkCheckerTool() {
   const affiliate = rows.filter((r) => r.ok !== false && r.isAffiliate)
   const healthy = rows.filter((r) => r.ok !== false && !r.isAffiliate)
   const byKey: Record<SectionKey, LinkCheckRow[]> = {broken, blocked, affiliate, healthy}
+  const activeBroken = broken.filter((r) => r.status !== 'ignored')
+  const activeBlocked = blocked.filter((r) => r.status !== 'ignored')
 
   const lastChecked = rows.reduce<string | undefined>((latest, r) => {
     if (!r.lastCheckedAt) return latest
@@ -155,14 +179,14 @@ export function LinkCheckerTool() {
     <Stack space={4}>
       <Stack space={2}>
         <Flex align="center" gap={3} wrap="wrap">
-          {broken.length > 0 && (
+          {activeBroken.length > 0 && (
             <Badge tone="critical" fontSize={1}>
-              {broken.length} broken
+              {activeBroken.length} broken
             </Badge>
           )}
-          {blocked.length > 0 && (
+          {activeBlocked.length > 0 && (
             <Badge tone="caution" fontSize={1}>
-              {blocked.length} possibly blocked
+              {activeBlocked.length} possibly blocked
             </Badge>
           )}
           <Button
@@ -183,7 +207,9 @@ export function LinkCheckerTool() {
           actually gone. A link that briefly fails gets one automatic retry before it&rsquo;s ever recorded
           as broken, so a server having one bad second doesn&rsquo;t get flagged. Hover any status badge for
           what it means. Removed or changed a link and don&rsquo;t want to wait for tomorrow&rsquo;s
-          automatic check? Click Check now to refresh immediately.
+          automatic check? Click Check now to refresh immediately. A broken or possibly-blocked link can be
+          marked Ignored if it&rsquo;s not actually worth fixing (a check that stays there, dismissed, not
+          removed) -- the count above only reflects what&rsquo;s still Pending.
           {lastChecked && ` Last checked ${new Date(lastChecked).toLocaleString()}.`}
         </Text>
         {checkError && <ErrorMessage>{checkError}</ErrorMessage>}
@@ -252,6 +278,20 @@ export function LinkCheckerTool() {
                               <Badge tone="positive" fontSize={0}>
                                 {row.statusCode ? `HTTP ${row.statusCode}` : 'ok'}
                               </Badge>
+                            )}
+                            {(key === 'broken' || key === 'blocked') && (
+                              <Select
+                                value={row.status ?? 'pending'}
+                                disabled={busyId === row._id}
+                                fontSize={0}
+                                padding={2}
+                                onChange={(event) => setRowStatus(row._id, event.currentTarget.value as DismissStatus)}
+                                style={{width: 110}}
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="ignored">Ignored</option>
+                                <option value="actioned">Actioned</option>
+                              </Select>
                             )}
                           </Flex>
                         </Flex>

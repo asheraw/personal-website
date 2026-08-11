@@ -70,6 +70,25 @@ export const linkCheckType = defineType({
       readOnly: true,
       description: 'When this URL first failed a check -- cleared automatically the next time it passes.',
     }),
+    // Added 2026-08-11 -- this tool had no dismiss mechanism at all (unlike
+    // 404 Hits/Error Log/Search Queries), which was the real reason Asher
+    // kept seeing the same flagged links with no way to say "I know, this
+    // one's fine." Same pending/ignored/actioned pattern as those. Set via
+    // LinkCheckerTool.tsx's own status control, not this field directly --
+    // it's still writable here (not readOnly) since Studio's default form
+    // is a reasonable fallback if the tool is ever unavailable.
+    //
+    // Preserved explicitly across every re-check in linkChecker.ts's
+    // createOrReplace -- that call rewrites this whole document on every
+    // run (daily cron + "Check now"), so without carrying `status` forward
+    // by hand it would silently reset to undefined the next time the
+    // checker ran, even though the URL itself never changed.
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      options: {list: [{title: 'Pending', value: 'pending'}, {title: 'Ignored', value: 'ignored'}, {title: 'Actioned', value: 'actioned'}]},
+    }),
   ],
   orderings: [
     {

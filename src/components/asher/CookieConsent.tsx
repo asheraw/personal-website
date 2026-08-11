@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import { Button } from "@/components/ui/button";
 import { client } from "@/sanity/lib/client";
 import { getConsent, setConsent } from "@/lib/consent";
@@ -15,7 +14,10 @@ const SHOW_DELAY_MS = 10_000;
 
 type Variant = {
   _key: string;
-  body: unknown[];
+  text: string;
+  linkText?: string;
+  linkHref?: string;
+  afterLink?: string;
   declineLabel: string;
   acceptLabel: string;
   showTasteLink?: boolean;
@@ -31,35 +33,9 @@ type Variant = {
 // and analytics consent never gets asked at all.
 const FALLBACK_VARIANT: Variant = {
   _key: "fallback",
-  body: [
-    {
-      _type: "block",
-      style: "normal",
-      children: [{ _type: "span", text: "This site uses cookies to understand how it's used. Analytics only load if you say yes." }],
-    },
-  ],
+  text: "This site uses cookies to understand how it's used. Analytics only load if you say yes.",
   declineLabel: "Decline",
   acceptLabel: "Accept",
-};
-
-const bannerBodyComponents: PortableTextComponents = {
-  block: {
-    normal: ({ children }) => <span>{children}</span>,
-  },
-  marks: {
-    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-    em: ({ children }) => <em className="italic">{children}</em>,
-    link: ({ value, children }) => (
-      <a
-        href={(value?.href as string) ?? "#"}
-        className="underline underline-offset-2 hover:no-underline"
-        target={/^https?:\/\//.test((value?.href as string) ?? "") ? "_blank" : undefined}
-        rel="noreferrer"
-      >
-        {children}
-      </a>
-    ),
-  },
 };
 
 function useBannerVariant(): Variant | null {
@@ -141,7 +117,23 @@ export function CookieConsent() {
         >
           <div className="mx-auto flex max-w-3xl flex-col items-start gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground">
-              <PortableText value={variant.body as never} components={bannerBodyComponents} />
+              <span>
+                {variant.text}
+                {variant.linkText && variant.linkHref && (
+                  <>
+                    {" "}
+                    <a
+                      href={variant.linkHref}
+                      className="underline underline-offset-2 hover:no-underline"
+                      target={/^https?:\/\//.test(variant.linkHref) ? "_blank" : undefined}
+                      rel="noreferrer"
+                    >
+                      {variant.linkText}
+                    </a>
+                  </>
+                )}
+                {variant.afterLink}
+              </span>
               {variant.showTasteLink && (
                 <button
                   type="button"

@@ -150,9 +150,9 @@ export async function runLinkCheck(): Promise<{checked: number; broken: number}>
   const links = await collectLinks()
   const now = new Date().toISOString()
 
-  const existingDocs = await writeClient.fetch<{_id: string; url: string; ok?: boolean; brokenSince?: string}[]>(
-    `*[_type == "linkCheck"]{_id, url, ok, brokenSince}`,
-  )
+  const existingDocs = await writeClient.fetch<
+    {_id: string; url: string; ok?: boolean; brokenSince?: string; status?: string}[]
+  >(`*[_type == "linkCheck"]{_id, url, ok, brokenSince, status}`)
   const existingByUrl = new Map(existingDocs.map((d) => [d.url, d]))
   const currentUrls = new Set(links.map((l) => l.url))
 
@@ -180,6 +180,10 @@ export async function runLinkCheck(): Promise<{checked: number; broken: number}>
       blocked: result.blocked,
       lastCheckedAt: now,
       ...(brokenSince ? {brokenSince} : {}),
+      // Carried forward, not recomputed -- this call replaces the whole
+      // document on every run, so a dismissed link would silently reset to
+      // "pending" on the very next check without this.
+      ...(prev?.status ? {status: prev.status} : {}),
     })
   }
 

@@ -55,35 +55,31 @@ type DashboardData = {
 // registered `name` from sanity.config.ts directly -- a different,
 // simpler mechanism (name-based routing, not pane-stack topology), not
 // the kind of guess that broke the old "open post" links (see RUNBOOK.md).
-// notFoundHits/errorLog/searchQueries/cookieInsights all live one level
-// deeper than contactSubmissions -- Site Admin -> Logs -> the item itself
-// -- since those four got grouped into their own "Logs" folder
-// (2026-08-11, Asher's own suggestion: they're all the same kind of thing,
-// an event log with a pending/ignored/actioned status, unlike Contact
-// Submissions/Export/Bulk Operations). cookieInsights itself is a folder
-// now too (Insights + Banner Copy merged together, also Asher's own ask),
-// so this points specifically at its "Insights" child, one level deeper
-// still.
+// notFoundHits/errorLog/searchQueries/cookies are all direct Site Admin
+// children (briefly grouped one level deeper inside a "Logs" folder on
+// 2026-08-11, flattened back out the same day on Asher's own reversal --
+// "no need to put them too far in, you're right"). cookies points at the
+// single merged Insights+Copy+Feedback pane (also 2026-08-11, second pass).
 const LINKS = {
   comments: '/studio/comments',
   distribution: '/studio/distribution',
   calendar: '/studio/editorial-calendar',
   contentHealth: '/studio/content-health',
   contactSubmissions: '/studio/structure/siteAdmin;contactSubmissions',
-  notFoundHits: '/studio/structure/siteAdmin;logs;notFoundHits',
-  errorLog: '/studio/structure/siteAdmin;logs;errorLog',
-  searchQueries: '/studio/structure/siteAdmin;logs;searchQueries',
-  cookieInsights: '/studio/structure/siteAdmin;logs;cookieInsights;insights',
+  notFoundHits: '/studio/structure/siteAdmin;notFoundHits',
+  errorLog: '/studio/structure/siteAdmin;errorLog',
+  searchQueries: '/studio/structure/siteAdmin;searchQueries',
+  cookies: '/studio/structure/siteAdmin;cookies',
 }
 
 // Deliberately doesn't also fetch posts/aiOutputLog -- usePostIssueCounts
 // below covers those (audit issues + social-copy-needed both derive from
 // the same two lists, so they share one fetch rather than pulling the same
 // data twice across two hooks). Also deliberately doesn't compute a
-// per-variant breakdown here anymore -- that lives in CookieInsightsTool.tsx
-// now, which has real room for it; this card only needs the overall total.
+// per-variant breakdown here anymore -- that lives in CookiesTool.tsx now,
+// which has real room for it; this card only needs the overall total.
 const QUERY = `{
-  "linkIssues": count(*[_type == "linkCheck" && ok == false]),
+  "linkIssues": count(*[_type == "linkCheck" && ok == false && status != "ignored"]),
   "notFoundPending": count(*[_type == "notFoundHit" && (status == "pending" || !defined(status))]),
   "errorPending": count(*[_type == "errorLog" && (status == "pending" || !defined(status))]),
   "searchPending": count(*[_type == "searchQueryLog" && (status == "pending" || !defined(status))]),
@@ -318,7 +314,7 @@ export function DashboardTool() {
         <Stack space={3}>
           <SectionHeading>Stats</SectionHeading>
           <Grid columns={[1, 2, 3]} gap={3}>
-            <Card radius={3} shadow={1} padding={4} as="a" href={LINKS.cookieInsights}>
+            <Card radius={3} shadow={1} padding={4} as="a" href={LINKS.cookies}>
               <Flex align="center" gap={3}>
                 <ComponentIcon />
                 <Stack space={2}>
