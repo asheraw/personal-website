@@ -182,6 +182,21 @@ export const postType = defineType({
       description: 'Turn on to keep this post out of Google and other search results (it stays visible on your site).',
       initialValue: false,
     }),
+    // Which of Content Audit's four checks (image/alt text/excerpt/
+    // category) Asher has deliberately decided don't apply to this post --
+    // per-check, not a whole-post "ignore everything" toggle, on his own
+    // call (2026-08-11): a blanket dismissal risked quietly hiding a real
+    // problem alongside the one actually being dismissed. Hidden from the
+    // normal editor form -- this is only ever set via the "Dismiss" button
+    // on a flagged issue in Studio -> Content Health, which has the actual
+    // context (what's missing, why) that deciding this needs; it has no
+    // business cluttering the main 17-field post form.
+    defineField({
+      name: 'contentAuditDismissed',
+      type: 'array',
+      of: [defineArrayMember({type: 'string'})],
+      hidden: true,
+    }),
     defineField({
       name: 'commentsLocked',
       title: 'Lock comments',

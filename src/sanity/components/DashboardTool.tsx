@@ -92,6 +92,27 @@ const QUERY = `{
   "feedbackCount": count(*[_type == "cookieFeedback"])
 }`
 
+// Mirrors ContentAuditTool.tsx's own issuesFor() exactly, dismissed checks
+// included -- this count feeds the Dashboard's "Content Health issues"
+// card, and it needs to agree with what that tool actually shows, or the
+// two numbers silently drift apart the first time a check gets dismissed.
+function activeIssueCount(p: {
+  mainImage?: unknown
+  hasAltText: boolean
+  excerpt?: string
+  categories?: unknown[]
+  contentAuditDismissed?: string[]
+}): number {
+  const dismissed = new Set(p.contentAuditDismissed ?? [])
+  let count = 0
+  if (!p.mainImage) {
+    if (!dismissed.has('hasImage')) count++
+  } else if (!p.hasAltText && !dismissed.has('hasAltText')) count++
+  if (!p.excerpt && !dismissed.has('hasExcerpt')) count++
+  if (!p.categories?.length && !dismissed.has('hasCategory')) count++
+  return count
+}
+
 function usePostIssueCounts(): {auditIssues: number; socialNeeded: number} | null {
   const client = useClient({apiVersion: '2026-07-22'})
   const [result, setResult] = useState<{auditIssues: number; socialNeeded: number} | null>(null)
@@ -100,19 +121,24 @@ function usePostIssueCounts(): {auditIssues: number; socialNeeded: number} | nul
     let cancelled = false
     client
       .fetch<{
-        posts: {_id: string; mainImage?: unknown; hasAltText: boolean; excerpt?: string; categories?: unknown[]}[]
+        posts: {
+          _id: string
+          mainImage?: unknown
+          hasAltText: boolean
+          excerpt?: string
+          categories?: unknown[]
+          contentAuditDismissed?: string[]
+        }[]
         socialDraftedSlugs: string[]
       }>(`{
         "posts": *[_type == "post" && defined(slug.current)]{
-          _id, mainImage, "hasAltText": defined(coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)), excerpt, categories
+          _id, mainImage, "hasAltText": defined(coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)), excerpt, categories, contentAuditDismissed
         },
         "socialDraftedSlugs": *[_type == "aiOutputLog" && feature == "social"].postSlug
       }`)
       .then(({posts, socialDraftedSlugs}) => {
         if (cancelled) return
-        const auditIssues = posts.filter(
-          (p) => !p.mainImage || !p.hasAltText || !p.excerpt || !p.categories?.length,
-        ).length
+        const auditIssues = posts.filter((p) => activeIssueCount(p) > 0).length
         const socialNeeded = posts.length - new Set(socialDraftedSlugs).size
         setResult({auditIssues, socialNeeded: Math.max(0, socialNeeded)})
       })
