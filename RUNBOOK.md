@@ -2598,7 +2598,7 @@ event would silently vanish every single time.
 
 ---
 
-## Cookie banner: delay, 7-day re-prompt, copy variants (shipped 2026-08-11)
+## Cookie banner: delay, 7-day re-prompt, editable copy variants (shipped 2026-08-11)
 
 **`src/lib/consent.ts`** — storage format changed from a bare `"granted"`/`"denied"` string in `localStorage`
 to JSON: `{status, timestamp}`. `getConsent()` now treats a stored choice as expired (returns `"unset"`,
@@ -2616,31 +2616,44 @@ single tab they open (reads as nagging) and made the accept/decline count reflec
 `visible` flips true (re-checks `getConsent()` when the timer fires, not just trusting the closure, in case
 consent changed via another tab during the wait). Previously showed on mount with zero delay.
 
-**Three banner copies in `VARIANTS`**, one picked at random (`Math.floor(Math.random() * VARIANTS.length)`)
-each time the banner is about to show — not stuck to one variant per visitor, re-rolled on every prompt
-including 7-day re-prompts. `current` and `formal` are real prior copy: `formal` is pulled verbatim from
-git history (`git show 25b350c...CookieConsent.tsx`, the version right before it was replaced), not
-reconstructed from memory. `cookieTasting` is new, paired with a "Tell me how it tasted" link that opens
-`CookieTasteFeedback.tsx`. Button labels change per variant too (`declineLabel`/`acceptLabel` on each
-`Variant`), not just the paragraph — the underlying `setConsent()`/tracking logic is identical regardless
-of which copy or labels were shown.
+**Banner copy is editable Studio content, not hardcoded JSX** — Studio → Site Settings section → **Cookie
+Banner Copy** (singleton, `cookieBannerCopyType.ts`, `_id: "cookieBannerCopy"`). Shipped hardcoded first,
+then moved out same day once Asher asked to be able to edit wording (or add/remove variants entirely)
+without a code change each time. `variants[]` is a normal Sanity array of `bannerVariant` objects: `label`
+(Studio-only, never shown to visitors), `body` (restricted Portable Text — bold/italic/link only, no
+headings/lists, matching the same "smallest sensible toolbar" precedent `blockContentType.ts`'s accordion
+content field already set), `declineLabel`/`acceptLabel`, `showTasteLink`. `CookieConsent.tsx` fetches
+`*[_type == "cookieBannerCopy"][0]{variants}` client-side on mount (first-ever client-side Sanity read
+anywhere in this codebase — see the CSP note below), picks one at random each time the banner is about to
+show (`Math.floor(Math.random() * variants.length)`, not stuck to one per visitor, re-rolled on every
+prompt including 7-day re-prompts), and renders that item's `body` through a small restricted
+`PortableTextComponents` config local to the file. The tracked `variant` sent to `/api/track-consent` is
+that array item's own Sanity `_key` — since variants are now dynamic, `/api/track-consent/route.ts` can't
+validate against a fixed enum of known ids anymore; it just checks the value looks like a real key
+(`/^[a-zA-Z0-9_-]{1,40}$/`) before storing it.
+
+**`FALLBACK_VARIANT`** (hardcoded, in `CookieConsent.tsx`) is used only if the Sanity fetch fails, or the
+document has zero variants (e.g. a fresh dataset before it's been seeded) — a real network hiccup shouldn't
+mean the banner (and analytics consent) silently never appears again. Seeded via a one-off script
+(deleted after running, not kept in `scripts/`) with the three variants that were live before this change,
+so nothing visibly changed for visitors at the moment of deploy.
 
 **No automatic winner-picking, by design** — Asher's own call, given how few data points a variant can
 realistically collect at this traffic level; an automated switch would flip on noise. Reviewed by hand
-instead: the Dashboard's "Cookie copy experiment" card (`DashboardTool.tsx`) shows a live per-variant
-accept/decline breakdown, computed via GROQ counting the `consentLog` singleton's own `entries[]` array
-filtered by `variant` — e.g. `count(*[_id == "consentLog"][0].entries[variant == "current" && choice ==
-"accepted"])`. Only entries logged from 2026-08-11 onward carry a `variant` at all (added to
-`consentLogType.ts`'s `entries[]` object shape that day), so these breakdowns naturally exclude everything
-recorded before the experiment started rather than showing misleading zeros for old data.
+instead, in Studio → Site Admin → **Logs → Cookie Insights** (see below) — a live per-variant accept/decline
+breakdown, grouped **client-side** from the raw `consentLog.entries[]` array rather than hardcoded GROQ
+`count()` queries per id, specifically because variants can now be added/removed/renamed at any time; a
+fixed-id breakdown would silently go stale the first time Asher edited the variant list. An entry whose
+`variant` key doesn't match any *currently existing* variant (one that's since been deleted, or the literal
+`"fallback"` id) still shows up, labeled honestly ("Deleted variant (...)" / "Fallback") rather than
+silently dropped. Only entries logged from 2026-08-11 onward carry a `variant` at all.
 
 **`src/components/asher/CookieTasteFeedback.tsx`** — a fully anonymous reaction form (no name/email/IP
 field exists anywhere in `cookieFeedbackType.ts`), three categories (colours/taste/texture, mapped via a
 hint line to real feedback on visual design/writing/UX) each rated 1-4 via emoji buttons, plus an optional
 comment. Posts to **`/api/track-cookie-feedback`**, one document per submission (`cookieFeedback` type,
-`liveEdit: true`, browsable in Studio → Site Admin → Cookie Taste Feedback, ordered newest-first) — a
-different shape from `consentLog`'s single running-tally singleton, since each response's free-text comment
-has standalone value worth browsing individually, not just aggregating.
+`liveEdit: true`) — a different shape from `consentLog`'s single running-tally singleton, since each
+response's free-text comment has standalone value worth browsing individually, not just aggregating.
 
 **Real bug found and fixed during testing, not shipped blind**: the first version of `CookieTasteFeedback`
 was another `fixed inset-x-0 bottom-0` bar, same positioning as the consent banner itself. Opening it
@@ -2651,15 +2664,59 @@ waiting for the (covered) button. Rebuilt as a centered modal with its own backd
 collide with a bottom-anchored bar regardless of either element's height. Auto-closes 2.5s after a
 successful submit, so a visitor doesn't have to remember to close it to get back to Accept/Decline.
 
+**Second real bug, also caught by testing rather than shipped blind: a CSP block.** Once banner copy moved
+to a client-side Sanity fetch, every attempt was silently blocked by the site's Content-Security-Policy
+`connect-src` directive (`next.config.ts`) — the fetch goes through Sanity's CDN read endpoint
+(`*.apicdn.sanity.io`), a genuinely different hostname from `*.api.sanity.io`, which was already allowlisted
+for `<SanityLive>`'s unrelated real-time connection but doesn't cover the CDN subdomain at all. This is the
+*first* client-side Sanity read anywhere in this codebase, so nothing had hit this gap before. Fixed by
+adding `https://*.apicdn.sanity.io` to `connect-src`. Caught locally as a CSP violation in the browser
+console; after the fix, local testing still showed a CORS failure on the same request — but that's this
+project's already-understood "Sanity's CORS origins are configured for the real domain, not localhost"
+limitation (`<SanityLive>` hits the identical wall locally, documented earlier in this same file), not a
+new problem — confirmed by testing directly against the deployed production domain, where the real fetch
+succeeded and rendered live Sanity content (visible from the real Privacy Policy link resolving, not the
+fallback text).
+
 **Verification**: built a real Playwright suite against the production build with `Math.random` mocked per
-run to force each of the three variants deterministically — confirmed no banner before the 10s mark, correct
-copy per variant after it, the tracking POST body carrying the right `variant` string, the new
-`{status, timestamp}` localStorage shape, an 8-day-old stored choice re-showing the banner, a legacy plain-string
-value also re-showing it, and a fresh choice staying hidden. Also ran the same checks against the real
-deployed production domain post-launch, not just the local build. Every test run wrote real entries to the
-live `consentLog`/`cookieFeedback` documents (this site's tracking routes don't distinguish test traffic
-from real traffic, by design — same as everywhere else) — all test-generated entries were identified by
-their known `_key`s/content and removed afterward, leaving only genuine visitor data.
+run to force specific variants deterministically — confirmed no banner before the 10s mark, correct copy
+after it, the tracking POST body carrying the right `variant` key, the new `{status, timestamp}` localStorage
+shape, an 8-day-old stored choice re-showing the banner, a legacy plain-string value also re-showing it, and
+a fresh choice staying hidden. Ran the same checks again against the real deployed production domain after
+each deploy, not just the local build, specifically to catch the CSP/CORS class of issue above that only
+a real domain can confirm. Every test run wrote real entries to the live `consentLog`/`cookieFeedback`
+documents (this site's tracking routes don't distinguish test traffic from real traffic, by design — same
+as everywhere else) — all test-generated entries were identified by their known `_key`s/content/recency and
+removed afterward, leaving only genuine visitor data.
+
+---
+
+## Cookie Insights: merged consent + feedback, grouped into a new Logs folder (shipped 2026-08-11)
+
+**`src/sanity/components/CookieInsightsTool.tsx`** replaces two separate Site Admin entries (Cookie Consent
+Log, Cookie Taste Feedback) with one tabbed tool, same `Tab`/`TabList`/`TabPanel` pattern
+`ContentHealthTool.tsx` already established for Content Audit + Link Checker. Asked for directly: the
+default Sanity array-field editor for `consentLog.entries[]` renders every single accept/decline as its own
+expandable row, which "is not helpful the longer it gets." The **Consent** tab shows aggregate numbers
+instead — total accepted/declined, accept rate, and the per-variant breakdown described above — never the
+raw entries list. The **Feedback** tab shows average colours/taste/texture scores plus the 30 most recent
+submissions with their comments (capped, for the same "don't let a list become unreadable" reason).
+
+**Grouped with Search Queries into a new "Logs" folder** inside Site Admin (`structure.tsx`,
+`.id('logs')`) — Asher's own suggestion, on the reasoning that these are passive records to review, not
+action queues like 404 Hits/Contact Submissions/Error Log (which all support marking something
+pending/ignored/actioned). **He also asked, more generally, to check for an existing logical container
+before adding a new standalone Studio entry going forward** — worth remembering for any future addition,
+not just this one.
+
+**Content Health was considered for the same Logs folder and deliberately left out.** It's a different kind
+of thing from the other two: an active check you run and act on, not a passive record — and it's in the top
+nav specifically because it was placed there for one-click daily access (see "Studio top nav" cleanup notes
+elsewhere in this file). Real feedback surfaced in the same conversation, though: Asher doesn't actually use
+it often, because `ContentAuditTool.tsx` has **no dismiss mechanism at all** — unlike 404 Hits/Error
+Log/Search Queries, a flagged post has no "mark as ignored, this is fine" option, so the same ~16 issues
+just sit there indefinitely whether or not they're real problems. Queued as a follow-up, scope still to be
+decided (per-post dismissal vs. per-individual-check dismissal changes what gets built).
 
 ---
 

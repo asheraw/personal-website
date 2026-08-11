@@ -11,6 +11,35 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-11 — Cookie tools merged, banner copy made editable in Studio
+
+Follow-up to the cookie banner work shipped earlier the same day. Asher flagged that the raw "Recent
+choices" list in Cookie Consent Log — every single accept/decline shown as its own row — stops being useful
+once it grows, and asked to merge it with Cookie Taste Feedback into one place instead of two separate
+sidebar entries. He also suggested grouping Search Queries in with them under a shared "Logs" section, and
+asked more generally: before adding new things to Studio going forward, check for an existing logical home
+first rather than bolting on another standalone entry.
+
+Merged into one **Cookie Insights** tool — aggregate totals and a per-variant breakdown instead of a
+growing row-by-row list, plus the feedback submissions with their averages. Grouped it with Search Queries
+into a new **Logs** folder inside Site Admin. Separately asked whether Content Health belonged in that same
+folder too — kept it where it is (top nav) for now, since it's an active check you run and act on, not a
+passive record like the other two, and it was deliberately placed there for one-click daily access. That
+led to real feedback, though: he doesn't actually use Content Health often, because its 16 flagged "issues"
+aren't real problems and there's no way to dismiss or act on any of them (unlike 404 Hits/Error Log/Search
+Queries, which all support marking something as ignored). Queued as a follow-up rather than folded into this
+same batch.
+
+Also asked to see the banner's copy variants and make them editable — they were hardcoded in the component,
+meaning any wording tweak needed a code change. Moved them into a new **Cookie Banner Copy** document in
+Studio: real rich text (bold/italic/links), and variants can now be added or removed entirely from Studio,
+not just edited. Seeded with the three variants that were already live so nothing changed for visitors.
+
+Found a real bug while verifying this against the actual production domain: the site's security headers
+(CSP) blocked the one new thing this shipped — a cookie banner reading its own copy from Sanity, from the
+visitor's browser — because that read goes through a different Sanity address than the one already
+allowed. Fixed, and confirmed working against the live site afterward, not just locally.
+
 ## 2026-08-11 — Cookie banner: a delay, a 7-day re-prompt, and a copy experiment
 
 Asher asked how the cookie banner actually behaves — how often it re-appears after someone declines, and
