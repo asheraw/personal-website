@@ -10,7 +10,6 @@ import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
 import {LinkRemovedIcon} from '@sanity/icons/LinkRemoved'
 import {BugIcon} from '@sanity/icons/Bug'
 import {SearchIcon} from '@sanity/icons/Search'
-import {TrendUpwardIcon} from '@sanity/icons/TrendUpward'
 import {ComponentIcon} from '@sanity/icons/Component'
 import {usePendingCommentCount} from '../hooks/usePendingCommentCount'
 import {usePendingContactCount} from '../hooks/usePendingContactCount'
@@ -31,7 +30,9 @@ import {openDocumentInStudio} from '../lib/openPostInStudio'
 // server-side GA integration today (checked -- no @google-analytics/data
 // dependency, no service-account env vars), and wiring one up is a real
 // new integration (Google Cloud service account, new credentials), not a
-// dashboard-layout decision. Left as a plain note instead of a fake stat.
+// dashboard-layout decision. Asher confirmed (2026-08-11) he's not pursuing
+// it for now, so there's no placeholder card here either -- just this note,
+// in case it comes up again later.
 
 type DashboardData = {
   linkIssues: number
@@ -336,14 +337,6 @@ export function DashboardTool() {
               tone="default"
               href={LINKS.searchQueries}
             />
-            <Card radius={3} shadow={1} padding={4} tone="transparent">
-              <Flex align="center" gap={3}>
-                <TrendUpwardIcon />
-                <Text size={1} muted>
-                  Traffic (Google Analytics) — not connected. Ask to set this up if you want it here.
-                </Text>
-              </Flex>
-            </Card>
           </Grid>
         </Stack>
       </Stack>
