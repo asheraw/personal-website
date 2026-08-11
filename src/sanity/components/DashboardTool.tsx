@@ -79,7 +79,7 @@ const LINKS = {
 // per-variant breakdown here anymore -- that lives in CookiesTool.tsx now,
 // which has real room for it; this card only needs the overall total.
 const QUERY = `{
-  "linkIssues": count(*[_type == "linkCheck" && ok == false && status != "ignored"]),
+  "linkIssues": count(*[_type == "linkCheck" && ok == false && (status == "pending" || !defined(status))]),
   "notFoundPending": count(*[_type == "notFoundHit" && (status == "pending" || !defined(status))]),
   "errorPending": count(*[_type == "errorLog" && (status == "pending" || !defined(status))]),
   "searchPending": count(*[_type == "searchQueryLog" && (status == "pending" || !defined(status))]),

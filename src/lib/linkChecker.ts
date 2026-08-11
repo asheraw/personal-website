@@ -9,6 +9,13 @@ type LinkEntry = {url: string; isAffiliate: boolean; sources: Source[]}
 const CHECK_TIMEOUT_MS = 8000
 const CONCURRENCY = 6
 
+// Matches the hardcoded convention already used in rss.ts/sitemap.ts -- no
+// env var for this anywhere in the codebase, so not introducing one here.
+const SITE_URL = 'https://asheraw.com'
+
+// Routes that always exist and never need checking against Sanity data.
+const STATIC_INTERNAL_PATHS = new Set(['/', '/blog', '/link', '/connect', '/privacy'])
+
 // Deterministic, dependency-free short hash -- same URL always maps to the
 // same document id, so re-running the checker upserts instead of piling up
 // duplicate documents for a link that hasn't changed.
@@ -85,6 +92,108 @@ const BOT_BLOCK_STATUS_CODES = new Set([401, 403, 429, 500])
 
 type CheckResult = {ok: boolean; statusCode?: number; error?: string; blocked: boolean}
 
+type InternalTargets = {
+  postSlugs: Set<string>
+  categorySlugs: Set<string>
+  authorSlugs: Set<string>
+  tags: Set<string>
+  redirectFroms: Set<string>
+}
+
+/**
+ * What this site's own internal links can point at, fetched once per run so
+ * every asheraw.com URL can be validated against real Sanity data instead
+ * of a live HTTP request (see checkInternalUrl below for why).
+ *
+ * `redirectFroms` matters as much as the slug sets -- a link to an old post
+ * slug that now 301s to the current one (via Studio -> Site Admin ->
+ * Redirects, read by middleware.ts) is a working link, not a broken one.
+ * Caught by testing directly: `/blog/how-i-lost-my-writing-home-for-13-years`
+ * doesn't match any current post slug, but a real visitor following it
+ * lands on a real page, because a redirect exists for exactly that path.
+ * Trusted at one level -- a redirect's own `to` destination isn't itself
+ * re-verified here -- matching the same shallow trust middleware.ts already
+ * gives every redirect.
+ */
+async function fetchInternalTargets(): Promise<InternalTargets> {
+  const data = await writeClient.fetch<{
+    postSlugs: string[]
+    categorySlugs: string[]
+    authorSlugs: string[]
+    tags: string[]
+    redirectFroms: string[]
+  }>(`{
+    "postSlugs": *[_type == "post" && defined(slug.current)].slug.current,
+    "categorySlugs": *[_type == "category" && defined(slug.current)].slug.current,
+    "authorSlugs": *[_type == "author" && defined(slug.current)].slug.current,
+    "tags": array::unique(*[_type == "post"].tags[]),
+    "redirectFroms": *[_type == "redirect" && defined(from)].from
+  }`)
+  return {
+    postSlugs: new Set(data.postSlugs),
+    categorySlugs: new Set(data.categorySlugs),
+    authorSlugs: new Set(data.authorSlugs),
+    tags: new Set(data.tags),
+    redirectFroms: new Set(data.redirectFroms),
+  }
+}
+
+// Links to this site's own domain don't need a live fetch -- the target
+// either exists in Sanity or it doesn't, and checking that is exactly what
+// a network round trip is a slow, fragile proxy for. Confirmed as the real
+// cause of asheraw.com's own pages showing "possibly blocked": the same
+// URLs return a clean 200 from any other network, but Vercel's own
+// system-level bot/DDoS mitigation flags this checker's serverless
+// function calling back into its own production domain as suspicious
+// traffic (401/403), the same class of false positive already documented
+// above for webmd.com's IP-reputation block on outside domains -- just
+// happening on the site's own infrastructure this time. Returns null for
+// anything not on this domain, or an internal path shape not recognized
+// below, so the caller falls back to a real fetch rather than silently
+// skipping something it doesn't understand.
+function checkInternalUrl(url: string, targets: InternalTargets): CheckResult | null {
+  if (!url.startsWith(SITE_URL)) return null
+  let pathname: string
+  try {
+    pathname = new URL(url).pathname.replace(/\/+$/, '') || '/'
+  } catch {
+    return null
+  }
+
+  if (STATIC_INTERNAL_PATHS.has(pathname)) return {ok: true, blocked: false}
+
+  // Checked before any specific route shape, matching middleware.ts's own
+  // exact-pathname lookup -- a redirect can exist for any old path, not
+  // just old post slugs.
+  if (targets.redirectFroms.has(pathname)) return {ok: true, blocked: false}
+
+  const postMatch = pathname.match(/^\/blog\/([^/]+)$/)
+  if (postMatch) {
+    const ok = targets.postSlugs.has(decodeURIComponent(postMatch[1]))
+    return {ok, blocked: false, error: ok ? undefined : 'No post with this slug exists anymore'}
+  }
+
+  const categoryMatch = pathname.match(/^\/blog\/category\/([^/]+)$/)
+  if (categoryMatch) {
+    const ok = targets.categorySlugs.has(decodeURIComponent(categoryMatch[1]))
+    return {ok, blocked: false, error: ok ? undefined : 'No category with this slug exists anymore'}
+  }
+
+  const authorMatch = pathname.match(/^\/blog\/author\/([^/]+)$/)
+  if (authorMatch) {
+    const ok = targets.authorSlugs.has(decodeURIComponent(authorMatch[1]))
+    return {ok, blocked: false, error: ok ? undefined : 'No author with this slug exists anymore'}
+  }
+
+  const tagMatch = pathname.match(/^\/blog\/tag\/([^/]+)$/)
+  if (tagMatch) {
+    const ok = targets.tags.has(decodeURIComponent(tagMatch[1]))
+    return {ok, blocked: false, error: ok ? undefined : 'No post currently has this tag'}
+  }
+
+  return null
+}
+
 // A one-off transient hiccup -- a server having a bad second, a dropped
 // connection -- shouldn't get permanently reported as "broken" from a
 // single unlucky request. Confirmed as a real problem, not a hypothetical
@@ -147,7 +256,7 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
  * (/api/check-links) and the daily cron (/api/cron/check-links).
  */
 export async function runLinkCheck(): Promise<{checked: number; broken: number}> {
-  const links = await collectLinks()
+  const [links, internalTargets] = await Promise.all([collectLinks(), fetchInternalTargets()])
   const now = new Date().toISOString()
 
   const existingDocs = await writeClient.fetch<
@@ -157,7 +266,7 @@ export async function runLinkCheck(): Promise<{checked: number; broken: number}>
   const currentUrls = new Set(links.map((l) => l.url))
 
   const results = await mapWithConcurrency(links, CONCURRENCY, async (link) => {
-    const result = await checkUrl(link.url)
+    const result = checkInternalUrl(link.url, internalTargets) ?? (await checkUrl(link.url))
     return {link, result}
   })
 

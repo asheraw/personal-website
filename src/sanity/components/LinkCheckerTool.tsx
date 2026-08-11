@@ -89,6 +89,7 @@ export function LinkCheckerTool() {
   const [checking, setChecking] = useState(false)
   const [checkError, setCheckError] = useState('')
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set(['broken', 'blocked', 'affiliate']))
+  const [dismissedOpen, setDismissedOpen] = useState<Set<SectionKey>>(new Set())
   const [busyId, setBusyId] = useState<string | null>(null)
 
   const load = useCallback(() => {
@@ -148,6 +149,15 @@ export function LinkCheckerTool() {
     })
   }
 
+  function toggleDismissed(key: SectionKey) {
+    setDismissedOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   if (!rows) {
     return (
       <Flex align="center" justify="center" padding={6}>
@@ -167,8 +177,9 @@ export function LinkCheckerTool() {
   const affiliate = rows.filter((r) => r.ok !== false && r.isAffiliate)
   const healthy = rows.filter((r) => r.ok !== false && !r.isAffiliate)
   const byKey: Record<SectionKey, LinkCheckRow[]> = {broken, blocked, affiliate, healthy}
-  const activeBroken = broken.filter((r) => r.status !== 'ignored')
-  const activeBlocked = blocked.filter((r) => r.status !== 'ignored')
+  const isPending = (r: LinkCheckRow) => (r.status ?? 'pending') === 'pending'
+  const activeBroken = broken.filter(isPending)
+  const activeBlocked = blocked.filter(isPending)
 
   const lastChecked = rows.reduce<string | undefined>((latest, r) => {
     if (!r.lastCheckedAt) return latest
@@ -205,11 +216,14 @@ export function LinkCheckerTool() {
           Blocked&rdquo; instead of Broken -- those codes usually mean a site is refusing an automated
           check specifically (Instagram does this to almost all non-browser traffic), not that the page is
           actually gone. A link that briefly fails gets one automatic retry before it&rsquo;s ever recorded
-          as broken, so a server having one bad second doesn&rsquo;t get flagged. Hover any status badge for
+          as broken, so a server having one bad second doesn&rsquo;t get flagged. Links to this site&rsquo;s
+          own pages are checked against what&rsquo;s actually in Sanity instead of a live request, so
+          Vercel&rsquo;s own bot protection can&rsquo;t flag them by mistake. Hover any status badge for
           what it means. Removed or changed a link and don&rsquo;t want to wait for tomorrow&rsquo;s
           automatic check? Click Check now to refresh immediately. A broken or possibly-blocked link can be
-          marked Ignored if it&rsquo;s not actually worth fixing (a check that stays there, dismissed, not
-          removed) -- the count above only reflects what&rsquo;s still Pending.
+          marked Ignored or Actioned if it&rsquo;s handled or not actually worth fixing -- it moves into
+          that section&rsquo;s &ldquo;Show dismissed&rdquo; list, reversible any time, and stops counting
+          toward the numbers above.
           {lastChecked && ` Last checked ${new Date(lastChecked).toLocaleString()}.`}
         </Text>
         {checkError && <ErrorMessage>{checkError}</ErrorMessage>}
@@ -224,7 +238,20 @@ export function LinkCheckerTool() {
       {rows.length > 0 &&
         SECTIONS.map(({key, title, emptyLabel, badgeTone}) => {
           const sectionRows = byKey[key]
+          const hasDismissal = key === 'broken' || key === 'blocked'
+          // Ignored/actioned rows move out of the visible list into a
+          // separate collapsed area (2026-08-11) -- the first version left
+          // dismissed rows sitting right where they were, with only the
+          // top summary badge reflecting the dismissal. Asher marked two
+          // rows Ignored and reported "nothing happens," reasonably, since
+          // the section's own count and the row itself never changed.
+          // Matches the pattern ContentAuditTool already established (and
+          // Asher already approved): active rows visible by default,
+          // dismissed ones tucked behind a "Show dismissed" toggle.
+          const activeRows = hasDismissal ? sectionRows.filter(isPending) : sectionRows
+          const dismissedRows = hasDismissal ? sectionRows.filter((r) => !isPending(r)) : []
           const isOpen = openSections.has(key)
+          const isDismissedOpen = dismissedOpen.has(key)
           return (
             <Stack key={key} space={3}>
               <Flex align="center" gap={2} style={{cursor: 'pointer'}} onClick={() => toggleSection(key)}>
@@ -232,107 +259,151 @@ export function LinkCheckerTool() {
                 <Text size={2} weight="semibold">
                   {title}
                 </Text>
-                <Badge tone={sectionRows.length > 0 ? badgeTone : 'default'} fontSize={0}>
-                  {sectionRows.length}
+                <Badge tone={activeRows.length > 0 ? badgeTone : 'default'} fontSize={0}>
+                  {activeRows.length}
                 </Badge>
               </Flex>
               {isOpen && (
                 <Stack space={3} paddingLeft={1}>
-                  {sectionRows.length === 0 && (
+                  {activeRows.length === 0 && dismissedRows.length === 0 && (
                     <Text size={1} muted>
                       {emptyLabel}
                     </Text>
                   )}
-                  {sectionRows.map((row) => (
-                    <Card key={row._id} padding={3} radius={2} border tone={cardTone(row)}>
-                      <Stack space={2}>
-                        <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
-                          <Text
-                            size={1}
-                            weight="medium"
-                            style={{fontFamily: 'monospace', wordBreak: 'break-all'}}
-                          >
-                            {row.url}
-                          </Text>
-                          <Flex align="center" gap={2}>
-                            {row.isAffiliate && (
-                              <Badge tone="primary" fontSize={0}>
-                                affiliate
-                              </Badge>
-                            )}
-                            {row.ok === false ? (
-                              <Tooltip
-                                content={
-                                  <Text size={1} style={{maxWidth: 240}}>
-                                    {statusMeaning(row.statusCode, row.error)}
-                                  </Text>
-                                }
-                                padding={2}
-                                placement="top"
-                              >
-                                <Badge tone={row.blocked ? 'caution' : 'critical'} fontSize={0} style={{cursor: 'help'}}>
-                                  {row.statusCode ? `HTTP ${row.statusCode}` : row.error || 'broken'}
-                                </Badge>
-                              </Tooltip>
-                            ) : (
-                              <Badge tone="positive" fontSize={0}>
-                                {row.statusCode ? `HTTP ${row.statusCode}` : 'ok'}
-                              </Badge>
-                            )}
-                            {(key === 'broken' || key === 'blocked') && (
-                              <Select
-                                value={row.status ?? 'pending'}
-                                disabled={busyId === row._id}
-                                fontSize={0}
-                                padding={2}
-                                onChange={(event) => setRowStatus(row._id, event.currentTarget.value as DismissStatus)}
-                                style={{width: 110}}
-                              >
-                                <option value="pending">Pending</option>
-                                <option value="ignored">Ignored</option>
-                                <option value="actioned">Actioned</option>
-                              </Select>
-                            )}
-                          </Flex>
-                        </Flex>
-                        <Flex gap={2} wrap="wrap" align="center">
-                          {row.sources.length === 0 && (
-                            <Text size={0} muted>
-                              No longer referenced
-                            </Text>
-                          )}
-                          {row.sources.map((source, i) => (
-                            <Flex key={source.id} align="center" gap={2}>
-                              {i > 0 && (
-                                <Text size={0} muted>
-                                  ·
-                                </Text>
-                              )}
-                              <Text
-                                size={0}
-                                muted
-                                style={{cursor: 'pointer', textDecoration: 'underline'}}
-                                onClick={() => openDocumentInStudio(source.type, source.id)}
-                              >
-                                {source.type === 'post' ? 'Post: ' : 'Snippet: '}
-                                {source.title}
-                              </Text>
-                            </Flex>
-                          ))}
-                        </Flex>
-                        <Text size={0} muted>
-                          {row.lastCheckedAt && `Last checked ${new Date(row.lastCheckedAt).toLocaleString()}`}
-                          {row.brokenSince &&
-                            ` · Broken since ${new Date(row.brokenSince).toLocaleDateString()}`}
-                        </Text>
-                      </Stack>
-                    </Card>
+                  {activeRows.length === 0 && dismissedRows.length > 0 && (
+                    <Text size={1} muted>
+                      Nothing pending -- {dismissedRows.length} dismissed below.
+                    </Text>
+                  )}
+                  {activeRows.map((row) => (
+                    <LinkRowCard
+                      key={row._id}
+                      row={row}
+                      showStatus={hasDismissal}
+                      busy={busyId === row._id}
+                      onSetStatus={(status) => setRowStatus(row._id, status)}
+                    />
                   ))}
+                  {dismissedRows.length > 0 && (
+                    <Stack space={3}>
+                      <Text
+                        size={0}
+                        muted
+                        style={{cursor: 'pointer', textDecoration: 'underline'}}
+                        onClick={() => toggleDismissed(key)}
+                      >
+                        {isDismissedOpen ? 'Hide' : 'Show'} dismissed ({dismissedRows.length})
+                      </Text>
+                      {isDismissedOpen &&
+                        dismissedRows.map((row) => (
+                          <LinkRowCard
+                            key={row._id}
+                            row={row}
+                            showStatus
+                            busy={busyId === row._id}
+                            onSetStatus={(status) => setRowStatus(row._id, status)}
+                          />
+                        ))}
+                    </Stack>
+                  )}
                 </Stack>
               )}
             </Stack>
           )
         })}
     </Stack>
+  )
+}
+
+function LinkRowCard({
+  row,
+  showStatus,
+  busy,
+  onSetStatus,
+}: {
+  row: LinkCheckRow
+  showStatus: boolean
+  busy: boolean
+  onSetStatus: (status: DismissStatus) => void
+}) {
+  return (
+    <Card padding={3} radius={2} border tone={cardTone(row)}>
+      <Stack space={2}>
+        <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
+          <Text size={1} weight="medium" style={{fontFamily: 'monospace', wordBreak: 'break-all'}}>
+            {row.url}
+          </Text>
+          <Flex align="center" gap={2}>
+            {row.isAffiliate && (
+              <Badge tone="primary" fontSize={0}>
+                affiliate
+              </Badge>
+            )}
+            {row.ok === false ? (
+              <Tooltip
+                content={
+                  <Text size={1} style={{maxWidth: 240}}>
+                    {statusMeaning(row.statusCode, row.error)}
+                  </Text>
+                }
+                padding={2}
+                placement="top"
+              >
+                <Badge tone={row.blocked ? 'caution' : 'critical'} fontSize={0} style={{cursor: 'help'}}>
+                  {row.statusCode ? `HTTP ${row.statusCode}` : row.error || 'broken'}
+                </Badge>
+              </Tooltip>
+            ) : (
+              <Badge tone="positive" fontSize={0}>
+                {row.statusCode ? `HTTP ${row.statusCode}` : 'ok'}
+              </Badge>
+            )}
+            {showStatus && (
+              <Select
+                value={row.status ?? 'pending'}
+                disabled={busy}
+                fontSize={0}
+                padding={2}
+                onChange={(event) => onSetStatus(event.currentTarget.value as DismissStatus)}
+                style={{width: 110}}
+              >
+                <option value="pending">Pending</option>
+                <option value="ignored">Ignored</option>
+                <option value="actioned">Actioned</option>
+              </Select>
+            )}
+          </Flex>
+        </Flex>
+        <Flex gap={2} wrap="wrap" align="center">
+          {row.sources.length === 0 && (
+            <Text size={0} muted>
+              No longer referenced
+            </Text>
+          )}
+          {row.sources.map((source, i) => (
+            <Flex key={source.id} align="center" gap={2}>
+              {i > 0 && (
+                <Text size={0} muted>
+                  ·
+                </Text>
+              )}
+              <Text
+                size={0}
+                muted
+                style={{cursor: 'pointer', textDecoration: 'underline'}}
+                onClick={() => openDocumentInStudio(source.type, source.id)}
+              >
+                {source.type === 'post' ? 'Post: ' : 'Snippet: '}
+                {source.title}
+              </Text>
+            </Flex>
+          ))}
+        </Flex>
+        <Text size={0} muted>
+          {row.lastCheckedAt && `Last checked ${new Date(row.lastCheckedAt).toLocaleString()}`}
+          {row.brokenSince && ` · Broken since ${new Date(row.brokenSince).toLocaleDateString()}`}
+        </Text>
+      </Stack>
+    </Card>
   )
 }
