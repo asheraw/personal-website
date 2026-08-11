@@ -267,7 +267,7 @@ export function CookieInsightsTool() {
             <Text size={3} weight="bold">
               Cookie Insights
             </Text>
-            <a href="/studio/structure/cookieBannerCopy" style={{fontSize: 12, textDecoration: 'underline'}}>
+            <a href="/studio/structure/siteAdmin;logs;cookieInsights;bannerCopy" style={{fontSize: 12, textDecoration: 'underline'}}>
               Edit banner copy →
             </a>
           </Flex>

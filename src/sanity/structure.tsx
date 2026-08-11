@@ -115,11 +115,6 @@ export const structure: StructureResolver = (S) =>
             ),
         ),
       S.divider(),
-      // Social Shares moved to a top-nav tool (see sanity.config.ts) --
-      // folded into the Distribution dashboard alongside drafted-copy
-      // status and a manual engagement log, instead of a standalone list.
-      S.documentTypeListItem('redirect').title('Redirects'),
-      S.divider(),
       // Occasional admin/maintenance tools, grouped under one named entry
       // instead of each getting its own top-nav slot (2026-08-05 cleanup --
       // the top bar had grown to 14 items). S.component() embeds the exact
@@ -144,11 +139,6 @@ export const structure: StructureResolver = (S) =>
               // means the dashboard's links are built from ids this file
               // controls directly, not a guess about Sanity's slugifier.
               S.listItem()
-                .title('404 Hits')
-                .id('notFoundHits')
-                .icon(LinkRemovedIcon)
-                .child(S.component(NotFoundHitsTool).title('404 Hits')),
-              S.listItem()
                 .title('Contact Submissions')
                 .id('contactSubmissions')
                 .icon(EnvelopeIcon)
@@ -161,18 +151,20 @@ export const structure: StructureResolver = (S) =>
                 .title('Bulk Operations')
                 .icon(EditIcon)
                 .child(S.component(BulkOperationsTool).title('Bulk Operations')),
-              S.listItem()
-                .title('Error Log')
-                .id('errorLog')
-                .icon(BugIcon)
-                .child(S.component(ErrorLogTool).title('Error Log')),
-              // Passive records to review, not queues that need action the
-              // way the items above do -- grouped together on Asher's own
-              // suggestion (2026-08-11) rather than sitting loose at the
-              // same level as Export/Bulk Operations. Cookie Consent Log and
-              // Cookie Taste Feedback merged into one tool here too (see
-              // CookieInsightsTool.tsx) instead of being two separate
-              // entries.
+              // Moved in from its own top-level slot (2026-08-11, on
+              // Asher's own suggestion) -- an occasional maintenance task
+              // (repointing a changed URL), same category as Export/Bulk
+              // Operations, not something touched daily.
+              S.documentTypeListItem('redirect').title('Redirects'),
+              // All four below share the same shape (an event log with a
+              // pending/ignored/actioned status) and are passive records to
+              // review rather than queues you act on inline the way
+              // Contact Submissions/Export/Bulk Operations are -- grouped
+              // together on Asher's own suggestion (2026-08-11) rather than
+              // sitting loose at the Site Admin level. 404 Hits and Error
+              // Log moved in alongside Search Queries for the same reason
+              // once it was pointed out they're really the same kind of
+              // thing, not meaningfully different from it.
               S.listItem()
                 .title('Logs')
                 .id('logs')
@@ -182,15 +174,49 @@ export const structure: StructureResolver = (S) =>
                     .title('Logs')
                     .items([
                       S.listItem()
+                        .title('404 Hits')
+                        .id('notFoundHits')
+                        .icon(LinkRemovedIcon)
+                        .child(S.component(NotFoundHitsTool).title('404 Hits')),
+                      S.listItem()
+                        .title('Error Log')
+                        .id('errorLog')
+                        .icon(BugIcon)
+                        .child(S.component(ErrorLogTool).title('Error Log')),
+                      S.listItem()
                         .title('Search Queries')
                         .id('searchQueries')
                         .icon(SearchIcon)
                         .child(S.component(SearchQueriesTool).title('Search Queries')),
+                      // A folder, not a single component -- merges the
+                      // read-only insights tool with the editable copy
+                      // document (2026-08-11, Asher's own ask: "can this
+                      // page not merge with Cookie Insights rather than a
+                      // standalone"). A custom S.component() pane and a
+                      // real Sanity document form don't combine into one
+                      // pane technically, so this is the closest genuine
+                      // merge -- one shared entry point, two sibling views,
+                      // instead of scattered in different parts of the tree.
                       S.listItem()
                         .title('Cookie Insights')
                         .id('cookieInsights')
                         .icon(CommentIcon)
-                        .child(S.component(CookieInsightsTool).title('Cookie Insights')),
+                        .child(
+                          S.list()
+                            .title('Cookie Insights')
+                            .items([
+                              S.listItem()
+                                .title('Insights')
+                                .id('insights')
+                                .icon(CommentIcon)
+                                .child(S.component(CookieInsightsTool).title('Cookie Insights')),
+                              S.listItem()
+                                .title('Banner Copy')
+                                .id('bannerCopy')
+                                .icon(CommentIcon)
+                                .child(S.document().schemaType('cookieBannerCopy').documentId('cookieBannerCopy')),
+                            ]),
+                        ),
                     ]),
                 ),
             ]),
@@ -206,15 +232,6 @@ export const structure: StructureResolver = (S) =>
         .title('Link Page (asheraw.com/link)')
         .icon(LinkIcon)
         .child(S.document().schemaType('linkPage').documentId('linkPage')),
-      // Wording shown in the cookie consent banner -- editable here instead
-      // of hardcoded in CookieConsent.tsx, so Asher can tweak copy (or add/
-      // remove variants) without a code change. See Logs -> Cookie Insights
-      // for how each variant is actually performing.
-      S.listItem()
-        .title('Cookie Banner Copy')
-        .id('cookieBannerCopy')
-        .icon(CommentIcon)
-        .child(S.document().schemaType('cookieBannerCopy').documentId('cookieBannerCopy')),
       // Grouped together (2026-08-11 cleanup) -- two views of the same
       // thing, the AI features' settings and the log of what those settings
       // actually produced, previously two unrelated-looking top-level items.

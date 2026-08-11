@@ -71,7 +71,20 @@ export const cookieBannerCopyType = defineType({
                         name: 'link',
                         type: 'object',
                         icon: LinkIcon,
-                        fields: [{title: 'URL', name: 'href', type: 'url'}],
+                        fields: [
+                          {
+                            title: 'URL',
+                            name: 'href',
+                            type: 'url',
+                            // Sanity's `url` type rejects a relative path like
+                            // "/privacy" under its default validation (an
+                            // absolute URI is required unless told otherwise)
+                            // -- allowRelative: true is needed for exactly
+                            // the case this field exists for: an internal
+                            // link to this site's own Privacy Policy page.
+                            validation: (rule) => rule.uri({scheme: ['http', 'https'], allowRelative: true}),
+                          },
+                        ],
                       },
                     ],
                   },

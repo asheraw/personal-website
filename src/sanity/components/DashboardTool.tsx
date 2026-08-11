@@ -55,19 +55,25 @@ type DashboardData = {
 // registered `name` from sanity.config.ts directly -- a different,
 // simpler mechanism (name-based routing, not pane-stack topology), not
 // the kind of guess that broke the old "open post" links (see RUNBOOK.md).
-// searchQueries/cookieInsights are nested one level deeper than the rest
-// -- Site Admin -> Logs -> the item itself -- since those two got grouped
-// into their own "Logs" folder (2026-08-11, Asher's own suggestion).
+// notFoundHits/errorLog/searchQueries/cookieInsights all live one level
+// deeper than contactSubmissions -- Site Admin -> Logs -> the item itself
+// -- since those four got grouped into their own "Logs" folder
+// (2026-08-11, Asher's own suggestion: they're all the same kind of thing,
+// an event log with a pending/ignored/actioned status, unlike Contact
+// Submissions/Export/Bulk Operations). cookieInsights itself is a folder
+// now too (Insights + Banner Copy merged together, also Asher's own ask),
+// so this points specifically at its "Insights" child, one level deeper
+// still.
 const LINKS = {
   comments: '/studio/comments',
   distribution: '/studio/distribution',
   calendar: '/studio/editorial-calendar',
   contentHealth: '/studio/content-health',
   contactSubmissions: '/studio/structure/siteAdmin;contactSubmissions',
-  notFoundHits: '/studio/structure/siteAdmin;notFoundHits',
-  errorLog: '/studio/structure/siteAdmin;errorLog',
+  notFoundHits: '/studio/structure/siteAdmin;logs;notFoundHits',
+  errorLog: '/studio/structure/siteAdmin;logs;errorLog',
   searchQueries: '/studio/structure/siteAdmin;logs;searchQueries',
-  cookieInsights: '/studio/structure/siteAdmin;logs;cookieInsights',
+  cookieInsights: '/studio/structure/siteAdmin;logs;cookieInsights;insights',
 }
 
 // Deliberately doesn't also fetch posts/aiOutputLog -- usePostIssueCounts
