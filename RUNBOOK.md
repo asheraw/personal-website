@@ -2598,6 +2598,71 @@ event would silently vanish every single time.
 
 ---
 
+## Cookie banner: delay, 7-day re-prompt, copy variants (shipped 2026-08-11)
+
+**`src/lib/consent.ts`** — storage format changed from a bare `"granted"`/`"denied"` string in `localStorage`
+to JSON: `{status, timestamp}`. `getConsent()` now treats a stored choice as expired (returns `"unset"`,
+which re-shows the banner) once `Date.now() - timestamp` exceeds `REPROMPT_AFTER_MS` (7 days) — asked for
+directly: this site's traffic is low enough that a permanent-forever choice meant each visitor only ever
+contributed one data point, ever, with no way to reconsider a decline short of clearing browser storage by
+hand. **A legacy plain-string value (no timestamp) is treated as already-expired**, not trusted indefinitely
+and not silently wiped either — an existing visitor just sees the banner once more on their next visit,
+then enters the normal 7-day cycle like everyone else. Deliberately *not* `sessionStorage`/every-session
+re-prompting, which was the other option on the table — that would've re-asked a returning reader on every
+single tab they open (reads as nagging) and made the accept/decline count reflect *visits* rather than
+*people*, since there's no visitor-identity system here to de-duplicate against.
+
+**`src/components/asher/CookieConsent.tsx`** — `SHOW_DELAY_MS = 10_000`, a plain `setTimeout` gating when
+`visible` flips true (re-checks `getConsent()` when the timer fires, not just trusting the closure, in case
+consent changed via another tab during the wait). Previously showed on mount with zero delay.
+
+**Three banner copies in `VARIANTS`**, one picked at random (`Math.floor(Math.random() * VARIANTS.length)`)
+each time the banner is about to show — not stuck to one variant per visitor, re-rolled on every prompt
+including 7-day re-prompts. `current` and `formal` are real prior copy: `formal` is pulled verbatim from
+git history (`git show 25b350c...CookieConsent.tsx`, the version right before it was replaced), not
+reconstructed from memory. `cookieTasting` is new, paired with a "Tell me how it tasted" link that opens
+`CookieTasteFeedback.tsx`. Button labels change per variant too (`declineLabel`/`acceptLabel` on each
+`Variant`), not just the paragraph — the underlying `setConsent()`/tracking logic is identical regardless
+of which copy or labels were shown.
+
+**No automatic winner-picking, by design** — Asher's own call, given how few data points a variant can
+realistically collect at this traffic level; an automated switch would flip on noise. Reviewed by hand
+instead: the Dashboard's "Cookie copy experiment" card (`DashboardTool.tsx`) shows a live per-variant
+accept/decline breakdown, computed via GROQ counting the `consentLog` singleton's own `entries[]` array
+filtered by `variant` — e.g. `count(*[_id == "consentLog"][0].entries[variant == "current" && choice ==
+"accepted"])`. Only entries logged from 2026-08-11 onward carry a `variant` at all (added to
+`consentLogType.ts`'s `entries[]` object shape that day), so these breakdowns naturally exclude everything
+recorded before the experiment started rather than showing misleading zeros for old data.
+
+**`src/components/asher/CookieTasteFeedback.tsx`** — a fully anonymous reaction form (no name/email/IP
+field exists anywhere in `cookieFeedbackType.ts`), three categories (colours/taste/texture, mapped via a
+hint line to real feedback on visual design/writing/UX) each rated 1-4 via emoji buttons, plus an optional
+comment. Posts to **`/api/track-cookie-feedback`**, one document per submission (`cookieFeedback` type,
+`liveEdit: true`, browsable in Studio → Site Admin → Cookie Taste Feedback, ordered newest-first) — a
+different shape from `consentLog`'s single running-tally singleton, since each response's free-text comment
+has standalone value worth browsing individually, not just aggregating.
+
+**Real bug found and fixed during testing, not shipped blind**: the first version of `CookieTasteFeedback`
+was another `fixed inset-x-0 bottom-0` bar, same positioning as the consent banner itself. Opening it
+stacked directly on top of the consent banner's Accept/Decline buttons and blocked clicks to them — caught
+by an actual Playwright run that tried to click Accept after opening the feedback form and timed out
+waiting for the (covered) button. Rebuilt as a centered modal with its own backdrop (`createPortal` to
+`document.body`, same pattern `ImageLightbox.tsx` already established elsewhere on this site), which can't
+collide with a bottom-anchored bar regardless of either element's height. Auto-closes 2.5s after a
+successful submit, so a visitor doesn't have to remember to close it to get back to Accept/Decline.
+
+**Verification**: built a real Playwright suite against the production build with `Math.random` mocked per
+run to force each of the three variants deterministically — confirmed no banner before the 10s mark, correct
+copy per variant after it, the tracking POST body carrying the right `variant` string, the new
+`{status, timestamp}` localStorage shape, an 8-day-old stored choice re-showing the banner, a legacy plain-string
+value also re-showing it, and a fresh choice staying hidden. Also ran the same checks against the real
+deployed production domain post-launch, not just the local build. Every test run wrote real entries to the
+live `consentLog`/`cookieFeedback` documents (this site's tracking routes don't distinguish test traffic
+from real traffic, by design — same as everywhere else) — all test-generated entries were identified by
+their known `_key`s/content and removed afterward, leaving only genuine visitor data.
+
+---
+
 ## Social Shares / Distribution dashboard: which posts get shared where (shipped 2026-08-03, folded into Distribution 2026-08-04)
 
 Asked for as a "social distribution dashboard." Scoped deliberately: this tracks *outbound* share-button

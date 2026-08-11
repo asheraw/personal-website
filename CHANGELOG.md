@@ -11,6 +11,33 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-11 — Cookie banner: a delay, a 7-day re-prompt, and a copy experiment
+
+Asher asked how the cookie banner actually behaves — how often it re-appears after someone declines, and
+whether an accept/decline decision ever gets asked again. Checked the real code rather than guess: it was
+permanent, forever, for both choices, with zero delay before showing. Pulled the real numbers too (19
+accepted / 9 declined at the time, 28 total since Aug 3) so the advice wasn't generic.
+
+Three changes followed from that conversation:
+
+**A 10-second delay** before the banner shows at all, instead of appearing the instant the page loads.
+
+**Re-prompts after 7 days now**, not never — deliberately not "every session," which would've made the
+accept/decline count reflect visits rather than people. A visitor's existing choice (even one made before
+today) gets asked again once on their next visit, then settles into the normal 7-day cycle.
+
+**Three banner copies, picked at random each time it shows** — the current wording, the exact formal
+wording this banner used before (pulled from git history, not rewritten from memory), and a new playful
+"cookie tasting" version paired with a tiny anonymous feedback form (colours/taste/texture, standing in for
+real feedback on the visual design/writing/UX). No auto-picked winner — Asher wants to review this by hand,
+so the Dashboard now shows the accept/decline split per variant to make that easy.
+
+Found and fixed a real bug along the way during testing: the feedback form and the consent banner both
+tried to anchor to the bottom of the screen, so opening the feedback form blocked the Accept/Decline
+buttons underneath it. Rebuilt as a proper centered modal instead. Verified the whole thing end-to-end
+against real production data (all three variants, the delay timing, the 7-day expiry, old-format visitors,
+the feedback form) before shipping, then cleaned every test entry back out of the real dataset afterward.
+
 ## 2026-08-11 — A Studio landing dashboard
 
 Asher's question after the sidebar cleanup: with this much now in Studio, would a dashboard showing what
