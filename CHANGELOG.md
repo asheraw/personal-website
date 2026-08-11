@@ -11,6 +11,28 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-11 — Content Audit can finally be dismissed, and one more Studio tidy-up
+
+Two more follow-ups from the same conversation. First, a real bug: the new Cookie Banner Copy document
+showed validation errors on all three variants — Sanity rejected the internal `/privacy` link as "not a
+valid URL" by default. Fixed, since an internal link was exactly what that field was built for.
+
+Then more consolidation, on Asher's own follow-up questions: **Cookie Banner Copy folded directly into
+Cookie Insights** (a real merge this time — one shared entry, two views inside it — rather than living in a
+different part of the sidebar). **404 Hits and Error Log moved into Logs** alongside Search Queries, once it
+was clear they're genuinely the same kind of thing (an event log with a pending/ignored/actioned status),
+not meaningfully different from what was already grouped there. **Redirects moved into Site Admin** — an
+occasional maintenance task, same category as Export/Bulk Operations, not something that needed its own
+top-level slot.
+
+Also finally fixed the real problem behind Content Health going unused: Content Audit had **no way to
+dismiss anything**. Asked whether dismissal should work per-post or per-check — Asher chose per-check
+specifically because a blanket per-post dismiss risked hiding a real issue alongside whatever was actually
+being waived. Built accordingly: each flagged check (missing image, alt text, excerpt, category) can be
+dismissed individually, stays reviewable in a collapsible "Dismissed" section, and can be restored with one
+click — nothing disappears for good. The Dashboard's own issue count was updated to apply the same logic,
+so the two numbers can't quietly drift apart the first time something gets dismissed.
+
 ## 2026-08-11 — Cookie tools merged, banner copy made editable in Studio
 
 Follow-up to the cookie banner work shipped earlier the same day. Asher flagged that the raw "Recent

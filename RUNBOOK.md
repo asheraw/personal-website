@@ -1627,6 +1627,26 @@ guessed wrong and didn't work).
 dataset (19 published posts at the time) — flagged exactly one real post (missing a featured image and an
 excerpt), everything else correctly showed as clean.
 
+**Per-check dismissal added 2026-08-11** — the actual reason this tool went unused: it had no way to say
+"this one's fine, stop flagging it," unlike 404 Hits/Error Log/Search Queries, which all support marking
+something ignored. Asked whether dismissal should work at the post level or the individual-check level;
+Asher chose **per-check** specifically because a blanket per-post dismiss risked hiding a real issue
+alongside whatever was actually being waived ("might catch too many issues and swipe them under the
+carpet," his words). New hidden field `postType.contentAuditDismissed` (string array of check keys —
+`'hasImage' | 'hasAltText' | 'hasExcerpt' | 'hasCategory'`), `hidden: true` so it never clutters the main
+17-field post editor — the only way to set it is the tool's own Dismiss/Restore buttons, which have the
+actual context (what's missing, why) that deciding this needs. `issuesFor()` in `ContentAuditTool.tsx`
+filters a post's raw issues against its `contentAuditDismissed` set before rendering; a dismissed check
+stays visible in a collapsible "Dismissed" section with a one-click Restore, never silently gone. Patches
+via the same `client.patch(id).set({...}).commit()` pattern `NotFoundHitsTool.tsx`'s status toggle already
+uses — Studio's own `useClient()` carries the logged-in user's write permissions, no separate token needed.
+
+**`DashboardTool.tsx`'s own audit-issue count applies the identical dismissal logic** (`activeIssueCount()`,
+a deliberate near-duplicate of `issuesFor()`) rather than the old "any of the four fields missing" check —
+without this, the Dashboard's number and the tool's own number would silently disagree the first time
+anything got dismissed, which is exactly the kind of drift that made the original count feel untrustworthy
+in the first place.
+
 ---
 
 ## Bulk Operations: tag/category/author edits, search-replace, undo (shipped 2026-08-05)
@@ -2702,21 +2722,41 @@ instead — total accepted/declined, accept rate, and the per-variant breakdown 
 raw entries list. The **Feedback** tab shows average colours/taste/texture scores plus the 30 most recent
 submissions with their comments (capped, for the same "don't let a list become unreadable" reason).
 
-**Grouped with Search Queries into a new "Logs" folder** inside Site Admin (`structure.tsx`,
-`.id('logs')`) — Asher's own suggestion, on the reasoning that these are passive records to review, not
-action queues like 404 Hits/Contact Submissions/Error Log (which all support marking something
-pending/ignored/actioned). **He also asked, more generally, to check for an existing logical container
-before adding a new standalone Studio entry going forward** — worth remembering for any future addition,
-not just this one.
+**Current final structure (Site Admin → Logs):** 404 Hits, Error Log, Search Queries, and Cookie Insights —
+all four grouped together as of 2026-08-11, on the reasoning that they're all the same kind of thing (an
+event log with a pending/ignored/actioned status, or an aggregate view of one), not action queues the way
+Contact Submissions/Export/Bulk Operations are. 404 Hits and Error Log moved in from Site Admin's flat level
+in a *second* pass, after Asher pointed out there was no real reason they'd been left out of Logs when
+Search Queries (which has the identical status mechanism) was already in it — worth remembering: the first
+grouping pass drew a distinction that didn't actually hold up once questioned directly.
 
-**Content Health was considered for the same Logs folder and deliberately left out.** It's a different kind
-of thing from the other two: an active check you run and act on, not a passive record — and it's in the top
-nav specifically because it was placed there for one-click daily access (see "Studio top nav" cleanup notes
-elsewhere in this file). Real feedback surfaced in the same conversation, though: Asher doesn't actually use
-it often, because `ContentAuditTool.tsx` has **no dismiss mechanism at all** — unlike 404 Hits/Error
-Log/Search Queries, a flagged post has no "mark as ignored, this is fine" option, so the same ~16 issues
-just sit there indefinitely whether or not they're real problems. Queued as a follow-up, scope still to be
-decided (per-post dismissal vs. per-individual-check dismissal changes what gets built).
+**Cookie Insights is itself a small folder, not a single component** — `Insights` (the stats tool above) and
+`Banner Copy` (the editable `cookieBannerCopy` document, see the cookie banner entry above) as two sibling
+items under one shared entry point. First shipped as two *separate* Studio locations (Banner Copy lived as
+its own top-level singleton near Site Settings); Asher asked directly whether it could merge with Cookie
+Insights instead. A custom `S.component()` pane and a real Sanity document-editing form can't technically
+combine into one pane, so this nested-list structure is the closest genuine merge available — one shared
+entry point in the sidebar, not scattered across two different areas of the tree.
+
+**Redirects moved from its own top-level slot into Site Admin** (also 2026-08-11) — an occasional
+maintenance task (repointing a changed URL), the same category as Export/Bulk Operations already there.
+
+**Real validation bug, caught immediately by actually looking at the result**: the seeded `cookieBannerCopy`
+variants all showed "Not a valid URL" in Studio. Sanity's `url` field type rejects a relative path like
+`/privacy` under its default validation — an absolute URI is required unless told otherwise. Fixed with
+`validation: (rule) => rule.uri({scheme: ['http', 'https'], allowRelative: true})` on the link annotation's
+`href` field, since an internal link to this site's own Privacy Policy page was exactly the point of that
+field.
+
+**A more general instruction came out of this thread**: check for an existing logical Studio container
+before adding a new standalone entry, rather than defaulting to bolting one on. Saved to auto-memory
+(`studio-logical-containers`) since it applies to any future addition, not just this one.
+
+**Content Health stayed in the top nav, not moved into Logs** — it's a different kind of thing from the
+items above: an active check you run and act on, not a passive record, and it's there specifically for
+one-click daily access (see the top-nav cleanup notes elsewhere in this file). The real problem underneath
+Asher's low usage of it turned out to be something else entirely — see Content Audit's own entry above for
+the per-check dismissal that actually fixed it.
 
 ---
 
