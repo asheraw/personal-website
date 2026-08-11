@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-11 — Internal links validated against Sanity data, not a live fetch; dismissed links actually disappear
+
+Fourth follow-up the same day, both real bugs caught by Asher actually using what shipped minutes earlier.
+
+**Why internal links to asheraw.com's own pages showed "possibly blocked":** confirmed by testing the exact
+same URLs from outside Vercel's own network — every one came back a clean 200. The 403s only ever happened
+when the link checker's own serverless function (running on Vercel) called back into asheraw.com's own
+production domain (also on Vercel); Vercel's system-level bot/DDoS mitigation was flagging that
+self-referential traffic pattern as suspicious. Fixed properly rather than worked around: links to this
+site's own domain are now validated structurally against real Sanity data (does this post/category/author
+slug actually exist? is this tag actually used? does a redirect exist for this exact path?) instead of a
+live network request at all — no fetch means nothing for Vercel's traffic heuristics to ever misjudge again.
+One of the four flagged links turned out to be a genuinely renamed post slug with a redirect already in
+place for it, not a coincidence — caught by testing against live data before assuming a simpler "does the
+current slug exist" check would be enough, which would've wrongly flagged that redirect as broken.
+
+**Why marking a link Ignored looked like it did nothing:** it didn't move anywhere. The row stayed in the
+same visible list, and that section's own count badge kept counting it — only a different, less obvious
+summary badge further up the page actually reflected the dismissal. Fixed to match the pattern already
+shipped for Content Audit (and already confirmed working well): a dismissed link now moves into a
+collapsed "Show dismissed" list within its section, reversible any time, and the section's own count drops
+to match immediately.
+
 ## 2026-08-11 — Cookies merged into one real form, Logs flattened back out, Link Checker gets dismissal
 
 Third follow-up pass the same day, all direct reactions to using the previous pass's changes. Asher's

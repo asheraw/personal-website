@@ -2818,15 +2818,16 @@ reported "still no option to mark or change the status" — correct, because tha
 `ContentAuditTool.tsx` (missing metadata); `LinkCheckerTool.tsx` (broken/blocked/affiliate links, the other
 tab) had no `status` field or dismiss control at all. Added: a `status` field on `linkCheckType.ts`, a
 `Select` (Pending/Ignored/Actioned) per row in `LinkCheckerTool.tsx` shown only for Broken/Possibly Blocked
-rows (same `client.patch(id).set({status}).commit()` pattern `NotFoundHitsTool.tsx` already established),
-and the top summary badges now count only non-ignored rows — the row itself stays visible in its section
-regardless, matching this session's standing "dismiss should never make something silently invisible" rule.
+rows (same `client.patch(id).set({status}).commit()` pattern `NotFoundHitsTool.tsx` already established).
+**This first version kept a dismissed row sitting in the same visible list with the section's own count
+badge unchanged — superseded the same day, see "Internal links validated against Sanity data" below for
+the real fix.**
 **One real gotcha caught by reading the actual write path first**: `src/lib/linkChecker.ts`'s
 `runLinkCheck()` does a full `createOrReplace` on every `linkCheck` document, on every run (daily cron +
 on-demand Check Now) — a naive `status` addition would've silently reset to `pending` on the very next
 automated check. Fixed by fetching and carrying `status` forward explicitly, the same way the pre-existing
 `brokenSince` field already had to be. `DashboardTool.tsx`'s `linkIssues` count was updated to exclude
-`status == "ignored"` the same way the other counts already do.
+`status == "ignored"` the same way the other counts already do (later tightened to pending-only, see below).
 
 **New Error Log entry investigated on request, diagnosed, not a bug**: `Uncaught Error: Error invoking
 postMessage: Java object is gone`, stack trace rooted entirely in `iabjs://navigation_performance_logger_android`
@@ -2835,6 +2836,66 @@ JavaScript for its navigation-performance logging, failing to reach a Java bridg
 been garbage-collected during page teardown — external to this codebase, not fixable here, same category
 as the already-dismissed "ResizeObserver loop completed" entry. Recommended marking it Ignored via the
 existing Error Log dismiss control rather than investigating further.
+
+---
+
+## Internal links validated against Sanity data, not a live fetch; dismissed links now actually disappear (shipped 2026-08-11, fourth pass)
+
+**Why asheraw.com's own pages showed "possibly blocked."** Right after the Link Checker dismissal fix above
+shipped, Asher used it and immediately found four false positives: `/#contact` and three of his own blog
+posts, all HTTP 403. Diagnosed by testing directly, not guessed: the exact same URLs returned a clean 200
+from `curl` on an outside network, both with the checker's own User-Agent and a browser one. The 403 only
+happened when the request originated from Vercel's own serverless infrastructure calling back into
+asheraw.com's own production domain (also on Vercel) — confirmed via `npx vercel firewall overview`/
+`attack-mode`/`system-mitigations`, which exist specifically because Vercel runs automatic system-level
+DDoS/bot mitigation on every plan (not configurable on this project's plan tier, which returned "IP Bypass
+is unavailable for this plan" on the overview call). Same underlying class of false positive as the
+webmd.com 500 documented above (an IP-reputation/traffic-pattern block, not a real broken link) — just
+happening on the site's own infrastructure instead of someone else's.
+
+**Fixed at the root, not worked around**: `src/lib/linkChecker.ts` now validates any link whose URL starts
+with `https://asheraw.com` structurally, against real Sanity data, instead of ever making a live HTTP
+request for it. `fetchInternalTargets()` fetches (once per run) every published post slug, category slug,
+author slug, distinct tag, and every `redirect` document's `from` path. `checkInternalUrl(url, targets)`
+parses the URL's pathname (fragment and query stripped automatically by `new URL().pathname`, which is why
+`/#contact` resolves to `/` and passes the static-path check), matches it against
+`/blog/<slug>`/`/blog/category/<slug>`/`/blog/author/<slug>`/`/blog/tag/<tag>` shapes, and returns a
+`CheckResult` directly — no network call, so nothing for Vercel's traffic heuristics to ever misjudge
+again. `runLinkCheck()` tries this first for every link and only falls through to the real `checkUrl()` for
+anything not on this domain or not matching a recognized internal route shape (so a genuinely mistyped
+internal path still gets a real check, not a silent skip).
+
+**Redirects matter as much as current slugs — caught by testing against live data before shipping.** One
+of the four flagged URLs, `/blog/how-i-lost-my-writing-home-for-13-years`, doesn't match any *current* post
+slug — but a real visitor following it lands on a real page, because a `redirect` document already exists
+for that exact old path (renamed to `/blog/how-i-lost-my-writing-home`). A slug-only check would have
+"fixed" three of the four false positives and introduced a fourth, subtler one: a working, correctly
+redirecting link reported as broken. `redirectFroms` is checked before the route-shape matching, mirroring
+`middleware.ts`'s own exact-pathname lookup — trusted at one level (a redirect's own `to` destination isn't
+itself re-verified), the same shallow trust `middleware.ts` already gives every redirect.
+
+**Verified against real production data, not just logic-checked**: ran `fetchInternalTargets()`'s exact
+query and `checkInternalUrl()`'s exact matching logic in a standalone script against the live dataset before
+shipping, confirming all four previously-flagged URLs resolved correctly (including the redirect case).
+After deploying, triggered a real `POST /api/check-links` against the live production domain and confirmed
+via a direct Sanity read that all four internal URLs came back `ok: true` with no live network request
+involved, and that the only two remaining flagged links were the pre-existing external ones Asher had
+already marked Ignored.
+
+**Dismissed links now actually move, instead of silently not appearing to.** The dismissal control shipped
+in the previous pass (see above) left an Ignored/Actioned row sitting in the exact same visible list with
+the section's own count badge unchanged — only a separate, less prominent summary badge further up the page
+reflected the dismissal at all. Asher: "I've stated as ignored but then nothing happens. The 'possibly
+blocked' number stays at 6." Fixed to match the pattern already shipped for `ContentAuditTool.tsx` (and
+already confirmed working well there): within the Broken/Possibly Blocked sections, rows now split into
+`activeRows` (status pending) shown directly and `dismissedRows` (ignored/actioned) tucked behind a
+"Show dismissed (N)" toggle — same `LinkRowCard` component renders both lists, so the same Select control
+can move a row back to Pending from inside the dismissed list. The section's own header badge now counts
+`activeRows.length`, not the raw section total, so it agrees with the toggle and with the top summary badges
+immediately. `DashboardTool.tsx`'s `linkIssues` count was tightened at the same time from "not ignored" to
+"pending only" (`status == "pending" || !defined(status)`), matching `notFoundPending`/`errorPending`'s
+existing convention exactly, so an Actioned link no longer keeps counting toward the Dashboard's issue
+total either.
 
 ---
 
