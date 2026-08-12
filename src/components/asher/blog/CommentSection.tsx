@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { MessageCircle, Send, Loader2, CheckCircle2, Reply } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MessageCircle, Send, Loader2, CheckCircle2, Reply, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { track } from "@/lib/analytics";
 
 type Comment = {
@@ -205,6 +206,67 @@ function CommentCard({ comment }: { comment: Comment }) {
   );
 }
 
+// A curated set, not a full searchable emoji database -- this is a quick
+// reaction picker for blog comments, not a chat app. Most visitors already
+// have a native emoji keyboard shortcut (Win+. / Cmd+Ctrl+Space); this is
+// just a visible, one-click option for anyone who doesn't know it.
+const COMMENT_EMOJIS = [
+  "😀", "😂", "😅", "😍", "🥲", "😎", "🤔", "😭",
+  "🥹", "😮", "🙌", "👏", "🙏", "👍", "👎", "✌️",
+  "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🔥",
+  "✨", "🎉", "💯", "😢", "😡", "🤯", "😴", "🥳",
+  "🤝", "👀", "💀", "🫠", "🤡", "☕", "📚", "🎬",
+  "🍪", "🌈", "⭐", "💡", "🎯", "🙈", "😇", "🤗",
+];
+
+// Inserts at the cursor position, not just appended -- the message field is
+// an uncontrolled textarea (read via FormData on submit, same as every
+// other field here), so this mutates the DOM node directly through the
+// ref rather than adding React state just to track message text.
+function EmojiPickerButton({ textareaRef }: { textareaRef: React.RefObject<HTMLTextAreaElement | null> }) {
+  const [open, setOpen] = useState(false);
+
+  function insert(emoji: string) {
+    const el = textareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    el.value = el.value.slice(0, start) + emoji + el.value.slice(end);
+    const cursor = start + emoji.length;
+    el.selectionStart = el.selectionEnd = cursor;
+    el.focus();
+    setOpen(false);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Insert emoji"
+          className="rounded-full p-1 text-stone/60 transition-colors hover:text-spotlight"
+        >
+          <Smile size={16} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 border-amber-faint bg-stage p-2">
+        <div className="grid grid-cols-8 gap-1">
+          {COMMENT_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => insert(emoji)}
+              className="rounded text-lg leading-none transition-transform hover:scale-125"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
 // Shared by the main "leave a comment" form and the compact reply form that
@@ -230,6 +292,7 @@ function CommentForm({
   const [captcha, setCaptcha] = useState({ a: 2, b: 3 });
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [honeypot, setHoneypot] = useState("");
+  const messageRef = useRef<HTMLTextAreaElement>(null);
   // Opt-in, unchecked by default -- controlled separately from the rest of
   // the form (a native FormData read, elsewhere in this component) because
   // the shadcn/Radix Checkbox isn't a plain native checkbox input.
@@ -341,10 +404,14 @@ function CommentForm({
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor={`c-message-${parentComment ?? "main"}`} className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">
-            {isReply ? "Reply" : "Comment"} <span className="text-spotlight">*</span>
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor={`c-message-${parentComment ?? "main"}`} className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">
+              {isReply ? "Reply" : "Comment"} <span className="text-spotlight">*</span>
+            </Label>
+            <EmojiPickerButton textareaRef={messageRef} />
+          </div>
           <Textarea
+            ref={messageRef}
             id={`c-message-${parentComment ?? "main"}`}
             name="message"
             required
