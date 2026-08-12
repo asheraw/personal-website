@@ -11,6 +11,33 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-12 — Built and validated a custom "asher-voice" writing skill, installed globally
+
+A Claude Code skill (`.claude/skills/asher-voice/`) that drafts or edits any first-person content — blog
+posts, newsletters, captions — in Asher's actual voice, built from close reading of all 21 posts on
+asheraw.com/blog (2009–2026) rather than a generic "sound human" prompt. Installed at both project level
+(committed here) and user level (`~/.claude/skills/asher-voice/`), so it triggers in any Claude Code session
+going forward, not just this repo.
+
+Runs alongside the existing `no-ai-slop` skill but explicitly overrides it on several patterns that look
+like generic AI tells on the surface but are confirmed as Asher's own long-standing voice (present since
+2013, well before AI was part of his workflow): sentence fragments, ellipses as real pauses, question-phrased
+section headers, and callback endings that reuse an image already planted earlier in the post rather than
+inventing a new closing metaphor.
+
+Went through two real rounds of validation against Asher's own direct feedback on drafted output (not just
+self-assessment) before being called done. First round scored 100% against the skill's own assertions but
+Asher rated the actual output "bad" — it compressed his stories into 300–450 word highlight reels instead of
+telling them, which the assertions hadn't been written to catch. Rewritten around four narrative frameworks
+he explicitly wants his content built on (PAS, Story Spine, 3-Act, Hero's Journey — documented with which of
+his real posts exemplifies each in `references/story-frameworks.md`), with instructions to dramatize the
+pivotal scene in near-real-time rather than summarize it, and to let realizations arrive only after the
+struggle that earns them. Also fixed on that pass: never use an em dash (not a style preference — he simply
+doesn't have easy keyboard access to the character), British/Singapore spelling throughout, no invented
+internal feelings or vague "something shifted" transitions. Second round of feedback was positive with two
+small refinements folded in: always address the reader 1-to-1 ("you," never "we"/"us"), and prefer numerals
+over spelled-out numbers ("day 4" not "day four").
+
 ## 2026-08-11 — Internal links validated against Sanity data, not a live fetch; dismissed links actually disappear
 
 Fourth follow-up the same day, both real bugs caught by Asher actually using what shipped minutes earlier.

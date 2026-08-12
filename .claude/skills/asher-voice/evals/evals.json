@@ -1,0 +1,54 @@
+{
+  "skill_name": "asher-voice",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "claude-subscription-confession",
+      "prompt": "I want to write a blog post for asheraw.com about how I almost didn't buy Claude Pro. Backstory: I went cold turkey on basically every software subscription for years after getting burned by GrooveFunnels (a CMS platform that promised to replace WordPress, turned out buggy, and even messed up an affiliate commission I was owed). Because of that, I default to free tools and I'm very reluctant to pay for anything recurring, even AI tools, even though I actually teach AI classes for a living. I'd been using free AI tools (GLM at z.ai) to build my new website and was waiting for an open-source model called Kimi K3 to release so I wouldn't have to pay. When Kimi didn't open up to consumers, I finally decided to just get Claude Pro. Within the first day of having it, I built a proper CMS, backups, a blog page, and more -- way more progress than I'd made in months on the free tools. Write this up as a post.",
+      "expected_output": "A blog post in Asher's voice: confessional hook, short paragraphs, at least one question-style H2 header, a callback ending that reuses something from earlier in the post, no invented facts beyond what's given.",
+      "files": [],
+      "expectations": [
+        "Opens with a hook (admission, quote, or blunt statement) rather than throat-clearing scene-setting",
+        "Contains at least one H2 header phrased as a question",
+        "Uses short paragraphs (multiple paragraphs of 1-3 sentences), not uniform 4-6 sentence blocks",
+        "Ending callbacks to a concrete image or phrase already used earlier in the post, rather than introducing a brand-new closing metaphor",
+        "Does not invent facts, numbers, or details beyond what was given in the prompt",
+        "Does not contain banned buzzwords (leverage, robust, elevate, streamline, game changer, cutting-edge, etc.)",
+        "Does not contain generic AI throat-clearing or wrap-up phrases (in conclusion, ultimately, it's worth noting, at the end of the day)",
+        "Retains sentence fragments or ellipses for emphasis rather than being uniformly grammatically 'clean'"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "morning-routine-relapse",
+      "prompt": "Help me write a blog post about a pattern I keep repeating: I keep committing to waking up early to pray and journal before work, do it for about 4 days straight, then stop. This has happened roughly 10 times this year. I noticed the pattern always starts right after some spiritually 'high' moment, like right after a church retreat, when I feel really motivated. Then normal life routine kicks back in within a week and the habit fades. I haven't fully figured out the fix yet, but I think part of it is that I'm chasing the feeling of the retreat instead of building something sustainable for normal daily life.",
+      "expected_output": "A confessional, personal-development-flavored blog post in Asher's voice using only the given material, with a genuine (not invented) landing point since he admits he hasn't fully solved it.",
+      "files": [],
+      "expectations": [
+        "Opens with a hook rather than throat-clearing",
+        "Contains at least one question-style H2 header",
+        "Uses short paragraphs, including at least one single-line paragraph used for emphasis",
+        "Does not fabricate a tidy resolution or fix the prompt didn't give -- reflects that Asher says he hasn't figured it out yet",
+        "Ending is a genuine reflective landing tied to material already in the post, not a generic motivational wrap-up",
+        "Does not contain banned buzzwords or importance-puffery phrases (marks a pivotal moment, stands as a testament, etc.)",
+        "Uses concrete specifics given in the prompt (e.g. '4 days', 'roughly 10 times this year') rather than vague paraphrases like 'several times'"
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "christmas-drama-rehearsal",
+      "prompt": "Write a blog post about this year's Christmas drama rehearsals at my church. I auditioned for a lead role but got cast as a side character instead. I was a bit disappointed at first, but ended up really enjoying building a backstory for the character anyway. One funny moment: during dress rehearsal I completely forgot my one line, panicked for a second, and just improvised something on the spot -- and it actually worked better dramatically than the scripted line. The director laughed about it afterward and said to keep it in.",
+      "expected_output": "A blog post in Asher's voice matching the pattern of his existing drama-ministry posts (Christmas 2016, Easter 2018): personal, reflective, admits initial disappointment honestly, treats the small role and improvised moment as genuinely meaningful rather than trivial.",
+      "files": [],
+      "expectations": [
+        "Opens with a hook rather than throat-clearing scene-setting",
+        "Admits the initial disappointment about not getting the lead role plainly, without over-apologizing or excessive hedging",
+        "Contains at least one H2 header phrased as a question",
+        "Includes the improvised-line anecdote with concrete specific detail (not vague summary)",
+        "Ending is a genuine reflective callback rather than a generic 'moral of the story' wrap-up",
+        "Does not contain banned buzzwords or fake-profound kicker phrasing invented beyond what's in the material",
+        "Uses short paragraphs and at least one deliberate fragment or ellipsis for emphasis"
+      ]
+    }
+  ]
+}
