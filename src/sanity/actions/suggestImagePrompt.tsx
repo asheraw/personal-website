@@ -1,11 +1,12 @@
 import {useState} from 'react'
 import type {DocumentActionComponent, DocumentActionProps} from 'sanity'
 import {ImageIcon} from '@sanity/icons/Image'
-import {Box, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Box, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {portableTextToPlainText} from '../../lib/portableText'
 import {ErrorMessage} from '../components/ErrorMessage'
 
-type Suggestions = {prompts: string[]; logId?: string | null}
+type Idea = {subject: string; mode: number; prompt: string}
+type Suggestions = {ideas: Idea[]; logId?: string | null}
 
 type PostDraft = {
   title?: string
@@ -24,12 +25,17 @@ function logUsage(logId: string | null | undefined, action: string) {
   }).catch(() => {})
 }
 
-function PromptOption({text, onCopy}: {text: string; onCopy: () => void}) {
+// Mode shown as a small badge above the assembled prompt -- lets Asher
+// tell the 3 ideas apart at a glance (isolated subject vs. full scene)
+// before reading the whole prompt text, since that's the one thing that
+// actually varies in shape between ideas now that the surrounding style
+// wording is fixed.
+function PromptOption({idea, onCopy}: {idea: Idea; onCopy: () => void}) {
   const [copied, setCopied] = useState(false)
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(idea.prompt)
       setCopied(true)
       onCopy()
       setTimeout(() => setCopied(false), 1800)
@@ -41,7 +47,14 @@ function PromptOption({text, onCopy}: {text: string; onCopy: () => void}) {
 
   return (
     <Card padding={3} radius={2} tone="primary" border>
-      <Text style={{whiteSpace: 'pre-wrap'}}>{text}</Text>
+      <Stack space={3}>
+        <Flex align="center" gap={2}>
+          <Badge tone="primary" fontSize={0}>
+            {idea.mode === 2 ? 'Environmental scene' : 'Isolated specimen'}
+          </Badge>
+        </Flex>
+        <Text style={{whiteSpace: 'pre-wrap'}}>{idea.prompt}</Text>
+      </Stack>
       <Flex justify="flex-end" marginTop={3}>
         <Button
           text={copied ? 'Copied!' : 'Copy prompt'}
@@ -55,14 +68,15 @@ function PromptOption({text, onCopy}: {text: string; onCopy: () => void}) {
 }
 
 /**
- * "Suggest Image Prompt" -- the ACE spec's DreamLab workflow: generate an
- * image-generation prompt in Sanity, copy it, then open Canva DreamLab (or
- * any AI image generator) separately, generate, download, and upload back
- * into Sanity as the post's featured/social image by hand. Deliberately
- * not an automated Canva integration -- the spec explicitly asks not to
- * automate a sub-one-minute manual step without a stable official API and
- * clear long-term value. Never generates an image itself, never writes to
- * the document.
+ * "Suggest Image Prompt" -- the ACE spec's DreamLab-style workflow: draft 3
+ * ready-to-paste image-generation prompts in Studio, copy one, then
+ * generate it separately in Gemini (Asher's actual tool) or any other AI
+ * image generator, iterate until satisfied, and upload the result back
+ * into this post's Featured/Social Image field by hand. Deliberately not
+ * an automated image-generation integration -- the spec explicitly asks
+ * not to automate a sub-one-minute manual step without a stable official
+ * API and clear long-term value. Never generates an image itself, never
+ * writes to the document.
  */
 export function createSuggestImagePromptAction(): DocumentActionComponent {
   const SuggestImagePromptAction: DocumentActionComponent = (props: DocumentActionProps) => {
@@ -110,7 +124,7 @@ export function createSuggestImagePromptAction(): DocumentActionComponent {
                 {status === 'loading' && (
                   <Flex align="center" gap={3}>
                     <Spinner />
-                    <Text>Reading the post and drafting a couple of visual concepts…</Text>
+                    <Text>Reading the post and drafting three visual concepts…</Text>
                   </Flex>
                 )}
                 {status === 'error' && (
@@ -122,18 +136,20 @@ export function createSuggestImagePromptAction(): DocumentActionComponent {
                 {status === 'done' && suggestions && (
                   <Stack space={5}>
                     <Stack space={3}>
-                      {suggestions.prompts.map((text, i) => (
+                      {suggestions.ideas.map((idea, i) => (
                         <PromptOption
-                          key={text}
-                          text={text}
+                          key={idea.prompt}
+                          idea={idea}
                           onCopy={() => logUsage(suggestions.logId, `Copied image prompt (option ${i + 1})`)}
                         />
                       ))}
                     </Stack>
                     <Text size={1} muted>
-                      Copy one, paste it into Canva DreamLab (or your image generator of choice), generate,
-                      download, then upload the result back into this post&rsquo;s Featured Image or Social
-                      Sharing Image field. These are starting points — edit freely before generating.
+                      Copy one, paste it into Gemini (or your image generator of choice), generate, download,
+                      then upload the result back into this post&rsquo;s Featured Image or Social Sharing Image
+                      field. These are starting points — edit freely before generating. The style wording
+                      itself comes from Studio → AI Workspace → Suggestion Settings, so tweaking it there
+                      applies to every future suggestion.
                     </Text>
                     <Flex justify="flex-end">
                       <Button text="Close" mode="ghost" onClick={() => setDialogOpen(false)} />

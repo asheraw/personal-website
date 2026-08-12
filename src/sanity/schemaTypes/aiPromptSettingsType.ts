@@ -1,6 +1,12 @@
 import {SparklesIcon} from '@sanity/icons/Sparkles'
 import {defineField, defineType} from 'sanity'
-import {DEFAULT_AI_PROMPT_INSTRUCTIONS, DEFAULT_VOICE_GUIDANCE} from '../../lib/aiPromptDefaults'
+import {
+  DEFAULT_AI_PROMPT_INSTRUCTIONS,
+  DEFAULT_VOICE_GUIDANCE,
+  DEFAULT_IMAGE_PROMPT_TEMPLATE,
+  DEFAULT_COMPOSITION_MODE_1,
+  DEFAULT_COMPOSITION_MODE_2,
+} from '../../lib/aiPromptDefaults'
 
 // Singleton -- see structure.ts, which always opens this exact document ID
 // rather than listing many.
@@ -43,6 +49,33 @@ export const aiPromptSettingsType = defineType({
       initialValue: DEFAULT_AI_PROMPT_INSTRUCTIONS,
       description:
         'What Gemini is told when suggesting SEO titles, excerpts, and tags specifically -- the task itself (what to produce, length limits), not the voice (see above). Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'imagePromptTemplate',
+      title: 'Image prompt template',
+      type: 'text',
+      rows: 6,
+      initialValue: DEFAULT_IMAGE_PROMPT_TEMPLATE,
+      description:
+        'The full image-generation prompt "Suggest Image Prompt" assembles for each idea -- keep both {SUBJECT} and {COMPOSITION_MODE} exactly as written; those are the only two parts Gemini fills in (a concrete subject, and which mode below fits it). Everything else here is used word-for-word, every time, so the visual style stays consistent across posts instead of being reworded by the AI. Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'compositionMode1',
+      title: 'Composition Mode 1 (specimen / isolated)',
+      type: 'text',
+      rows: 3,
+      initialValue: DEFAULT_COMPOSITION_MODE_1,
+      description:
+        'Substituted for {COMPOSITION_MODE} above when Gemini judges a subject fits better isolated -- a single symbolic object or motif, catalog-plate style. Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'compositionMode2',
+      title: 'Composition Mode 2 (environmental scene)',
+      type: 'text',
+      rows: 3,
+      initialValue: DEFAULT_COMPOSITION_MODE_2,
+      description:
+        'Substituted for {COMPOSITION_MODE} above when Gemini judges a subject fits better as a full staged scene -- a moment, a figure in a place, layered depth. Leave blank to fall back to the default shown here.',
     }),
   ],
   preview: {

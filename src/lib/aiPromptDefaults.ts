@@ -30,3 +30,17 @@ Tags: 3-5 short topic labels (1-3 words each, lowercase unless reusing an existi
 export const DEFAULT_VOICE_GUIDANCE = `Write like a real person talking, not a brand. Direct, warm, a little wry -- not corporate, not hype-y ("Exciting news!!", "Game-changing", excessive exclamation points), not stuffed with hashtags or buzzwords. Short sentences are fine. It's okay to sound like you're talking to one specific person, not "an audience."
 
 Never invent facts, quotes, numbers, or specifics that aren't actually in the source content -- when in doubt, stay general rather than making something up.`
+
+// Asher's own established image-generation prompt, used verbatim as the
+// starting value for the "Image prompt template" field
+// (aiPromptSettingsType.ts) -- {SUBJECT} and {COMPOSITION_MODE} are the
+// only two slots Gemini ever fills in (see suggest-image-prompt/route.ts);
+// everything else here is assembled server-side exactly as written below,
+// never re-paraphrased by the model, so the visual style stays byte-for-
+// byte consistent across every post instead of drifting suggestion to
+// suggestion.
+export const DEFAULT_IMAGE_PROMPT_TEMPLATE = `{SUBJECT}, in the style of a 19th-century steel-plate engraving / pen-and-ink illustration, dense fine crosshatching and stippling for shading and volume, confident unbroken linework, high contrast, hand-engraved antique naturalist or encyclopedia-plate quality, rendered entirely in sepia monochrome — warm brown ink tones on aged ivory paper, no flat color, no digital shading, no gradients, sharp fine detail throughout, {COMPOSITION_MODE}. No text on the visual except for an unobtrusive "Asher Aw, 1984" in the bottom margin.`
+
+export const DEFAULT_COMPOSITION_MODE_1 = `studio-style specimen illustration, single subject centered and isolated, plain background, no environment, no horizon, catalog/plate presentation`
+
+export const DEFAULT_COMPOSITION_MODE_2 = `fully rendered environmental scene with layered depth and background detail, atmospheric composition, narrative staging, foreground/midground/background separation`
