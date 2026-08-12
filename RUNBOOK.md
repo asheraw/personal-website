@@ -2139,12 +2139,12 @@ not removed — but the floating badge is the one actually doing the job now.
 **One thing considered and deliberately not built here** — Figma-style inline highlight comments — is logged
 with full reasoning in `IDEAS.md`, the running list of "good to have, not now" ideas.
 
-## Comments: emoji picker (shipped 2026-08-12)
+## Comments: emoji picker and GIF comments via Giphy (shipped 2026-08-12)
 
 Asher asked about fun media in comments — emoji and GIFs (Tenor/Giphy) — with one hard constraint: no
-clickable URLs, to avoid inviting spam. Assessed both before building either. Emoji: trivial, ship
-immediately (approved same message: "Go ahead with the easy emoji upgrade"). GIFs: bigger, real feature,
-scoped but not yet built — needs a Giphy API key from Asher first (see below).
+clickable URLs, to avoid inviting spam. Assessed both before building either. Emoji shipped same message
+("Go ahead with the easy emoji upgrade"); GIFs shipped the next day once Asher created a free Giphy API
+key and handed it over.
 
 **Emoji, `src/components/asher/blog/CommentSection.tsx`** — a smiley button next to the Comment/Reply
 label opens a `Popover` (shadcn/Radix, already a dependency, no new package) showing a curated grid of
@@ -2163,38 +2163,64 @@ accepts any string up to 3000 characters. Verified with a real Playwright run ag
 (typed text, opened the picker, clicked an emoji, confirmed it landed at the end; moved the cursor to the
 start and clicked another, confirmed *that* one landed at the very front, not appended) before shipping.
 
-**GIFs, not yet built — here's the actual plan for whoever picks it up next.** The design that satisfies
-"no clickable URLs": a GIF renders as a plain `<img>`, never wrapped in an `<a>` — nothing to click through
-to anywhere, so it doesn't reopen the spam-link concern at all. Scoped as:
-- New Sanity field: `commentType.gifUrl` (optional string), alongside the existing plain-text `message` —
-  not folding GIFs into a richer message format, since one optional sibling field is much simpler than
-  inventing a mini markup language for a single media type.
-- A `Comment` (just a GIF, no text) is explicitly allowed — Asher's own call: "it is also a response,"
-  same as a wordless reaction. `message` should NOT be made conditionally-required only when `gifUrl` is
-  empty in `commentType.ts`'s validation and in `/api/comments/route.ts`'s required-fields check (currently
-  `if (!postId || !name || !email || !message)` — needs to become "at least one of message or gifUrl").
-- New API route (e.g. `/api/gif-search`) proxying Giphy's search endpoint server-side — keeps the API key
-  off the client, and lets the request force Giphy's `rating=g` (or `pg`) parameter, worth doing since
-  comments here are genuinely public and not pre-moderated at submission time (moderation happens after,
-  in Studio → Comments).
-- **The one real abuse-surface gap to close**: don't trust a client-submitted `gifUrl` string as-is —
-  something posting directly to `/api/comments` (bypassing the picker UI entirely) could hand-craft any
-  image URL, not just a real Giphy result. Validate server-side that `gifUrl`'s hostname is actually
-  Giphy's CDN (`media*.giphy.com`) before storing it; reject anything else. This is the GIF-equivalent of
-  the honeypot/captcha/rate-limit already protecting the text path — same threat model, different field.
-- A picker UI component in `CommentForm` (search box + a scrollable results grid, click to attach) — the
-  bulk of the actual build effort, roughly on par with a small autocomplete widget.
-- Render changes in two places: the public `CommentCard` (an `<img>` with a max-height cap, `loading="lazy"`,
-  no `<a>` wrapper) and Studio's `CommentsTool.tsx` moderation cards (a thumbnail, so Asher isn't approving
-  a GIF blind).
+**GIFs, shipped 2026-08-12.** The design that satisfies "no clickable URLs": a GIF renders as a plain
+`<img>`, never wrapped in an `<a>` — nothing to click through to anywhere, so it doesn't reopen the
+spam-link concern at all.
 
-**Blocked on:** a free Giphy API key. Sign-up is instant (developers.giphy.com → create an app → copy the
-"Beta" key — no credit card, no approval wait; a "Production" key needs Giphy's review but the Beta key
-already works at real usage levels for a personal blog's comment volume). Store it as `GIPHY_API_KEY` in
-`.env.local` / Vercel env vars, same convention as every other secret in this project (see the "Contacts /
-where things live" section for where secrets are documented). Chose Giphy over Tenor specifically because
-Tenor's API now lives behind a Google Cloud project (more setup friction) where Giphy's own developer
-portal is self-contained.
+- **`commentType.ts`**: new optional `gifUrl` field (`readOnly: true` — set only via the picker/API, never
+  typed by hand in Studio) alongside the existing `message`, which is no longer required on its own. Not
+  folding GIFs into a richer message format — one optional sibling field is much simpler than inventing a
+  mini markup language for a single media type.
+- **A comment that's just a GIF, no text, is explicitly allowed** — Asher's own call: "it is also a
+  response," same as a wordless reaction. `/api/comments/route.ts`'s required-fields check is
+  `!postId || !name || !email || (!message && !gifUrl)` — at least one of the two, not both.
+- **`src/app/api/gif-search/route.ts`** (new) — proxies Giphy's `search` endpoint (or `trending`, when the
+  query is empty, so the picker isn't blank the moment it opens) server-side, keeping `GIPHY_API_KEY` out
+  of the browser and forcing every request into Giphy's own `rating=g` filter — worth doing even though
+  Asher still reviews every comment before it goes live, since comments aren't pre-moderated *at
+  submission time*. Has its own lightweight in-memory per-IP rate limit (20 req/min, resets on cold start,
+  same "good enough for this traffic level" tradeoff already accepted for `middleware.ts`'s redirect
+  cache) — guards Giphy's free-tier hourly quota against a scripted flood, separate from `/api/comments`'s
+  own Sanity-backed rate limit, since this is a GET route with nothing to count against in Sanity.
+- **The one real abuse-surface gap, closed**: the picker UI is a convention, not an enforcement — a request
+  crafted by hand and posted straight to `/api/comments` could otherwise carry any image URL, not just a
+  real Giphy result. `isGiphyUrl()` in `comments/route.ts` rejects any `gifUrl` whose hostname isn't
+  `giphy.com` or a `*.giphy.com` subdomain before it's ever stored. Verified directly: a hand-crafted
+  request with `gifUrl: "https://evil.example.com/tracker.gif"` gets a 400 with `"That GIF didn't come
+  from a recognized source."`
+- **`CommentSection.tsx`**: `GifPickerButton` next to the existing `EmojiPickerButton` — a "GIF" pill button
+  opens a `Popover` with a debounced (350ms) search box and a 3-column thumbnail grid. Selecting one sets
+  `selectedGif` state (lifted to `CommentForm`, unlike the emoji picker's ref-based insert, since the GIF
+  needs to render as a visible preview *and* ride along in the submit payload) and shows a removable
+  preview above the Send button. `message`'s `required` attribute was removed from the `<Textarea>`; a
+  client-side check (`!data.message?.trim() && !selectedGif`) fails fast with a clear error before the
+  network round trip, mirroring the server-side check.
+- **Public render (`CommentCard`)**: a new `CommentGif` component — plain `<img>`, `max-h-64`,
+  `loading="lazy"`, explicitly never inside an `<a>`. `next/image` skipped on purpose: it re-encodes
+  through Next's image optimizer, which isn't guaranteed to preserve GIF animation.
+- **Moderation render (`CommentsTool.tsx`)**: a matching `CommentGifPreview` (plain `<img>`, capped at
+  160px tall) in both the live queue and the Trash view, so Asher is never approving a GIF blind. Also
+  updated: the document-list preview (`commentType.ts`) shows `[GIF]` for a GIF-only comment instead of a
+  blank title.
+- **Real bug caught by testing locally before shipping, not assumed**: the first pass showed broken-image
+  icons instead of actual GIF thumbnails, in both the picker grid and the selected preview. The site's own
+  CSP (`next.config.ts`) blocks `img-src` by allowlist, and `*.giphy.com` wasn't on it — the exact same
+  class of gap as the `*.apicdn.sanity.io` CSP miss documented above for the cookie banner's client-side
+  fetch. Added `https://*.giphy.com`; confirmed fixed with a second local run before deploying.
+
+**Setup**: `GIPHY_API_KEY` — Asher created a free Giphy developer account (developers.giphy.com), copied the
+"Beta" key (no credit card, no approval wait; already sufficient at this site's comment volume), and handed
+it over directly. Stored in `.env.local` for local dev and added to Vercel's Production and Preview
+environments via `vercel env add`. Chose Giphy over Tenor specifically because Tenor's API now lives behind
+a Google Cloud project (more setup friction) where Giphy's own developer portal is self-contained.
+
+**Verified against the real Giphy API and real Sanity data, not just a local logic check**: searched,
+selected, and submitted a real GIF-only comment through an actual browser (Playwright) against the dev
+server; confirmed the stored Sanity document had `gifUrl` set to a real `media*.giphy.com` URL and
+`message: null`; confirmed the hostname guard and the missing-both-fields validation both fire correctly
+via direct requests; confirmed `/api/gif-search` returns real results against the deployed production
+domain after shipping. Every test comment was deleted afterward, same "clean up what a real test run writes
+to production" convention used throughout this project.
 
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
