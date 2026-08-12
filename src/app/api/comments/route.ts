@@ -11,6 +11,23 @@ const NOTIFY_EMAIL = process.env.CONTACT_NOTIFICATION_EMAIL || "";
 const STUDIO_COMMENTS_URL = "https://asheraw.com/studio/comments";
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
+// A comment's gifUrl is picked from the /api/gif-search results (Giphy's
+// own CDN), never typed in by hand -- but the picker UI is only a
+// convention, not an enforcement. Anyone can POST directly to this route,
+// so the actual guarantee has to live here: reject any gifUrl that isn't
+// really on Giphy's domain before it's ever stored, closing off the one
+// real gap this feature would otherwise reopen (a hotlinked image field
+// that accepts literally any URL, sidestepping the "no clickable links"
+// spam concern the feature exists to respect in the first place).
+function isGiphyUrl(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === "https:" && (hostname === "giphy.com" || hostname.endsWith(".giphy.com"));
+  } catch {
+    return false;
+  }
+}
+
 // GET /api/comments?postId=<sanity post _id> -- approved comments only,
 // oldest first (a conversation reads top-to-bottom). Never returns email.
 //
@@ -28,7 +45,7 @@ export async function GET(request: NextRequest) {
 
   const comments = await writeClient.fetch(
     `*[_type == "comment" && post._ref == $postId && status == "approved" && !defined(trashedAt)] | order(createdAt asc){
-      _id, name, message, createdAt, isAuthorReply,
+      _id, name, message, gifUrl, createdAt, isAuthorReply,
       "parentComment": parentComment._ref
     }`,
     { postId }
@@ -49,9 +66,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const { postId, name, email, message, captchaA, captchaB, captchaAnswer, parentComment, notifyOnReply } = body;
-    if (!postId || !name || !email || !message) {
+    const { postId, name, email, message, gifUrl, captchaA, captchaB, captchaAnswer, parentComment, notifyOnReply } = body;
+    // A GIF alone is a valid comment -- it's a response either way, the
+    // same as a wordless reaction would be. Only postId/name/email stay
+    // strictly required; message and gifUrl are each optional, but at
+    // least one of the two has to be there.
+    if (!postId || !name || !email || (!message && !gifUrl)) {
       return NextResponse.json({ success: false, error: "Missing required fields." }, { status: 400 });
+    }
+
+    if (gifUrl && !isGiphyUrl(gifUrl)) {
+      return NextResponse.json({ success: false, error: "That GIF didn't come from a recognized source." }, { status: 400 });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -73,7 +98,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (message.length > 3000) {
+    if (message && message.length > 3000) {
       return NextResponse.json({ success: false, error: "Message is too long." }, { status: 400 });
     }
 
@@ -168,7 +193,8 @@ export async function POST(request: NextRequest) {
       name,
       email,
       ip,
-      message,
+      ...(message ? { message } : {}),
+      ...(gifUrl ? { gifUrl } : {}),
       status: isKnownSpammer ? "spam" : "pending",
       // The schema's initialValue for this field only applies when a
       // document is created through Studio's own UI, not via the API --
@@ -205,7 +231,7 @@ export async function POST(request: NextRequest) {
           subject: parentRef
             ? `[Site Comment] ${name} replied on "${post?.title ?? "a post"}"`
             : `[Site Comment] ${name} commented on "${post?.title ?? "a post"}"`,
-          text: `${name} <${email}>${parentRef ? " (replying to another comment)" : ""}:\n\n${message}\n\nApprove, reject, or reply: ${STUDIO_COMMENTS_URL}`,
+          text: `${name} <${email}>${parentRef ? " (replying to another comment)" : ""}:\n\n${message || "[GIF, no text]"}${gifUrl ? `\n${gifUrl}` : ""}\n\nApprove, reject, or reply: ${STUDIO_COMMENTS_URL}`,
         });
       } catch (emailError) {
         // Logged, not surfaced -- see the comment above.

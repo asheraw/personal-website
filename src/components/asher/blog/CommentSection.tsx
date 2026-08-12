@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, Loader2, CheckCircle2, Reply, Smile } from "lucide-react";
+import { MessageCircle, Send, Loader2, CheckCircle2, Reply, Smile, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ type Comment = {
   _id: string;
   name: string;
   message: string;
+  gifUrl?: string;
   createdAt: string;
   isAuthorReply?: boolean;
   parentComment?: string | null;
@@ -188,7 +189,10 @@ function CommentCard({ comment }: { comment: Comment }) {
             {new Date(comment.createdAt).toLocaleDateString()}
           </p>
         </div>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ivory/90">{comment.message}</p>
+        {comment.message && (
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ivory/90">{comment.message}</p>
+        )}
+        {comment.gifUrl && <CommentGif url={comment.gifUrl} />}
       </div>
     );
   }
@@ -201,8 +205,29 @@ function CommentCard({ comment }: { comment: Comment }) {
           {new Date(comment.createdAt).toLocaleDateString()}
         </p>
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone/85">{comment.message}</p>
+      {comment.message && (
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone/85">{comment.message}</p>
+      )}
+      {comment.gifUrl && <CommentGif url={comment.gifUrl} />}
     </div>
+  );
+}
+
+// Plain <img>, deliberately never wrapped in an <a> -- the whole point of
+// rendering a GIF this way (see gif-search/route.ts and /api/comments's
+// isGiphyUrl check) is that it's never a clickable link, so it can't
+// reopen the "no clickable URLs" spam concern this feature was scoped
+// around. next/image is skipped on purpose: it re-encodes through Next's
+// image optimizer, which isn't guaranteed to preserve GIF animation.
+function CommentGif({ url }: { url: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- animated GIF, not safe to route through next/image's optimizer
+    <img
+      src={url}
+      alt=""
+      loading="lazy"
+      className="mt-2 max-h-64 rounded-lg border border-amber-faint/60 object-contain"
+    />
   );
 }
 
@@ -267,6 +292,101 @@ function EmojiPickerButton({ textareaRef }: { textareaRef: React.RefObject<HTMLT
   );
 }
 
+type GifResult = { id: string; title: string; thumbUrl: string; url: string };
+type SelectedGif = { url: string; title: string };
+
+// Search-as-you-type against /api/gif-search (a server-side proxy to
+// Giphy, keeping the API key out of the browser and forcing a "g" content
+// rating on every request). Debounced 350ms so normal typing doesn't fire
+// a request per keystroke; opening the picker with an empty query shows
+// Giphy's trending results instead of a blank panel.
+function GifPickerButton({ onSelect }: { onSelect: (gif: SelectedGif) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [gifs, setGifs] = useState<GifResult[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoadError(false);
+    const timer = setTimeout(() => {
+      fetch(`/api/gif-search?q=${encodeURIComponent(query)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled) return;
+          if (data.gifs) setGifs(data.gifs);
+          else setLoadError(true);
+        })
+        .catch(() => {
+          if (!cancelled) setLoadError(true);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, query]);
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) {
+          setQuery("");
+          setGifs(null);
+        }
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Attach a GIF"
+          className="rounded-full border border-amber-faint/60 px-2 py-0.5 font-mono-stage text-[10px] uppercase tracking-[0.1em] text-stone/60 transition-colors hover:border-spotlight/60 hover:text-spotlight"
+        >
+          GIF
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 border-amber-faint bg-stage p-2">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search Giphy…"
+          className="mb-2 w-full rounded border border-amber-faint bg-stage/60 px-2 py-1.5 text-sm text-ivory outline-none placeholder:text-stone/40 focus-visible:border-spotlight"
+        />
+        <div className="grid max-h-64 grid-cols-3 gap-1 overflow-y-auto">
+          {gifs === null && !loadError && (
+            <p className="col-span-3 py-4 text-center text-xs text-stone/50">Loading…</p>
+          )}
+          {loadError && (
+            <p className="col-span-3 py-4 text-center text-xs text-stone/50">Couldn&rsquo;t load GIFs — try again.</p>
+          )}
+          {gifs && gifs.length === 0 && (
+            <p className="col-span-3 py-4 text-center text-xs text-stone/50">No results.</p>
+          )}
+          {gifs?.map((gif) => (
+            <button
+              key={gif.id}
+              type="button"
+              onClick={() => {
+                onSelect({ url: gif.url, title: gif.title });
+                setOpen(false);
+              }}
+              className="aspect-square overflow-hidden rounded bg-stage/60 transition-opacity hover:opacity-80"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF thumbnail, not safe to route through next/image's optimizer */}
+              <img src={gif.thumbUrl} alt={gif.title} loading="lazy" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[10px] text-stone/40">Powered by GIPHY</p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 type FormStatus = "idle" | "submitting" | "success" | "error";
 
 // Shared by the main "leave a comment" form and the compact reply form that
@@ -293,6 +413,7 @@ function CommentForm({
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [honeypot, setHoneypot] = useState("");
   const messageRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedGif, setSelectedGif] = useState<SelectedGif | null>(null);
   // Opt-in, unchecked by default -- controlled separately from the rest of
   // the form (a native FormData read, elsewhere in this component) because
   // the shadcn/Radix Checkbox isn't a plain native checkbox input.
@@ -315,6 +436,17 @@ function CommentForm({
       return;
     }
 
+    // A GIF alone is a valid comment (Asher's own call -- "it is also a
+    // response"), so message isn't a required field anymore -- but at
+    // least one of the two has to be there. Checked client-side too, not
+    // just by /api/comments, so this fails fast instead of round-tripping
+    // for something catchable immediately.
+    if (!data.message?.trim() && !selectedGif) {
+      setStatus("error");
+      setErrorMsg("Write something or attach a GIF before sending.");
+      return;
+    }
+
     try {
       const res = await fetch("/api/comments", {
         method: "POST",
@@ -325,6 +457,7 @@ function CommentForm({
           name: data.name,
           email: data.email,
           message: data.message,
+          gifUrl: selectedGif?.url,
           captchaA: captcha.a,
           captchaB: captcha.b,
           captchaAnswer,
@@ -338,6 +471,7 @@ function CommentForm({
         form.reset();
         setCaptchaAnswer("");
         setNotifyOnReply(false);
+        setSelectedGif(null);
         onPosted();
       } else {
         track({ action: "comment_submit", category: "engagement", label: "error" });
@@ -406,19 +540,39 @@ function CommentForm({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor={`c-message-${parentComment ?? "main"}`} className="font-mono-stage text-[10px] uppercase tracking-[0.2em] text-stone/70">
-              {isReply ? "Reply" : "Comment"} <span className="text-spotlight">*</span>
+              {isReply ? "Reply" : "Comment"}
             </Label>
-            <EmojiPickerButton textareaRef={messageRef} />
+            <div className="flex items-center gap-2">
+              <GifPickerButton onSelect={setSelectedGif} />
+              <EmojiPickerButton textareaRef={messageRef} />
+            </div>
           </div>
           <Textarea
             ref={messageRef}
             id={`c-message-${parentComment ?? "main"}`}
             name="message"
-            required
             rows={isReply ? 3 : 4}
-            placeholder={isReply ? "Write a reply…" : "What did you think?"}
+            placeholder={isReply ? "Write a reply… (or just attach a GIF)" : "What did you think? (or just attach a GIF)"}
             className="border-amber-faint bg-stage/40 text-ivory placeholder:text-stone/40 resize-none"
           />
+          {selectedGif && (
+            <div className="relative inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF, not safe to route through next/image's optimizer */}
+              <img
+                src={selectedGif.url}
+                alt={selectedGif.title}
+                className="max-h-40 rounded-lg border border-amber-faint/60 object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => setSelectedGif(null)}
+                aria-label="Remove GIF"
+                className="absolute -right-2 -top-2 rounded-full bg-stage p-1 text-stone/70 shadow-sm ring-1 ring-amber-faint transition-colors hover:text-spotlight"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Checkbox

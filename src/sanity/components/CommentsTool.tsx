@@ -34,7 +34,8 @@ type CommentRow = {
   name: string
   email: string
   ip: string | null
-  message: string
+  message: string | null
+  gifUrl: string | null
   status: 'pending' | 'approved' | 'rejected' | 'spam'
   createdAt: string
   editedAt: string | null
@@ -71,6 +72,15 @@ const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critic
   approved: 'positive',
   rejected: 'critical',
   spam: 'critical',
+}
+
+// A plain <img>, not next/image -- Studio doesn't run through Next's image
+// optimizer for arbitrary external URLs anyway, and GIF animation isn't
+// guaranteed to survive re-encoding through it. Shown here so a GIF
+// comment can actually be reviewed before Approve, not approved blind.
+function CommentGifPreview({url}: {url: string}) {
+  // eslint-disable-next-line @next/next/no-img-element -- Studio component, not a Next page; animated GIF, not safe to route through next/image's optimizer
+  return <img src={url} alt="" style={{maxHeight: 160, maxWidth: '100%', borderRadius: 6, display: 'block'}} />
 }
 
 // A custom Studio tool (not a plain document-type list) so pending comments
@@ -130,7 +140,7 @@ export function CommentsTool() {
     client
       .fetch<CommentRow[]>(
         `*[_type == "comment"] | order(createdAt desc){
-          _id, name, email, ip, message, status, createdAt, editedAt, trashedAt, isAuthorReply,
+          _id, name, email, ip, message, gifUrl, status, createdAt, editedAt, trashedAt, isAuthorReply,
           "postId": post._ref, "postTitle": post->title, "postSlug": post->slug.current,
           "postCommentsLocked": post->commentsLocked,
           "parentComment": parentComment._ref
@@ -261,7 +271,7 @@ export function CommentsTool() {
 
   function startEdit(comment: CommentRow) {
     setEditingId(comment._id)
-    setEditText(comment.message)
+    setEditText(comment.message ?? '')
     setEditDate(isoToLocalInputValue(comment.createdAt))
   }
 
@@ -326,6 +336,7 @@ export function CommentsTool() {
                 email: '',
                 ip: null,
                 message: replyText.trim(),
+                gifUrl: null,
                 status: 'approved',
                 createdAt: new Date().toISOString(),
                 editedAt: null,
@@ -358,7 +369,7 @@ export function CommentsTool() {
   const searchTerm = search.trim().toLowerCase()
 
   function commentText(c: CommentRow): string {
-    return `${c.name} ${c.message}`.toLowerCase()
+    return `${c.name} ${c.message ?? ''}`.toLowerCase()
   }
 
   // A reply matching but its parent not (or vice versa) would read as
@@ -903,9 +914,12 @@ function CommentCard({
                 site (which does apply this) rendered the same message's
                 line breaks correctly the whole time. The formatting was
                 never actually lost, Studio just wasn't showing it. */}
-            <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
-              {comment.message}
-            </Text>
+            {comment.message && (
+              <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
+                {comment.message}
+              </Text>
+            )}
+            {comment.gifUrl && <CommentGifPreview url={comment.gifUrl} />}
           </>
         )}
 
@@ -1009,9 +1023,12 @@ function TrashedCommentCard({
             &rdquo;
           </Text>
         </Flex>
-        <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
-          {comment.message}
-        </Text>
+        {comment.message && (
+          <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
+            {comment.message}
+          </Text>
+        )}
+        {comment.gifUrl && <CommentGifPreview url={comment.gifUrl} />}
         {purgeDate && (
           <Text size={0} muted>
             Auto-deletes {purgeDate.toLocaleDateString()} unless restored or deleted now.

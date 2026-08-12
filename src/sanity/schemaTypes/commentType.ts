@@ -44,7 +44,15 @@ export const commentType = defineType({
       title: 'Message',
       type: 'text',
       rows: 4,
-      validation: (rule) => rule.required(),
+      description: 'Not required if a GIF is attached below -- a GIF alone is a valid comment on its own.',
+    }),
+    defineField({
+      name: 'gifUrl',
+      title: 'GIF URL',
+      type: 'url',
+      description:
+        'Set via the GIF picker in the comment form, not typed by hand -- restricted server-side (/api/comments) to Giphy\'s own CDN so this field can never be used to smuggle an arbitrary hotlinked image in. Rendered as a plain <img>, never a clickable link.',
+      readOnly: true,
     }),
     defineField({
       name: 'status',
@@ -137,13 +145,14 @@ export const commentType = defineType({
     select: {
       name: 'name',
       message: 'message',
+      gifUrl: 'gifUrl',
       status: 'status',
       postTitle: 'post.title',
       parentComment: 'parentComment._ref',
       trashedAt: 'trashedAt',
     },
-    prepare: ({name, message, status, postTitle, parentComment, trashedAt}) => ({
-      title: `${parentComment ? '↳ ' : ''}${name}: ${message?.slice(0, 60) ?? ''}`,
+    prepare: ({name, message, gifUrl, status, postTitle, parentComment, trashedAt}) => ({
+      title: `${parentComment ? '↳ ' : ''}${name}: ${message?.slice(0, 60) ?? (gifUrl ? '[GIF]' : '')}`,
       subtitle: `${trashedAt ? 'trashed · ' : ''}${status} · on "${postTitle ?? 'unknown post'}"`,
     }),
   },
