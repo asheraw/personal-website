@@ -2139,6 +2139,63 @@ not removed — but the floating badge is the one actually doing the job now.
 **One thing considered and deliberately not built here** — Figma-style inline highlight comments — is logged
 with full reasoning in `IDEAS.md`, the running list of "good to have, not now" ideas.
 
+## Comments: emoji picker (shipped 2026-08-12)
+
+Asher asked about fun media in comments — emoji and GIFs (Tenor/Giphy) — with one hard constraint: no
+clickable URLs, to avoid inviting spam. Assessed both before building either. Emoji: trivial, ship
+immediately (approved same message: "Go ahead with the easy emoji upgrade"). GIFs: bigger, real feature,
+scoped but not yet built — needs a Giphy API key from Asher first (see below).
+
+**Emoji, `src/components/asher/blog/CommentSection.tsx`** — a smiley button next to the Comment/Reply
+label opens a `Popover` (shadcn/Radix, already a dependency, no new package) showing a curated grid of
+~48 common/fun emoji (`COMMENT_EMOJIS`), not a full searchable emoji database — this is a quick-reaction
+picker for blog comments, not a chat app, and most visitors already have a native OS emoji shortcut
+(Win+. / Cmd+Ctrl+Space) this just makes more discoverable. Clicking one inserts it **at the cursor
+position**, not appended to the end — the message field is an uncontrolled `<textarea>` (read via
+`FormData` on submit, the same pattern every other field in this form already uses), so insertion works by
+mutating the DOM node directly through a `ref` (`el.value = before + emoji + after`, then restoring
+`selectionStart`/`selectionEnd` and refocusing) rather than adding React state just to track message text.
+Same component used for both the main comment form and the compact reply form — each `CommentForm`
+instance gets its own `messageRef`, so replying to one comment never touches another's textarea.
+
+No schema or API change at all: emoji are just unicode characters, and `commentType.message` already
+accepts any string up to 3000 characters. Verified with a real Playwright run against the dev server
+(typed text, opened the picker, clicked an emoji, confirmed it landed at the end; moved the cursor to the
+start and clicked another, confirmed *that* one landed at the very front, not appended) before shipping.
+
+**GIFs, not yet built — here's the actual plan for whoever picks it up next.** The design that satisfies
+"no clickable URLs": a GIF renders as a plain `<img>`, never wrapped in an `<a>` — nothing to click through
+to anywhere, so it doesn't reopen the spam-link concern at all. Scoped as:
+- New Sanity field: `commentType.gifUrl` (optional string), alongside the existing plain-text `message` —
+  not folding GIFs into a richer message format, since one optional sibling field is much simpler than
+  inventing a mini markup language for a single media type.
+- A `Comment` (just a GIF, no text) is explicitly allowed — Asher's own call: "it is also a response,"
+  same as a wordless reaction. `message` should NOT be made conditionally-required only when `gifUrl` is
+  empty in `commentType.ts`'s validation and in `/api/comments/route.ts`'s required-fields check (currently
+  `if (!postId || !name || !email || !message)` — needs to become "at least one of message or gifUrl").
+- New API route (e.g. `/api/gif-search`) proxying Giphy's search endpoint server-side — keeps the API key
+  off the client, and lets the request force Giphy's `rating=g` (or `pg`) parameter, worth doing since
+  comments here are genuinely public and not pre-moderated at submission time (moderation happens after,
+  in Studio → Comments).
+- **The one real abuse-surface gap to close**: don't trust a client-submitted `gifUrl` string as-is —
+  something posting directly to `/api/comments` (bypassing the picker UI entirely) could hand-craft any
+  image URL, not just a real Giphy result. Validate server-side that `gifUrl`'s hostname is actually
+  Giphy's CDN (`media*.giphy.com`) before storing it; reject anything else. This is the GIF-equivalent of
+  the honeypot/captcha/rate-limit already protecting the text path — same threat model, different field.
+- A picker UI component in `CommentForm` (search box + a scrollable results grid, click to attach) — the
+  bulk of the actual build effort, roughly on par with a small autocomplete widget.
+- Render changes in two places: the public `CommentCard` (an `<img>` with a max-height cap, `loading="lazy"`,
+  no `<a>` wrapper) and Studio's `CommentsTool.tsx` moderation cards (a thumbnail, so Asher isn't approving
+  a GIF blind).
+
+**Blocked on:** a free Giphy API key. Sign-up is instant (developers.giphy.com → create an app → copy the
+"Beta" key — no credit card, no approval wait; a "Production" key needs Giphy's review but the Beta key
+already works at real usage levels for a personal blog's comment volume). Store it as `GIPHY_API_KEY` in
+`.env.local` / Vercel env vars, same convention as every other secret in this project (see the "Contacts /
+where things live" section for where secrets are documented). Chose Giphy over Tenor specifically because
+Tenor's API now lives behind a Google Cloud project (more setup friction) where Giphy's own developer
+portal is self-contained.
+
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
 The other IDEAS.md entry — emailing a commenter when there's a reply — is now built, but not as originally
