@@ -3170,6 +3170,64 @@ this exact bug reappears for it.
 
 ---
 
+## AI Workspace: Suggest Image Prompt rebuilt around a fixed template (shipped 2026-08-13)
+
+**The existing "Suggest Image Prompt" document action was quietly disconnected from Asher's real workflow.**
+It already existed (`src/sanity/actions/suggestImagePrompt.tsx` + `src/app/api/ai/suggest-image-prompt/
+route.ts`) and already called Gemini, but asked the model to freely write 2 generic photographic/editorial
+prompts from scratch — nothing tying them to the actual steel-plate-engraving/sepia-monochrome template
+Asher had been pasting in by hand for most of his existing post images. Surfaced when he asked for help
+generating image ideas for 48 posts just imported into drafts; checked what already existed before
+proposing anything new, and this was the natural thing to fix rather than duplicate.
+
+**Gemini's job was narrowed to exactly two decisions per idea, everything else is fixed.** The template
+itself — `{SUBJECT}, in the style of a 19th-century steel-plate engraving...rendered entirely in sepia
+monochrome...{COMPOSITION_MODE}...an unobtrusive "Asher Aw, 1984" in the bottom margin` — is now stored as
+an editable Studio field (`aiPromptSettingsType.ts`'s new `imagePromptTemplate`, alongside two more new
+fields for the two composition-mode descriptions: `compositionMode1` "studio-style specimen illustration,
+single subject centered and isolated..." and `compositionMode2` "fully rendered environmental scene with
+layered depth..."), defaulting to Asher's own exact wording (`DEFAULT_IMAGE_PROMPT_TEMPLATE`/
+`DEFAULT_COMPOSITION_MODE_1`/`DEFAULT_COMPOSITION_MODE_2` in `src/lib/aiPromptDefaults.ts`, same
+single-source-of-truth pattern as the existing SEO defaults). Gemini only ever returns a concrete `subject`
+string and a `mode` (1 or 2) per idea — `suggest-image-prompt/route.ts` substitutes both into the template
+server-side via `{SUBJECT}`/`{COMPOSITION_MODE}` placeholders (`split().join()`, not `.replace()`, so a
+template edited to reference either placeholder more than once still substitutes every occurrence). The
+wrapper text is therefore byte-for-byte identical across every idea and every post — the AI can no longer
+subtly reword "sepia monochrome" into something close-but-different from one suggestion to the next.
+
+**Composition mode is decided per idea, not fixed site-wide — confirmed directly with Asher, not assumed.**
+Asked explicitly which of a few options he wanted (AI picks per idea and mixes them / always Mode 1 / always
+Mode 2 / a manual toggle each run); he picked "AI picks per idea, mixed" specifically because 3 ideas that
+are all the same composition shape isn't actually 3 different things to consider. The task prompt tells
+Gemini both mode descriptions and instructs it to vary the choice across the 3 ideas "where it genuinely
+fits" — a real test call returned modes `[1, 2, 1]` for one post, confirming the mixing actually happens,
+not just 3-of-the-same by default. Each result shows a small "Isolated specimen" / "Environmental scene"
+badge in the dialog (`suggestImagePrompt.tsx`) so the shape of each idea is visible before reading the full
+prompt text.
+
+**2 ideas -> 3**, per Asher's explicit ask — the `responseSchema` on the Gemini call now requires an `ideas`
+array of `{subject, mode}` objects instead of a flat `prompts: string[]`.
+
+**Real bug, caught by an actual test call against real Gemini output, not assumed correct from reading the
+prompt instructions:** the first version produced prompts like `"...wrapping around the hands., in the
+style of a 19th-century steel-plate engraving..."` — a stray double-punctuation, because the template joins
+`{SUBJECT}` directly into a longer sentence with its own comma, and Gemini's subject text sometimes ended
+with a period as if it were a complete sentence on its own. Fixed on both sides: the task instructions now
+explicitly ask for a lowercase, no-trailing-period noun phrase with a worked example, and
+`suggest-image-prompt/route.ts` strips a trailing period (`.replace(/[.。]+$/, "")`) as a backstop
+regardless of whether Gemini actually follows the instruction. Re-verified with a second real test call
+before shipping — no stray punctuation in either result.
+
+**Verified against the real Gemini API and real Sanity data before shipping**: called the live route with a
+real, already-published post's actual title/content (not synthetic test text), confirmed 3 ideas with
+genuinely mixed composition modes, confirmed each assembled `prompt` matched the template exactly
+(word-for-word crosshatching/sepia/signature text, correct mode description substituted), confirmed the
+`aiPromptSettings` fallback-to-defaults path worked correctly (the singleton document didn't have the three
+new fields set yet at the time of testing, since they're brand new), and confirmed Studio's schema loads
+with no errors after the new fields were added — then deleted both test `aiOutputLog` entries afterward.
+
+---
+
 ## PLAY mode: the homepage's 3D/2D walking world (freeze fixed twice + loading state added 2026-08-08)
 
 **Not the per-post registry documented below.** This is the homepage's own PLAY toggle (`page.tsx`'s

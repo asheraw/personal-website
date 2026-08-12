@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-13 — Suggest Image Prompt rebuilt around Asher's real visual style
+
+Asher imported 48 old posts into drafts and needed a way to get image ideas for all of them, in his actual
+established style — a steel-plate-engraving/sepia template he'd been pasting in by hand for most of his
+existing images. Checked the existing "Suggest Image Prompt" button first rather than building a second
+tool: it already existed, already ran on Gemini, but asked the AI to freely write 2 generic prompts with no
+connection to that template at all — probably why it had gone mostly unused.
+
+Rebuilt around the template instead of replacing it with AI prose. Gemini's job shrank to exactly two
+things per idea: a concrete subject drawn from the post's real content, and which of two composition modes
+(an isolated specimen-plate style, or a full staged scene) actually fits that subject — decided per idea,
+mixed across the 3 results (confirmed with Asher directly rather than assumed), so the 3 choices are
+genuinely different shapes to pick from. Everything else — the crosshatching, the sepia paper, the
+"Asher Aw, 1984" signature — comes from a fixed template, assembled the same way every single time, never
+reworded by the AI. That template (and both mode descriptions) is now an editable Studio field, not
+hardcoded, so tweaking the wording later doesn't need a code change.
+
+Real bug caught by testing against actual Gemini output, not assumed correct: the first pass produced
+prompts like "...wrapping around the hands., in the style of..." — a stray double-punctuation where the
+AI's subject sentence ended with a period right where the template's own comma picks up. Fixed on both
+sides (asked Gemini not to end with punctuation, stripped a trailing period server-side as a backstop) and
+confirmed clean with a second real test call before shipping.
+
 ## 2026-08-13 — GIF comments via Giphy, hotlinked and never clickable
 
 Follow-up to the emoji picker below: Asher confirmed the hotlinking-bandwidth question directly and
