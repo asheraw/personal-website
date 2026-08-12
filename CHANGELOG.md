@@ -11,6 +11,46 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-13 — GIF comments via Giphy, hotlinked and never clickable
+
+Follow-up to the emoji picker below: Asher confirmed the hotlinking-bandwidth question directly and
+created a free Giphy API key. A comment can now attach a GIF (search-and-pick from Giphy) alongside or
+instead of text — a GIF alone is a valid comment on its own, Asher's own call, "it is also a response."
+Renders as a plain `<img>`, never wrapped in a link, so it can't reopen the "no clickable URLs" spam
+concern this was scoped around from the start.
+
+Built: a server-side `/api/gif-search` route (keeps the API key off the browser, forces Giphy's "g" content
+rating, has its own lightweight rate limit against quota abuse), a debounced search-and-thumbnail-grid
+picker in the comment form next to the emoji picker, a removable preview before sending, GIF rendering on
+both the public comment cards and Studio's moderation queue (so nothing gets approved blind), and a
+server-side check rejecting any `gifUrl` that isn't actually hosted on Giphy's own domain — the picker UI
+is a convention, not an enforcement, so the real guarantee against a hand-crafted request has to live on
+the server.
+
+One real bug caught locally before shipping, not assumed: GIF thumbnails showed as broken-image icons at
+first — the site's Content-Security-Policy didn't yet allow images from Giphy's domain. Fixed, confirmed
+with a second local test, then verified end to end against the real Giphy API and real Sanity data: a real
+GIF-only comment searched, selected, and submitted through an actual browser, confirmed correctly stored,
+then deleted afterward along with two direct-request tests confirming the hostname guard and the
+missing-both-fields validation both actually fire.
+
+## 2026-08-12 — A quick emoji picker for comments, and the Google Analytics placeholder removed
+
+Two small, separate follow-ups. First: Asher asked whether Google Analytics could show on the new Studio
+Dashboard. Checked properly — genuinely possible via Google's own reporting API, but it needs a one-time
+manual step in his own Google account first (a service account with read access), not something buildable
+from this side alone. He confirmed he was just checking feasibility for now, so the "not connected"
+placeholder card that had been sitting on the Dashboard for exactly that possibility came back out.
+
+Second: asked about adding fun media to comments — emoji, and GIFs from Tenor or Giphy — with one
+condition: no clickable links, to avoid inviting spam. Assessed both before building either, since he
+explicitly asked for clarity first, not code. Emoji: genuinely trivial (unicode characters the comment
+field already accepts), approved and shipped the same message — a smiley button next to the comment box
+opens a curated grid of common emoji, inserting whichever one's clicked at the actual cursor position, not
+just tacked onto the end. GIFs: a real, bigger feature, fully scoped (search picker, a new field, keeping
+it restricted to genuine Giphy images, a moderation preview) but intentionally not built yet — needs a free
+API key only Asher can create. Picked up the next day once he had one (see above).
+
 ## 2026-08-12 — Built and validated a custom "asher-voice" writing skill, installed globally
 
 A Claude Code skill (`.claude/skills/asher-voice/`) that drafts or edits any first-person content — blog
