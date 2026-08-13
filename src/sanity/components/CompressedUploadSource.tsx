@@ -1,4 +1,4 @@
-import {useRef, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {Box, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 import type {AssetSource, AssetSourceComponentProps} from '@sanity/types'
@@ -27,6 +27,25 @@ function CompressedUploadSourceComponent(props: AssetSourceComponentProps) {
   const [result, setResult] = useState<{originalSize: number; compressedSize: number} | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+
+  // Opens the OS file picker immediately on mount, instead of making
+  // picking "Upload (compressed)" from the menu just the first of two
+  // taps before anything actually happens -- Asher's own ask, since this
+  // panel (like every asset source) renders wherever Studio's own image
+  // field decides to put an open source's UI, sometimes well below the
+  // fold on a phone, so reaching a manual "Choose photo" button meant
+  // scrolling to find it first. The drag zone and button stay as a
+  // fallback below for whenever the browser doesn't allow a file input
+  // to be opened programmatically (or the reader dismisses the native
+  // picker without choosing anything) -- this only ever fires once, on
+  // the very first mount, never re-opening the OS picker on its own
+  // after an upload error or a later re-render. Placed before the
+  // `action !== 'upload'` early return below, not after -- a hook can
+  // never come after a conditional return, or it stops being called in
+  // the same order every render.
+  useEffect(() => {
+    fileInputRef.current?.click()
+  }, [])
 
   if (props.action && props.action !== 'upload') return null
 
