@@ -2413,7 +2413,7 @@ succeeds one pass later with zero manual intervention. Stops retrying a comment 
 (the exact same set of still-failing IDs) repeats between two consecutive passes — that's not a race
 anymore, it's a real, different failure, and shown as such instead of spun on forever.
 
-## Comments tool lag after the Facebook import (found and partly fixed 2026-08-14)
+## Comments tool lag after the Facebook import (found and fixed 2026-08-14)
 
 **Symptom**: Asher reported Studio → Comments feeling "very laggy" after the 48-post Facebook import (and
 the subsequent screenshot cross-check passes on top of it) landed hundreds more comments than this tool had
@@ -2445,14 +2445,33 @@ Same total work, done once instead of once-per-row-per-render. Behavior-identica
 same threading — purely a performance change, verified with `npx tsc --noEmit` + `npm run build` clean and
 Studio's schema-bootstrap check showing no errors before shipping.
 
-**Not yet addressed: the 677-simultaneously-rendered-rows part.** This is a real scale issue distinct from
-the per-render cost above, and fixing it properly (capping how much renders per group, paginating within a
-huge thread, or true list virtualization) changes what Asher actually sees by default, which is a real UX
-call, not a pure performance fix — flagged to him rather than decided unilaterally. If this comes up again:
-the lowest-risk option in that direction is probably capping the auto-rendered comment count within an
-individual very-large group (mirroring `NotFoundHitsTool.tsx`'s existing "show full hit log, capped at 500"
-pattern) rather than changing the collapse-by-default threshold globally, since most groups are still small
-and the auto-expand-when-pending behavior itself is working as intended for those.
+**Second pass, same day: the 677-simultaneously-rendered-rows part, resolved by a threshold rather than a
+render-capping mechanism.** Flagged as a genuine UX call rather than decided unilaterally — Asher's answer,
+directly: while he's still working through the Facebook import, pending count is going to sit in the
+hundreds and *should* default collapsed; once the import's done and comments are back to trickling in from
+real visitors (his own words: "no one, except a good friend Joycelyn, comes by"), a small pending count
+auto-expanding is exactly the behavior he wants back.
+
+**Fix**: `AUTO_EXPAND_BELOW_PENDING_COUNT = 10` (his own number). `isExpanded`'s auto-expand-when-pending
+branch now only fires when the *site-wide* `pending.length` is below this threshold — above it, every group
+defaults to collapsed regardless of that group's own pending status, same as a fully "settled" group already
+did, opened only by an explicit click or an active search (unchanged either way). This is a threshold to
+cross back over as the import finishes, not a one-way behavior change — no code changes needed when pending
+count naturally drops back under 10, it self-corrects.
+
+**Also changed the same pass**: group order's "most recent" sort key was the comment's own `createdAt` —
+for an imported thread, that's the real *historical* Facebook date (2021, 2023, whenever the original
+comment was posted), not when it landed on this site. Sorting by it meant an old thread imported five
+minutes ago could still sort below a thread with a coincidentally more recent original date, burying "the
+post I just finished" under unrelated old ones. Switched the sort's tiebreaker to a new `addedAt` field
+(`"addedAt": _createdAt` in the GROQ projection — Sanity's own system timestamp, i.e. when the document was
+actually written) — every other date shown anywhere in this tool is still the real `createdAt`; this one
+field exists purely for this one ordering decision.
+
+**Verified against the real dataset before shipping**: at the actual current pending count (658), confirmed
+the auto-expand branch evaluates false; confirmed the new sort order's top few groups are exactly the four
+posts cross-checked the day before (their `addedAt` timestamps are the most recent in the dataset) —
+matching what "the newest ones on top" should mean in practice, not just in theory.
 
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
