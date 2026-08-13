@@ -485,6 +485,32 @@ export function CommentsTool() {
   // "approved" draft comment silently never shows up for a visitor, with
   // nothing in Studio itself hinting that anything's wrong.
   const draftComments = useMemo(() => (comments ?? []).filter((c) => c._id.startsWith(DRAFTS_PREFIX)), [comments])
+
+  // Built once per `live` change, not per row per render -- the render loop
+  // below used to call `group.comments.filter((r) => r.parentComment ===
+  // comment._id)` fresh for every top-level comment AND every depth-2 reply,
+  // an O(n) scan repeated for every visible row on every single render
+  // (including a keystroke in the search box, hovering a button, or opening
+  // a status Select -- none of which actually change the underlying data).
+  // With comment counts still in the dozens this was invisible; once the
+  // Facebook import brought the total past 800, most of it sitting pending
+  // and therefore auto-expanded, this became real, reproducible lag on
+  // every interaction, not just the initial load. Same total work, done
+  // once and memoized, then an O(1) lookup per row instead.
+  const repliesByParentId = useMemo(() => {
+    const map = new Map<string, CommentRow[]>()
+    for (const c of live) {
+      if (!c.parentComment) continue
+      const bucket = map.get(c.parentComment)
+      if (bucket) bucket.push(c)
+      else map.set(c.parentComment, [c])
+    }
+    for (const bucket of map.values()) {
+      bucket.sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+    }
+    return map
+  }, [live])
+
   const searchTerm = search.trim().toLowerCase()
 
   // Sanity's client has no single "publish" verb -- publishing a draft is,
@@ -643,10 +669,15 @@ export function CommentsTool() {
   // A reply matching but its parent not (or vice versa) would read as
   // context-free gibberish on its own -- so a search match keeps its whole
   // thread (top-level comment + every level of reply under it) rather than
-  // just the one card that happens to contain the term.
-  function threadFamily(group: PostGroup, topLevelComment: CommentRow): CommentRow[] {
-    const replies = group.comments.filter((c) => c.parentComment === topLevelComment._id)
-    const replies3 = group.comments.filter((c) => replies.some((r) => r._id === c.parentComment))
+  // just the one card that happens to contain the term. Uses the same
+  // memoized repliesByParentId lookup as the main render loop -- this used
+  // to re-scan the whole group per top-level comment, which mattered here
+  // specifically because typing in the search box re-runs this on every
+  // keystroke (visibleGroups is memoized on searchTerm, which changes every
+  // keystroke by design).
+  function threadFamily(topLevelComment: CommentRow): CommentRow[] {
+    const replies = repliesByParentId.get(topLevelComment._id) ?? []
+    const replies3 = replies.flatMap((r) => repliesByParentId.get(r._id) ?? [])
     return [topLevelComment, ...replies, ...replies3]
   }
 
@@ -696,7 +727,7 @@ export function CommentsTool() {
         const titleMatches = !!group.postTitle?.toLowerCase().includes(searchTerm)
         const topLevel = titleMatches
           ? allTopLevel
-          : allTopLevel.filter((c) => threadFamily(group, c).some((f) => commentText(f).includes(searchTerm)))
+          : allTopLevel.filter((c) => threadFamily(c).some((f) => commentText(f).includes(searchTerm)))
         return {group, topLevel}
       })
       .filter(({topLevel}) => !searchTerm || topLevel.length > 0)
@@ -977,9 +1008,7 @@ export function CommentsTool() {
                   {isExpanded && (
                   <Stack space={4}>
                     {topLevel.map((comment) => {
-                      const replies = group.comments
-                        .filter((r) => r.parentComment === comment._id)
-                        .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+                      const replies = repliesByParentId.get(comment._id) ?? []
 
                       return (
                         <Stack key={comment._id} space={3}>
@@ -1021,9 +1050,7 @@ export function CommentsTool() {
 
                           {/* Depth 2 (a reply to the original comment). */}
                           {replies.map((reply) => {
-                            const replies3 = group.comments
-                              .filter((r3) => r3.parentComment === reply._id)
-                              .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
+                            const replies3 = repliesByParentId.get(reply._id) ?? []
 
                             return (
                               <Box key={reply._id} marginLeft={4}>
