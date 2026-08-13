@@ -2222,7 +2222,7 @@ via direct requests; confirmed `/api/gif-search` returns real results against th
 domain after shipping. Every test comment was deleted afterward, same "clean up what a real test run writes
 to production" convention used throughout this project.
 
-## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13, fix not yet run)
+## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13)
 
 Asher hit this trying to publish "wrote-these-in-2009": `Document "drafts.wrote-these-in-2009" cannot be
 deleted as there are references to it from "drafts.facebook-comment-wrote-these-in-2009-0"` (and `-1`, `-2`,
@@ -2242,20 +2242,31 @@ draft-perspective query handed back, `drafts.` prefix included, instead of the p
 version control, so this was created directly against the dataset at some point (Vision, the CLI, or an
 ad-hoc script that was never committed), outside anything trackable here.
 
-**Fix**: `scripts/fix-draft-referenced-comments.mjs` — finds every `comment` document whose `post._ref`
-starts with `drafts.` and repoints it at the same ID with that prefix stripped, dry-run first, same
-`--dry-run` / real-run pattern as this repo's other migration scripts. **Scoped to the actual bug pattern
-across every post, not just this one** — the "578 comments need review" backlog badge suggests a much
-larger bulk import, and there's no reason to assume only this post's comments got the drafts-prefixed
-reference. Only fixes the reference; does not touch the comments' own draft state or `status` — publishing
-those (if they're worth keeping and showing) is still Asher's own moderation call from the Comments tool.
+**First fix attempt was a script** (`scripts/fix-draft-referenced-comments.mjs`, still in the repo) — but
+Asher doesn't work in a terminal, and even the script's own `--dry-run` needed `SANITY_API_WRITE_TOKEN`
+since draft documents aren't on the public-read perspective. Wrong shape of fix for who'd actually be
+running it.
 
-**Not run yet.** Unlike this repo's other migration scripts, even `--dry-run` here needs
-`SANITY_API_WRITE_TOKEN` — draft documents aren't on the public-read perspective, so an unauthenticated
-client can't see them to report on them at all. This needs running from an environment with that token
-available (nothing in this sandbox has one). Run `node scripts/fix-draft-referenced-comments.mjs --dry-run`
-first to see exactly what it found, then without the flag to actually patch. Update this entry once it's
-been run for real, same as every other migration script's documented outcome.
+**Real fix: a button, right in the Comments tool Asher already uses daily** (shipped 2026-08-13). The tool's
+existing `load()` query already selects `post._ref` per comment (`postId` on `CommentRow`) — a
+`stuckComments` memo just filters that for anything starting with `drafts.`, no new query needed. When
+that's non-empty, a critical-tone banner appears above the comment list (visible in both the normal and
+Trash views) naming the count and explaining in plain terms what's wrong, with a single "Fix them now"
+button. Clicking it repoints each one's `post._ref` at the same ID with `drafts.` stripped, one at a time
+(not `Promise.all` — same reasoning as the Media library's own mass upload: one failure shouldn't take the
+rest down with it), using Studio's own already-authenticated `useClient()` — no token needed, since Asher's
+own browser session already has write access the moment he's signed into Studio. Only touches the
+reference; doesn't touch the comment's own content, status, or trashed state — publishing those comments
+(if they're worth showing) stays his own moderation call afterward, same as any other comment.
+
+**Scoped to the actual bug pattern across every post, not just this one** — the "578 comments need review"
+backlog badge suggests a much larger bulk import, and there's no reason to assume only this post's comments
+got the drafts-prefixed reference; the banner (and its count) will catch any of them, on whichever post,
+the moment Asher opens the Comments tool.
+
+**The script stays in the repo** as a documented alternative for a future case where fixing hundreds of
+these at once from a terminal is genuinely faster than clicking a Studio button — but the button is the
+one actually meant to be used.
 
 ## Reply-notification subscriptions (shipped 2026-07-31)
 

@@ -118,6 +118,7 @@ export function CommentsTool() {
   const [editBusy, setEditBusy] = useState(false)
   const [viewingTrash, setViewingTrash] = useState(false)
   const [search, setSearch] = useState('')
+  const [fixingStuck, setFixingStuck] = useState(false)
   // Explicit overrides of the default expand/collapse state (see
   // groupIsExpanded below) -- a group the user has opened or closed by hand
   // stays that way regardless of its pending status, until they toggle it
@@ -366,7 +367,48 @@ export function CommentsTool() {
     [comments],
   )
   const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
+  const stuckComments = useMemo(
+    () => (comments ?? []).filter((c) => (c.postId ?? '').startsWith('drafts.')),
+    [comments],
+  )
   const searchTerm = search.trim().toLowerCase()
+
+  // A comment created (usually imported, e.g. an old Facebook comment
+  // brought over by hand) while its post was still unpublished sometimes
+  // ends up with `post` pointing at the post's *draft* ID instead of its
+  // published one. Invisible day to day -- the title still resolves fine
+  // for display, since the draft document carries the same title -- but
+  // it silently blocks that post from ever being published: Sanity won't
+  // delete a draft (which is what publishing does under the hood) while
+  // anything still references its exact ID. Repoints the reference at the
+  // same post's published ID; doesn't touch the comment's own content,
+  // status, or trashed state. Same fix as scripts/fix-draft-referenced-
+  // comments.mjs, as a real button here instead of something that needs a
+  // terminal and a write token to run.
+  async function fixStuckReference(id: string, postId: string) {
+    setBusyId(id)
+    try {
+      const fixedRef = postId.replace(/^drafts\./, '')
+      await client.patch(id).set({'post._ref': fixedRef}).commit()
+      setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, postId: fixedRef} : c)) : prev))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  // One at a time, not Promise.all in parallel -- same reasoning as the
+  // Media library's own mass upload: one failure shouldn't take the rest
+  // down with it in an unhandled Promise.all rejection.
+  async function fixAllStuckReferences() {
+    setFixingStuck(true)
+    try {
+      for (const comment of stuckComments) {
+        if (comment.postId) await fixStuckReference(comment._id, comment.postId)
+      }
+    } finally {
+      setFixingStuck(false)
+    }
+  }
 
   function commentText(c: CommentRow): string {
     return `${c.name} ${c.message ?? ''}`.toLowerCase()
@@ -466,6 +508,37 @@ export function CommentsTool() {
             onClick={() => setViewingTrash((v) => !v)}
           />
         </Flex>
+
+        {stuckComments.length > 0 && (
+          <Card padding={4} radius={3} tone="critical" border>
+            <Stack space={3}>
+              <Flex align="center" gap={3} wrap="wrap">
+                <Badge tone="critical" fontSize={2}>
+                  {stuckComments.length}
+                </Badge>
+                <Text size={2} weight="semibold">
+                  {stuckComments.length === 1 ? 'comment is' : 'comments are'} stuck pointing at an unpublished
+                  version of their post
+                </Text>
+              </Flex>
+              <Text size={1} muted>
+                Usually an old imported comment (like a Facebook comment brought over by hand) created before its
+                post was published. Harmless on its own, but it can silently block that post from ever
+                publishing. Fixing this only repoints the comment at the right post -- nothing about the
+                comment itself changes.
+              </Text>
+              <Box>
+                <Button
+                  text={fixingStuck ? 'Fixing…' : `Fix ${stuckComments.length === 1 ? 'it' : 'them'} now`}
+                  tone="critical"
+                  fontSize={1}
+                  disabled={fixingStuck}
+                  onClick={fixAllStuckReferences}
+                />
+              </Box>
+            </Stack>
+          </Card>
+        )}
 
         {!viewingTrash && (
           <TextInput
