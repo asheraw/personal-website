@@ -2248,25 +2248,40 @@ since draft documents aren't on the public-read perspective. Wrong shape of fix 
 running it.
 
 **Real fix: a button, right in the Comments tool Asher already uses daily** (shipped 2026-08-13). The tool's
-existing `load()` query already selects `post._ref` per comment (`postId` on `CommentRow`) — a
-`stuckComments` memo just filters that for anything starting with `drafts.`, no new query needed. When
-that's non-empty, a critical-tone banner appears above the comment list (visible in both the normal and
-Trash views) naming the count and explaining in plain terms what's wrong, with a single "Fix them now"
-button. Clicking it repoints each one's `post._ref` at the same ID with `drafts.` stripped, one at a time
-(not `Promise.all` — same reasoning as the Media library's own mass upload: one failure shouldn't take the
-rest down with it), using Studio's own already-authenticated `useClient()` — no token needed, since Asher's
-own browser session already has write access the moment he's signed into Studio. Only touches the
-reference; doesn't touch the comment's own content, status, or trashed state — publishing those comments
-(if they're worth showing) stays his own moderation call afterward, same as any other comment.
+existing `load()` query already selects `post._ref` per comment (`postId` on `CommentRow`), and a
+`stuckComments` memo filters that.
 
-**Scoped to the actual bug pattern across every post, not just this one** — the "578 comments need review"
-backlog badge suggests a much larger bulk import, and there's no reason to assume only this post's comments
-got the drafts-prefixed reference; the banner (and its count) will catch any of them, on whichever post,
-the moment Asher opens the Comments tool.
+**First version of the button was wrong, and Asher caught it in real use.** It flagged every comment whose
+`postId` started with `drafts.` — 578 of them, almost the entire pending backlog, not just the 4 actually
+blocking this post. Root cause: a comment referencing `drafts.<id>` is only a *problem* once `<id>` also has
+a *published* counterpart (the exact "cannot delete, still referenced" case) — a post that's simply never
+been published yet legitimately has no other ID for a comment to point at, and that describes most of the
+578 (a bulk historical import of old posts, most still sitting unreviewed as drafts, per `CHANGELOG.md`'s
+`import-legacy-posts.mjs` entry). Clicking "Fix them now" tried to strip `drafts.` from all 578 regardless,
+and Sanity's own reference validation rejected the very first rewrite that pointed at a post with no
+published version to point at — which **silently aborted the entire loop** (one `try`/`catch` around the
+whole batch, not one per item) before it ever reached the four comments that actually mattered. Asher's "not
+sure if it did anything" was exactly right: nothing had changed, and the same publish error came back
+identical afterward.
 
-**The script stays in the repo** as a documented alternative for a future case where fixing hundreds of
-these at once from a terminal is genuinely faster than clicking a Studio button — but the button is the
-one actually meant to be used.
+**Fixed the same day.** `load()` now runs one extra existence check after fetching comments — collapses
+every `drafts.`-referenced `postId` to its unique candidate published ID, then queries which of those IDs
+actually exist (`*[_id in $ids]._id`). `stuckComments` only counts a comment as fixable once its target
+post's published counterpart is confirmed to exist — this correctly dropped the count from 578 to the small
+number that are real, present-tense problems. `fixAllStuckReferences` also wraps each comment's own fix in
+its own `try`/`catch` now, collecting failures into a visible message instead of one failure silently
+killing everything after it — so if something unexpected still fails, Asher sees exactly what and how many,
+never another silent no-op.
+
+Clicking "Fix them now" repoints each one's `post._ref` at the same ID with `drafts.` stripped, one at a
+time (not `Promise.all` — same reasoning as the Media library's own mass upload), using Studio's own
+already-authenticated `useClient()` — no token needed. Only touches the reference; doesn't touch the
+comment's own content, status, or trashed state.
+
+**The script stays in the repo** (`scripts/fix-draft-referenced-comments.mjs`) as a documented alternative
+for a future case where fixing many of these at once from a terminal is genuinely faster than clicking a
+Studio button — but the button is the one actually meant to be used, and now has the same safety check the
+UI does.
 
 ## Reply-notification subscriptions (shipped 2026-07-31)
 

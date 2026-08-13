@@ -18,6 +18,23 @@ const LAST_SEEN_KEY = 'asheraw-comments-last-seen'
 // "auto-deletes on ..." display, the actual purge happens server-side.
 const TRASH_RETENTION_DAYS = 30
 
+// A comment's `post` reference pointing at `drafts.<id>` only actually
+// blocks anything once that post has a *published* counterpart too (the
+// exact "cannot be deleted, referenced by ..." publish failure) -- a post
+// that has never been published yet legitimately has no other ID for a
+// comment to point at, and stripping this prefix there would repoint the
+// comment at a document that doesn't exist, which Sanity's own reference
+// validation rejects outright. First version of this fix (2026-08-13)
+// missed that distinction entirely: it flagged every drafts.-referencing
+// comment as "stuck" (578 of them, almost the entire pending backlog --
+// nearly all from a bulk historical import of posts that are still
+// sitting unpublished, not actually broken), and "Fix them now" threw on
+// the very first one that pointed at a not-yet-published post, silently
+// aborting the whole loop with zero feedback -- which is exactly why
+// Asher's click looked like it did nothing and the real, already-
+// publishable post's four comments were never even reached.
+const DRAFTS_PREFIX = 'drafts.'
+
 // <input type="datetime-local"> works in the browser's own local time, with
 // no timezone suffix -- `new Date(isoString)` already handles turning that
 // back into the right instant on save, but going the other way (showing an
@@ -119,6 +136,11 @@ export function CommentsTool() {
   const [viewingTrash, setViewingTrash] = useState(false)
   const [search, setSearch] = useState('')
   const [fixingStuck, setFixingStuck] = useState(false)
+  const [fixError, setFixError] = useState<string | null>(null)
+  // Which drafts.-referenced posts actually have a published counterpart
+  // right now -- the only ones a comment can safely be repointed at. See
+  // DRAFTS_PREFIX's comment above for why this check exists at all.
+  const [publishedCounterparts, setPublishedCounterparts] = useState<Set<string>>(new Set())
   // Explicit overrides of the default expand/collapse state (see
   // groupIsExpanded below) -- a group the user has opened or closed by hand
   // stays that way regardless of its pending status, until they toggle it
@@ -147,7 +169,29 @@ export function CommentsTool() {
           "parentComment": parentComment._ref
         }`,
       )
-      .then(setComments)
+      .then((rows) => {
+        setComments(rows)
+
+        // One extra existence check, not per-comment -- collapses every
+        // drafts.-referenced comment down to its unique candidate
+        // published ID first, so a post with 40 imported comments only
+        // costs one ID in this query, not 40.
+        const candidateIds = Array.from(
+          new Set(
+            rows
+              .map((r) => r.postId)
+              .filter((id): id is string => !!id && id.startsWith(DRAFTS_PREFIX))
+              .map((id) => id.slice(DRAFTS_PREFIX.length)),
+          ),
+        )
+        if (candidateIds.length === 0) {
+          setPublishedCounterparts(new Set())
+          return
+        }
+        client.fetch<string[]>(`*[_id in $ids]._id`, {ids: candidateIds}).then((existing) => {
+          setPublishedCounterparts(new Set(existing))
+        })
+      })
   }, [client])
 
   useEffect(() => {
@@ -368,8 +412,16 @@ export function CommentsTool() {
   )
   const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
   const stuckComments = useMemo(
-    () => (comments ?? []).filter((c) => (c.postId ?? '').startsWith('drafts.')),
-    [comments],
+    () =>
+      (comments ?? []).filter((c) => {
+        const id = c.postId ?? ''
+        if (!id.startsWith(DRAFTS_PREFIX)) return false
+        // Only a real, fixable problem once the published counterpart
+        // actually exists -- see DRAFTS_PREFIX's comment for why a post
+        // that's never been published yet doesn't count as "stuck."
+        return publishedCounterparts.has(id.slice(DRAFTS_PREFIX.length))
+      }),
+    [comments, publishedCounterparts],
   )
   const searchTerm = search.trim().toLowerCase()
 
@@ -388,7 +440,7 @@ export function CommentsTool() {
   async function fixStuckReference(id: string, postId: string) {
     setBusyId(id)
     try {
-      const fixedRef = postId.replace(/^drafts\./, '')
+      const fixedRef = postId.slice(DRAFTS_PREFIX.length)
       await client.patch(id).set({'post._ref': fixedRef}).commit()
       setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, postId: fixedRef} : c)) : prev))
     } finally {
@@ -398,15 +450,29 @@ export function CommentsTool() {
 
   // One at a time, not Promise.all in parallel -- same reasoning as the
   // Media library's own mass upload: one failure shouldn't take the rest
-  // down with it in an unhandled Promise.all rejection.
+  // down with it in an unhandled Promise.all rejection. Each one is now
+  // its own try/catch, not one try/catch around the whole loop -- the
+  // first version let a single failure silently kill every fix after it
+  // with zero feedback, which is exactly how this looked like it "did
+  // nothing" the first time around.
   async function fixAllStuckReferences() {
     setFixingStuck(true)
+    setFixError(null)
+    const failedNames: string[] = []
     try {
       for (const comment of stuckComments) {
-        if (comment.postId) await fixStuckReference(comment._id, comment.postId)
+        if (!comment.postId) continue
+        try {
+          await fixStuckReference(comment._id, comment.postId)
+        } catch {
+          failedNames.push(comment.name || '(unnamed)')
+        }
       }
     } finally {
       setFixingStuck(false)
+      if (failedNames.length > 0) {
+        setFixError(`Couldn't fix ${failedNames.length} of them: ${failedNames.join(', ')}. Nothing else changed for those -- try again, or let me know.`)
+      }
     }
   }
 
@@ -536,6 +602,11 @@ export function CommentsTool() {
                   onClick={fixAllStuckReferences}
                 />
               </Box>
+              {fixError && (
+                <Text size={1} weight="semibold">
+                  {fixError}
+                </Text>
+              )}
             </Stack>
           </Card>
         )}
