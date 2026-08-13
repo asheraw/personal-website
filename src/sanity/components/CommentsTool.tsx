@@ -18,21 +18,19 @@ const LAST_SEEN_KEY = 'asheraw-comments-last-seen'
 // "auto-deletes on ..." display, the actual purge happens server-side.
 const TRASH_RETENTION_DAYS = 30
 
-// A comment's `post` reference pointing at `drafts.<id>` only actually
-// blocks anything once that post has a *published* counterpart too (the
-// exact "cannot be deleted, referenced by ..." publish failure) -- a post
-// that has never been published yet legitimately has no other ID for a
-// comment to point at, and stripping this prefix there would repoint the
-// comment at a document that doesn't exist, which Sanity's own reference
-// validation rejects outright. First version of this fix (2026-08-13)
-// missed that distinction entirely: it flagged every drafts.-referencing
-// comment as "stuck" (578 of them, almost the entire pending backlog --
-// nearly all from a bulk historical import of posts that are still
-// sitting unpublished, not actually broken), and "Fix them now" threw on
-// the very first one that pointed at a not-yet-published post, silently
-// aborting the whole loop with zero feedback -- which is exactly why
-// Asher's click looked like it did nothing and the real, already-
-// publishable post's four comments were never even reached.
+// A comment's `post` reference pointing at `drafts.<id>` is what blocks
+// that post's very first publish -- Sanity refuses to delete a draft
+// (which is what publishing does under the hood) while anything still
+// references its exact ID. See RUNBOOK.md's entry on this for the full
+// back-and-forth getting here: a first version required a *published*
+// counterpart to already exist before treating a comment as fixable, on
+// the assumption Sanity rejects writing a reference to a not-yet-existing
+// document -- wrong assumption (that only produces a Studio-side broken-
+// reference warning, not a hard mutation failure), and it meant the tool
+// could never fix a post that had never been published even once, which
+// is exactly the case that matters here: no published counterpart CAN
+// exist until this exact reference is fixed. Unconditional now --
+// anything pointing at a drafts.-prefixed post ID gets offered a fix.
 const DRAFTS_PREFIX = 'drafts.'
 
 // <input type="datetime-local"> works in the browser's own local time, with
@@ -137,10 +135,6 @@ export function CommentsTool() {
   const [search, setSearch] = useState('')
   const [fixingStuck, setFixingStuck] = useState(false)
   const [fixError, setFixError] = useState<string | null>(null)
-  // Which drafts.-referenced posts actually have a published counterpart
-  // right now -- the only ones a comment can safely be repointed at. See
-  // DRAFTS_PREFIX's comment above for why this check exists at all.
-  const [publishedCounterparts, setPublishedCounterparts] = useState<Set<string>>(new Set())
   // Explicit overrides of the default expand/collapse state (see
   // groupIsExpanded below) -- a group the user has opened or closed by hand
   // stays that way regardless of its pending status, until they toggle it
@@ -169,29 +163,7 @@ export function CommentsTool() {
           "parentComment": parentComment._ref
         }`,
       )
-      .then((rows) => {
-        setComments(rows)
-
-        // One extra existence check, not per-comment -- collapses every
-        // drafts.-referenced comment down to its unique candidate
-        // published ID first, so a post with 40 imported comments only
-        // costs one ID in this query, not 40.
-        const candidateIds = Array.from(
-          new Set(
-            rows
-              .map((r) => r.postId)
-              .filter((id): id is string => !!id && id.startsWith(DRAFTS_PREFIX))
-              .map((id) => id.slice(DRAFTS_PREFIX.length)),
-          ),
-        )
-        if (candidateIds.length === 0) {
-          setPublishedCounterparts(new Set())
-          return
-        }
-        client.fetch<string[]>(`*[_id in $ids]._id`, {ids: candidateIds}).then((existing) => {
-          setPublishedCounterparts(new Set(existing))
-        })
-      })
+      .then(setComments)
   }, [client])
 
   useEffect(() => {
@@ -411,17 +383,20 @@ export function CommentsTool() {
     [comments],
   )
   const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
+  // Deliberately NOT gated on "does a published counterpart already
+  // exist" -- an earlier version of this added that gate on the
+  // assumption Sanity rejects a reference written to a not-yet-existing
+  // document, which turned out to be wrong (that only produces a
+  // Studio-side broken-reference warning, not a hard mutation failure --
+  // Sanity happily stores a reference to an ID that doesn't exist yet,
+  // it's a completely normal, supported state). That gate made the tool
+  // correctly report zero, but also made it unable to ever fix a post
+  // that's never been published even once -- exactly the deadlock Asher
+  // hit: no published counterpart can exist until the reference blocking
+  // publish is fixed, and the fix required one to already exist. Removed.
   const stuckComments = useMemo(
-    () =>
-      (comments ?? []).filter((c) => {
-        const id = c.postId ?? ''
-        if (!id.startsWith(DRAFTS_PREFIX)) return false
-        // Only a real, fixable problem once the published counterpart
-        // actually exists -- see DRAFTS_PREFIX's comment for why a post
-        // that's never been published yet doesn't count as "stuck."
-        return publishedCounterparts.has(id.slice(DRAFTS_PREFIX.length))
-      }),
-    [comments, publishedCounterparts],
+    () => (comments ?? []).filter((c) => (c.postId ?? '').startsWith(DRAFTS_PREFIX)),
+    [comments],
   )
   const searchTerm = search.trim().toLowerCase()
 

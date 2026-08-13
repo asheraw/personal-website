@@ -2224,64 +2224,75 @@ to production" convention used throughout this project.
 
 ## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13)
 
-Asher hit this trying to publish "wrote-these-in-2009": `Document "drafts.wrote-these-in-2009" cannot be
-deleted as there are references to it from "drafts.facebook-comment-wrote-these-in-2009-0"` (and `-1`, `-2`,
-`-3`). Publishing a document is, under the hood, delete-the-draft-and-write-the-published-version — Sanity
-refuses that delete when anything still strongly references the draft's exact ID, which is what these four
-did.
+Asher hit this trying to publish the post whose **slug** is "wrote-these-in-2009": `Document
+"drafts.facebook-wrote-these-in-2009" cannot be deleted as there are references to it from
+"drafts.facebook-comment-wrote-these-in-2009-0"` (and `-1`, `-2`, `-3`). Publishing a document is, under the
+hood, delete-the-draft-and-write-the-published-version — Sanity refuses that delete when anything still
+strongly references the draft's exact ID, which is what these four did. **Note the mismatch**: the post's
+`_id` is `facebook-wrote-these-in-2009`, not the same as its `slug` (`wrote-these-in-2009`) — a document's
+`_id` is set once at creation and never changes, but its `slug` field can be edited freely afterward, and
+this post's slug was apparently changed at some point after import. Earlier drafts of this very entry
+wrongly assumed `_id` and slug matched and named the post "wrote-these-in-2009" throughout — harmless in
+practice since nothing in the actual fix ever hardcoded that string, but worth flagging so a future reader
+isn't confused by the discrepancy.
 
 **Root cause, confirmed by reading `commentType.ts` directly, not assumed**: `comment.post` is a plain
 (strong) reference, and `comment` documents are never meant to sit in draft state themselves — moderation
 is the `status` field, not Sanity's draft/publish mechanism (that file's own header comment says so). These
 four legacy Facebook-comment imports are both sitting as `drafts.facebook-comment-wrote-these-in-2009-N`
-*and* pointing their `post` reference at `drafts.wrote-these-in-2009` specifically — both symptoms of the
-same thing: whatever imported them ran while the post was still unpublished, and used the literal `_id` a
-draft-perspective query handed back, `drafts.` prefix included, instead of the published slug ID.
+*and* pointing their `post` reference at `drafts.facebook-wrote-these-in-2009` specifically — both symptoms
+of the same thing: whatever imported them ran while the post was still unpublished, and used the literal
+`_id` a draft-perspective query handed back, `drafts.` prefix included.
 
 **Not written anywhere in this repo** — no `facebookComment` schema type, no import script for it exists in
 version control, so this was created directly against the dataset at some point (Vision, the CLI, or an
 ad-hoc script that was never committed), outside anything trackable here.
 
-**First fix attempt was a script** (`scripts/fix-draft-referenced-comments.mjs`, still in the repo) — but
-Asher doesn't work in a terminal, and even the script's own `--dry-run` needed `SANITY_API_WRITE_TOKEN`
-since draft documents aren't on the public-read perspective. Wrong shape of fix for who'd actually be
-running it.
+**Three attempts to actually fix it, each one taught something real:**
 
-**Real fix: a button, right in the Comments tool Asher already uses daily** (shipped 2026-08-13). The tool's
-existing `load()` query already selects `post._ref` per comment (`postId` on `CommentRow`), and a
-`stuckComments` memo filters that.
+1. **A script** (`scripts/fix-draft-referenced-comments.mjs`, still in the repo). Wrong shape of fix —
+   Asher doesn't work in a terminal, and even `--dry-run` needed `SANITY_API_WRITE_TOKEN` since draft
+   documents aren't on the public-read perspective.
 
-**First version of the button was wrong, and Asher caught it in real use.** It flagged every comment whose
-`postId` started with `drafts.` — 578 of them, almost the entire pending backlog, not just the 4 actually
-blocking this post. Root cause: a comment referencing `drafts.<id>` is only a *problem* once `<id>` also has
-a *published* counterpart (the exact "cannot delete, still referenced" case) — a post that's simply never
-been published yet legitimately has no other ID for a comment to point at, and that describes most of the
-578 (a bulk historical import of old posts, most still sitting unreviewed as drafts, per `CHANGELOG.md`'s
-`import-legacy-posts.mjs` entry). Clicking "Fix them now" tried to strip `drafts.` from all 578 regardless,
-and Sanity's own reference validation rejected the very first rewrite that pointed at a post with no
-published version to point at — which **silently aborted the entire loop** (one `try`/`catch` around the
-whole batch, not one per item) before it ever reached the four comments that actually mattered. Asher's "not
-sure if it did anything" was exactly right: nothing had changed, and the same publish error came back
-identical afterward.
+2. **A button in the Comments tool**, using its already-loaded `post._ref` per comment. First version
+   flagged every comment whose `postId` started with `drafts.` — 578 of them, almost the entire pending
+   backlog, not just the 4 actually blocking this post. Clicking "Fix them now" tried to strip `drafts.`
+   from all 578 in one `try`/`catch` around the whole loop — the first one that threw for any reason
+   silently killed everything after it, so Asher's "not sure if it did anything" was exactly right: nothing
+   had changed.
 
-**Fixed the same day.** `load()` now runs one extra existence check after fetching comments — collapses
-every `drafts.`-referenced `postId` to its unique candidate published ID, then queries which of those IDs
-actually exist (`*[_id in $ids]._id`). `stuckComments` only counts a comment as fixable once its target
-post's published counterpart is confirmed to exist — this correctly dropped the count from 578 to the small
-number that are real, present-tense problems. `fixAllStuckReferences` also wraps each comment's own fix in
-its own `try`/`catch` now, collecting failures into a visible message instead of one failure silently
-killing everything after it — so if something unexpected still fails, Asher sees exactly what and how many,
-never another silent no-op.
+3. **An "only fix it if a published counterpart already exists" guard**, added on the theory that a comment
+   referencing a *never-published* post's draft ID isn't really broken yet (nothing to repoint it to) and
+   that Sanity would reject a reference written to a nonexistent document anyway. **Both halves of that
+   theory turned out to matter, but the fix was still wrong**: it correctly dropped the flagged count to
+   zero, but that included the real four blocking this exact post — which, it turned out, had *never
+   successfully published even once*, so no published counterpart could exist yet by definition. The guard
+   made the tool unable to ever break that deadlock: nothing could get fixed until a published copy
+   existed, and a published copy couldn't exist until the fix ran. Also: Sanity does **not** actually reject
+   writing a reference to a not-yet-existing document at the mutation level (that only shows up as a
+   Studio-side broken-reference warning) — so the guard was solving a problem that likely wasn't the real
+   cause of the original silent failure in the first place.
 
-Clicking "Fix them now" repoints each one's `post._ref` at the same ID with `drafts.` stripped, one at a
-time (not `Promise.all` — same reasoning as the Media library's own mass upload), using Studio's own
-already-authenticated `useClient()` — no token needed. Only touches the reference; doesn't touch the
-comment's own content, status, or trashed state.
+**Where it landed (shipped 2026-08-13):** `stuckComments` is unconditional again — any comment whose `post`
+reference starts with `drafts.` gets offered a fix, no existence check. What's kept from the false start:
+`fixAllStuckReferences` wraps *each* comment's own fix in its own `try`/`catch` rather than one around the
+whole loop, so a single real failure shows up as a specific, visible message (name + count) instead of a
+silent no-op that kills every fix after it. Clicking "Fix them now" repoints each one's `post._ref` at the
+same ID with `drafts.` stripped, one at a time (not `Promise.all`), using Studio's own already-authenticated
+`useClient()` — no token needed. Only touches the reference; doesn't touch the comment's own content,
+status, or trashed state.
 
-**The script stays in the repo** (`scripts/fix-draft-referenced-comments.mjs`) as a documented alternative
-for a future case where fixing many of these at once from a terminal is genuinely faster than clicking a
-Studio button — but the button is the one actually meant to be used, and now has the same safety check the
-UI does.
+**If a comment ever again shows up in the publish-blocking error but never appears in the Comments tool's
+banner**, the working theory going in was that it's a different, undocumented `_type` entirely (these
+Facebook imports were created outside any schema this repo defines, so nothing guarantees they're literally
+`_type == "comment"`) — not yet confirmed either way, since fixing the guard above resolved the immediate
+case without needing to check. Worth checking first via Vision: `*[references("drafts.<the-blocked-id>")]{
+_id, _type }` lists every actual referencing document regardless of type, which the Comments tool's own
+query (scoped to `_type == "comment"`) would never surface if the real answer is "something else."
+
+**The script stays in the repo** (`scripts/fix-draft-referenced-comments.mjs`, same existence-check history
+and same correction applied) as a documented alternative for a future case where fixing many of these at
+once from a terminal is genuinely faster than clicking a Studio button.
 
 ## Reply-notification subscriptions (shipped 2026-07-31)
 

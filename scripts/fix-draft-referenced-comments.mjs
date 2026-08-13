@@ -90,37 +90,18 @@ async function main() {
     return;
   }
 
-  // Only a real problem once the referenced post also has a *published*
-  // counterpart -- a post that's simply never been published yet
-  // legitimately has no other ID for a comment to point at, and Sanity's
-  // own reference validation rejects a patch that repoints one at a
-  // document that doesn't exist. An earlier version of this same fix (as
-  // a button in the Comments tool) skipped this check, tried to strip
-  // `drafts.` from every match regardless, and hit exactly that
-  // rejection on the first not-yet-published post it reached -- which
-  // matters here even more, since without a per-item try/catch below too,
-  // that one failure would silently end the whole run.
-  const candidateIds = [...new Set(broken.map((c) => c.postRef.slice(DRAFTS_PREFIX.length)))];
-  const existing = new Set(await client.fetch(`*[_id in $ids]._id`, { ids: candidateIds }));
-  const fixable = broken.filter((c) => existing.has(c.postRef.slice(DRAFTS_PREFIX.length)));
-  const notYetPublished = broken.length - fixable.length;
-
-  if (notYetPublished > 0) {
-    console.log(
-      `${notYetPublished} comment(s) reference a post that hasn't been published yet -- left alone, nothing wrong ` +
-        `with them right now. They'll need this same fix once (if) that post is published.\n`
-    );
-  }
-
-  if (fixable.length === 0) {
-    console.log("No comment documents are actually fixable right now -- nothing to do.");
-    return;
-  }
-
-  console.log(`${DRY_RUN ? "[dry run] " : ""}Found ${fixable.length} comment(s) referencing a post's draft ID:\n`);
+  // Deliberately not gated on "does a published counterpart already
+  // exist" -- an earlier version of this added that gate on the
+  // assumption Sanity rejects writing a reference to a not-yet-existing
+  // document, which is wrong (that only produces a Studio-side broken-
+  // reference warning, not a hard mutation failure). That gate also made
+  // this permanently unable to fix a post that's never been published
+  // even once -- exactly the case that matters: no published counterpart
+  // CAN exist until the reference blocking that first publish is fixed.
+  console.log(`${DRY_RUN ? "[dry run] " : ""}Found ${broken.length} comment(s) referencing a post's draft ID:\n`);
 
   const failures = [];
-  for (const comment of fixable) {
+  for (const comment of broken) {
     const fixedRef = comment.postRef.slice(DRAFTS_PREFIX.length);
     console.log(`- "${comment.name || "(no name)"}" (${comment._id}), submitted ${comment.createdAt || "unknown date"}`);
     console.log(`  post: ${comment.postRef}  ->  ${fixedRef}`);
@@ -134,8 +115,8 @@ async function main() {
     }
   }
 
-  const fixedCount = fixable.length - failures.length;
-  console.log(`\n${DRY_RUN ? "[dry run] Would fix" : "Fixed"} ${DRY_RUN ? fixable.length : fixedCount} comment(s).`);
+  const fixedCount = broken.length - failures.length;
+  console.log(`\n${DRY_RUN ? "[dry run] Would fix" : "Fixed"} ${DRY_RUN ? broken.length : fixedCount} comment(s).`);
   if (failures.length > 0) {
     console.log(`⚠ ${failures.length} comment(s) failed to patch -- see the ⚠ lines above.`);
   }
@@ -146,14 +127,10 @@ async function main() {
   }
 
   const remaining = await client.fetch(QUERY);
-  const remainingExisting = new Set(await client.fetch(`*[_id in $ids]._id`, {
-    ids: [...new Set(remaining.map((c) => c.postRef.slice(DRAFTS_PREFIX.length)))],
-  }));
-  const stillFixable = remaining.filter((c) => remainingExisting.has(c.postRef.slice(DRAFTS_PREFIX.length)));
-  if (stillFixable.length === 0) {
-    console.log("\nVerified: no comment documents still reference a draft post ID that's actually fixable.");
+  if (remaining.length === 0) {
+    console.log("\nVerified: no comment documents still reference a post by its draft ID.");
   } else {
-    console.log(`\n⚠ ${stillFixable.length} comment(s) are still fixable but weren't fixed -- needs a manual look.`);
+    console.log(`\n⚠ ${remaining.length} comment(s) still reference a draft post ID after this run -- needs a manual look.`);
   }
 }
 
