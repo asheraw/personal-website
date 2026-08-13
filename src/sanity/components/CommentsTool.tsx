@@ -18,6 +18,19 @@ const LAST_SEEN_KEY = 'asheraw-comments-last-seen'
 // "auto-deletes on ..." display, the actual purge happens server-side.
 const TRASH_RETENTION_DAYS = 30
 
+// A group with a pending comment auto-expands by default -- but only while
+// the *site-wide* pending count is still low. Added 2026-08-14: while
+// Asher's mid-way through the Facebook import, hundreds of posts sit
+// pending at once, and auto-expanding all of them is exactly what made this
+// page heavy (see RUNBOOK.md's "Comments tool lag" entry). Above this
+// threshold, every group defaults to collapsed regardless of pending
+// status -- opened only by an explicit click (or a search, which always
+// shows its own results in full). Once real day-to-day traffic is the only
+// source of pending comments again (a small number, reviewed as they come
+// in), auto-expand-when-pending becomes exactly the right default again,
+// so this is a threshold to cross back over, not a one-way switch.
+const AUTO_EXPAND_BELOW_PENDING_COUNT = 10
+
 // A comment's `post` reference pointing at `drafts.<id>` is what blocks
 // that post's very first publish -- Sanity refuses to delete a draft
 // (which is what publishing does under the hood) while anything still
@@ -53,6 +66,12 @@ type CommentRow = {
   gifUrl: string | null
   status: 'pending' | 'approved' | 'rejected' | 'spam'
   createdAt: string
+  // Sanity's own system timestamp -- when this document was actually
+  // written, which for an imported comment is today, not whatever
+  // historical Facebook date `createdAt` carries. Used only for "which
+  // post did I just work on" group ordering below; every other date shown
+  // anywhere in this tool is still the real `createdAt`.
+  addedAt: string
   editedAt: string | null
   trashedAt: string | null
   postId: string | null
@@ -210,7 +229,7 @@ export function CommentsTool() {
     client
       .fetch<CommentRow[]>(
         `*[_type == "comment"] | order(createdAt desc){
-          _id, name, email, ip, message, gifUrl, status, createdAt, editedAt, trashedAt, isAuthorReply,
+          _id, name, email, ip, message, gifUrl, status, createdAt, "addedAt": _createdAt, editedAt, trashedAt, isAuthorReply,
           "postId": post._ref, "postTitle": post->title, "postSlug": post->slug.current,
           "postCommentsLocked": post->commentsLocked,
           "parentComment": parentComment._ref
@@ -447,6 +466,7 @@ export function CommentsTool() {
                 gifUrl: replyGif?.url ?? null,
                 status: 'approved',
                 createdAt: new Date().toISOString(),
+                addedAt: new Date().toISOString(),
                 editedAt: null,
                 trashedAt: null,
                 postId: parent.postId,
@@ -681,9 +701,13 @@ export function CommentsTool() {
     return [topLevelComment, ...replies, ...replies3]
   }
 
-  // Grouped by post, posts with anything pending first, then by most
-  // recent activity -- so the thing most likely to need you shows up
-  // without scrolling. Trashed comments never appear here at all.
+  // Grouped by post, posts with anything pending first, then by which was
+  // *added to this site* most recently -- not the historical Facebook date
+  // (`createdAt`, which for an imported thread can be years old). While
+  // Asher's still working through the Facebook import post by post, this
+  // is what actually surfaces "the one I just finished" at the top instead
+  // of burying it under old-but-recently-imported threads sorted by their
+  // 2021/2023 dates. Trashed comments never appear here at all.
   const groups = useMemo<PostGroup[]>(() => {
     const byPost = new Map<string, PostGroup>()
     for (const c of live) {
@@ -702,8 +726,8 @@ export function CommentsTool() {
       const aPending = a.comments.some((c) => c.status === 'pending')
       const bPending = b.comments.some((c) => c.status === 'pending')
       if (aPending !== bPending) return aPending ? -1 : 1
-      const latest = (g: PostGroup) => Math.max(...g.comments.map((c) => +new Date(c.createdAt)))
-      return latest(b) - latest(a)
+      const latestAdded = (g: PostGroup) => Math.max(...g.comments.map((c) => +new Date(c.addedAt)))
+      return latestAdded(b) - latestAdded(a)
     })
   }, [live])
 
@@ -938,7 +962,11 @@ export function CommentsTool() {
               // expanded page for content that never needs a second look is
               // exactly what made this tool feel heavy. A search in progress
               // always shows its results in full; that's the point of it.
-              const isExpanded = !!searchTerm || (expandOverrides[key] ?? groupPending)
+              // Auto-expand-when-pending only kicks in below
+              // AUTO_EXPAND_BELOW_PENDING_COUNT site-wide -- see its own
+              // comment above for why.
+              const isExpanded =
+                !!searchTerm || (expandOverrides[key] ?? (pending.length < AUTO_EXPAND_BELOW_PENDING_COUNT && groupPending))
               const totalCount = group.comments.length
 
               return (
