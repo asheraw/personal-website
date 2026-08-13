@@ -34,6 +34,54 @@ const CODE_LANGUAGES = [
   {title: 'Markdown', value: 'markdown'},
 ]
 
+// Shared by the single Accordion block and each item inside an Accordion
+// Group -- both need the exact same deliberately restricted rich text
+// (bold/italic/underline/lists/a plain URL link, no headings/blockquotes/
+// custom annotations), and a factory function is what keeps that in sync
+// between the two rather than two hand-copied definitions drifting apart
+// the way Story/Play's own duplicated prose once did (see RUNBOOK.md).
+function accordionContentField() {
+  return defineField({
+    name: 'content',
+    title: 'Content (hidden until clicked)',
+    type: 'array',
+    of: [
+      defineArrayMember({
+        type: 'block',
+        styles: [{title: 'Normal', value: 'normal'}],
+        lists: [
+          {title: 'Bullet', value: 'bullet'},
+          {title: 'Numbered', value: 'number'},
+        ],
+        marks: {
+          decorators: [
+            {title: 'Strong', value: 'strong'},
+            {title: 'Emphasis', value: 'em'},
+            {title: 'Underline', value: 'underline'},
+          ],
+          annotations: [
+            {
+              title: 'URL',
+              name: 'link',
+              type: 'object',
+              icon: LinkIcon,
+              fields: [
+                {title: 'URL', name: 'href', type: 'url'},
+                {
+                  title: 'Open in the same tab instead',
+                  name: 'openInSameTab',
+                  type: 'boolean',
+                  initialValue: false,
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    ],
+  })
+}
+
 export const blockContentType = defineType({
   title: 'Block Content',
   name: 'blockContent',
@@ -474,49 +522,53 @@ export const blockContentType = defineType({
         // existing accordions were migrated to this array shape (one
         // 'normal' block per paragraph) rather than left to break -- see
         // RUNBOOK.md's Accordion section for the migration script.
+        accordionContentField(),
+      ],
+      preview: {
+        select: {title: 'title'},
+        prepare: ({title}) => ({title: title || 'Accordion'}),
+      },
+    }),
+    // A separate block from the single Accordion above, not that same
+    // block widened to hold many items -- every already-published post's
+    // Accordion blocks stay exactly as they are, no migration needed, and
+    // Asher picks per-use whether a spot needs one lone disclosure or a
+    // stacked FAQ-style group. Each item shares the exact same restricted
+    // rich text as the single Accordion via `accordionContentField()`.
+    defineArrayMember({
+      type: 'object',
+      name: 'accordionGroup',
+      title: 'Accordion Group (multiple items)',
+      icon: UlistIcon,
+      fields: [
         defineField({
-          name: 'content',
-          title: 'Content (hidden until clicked)',
+          name: 'items',
+          title: 'Items',
           type: 'array',
+          validation: (rule) => rule.min(1),
           of: [
             defineArrayMember({
-              type: 'block',
-              styles: [{title: 'Normal', value: 'normal'}],
-              lists: [
-                {title: 'Bullet', value: 'bullet'},
-                {title: 'Numbered', value: 'number'},
+              type: 'object',
+              name: 'accordionGroupItem',
+              components: {input: SavedStatusInput},
+              fields: [
+                defineField({name: 'title', title: 'Heading (always visible)', type: 'string'}),
+                accordionContentField(),
               ],
-              marks: {
-                decorators: [
-                  {title: 'Strong', value: 'strong'},
-                  {title: 'Emphasis', value: 'em'},
-                  {title: 'Underline', value: 'underline'},
-                ],
-                annotations: [
-                  {
-                    title: 'URL',
-                    name: 'link',
-                    type: 'object',
-                    icon: LinkIcon,
-                    fields: [
-                      {title: 'URL', name: 'href', type: 'url'},
-                      {
-                        title: 'Open in the same tab instead',
-                        name: 'openInSameTab',
-                        type: 'boolean',
-                        initialValue: false,
-                      },
-                    ],
-                  },
-                ],
+              preview: {
+                select: {title: 'title'},
+                prepare: ({title}) => ({title: title || 'Item'}),
               },
             }),
           ],
         }),
       ],
       preview: {
-        select: {title: 'title'},
-        prepare: ({title}) => ({title: title || 'Accordion'}),
+        select: {items: 'items'},
+        prepare: ({items}) => {
+          const count = (items as unknown[] | undefined)?.length ?? 0
+          return {title: `Accordion Group (${count} item${count === 1 ? '' : 's'})`}
+        },
       },
     }),
     // Embeds a *reference* to a Reusable Snippet document, not a copy of

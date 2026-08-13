@@ -4,6 +4,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
+import { AccordionGroup } from "@/components/asher/blog/AccordionGroup";
 import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
 import { SizedImage, type DisplaySize } from "@/components/asher/blog/SizedImage";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
@@ -243,6 +244,7 @@ export const postBodyComponents: PortableTextComponents = {
       );
     },
     accordion: ({ value }) => <Accordion title={value?.title} content={value?.content} />,
+    accordionGroup: ({ value }) => <AccordionGroup items={value?.items ?? []} />,
     quoteGrid: ({ value }) => (
       <QuoteGrid
         entries={(value?.entries ?? []) as QuoteEntry[]}

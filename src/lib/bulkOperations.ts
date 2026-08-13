@@ -109,10 +109,10 @@ function escapeRegExp(s: string): string {
 }
 
 // Scoped to plain paragraph/heading/blockquote/list-item text only --
-// not image captions, callout text, code blocks, or accordion content.
-// Walking every custom block type's own text fields for a bulk
-// find-and-replace would be a lot of special-casing for a feature meant
-// to fix a typo across many posts, not rewrite arbitrary structured
+// not image captions, callout text, code blocks, or Accordion/Accordion
+// Group content. Walking every custom block type's own text fields for a
+// bulk find-and-replace would be a lot of special-casing for a feature
+// meant to fix a typo across many posts, not rewrite arbitrary structured
 // content -- stated plainly here and in the tool's own UI text.
 function bodySpans(body: unknown[] | undefined): { block: PTBlock; span: PTSpan }[] {
   const out: { block: PTBlock; span: PTSpan }[] = [];

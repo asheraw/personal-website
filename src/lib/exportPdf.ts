@@ -250,6 +250,25 @@ async function renderNode(doc: PDFKit.PDFDocument, node: Block) {
       doc.moveDown(0.5);
       return;
     }
+    case "accordionGroup": {
+      // Same per-item rendering as the "accordion" case above, just looped
+      // -- an Accordion Group is several of those stacked, not a
+      // different shape.
+      const items = Array.isArray(node.items) ? (node.items as Block[]) : [];
+      for (const item of items) {
+        doc.font("Helvetica-Bold").fontSize(11).text(String(item.title ?? ""));
+        doc.moveDown(0.2);
+        if (Array.isArray(item.content)) {
+          for (const child of item.content as Block[]) {
+            await renderNode(doc, child);
+          }
+        } else {
+          doc.font("Helvetica").fontSize(11).text(String(item.content ?? ""));
+        }
+        doc.moveDown(0.5);
+      }
+      return;
+    }
     case "youtube": {
       const url = typeof node.url === "string" ? node.url : "";
       // No "▶ " prefix here unlike the Markdown/HTML renderers -- pdfkit's

@@ -76,6 +76,22 @@ const accordionRenderer: PortableTextTypeRenderer<{ _type: string; title?: strin
   return `<details>\n<summary>${value.title ?? ""}</summary>\n\n${inner}\n\n</details>`;
 };
 
+// Same per-item rendering as accordionRenderer above, just looped -- an
+// Accordion Group is several of these stacked, not a different shape.
+const accordionGroupRenderer: PortableTextTypeRenderer<{
+  _type: string;
+  items?: { _key?: string; title?: string; content?: string | unknown[] }[];
+}> = ({ value }) => {
+  return (value.items ?? [])
+    .map((item) => {
+      const inner = Array.isArray(item.content)
+        ? portableTextToMarkdown(item.content as never, markdownOptions)
+        : String(item.content ?? "");
+      return `<details>\n<summary>${item.title ?? ""}</summary>\n\n${inner}\n\n</details>`;
+    })
+    .join("\n\n");
+};
+
 const youtubeRenderer: PortableTextTypeRenderer<{ _type: string; url?: string }> = ({ value }) =>
   value?.url ? `[▶ Watch on YouTube](${value.url})` : "";
 
@@ -128,6 +144,7 @@ const markdownOptions = {
     codeBlock: DefaultCodeBlockRenderer,
     callout: calloutRenderer,
     accordion: accordionRenderer,
+    accordionGroup: accordionGroupRenderer,
     youtube: youtubeRenderer,
     instagramEmbed: instagramEmbedRenderer,
     image: imageRenderer,

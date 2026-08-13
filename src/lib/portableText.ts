@@ -11,6 +11,7 @@ export type PortableTextBlock = {
   text?: string;
   content?: string | PortableTextBlock[];
   entries?: { name?: string; quote?: string }[];
+  items?: { title?: string; content?: string | PortableTextBlock[] }[];
 };
 
 // A single "block" node's own text, ignoring marks/annotations -- shared
@@ -39,6 +40,11 @@ export function portableTextToPlainText(blocks: unknown): string {
         // both here rather than assuming every already-published post has
         // been migrated to the new shape by the time this runs.
         return Array.isArray(block.content) ? block.content.map(blockText).join(" ") : block.content || "";
+      }
+      if (block._type === "accordionGroup") {
+        return (block.items ?? [])
+          .map((item) => (Array.isArray(item.content) ? item.content.map(blockText).join(" ") : item.content || ""))
+          .join(" ");
       }
       // A Quote Grid's actual content is entirely inside its entries, not
       // on the block itself -- missed the first time this was written,

@@ -99,6 +99,22 @@ const accordionType: PortableTextTypeComponent<{ _type: string; title?: string; 
   return `<details><summary>${escapeHTML(value.title ?? "")}</summary><div>${inner}</div></details>`;
 };
 
+// Same per-item rendering as accordionType above, just looped -- an
+// Accordion Group is several of these stacked, not a different shape.
+const accordionGroupType: PortableTextTypeComponent<{
+  _type: string;
+  items?: { _key?: string; title?: string; content?: string | unknown[] }[];
+}> = ({ value }) => {
+  return (value.items ?? [])
+    .map((item) => {
+      const inner = Array.isArray(item.content)
+        ? toHTML(item.content as never, { components: htmlComponents })
+        : `<p>${escapeHTML(item.content ?? "")}</p>`;
+      return `<details><summary>${escapeHTML(item.title ?? "")}</summary><div>${inner}</div></details>`;
+    })
+    .join("");
+};
+
 const youtubeType: PortableTextTypeComponent<{ _type: string; url?: string }> = ({ value }) => {
   const id = value?.url ? youtubeVideoId(value.url) : null;
   if (id) {
@@ -147,6 +163,7 @@ export const htmlComponents: Partial<PortableTextComponents> = {
     codeBlock: codeBlockType,
     callout: calloutType,
     accordion: accordionType,
+    accordionGroup: accordionGroupType,
     youtube: youtubeType,
     instagramEmbed: instagramEmbedType,
     image: imageType,
