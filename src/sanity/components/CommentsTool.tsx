@@ -1,5 +1,5 @@
-import {useCallback, useEffect, useMemo, useState} from 'react'
-import {Badge, Box, Button, Card, Flex, Grid, Spinner, Stack, Text, TextArea, TextInput} from '@sanity/ui'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {Badge, Box, Button, Card, Flex, Grid, Popover, Spinner, Stack, Text, TextArea, TextInput} from '@sanity/ui'
 import {useClient} from 'sanity'
 
 // Shown as the name on every reply created from this tool. Cosmetic only --
@@ -174,6 +174,7 @@ export function CommentsTool() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [replyingId, setReplyingId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
+  const [replyGif, setReplyGif] = useState<SelectedGif | null>(null)
   const [replyBusy, setReplyBusy] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -369,6 +370,7 @@ export function CommentsTool() {
   function startReply(id: string) {
     setReplyingId(id)
     setReplyText('')
+    setReplyGif(null)
   }
 
   function startEdit(comment: CommentRow) {
@@ -414,16 +416,20 @@ export function CommentsTool() {
   // to the honeypot/captcha checks the public form goes through, since this
   // only runs from inside authenticated Studio.
   async function submitReply(parent: CommentRow) {
-    if (!replyText.trim() || !parent.postId) return
+    // A GIF alone is a valid reply -- same rule the public comment form
+    // uses (a GIF is a response on its own, not just decoration on text).
+    if ((!replyText.trim() && !replyGif) || !parent.postId) return
     setReplyBusy(true)
     try {
       const parentRef = resolveReplyParentId(parent)
+      const message = replyText.trim()
       const created = await client.create({
         _type: 'comment',
         post: {_type: 'reference', _ref: parent.postId},
         name: REPLY_AUTHOR_NAME,
         email: '',
-        message: replyText.trim(),
+        ...(message ? {message} : {}),
+        ...(replyGif ? {gifUrl: replyGif.url} : {}),
         status: 'approved',
         createdAt: new Date().toISOString(),
         parentComment: {_type: 'reference', _ref: parentRef},
@@ -437,8 +443,8 @@ export function CommentsTool() {
                 name: REPLY_AUTHOR_NAME,
                 email: '',
                 ip: null,
-                message: replyText.trim(),
-                gifUrl: null,
+                message: message || null,
+                gifUrl: replyGif?.url ?? null,
                 status: 'approved',
                 createdAt: new Date().toISOString(),
                 editedAt: null,
@@ -456,6 +462,7 @@ export function CommentsTool() {
       )
       setReplyingId(null)
       setReplyText('')
+      setReplyGif(null)
       notifySubscribers(created._id)
     } finally {
       setReplyBusy(false)
@@ -1001,9 +1008,14 @@ export function CommentsTool() {
                             <InlineReplyForm
                               replyText={replyText}
                               replyBusy={replyBusy}
+                              selectedGif={replyGif}
                               onChange={setReplyText}
+                              onSelectGif={setReplyGif}
                               onSubmit={() => submitReply(comment)}
-                              onCancel={() => setReplyingId(null)}
+                              onCancel={() => {
+                                setReplyingId(null)
+                                setReplyGif(null)
+                              }}
                             />
                           )}
 
@@ -1042,9 +1054,14 @@ export function CommentsTool() {
                                     <InlineReplyForm
                                       replyText={replyText}
                                       replyBusy={replyBusy}
+                                      selectedGif={replyGif}
                                       onChange={setReplyText}
+                                      onSelectGif={setReplyGif}
                                       onSubmit={() => submitReply(reply)}
-                                      onCancel={() => setReplyingId(null)}
+                                      onCancel={() => {
+                                        setReplyingId(null)
+                                        setReplyGif(null)
+                                      }}
                                     />
                                   )}
 
@@ -1086,9 +1103,14 @@ export function CommentsTool() {
                                           <InlineReplyForm
                                             replyText={replyText}
                                             replyBusy={replyBusy}
+                                            selectedGif={replyGif}
                                             onChange={setReplyText}
+                                            onSelectGif={setReplyGif}
                                             onSubmit={() => submitReply(reply3)}
-                                            onCancel={() => setReplyingId(null)}
+                                            onCancel={() => {
+                                              setReplyingId(null)
+                                              setReplyGif(null)
+                                            }}
                                           />
                                         )}
                                       </Stack>
@@ -1113,37 +1135,238 @@ export function CommentsTool() {
   )
 }
 
+// Studio equivalent of CommentSection.tsx's emoji picker on the public
+// form -- same curated set, same "insert at the cursor" behavior. Added
+// 2026-08-13 on Asher's own ask: the public form already had this, but
+// replying as himself from Studio didn't. Adapted for a *controlled*
+// @sanity/ui TextArea rather than the public form's uncontrolled native
+// one -- the new value is set via the parent's onChange (React state), and
+// the cursor position is restored afterward through the textarea ref, once
+// React has actually committed the re-render with that new value (hence
+// requestAnimationFrame rather than setting it synchronously).
+const COMMENT_EMOJIS = [
+  '😀', '😂', '😅', '😍', '🥲', '😎', '🤔', '😭',
+  '🥹', '😮', '🙌', '👏', '🙏', '👍', '👎', '✌️',
+  '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🔥',
+  '✨', '🎉', '💯', '😢', '😡', '🤯', '😴', '🥳',
+  '🤝', '👀', '💀', '🫠', '🤡', '☕', '📚', '🎬',
+  '🍪', '🌈', '⭐', '💡', '🎯', '🙈', '😇', '🤗',
+]
+
+function EmojiPickerButton({
+  textareaRef,
+  value,
+  onChange,
+}: {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  value: string
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  function insert(emoji: string) {
+    const el = textareaRef.current
+    const start = el?.selectionStart ?? value.length
+    const end = el?.selectionEnd ?? value.length
+    onChange(value.slice(0, start) + emoji + value.slice(end))
+    const cursor = start + emoji.length
+    requestAnimationFrame(() => {
+      el?.focus()
+      el?.setSelectionRange(cursor, cursor)
+    })
+    setOpen(false)
+  }
+
+  return (
+    <Popover
+      open={open}
+      portal
+      placement="bottom-start"
+      content={
+        <Box padding={2} style={{width: 232}}>
+          <Grid columns={8} gap={1}>
+            {COMMENT_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => insert(emoji)}
+                style={{border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16, padding: 4}}
+              >
+                {emoji}
+              </button>
+            ))}
+          </Grid>
+        </Box>
+      }
+    >
+      <Button text="😊" mode="bleed" fontSize={1} padding={2} onClick={() => setOpen((v) => !v)} />
+    </Popover>
+  )
+}
+
+type GifResult = {id: string; title: string; thumbUrl: string; url: string}
+type SelectedGif = {url: string; title: string}
+
+// Studio equivalent of CommentSection.tsx's GifPickerButton -- same
+// /api/gif-search proxy (Giphy's key stays server-side, results forced to
+// "g" content rating), same debounced search-as-you-type. No hostname
+// re-validation needed here the way /api/comments enforces it for public
+// submissions: the URL only ever comes from a real search result the
+// button itself fetched, never typed in by hand.
+function GifPickerButton({onSelect}: {onSelect: (gif: SelectedGif) => void}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [gifs, setGifs] = useState<GifResult[] | null>(null)
+  const [loadError, setLoadError] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setLoadError(false)
+    const timer = setTimeout(() => {
+      fetch(`/api/gif-search?q=${encodeURIComponent(query)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (cancelled) return
+          if (data.gifs) setGifs(data.gifs)
+          else setLoadError(true)
+        })
+        .catch(() => {
+          if (!cancelled) setLoadError(true)
+        })
+    }, 350)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [open, query])
+
+  return (
+    <Popover
+      open={open}
+      portal
+      placement="bottom-start"
+      content={
+        <Box padding={2} style={{width: 320}}>
+          <Stack space={2}>
+            <TextInput
+              fontSize={1}
+              placeholder="Search Giphy…"
+              value={query}
+              onChange={(e) => setQuery(e.currentTarget.value)}
+            />
+            <Grid columns={3} gap={1} style={{maxHeight: 256, overflowY: 'auto'}}>
+              {gifs === null && !loadError && (
+                <Text size={1} muted style={{gridColumn: 'span 3', textAlign: 'center', padding: 8}}>
+                  Loading…
+                </Text>
+              )}
+              {loadError && (
+                <Text size={1} muted style={{gridColumn: 'span 3', textAlign: 'center', padding: 8}}>
+                  Couldn&rsquo;t load GIFs — try again.
+                </Text>
+              )}
+              {gifs && gifs.length === 0 && (
+                <Text size={1} muted style={{gridColumn: 'span 3', textAlign: 'center', padding: 8}}>
+                  No results.
+                </Text>
+              )}
+              {gifs?.map((gif) => (
+                <button
+                  key={gif.id}
+                  type="button"
+                  onClick={() => {
+                    onSelect({url: gif.url, title: gif.title})
+                    setOpen(false)
+                  }}
+                  style={{border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, aspectRatio: '1', overflow: 'hidden', borderRadius: 4}}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF thumbnail, not a Next page */}
+                  <img src={gif.thumbUrl} alt={gif.title} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                </button>
+              ))}
+            </Grid>
+            <Text size={0} muted>
+              Powered by GIPHY
+            </Text>
+          </Stack>
+        </Box>
+      }
+    >
+      <Button
+        text="GIF"
+        mode="bleed"
+        fontSize={1}
+        padding={2}
+        onClick={() => {
+          setOpen((v) => !v)
+          if (!open) {
+            setQuery('')
+            setGifs(null)
+          }
+        }}
+      />
+    </Popover>
+  )
+}
+
 // Shared by all 3 nesting levels -- identical form, just wired to whichever
 // comment's Reply button was clicked.
 function InlineReplyForm({
   replyText,
   replyBusy,
+  selectedGif,
   onChange,
+  onSelectGif,
   onSubmit,
   onCancel,
 }: {
   replyText: string
   replyBusy: boolean
+  selectedGif: SelectedGif | null
   onChange: (value: string) => void
+  onSelectGif: (gif: SelectedGif | null) => void
   onSubmit: () => void
   onCancel: () => void
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
   return (
     <Box marginLeft={4}>
       <Stack space={2}>
+        <Flex justify="flex-end" gap={1}>
+          <GifPickerButton onSelect={onSelectGif} />
+          <EmojiPickerButton textareaRef={textareaRef} value={replyText} onChange={onChange} />
+        </Flex>
         <TextArea
+          ref={textareaRef}
           fontSize={1}
           rows={3}
           placeholder={`Reply as ${REPLY_AUTHOR_NAME}…`}
           value={replyText}
           onChange={(e) => onChange(e.currentTarget.value)}
         />
+        {selectedGif && (
+          <Box style={{position: 'relative', width: 'fit-content'}}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF preview, not a Next page */}
+            <img src={selectedGif.url} alt={selectedGif.title} style={{maxHeight: 120, borderRadius: 6, display: 'block'}} />
+            <Button
+              text="✕"
+              mode="bleed"
+              tone="critical"
+              fontSize={0}
+              padding={2}
+              onClick={() => onSelectGif(null)}
+              style={{position: 'absolute', top: -8, right: -8, borderRadius: '50%'}}
+            />
+          </Box>
+        )}
         <Flex gap={2}>
           <Button
             text="Post reply"
             tone="primary"
             fontSize={1}
-            disabled={replyBusy || !replyText.trim()}
+            disabled={replyBusy || (!replyText.trim() && !selectedGif)}
             onClick={onSubmit}
           />
           <Button text="Cancel" mode="ghost" fontSize={1} disabled={replyBusy} onClick={onCancel} />
