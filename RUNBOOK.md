@@ -2273,26 +2273,39 @@ ad-hoc script that was never committed), outside anything trackable here.
    Studio-side broken-reference warning) — so the guard was solving a problem that likely wasn't the real
    cause of the original silent failure in the first place.
 
-**Where it landed (shipped 2026-08-13):** `stuckComments` is unconditional again — any comment whose `post`
-reference starts with `drafts.` gets offered a fix, no existence check. What's kept from the false start:
-`fixAllStuckReferences` wraps *each* comment's own fix in its own `try`/`catch` rather than one around the
-whole loop, so a single real failure shows up as a specific, visible message (name + count) instead of a
-silent no-op that kills every fix after it. Clicking "Fix them now" repoints each one's `post._ref` at the
-same ID with `drafts.` stripped, one at a time (not `Promise.all`), using Studio's own already-authenticated
-`useClient()` — no token needed. Only touches the reference; doesn't touch the comment's own content,
-status, or trashed state.
+**Removed the existence-check gate the same day, still didn't fix it — Asher retried and got the identical
+error, same four document IDs, completely unchanged.** That was the real signal: if the fix had actually
+reached and repointed those four, the error would have named different (or zero) blockers. It never did,
+across three separate attempts. The working theory that had been sitting in this entry — a different,
+undocumented `_type` the Comments tool's own `_type == "comment"`-scoped query would never see in the first
+place — was the actual answer, confirmed by finally checking rather than assuming: this repo defines no
+`facebookComment` schema (or anything matching this import) anywhere, so there was never a guarantee these
+four were really `comment` documents at all. The Comments tool had been trying to fix things it could never
+even see.
 
-**If a comment ever again shows up in the publish-blocking error but never appears in the Comments tool's
-banner**, the working theory going in was that it's a different, undocumented `_type` entirely (these
-Facebook imports were created outside any schema this repo defines, so nothing guarantees they're literally
-`_type == "comment"`) — not yet confirmed either way, since fixing the guard above resolved the immediate
-case without needing to check. Worth checking first via Vision: `*[references("drafts.<the-blocked-id>")]{
-_id, _type }` lists every actual referencing document regardless of type, which the Comments tool's own
-query (scoped to `_type == "comment"`) would never surface if the real answer is "something else."
+**Rebuilt around what Sanity's own error is actually about (shipped 2026-08-13, same day): not "comments,"
+references.** The banner and fix no longer scope to `_type == "comment"` at all. `loadStuckPosts()` runs one
+query — `*[_type == "post" && _id in path("drafts.**")]{ _id, title, "blockers": *[references(^._id)] }[
+count(blockers) > 0]` — a server-side correlated subquery, one round trip, not one query per draft post.
+GROQ's `references()` finds *anything* pointing at a given document regardless of type, which is exactly
+what Sanity's own delete-blocked check is actually testing — matching the real constraint instead of a
+guess about what kind of document usually causes it.
 
-**The script stays in the repo** (`scripts/fix-draft-referenced-comments.mjs`, same existence-check history
-and same correction applied) as a documented alternative for a future case where fixing many of these at
-once from a terminal is genuinely faster than clicking a Studio button.
+Each returned blocker comes back as a full raw document (no projection) specifically so `loadStuckPosts` can
+scan its own top-level keys in JS for whichever one holds a reference pointing at the stuck post — since
+there's no schema to look this field up in for an unknown `_type`, it's found by inspection, not assumed to
+be `post` the way the comment-scoped version did. A blocker whose reference field can't be found this way
+(most likely one nested more than one level deep) is shown separately as "needs a manual look" rather than
+guessed at and risking a wrong field getting written.
+
+The banner now reads per-post ("N document(s) are blocking '\<title\>' from ever publishing") instead of a
+flat comment count across the whole site, and "Fix them now" repoints every blocker with a known field at
+the post's published ID — each one its own `try`/`catch`, same lesson kept from the false start two versions
+back, so one real failure surfaces as a specific message instead of silently killing the rest.
+
+**The script stays in the repo** (`scripts/fix-draft-referenced-comments.mjs`) but is now the *old*,
+`comment`-scoped approach and hasn't been rebuilt to match the type-agnostic query above — a real gap if it
+is ever reached for from a terminal, worth fixing before relying on it again.
 
 ## Reply-notification subscriptions (shipped 2026-07-31)
 

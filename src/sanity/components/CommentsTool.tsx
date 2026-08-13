@@ -63,6 +63,37 @@ type CommentRow = {
   isAuthorReply: boolean
 }
 
+// A post that's never been published can't be published *at all* while
+// anything still strongly references its draft ID (Sanity refuses to
+// delete a document something else points at, and publishing a document
+// is delete-the-draft-and-write-the-published-version under the hood).
+// Deliberately not scoped to `_type == "comment"` -- an earlier version
+// of this whole feature was, and it silently missed the actual blockers
+// on a real post because they turned out not to be `comment` documents
+// at all (this codebase has no `facebookComment` schema, or any schema,
+// for whatever these were -- created directly against the dataset,
+// outside anything this repo defines). GROQ's `references()` finds
+// anything pointing at a given document regardless of its `_type`, which
+// is what actually matches Sanity's own "cannot be deleted, referenced by
+// ..." error -- that error doesn't care about type either.
+type StuckPostBlocker = {
+  _id: string
+  _type: string
+  // The field on the blocking document that holds the reference, e.g.
+  // "post" -- found by scanning the document's own top-level fields for
+  // one whose value is a reference pointing at the stuck draft, since
+  // there's no schema here to just look this up in. Null if that scan
+  // came up empty (a reference nested deeper than one level, most
+  // likely) -- shown as "needs a manual look" rather than guessed at.
+  fieldName: string | null
+}
+type StuckPost = {
+  draftId: string
+  postTitle: string
+  publishedId: string
+  blockers: StuckPostBlocker[]
+}
+
 type PostGroup = {
   postId: string | null
   postTitle: string | null
@@ -133,8 +164,9 @@ export function CommentsTool() {
   const [editBusy, setEditBusy] = useState(false)
   const [viewingTrash, setViewingTrash] = useState(false)
   const [search, setSearch] = useState('')
-  const [fixingStuck, setFixingStuck] = useState(false)
-  const [fixError, setFixError] = useState<string | null>(null)
+  const [stuckPosts, setStuckPosts] = useState<StuckPost[]>([])
+  const [fixingStuckId, setFixingStuckId] = useState<string | null>(null)
+  const [fixError, setFixError] = useState<{draftId: string; message: string} | null>(null)
   // Explicit overrides of the default expand/collapse state (see
   // groupIsExpanded below) -- a group the user has opened or closed by hand
   // stays that way regardless of its pending status, until they toggle it
@@ -166,9 +198,42 @@ export function CommentsTool() {
       .then(setComments)
   }, [client])
 
+  // One query, server-side correlated subquery -- not one round trip per
+  // draft post -- finds every draft post that has at least one document
+  // (any type) referencing it. `blockers` comes back as full raw
+  // documents (no projection) specifically so the field-name scan below
+  // has something real to search.
+  const loadStuckPosts = useCallback(() => {
+    client
+      .fetch<{_id: string; title: string; blockers: Record<string, unknown>[]}[]>(
+        `*[_type == "post" && _id in path("drafts.**")]{
+          _id, title,
+          "blockers": *[references(^._id)]
+        }[count(blockers) > 0]`,
+      )
+      .then((rows) => {
+        setStuckPosts(
+          rows.map((row) => ({
+            draftId: row._id,
+            postTitle: row.title || '(untitled)',
+            publishedId: row._id.slice(DRAFTS_PREFIX.length),
+            blockers: row.blockers.map((doc) => {
+              const fieldName =
+                Object.keys(doc).find((key) => {
+                  const val = doc[key] as {_ref?: unknown} | undefined
+                  return !!val && typeof val === 'object' && !Array.isArray(val) && val._ref === row._id
+                }) ?? null
+              return {_id: doc._id as string, _type: doc._type as string, fieldName}
+            }),
+          })),
+        )
+      })
+  }, [client])
+
   useEffect(() => {
     load()
-  }, [load])
+    loadStuckPosts()
+  }, [load, loadStuckPosts])
 
   useEffect(() => {
     if (!comments) return
@@ -383,71 +448,36 @@ export function CommentsTool() {
     [comments],
   )
   const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
-  // Deliberately NOT gated on "does a published counterpart already
-  // exist" -- an earlier version of this added that gate on the
-  // assumption Sanity rejects a reference written to a not-yet-existing
-  // document, which turned out to be wrong (that only produces a
-  // Studio-side broken-reference warning, not a hard mutation failure --
-  // Sanity happily stores a reference to an ID that doesn't exist yet,
-  // it's a completely normal, supported state). That gate made the tool
-  // correctly report zero, but also made it unable to ever fix a post
-  // that's never been published even once -- exactly the deadlock Asher
-  // hit: no published counterpart can exist until the reference blocking
-  // publish is fixed, and the fix required one to already exist. Removed.
-  const stuckComments = useMemo(
-    () => (comments ?? []).filter((c) => (c.postId ?? '').startsWith(DRAFTS_PREFIX)),
-    [comments],
-  )
   const searchTerm = search.trim().toLowerCase()
 
-  // A comment created (usually imported, e.g. an old Facebook comment
-  // brought over by hand) while its post was still unpublished sometimes
-  // ends up with `post` pointing at the post's *draft* ID instead of its
-  // published one. Invisible day to day -- the title still resolves fine
-  // for display, since the draft document carries the same title -- but
-  // it silently blocks that post from ever being published: Sanity won't
-  // delete a draft (which is what publishing does under the hood) while
-  // anything still references its exact ID. Repoints the reference at the
-  // same post's published ID; doesn't touch the comment's own content,
-  // status, or trashed state. Same fix as scripts/fix-draft-referenced-
-  // comments.mjs, as a real button here instead of something that needs a
-  // terminal and a write token to run.
-  async function fixStuckReference(id: string, postId: string) {
-    setBusyId(id)
-    try {
-      const fixedRef = postId.slice(DRAFTS_PREFIX.length)
-      await client.patch(id).set({'post._ref': fixedRef}).commit()
-      setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, postId: fixedRef} : c)) : prev))
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  // One at a time, not Promise.all in parallel -- same reasoning as the
-  // Media library's own mass upload: one failure shouldn't take the rest
-  // down with it in an unhandled Promise.all rejection. Each one is now
-  // its own try/catch, not one try/catch around the whole loop -- the
-  // first version let a single failure silently kill every fix after it
-  // with zero feedback, which is exactly how this looked like it "did
-  // nothing" the first time around.
-  async function fixAllStuckReferences() {
-    setFixingStuck(true)
+  // Repoints every blocker with a known field at the post's published ID
+  // in one go -- one blocker at a time, each its own try/catch (not one
+  // around the whole loop), so a single real failure surfaces as a
+  // specific message instead of silently stopping every fix after it.
+  // Blockers with no known field (fieldName null -- the one-level scan in
+  // loadStuckPosts came up empty) are skipped and called out separately,
+  // never guessed at.
+  async function fixStuckPost(stuck: StuckPost) {
+    setFixingStuckId(stuck.draftId)
     setFixError(null)
-    const failedNames: string[] = []
+    const failed: string[] = []
     try {
-      for (const comment of stuckComments) {
-        if (!comment.postId) continue
+      for (const blocker of stuck.blockers) {
+        if (!blocker.fieldName) continue
         try {
-          await fixStuckReference(comment._id, comment.postId)
+          await client.patch(blocker._id).set({[`${blocker.fieldName}._ref`]: stuck.publishedId}).commit()
         } catch {
-          failedNames.push(comment.name || '(unnamed)')
+          failed.push(`${blocker._type} (${blocker._id})`)
         }
       }
     } finally {
-      setFixingStuck(false)
-      if (failedNames.length > 0) {
-        setFixError(`Couldn't fix ${failedNames.length} of them: ${failedNames.join(', ')}. Nothing else changed for those -- try again, or let me know.`)
-      }
+      setFixingStuckId(null)
+      setFixError(
+        failed.length > 0
+          ? {draftId: stuck.draftId, message: `Couldn't fix ${failed.length}: ${failed.join(', ')}.`}
+          : null,
+      )
+      loadStuckPosts()
     }
   }
 
@@ -550,41 +580,52 @@ export function CommentsTool() {
           />
         </Flex>
 
-        {stuckComments.length > 0 && (
-          <Card padding={4} radius={3} tone="critical" border>
-            <Stack space={3}>
-              <Flex align="center" gap={3} wrap="wrap">
-                <Badge tone="critical" fontSize={2}>
-                  {stuckComments.length}
-                </Badge>
-                <Text size={2} weight="semibold">
-                  {stuckComments.length === 1 ? 'comment is' : 'comments are'} stuck pointing at an unpublished
-                  version of their post
+        {stuckPosts.map((stuck) => {
+          const knownBlockers = stuck.blockers.filter((b) => b.fieldName)
+          const unknownBlockers = stuck.blockers.filter((b) => !b.fieldName)
+          return (
+            <Card key={stuck.draftId} padding={4} radius={3} tone="critical" border>
+              <Stack space={3}>
+                <Flex align="center" gap={3} wrap="wrap">
+                  <Badge tone="critical" fontSize={2}>
+                    {stuck.blockers.length}
+                  </Badge>
+                  <Text size={2} weight="semibold">
+                    document(s) are blocking "{stuck.postTitle}" from ever publishing
+                  </Text>
+                </Flex>
+                <Text size={1} muted>
+                  Usually an old imported item (like a Facebook comment brought over by hand) created before this
+                  post was published. Harmless on its own, but Sanity won't let a post publish while anything
+                  still points at its unpublished version. Fixing this only repoints those items at the right
+                  post -- nothing else about them changes.
                 </Text>
-              </Flex>
-              <Text size={1} muted>
-                Usually an old imported comment (like a Facebook comment brought over by hand) created before its
-                post was published. Harmless on its own, but it can silently block that post from ever
-                publishing. Fixing this only repoints the comment at the right post -- nothing about the
-                comment itself changes.
-              </Text>
-              <Box>
-                <Button
-                  text={fixingStuck ? 'Fixing…' : `Fix ${stuckComments.length === 1 ? 'it' : 'them'} now`}
-                  tone="critical"
-                  fontSize={1}
-                  disabled={fixingStuck}
-                  onClick={fixAllStuckReferences}
-                />
-              </Box>
-              {fixError && (
-                <Text size={1} weight="semibold">
-                  {fixError}
-                </Text>
-              )}
-            </Stack>
-          </Card>
-        )}
+                {knownBlockers.length > 0 && (
+                  <Box>
+                    <Button
+                      text={fixingStuckId === stuck.draftId ? 'Fixing…' : `Fix ${knownBlockers.length === 1 ? 'it' : 'them'} now`}
+                      tone="critical"
+                      fontSize={1}
+                      disabled={fixingStuckId === stuck.draftId}
+                      onClick={() => fixStuckPost(stuck)}
+                    />
+                  </Box>
+                )}
+                {unknownBlockers.length > 0 && (
+                  <Text size={1} weight="semibold">
+                    {unknownBlockers.length} of these couldn't be identified automatically -- needs a manual look:{' '}
+                    {unknownBlockers.map((b) => `${b._type} (${b._id})`).join(', ')}.
+                  </Text>
+                )}
+                {fixError && fixError.draftId === stuck.draftId && (
+                  <Text size={1} weight="semibold">
+                    {fixError.message}
+                  </Text>
+                )}
+              </Stack>
+            </Card>
+          )
+        })}
 
         {!viewingTrash && (
           <TextInput
