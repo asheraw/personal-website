@@ -206,6 +206,15 @@ export const postType = defineType({
         'Turn on to stop new comments and replies on this post -- existing comments stay exactly as they are, just no new ones can be added. Can also be toggled per-post from Studio -> Comments, right where you already moderate.',
       initialValue: false,
     }),
+    defineField({
+      name: 'legacyFacebookThreadUrl',
+      title: 'Original Facebook thread (internal note)',
+      type: 'url',
+      fieldset: 'discussion',
+      description:
+        'Internal reference only -- never shown on the live site or fed into anything automated. Facebook comments on personal-profile posts (not a Page) aren\'t reachable through any API, so cross-checking an imported thread against the real one means opening this link by hand. Safe to delete once you\'re done cross-checking a post\'s comments -- nothing else in the codebase reads this field.',
+      validation: (rule) => rule.uri({scheme: ['http', 'https']}),
+    }),
     // PLAY: an optional, interactive alternative way to experience this
     // post -- separate from the normal reading view (STORY), never
     // required, off by default. `presentation` is deliberately an array
