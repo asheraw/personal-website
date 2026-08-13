@@ -6,12 +6,15 @@ import {usePendingCommentCount} from '../hooks/usePendingCommentCount'
 // the icon (and its badge) never actually renders there, so that badge
 // was invisible in the one place it needed to be seen. This uses Studio's
 // navbar extension point (studio.components.navbar, wired in
-// sanity.config.ts) instead: a floating pill, fixed to the bottom-right
+// sanity.config.ts) instead: a floating pill, fixed to the bottom-left
 // corner of the screen (deliberately *not* pinned into the navbar row
 // itself -- that row's own content, the Drafts/release picker and icon
-// cluster on the right, isn't a fixed, guessable width, and this sandbox
-// has no way to render Studio live to check for overlap), visible on
-// every Studio page regardless of which tool is open.
+// cluster on the right, isn't a fixed, guessable width), visible on
+// every Studio page regardless of which tool is open. Originally
+// bottom-right; moved after Asher reported it sitting directly on top of
+// the document pane's own Publish button and "..." extended-actions
+// menu -- those live bottom-right of every open document, a fixed,
+// predictable spot this should never have shared in the first place.
 export function CommentsNavbarBadge() {
   const pending = usePendingCommentCount()
 
@@ -23,7 +26,7 @@ export function CommentsNavbarBadge() {
       style={{
         position: 'fixed',
         bottom: 20,
-        right: 20,
+        left: 20,
         zIndex: 200,
         display: 'flex',
         alignItems: 'center',
