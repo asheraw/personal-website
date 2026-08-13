@@ -495,33 +495,68 @@ export function CommentsTool() {
   // how many requests fire at once, and a live done/total count means
   // "Publishing…" is never the only signal something's still happening.
   const PUBLISH_BATCH_SIZE = 8
+  // A reply's own `parentComment` points at another *comment*, and a
+  // legacy-imported thread nests up to 3 levels deep -- so unlike `post`
+  // (which every comment points at but nothing points back at), a
+  // still-drafted parent comment can genuinely be blocked from deleting
+  // by a sibling reply that hasn't been processed yet, even inside the
+  // same batch (Promise.allSettled fires all of a batch's requests
+  // concurrently, so which one's delete actually lands first on Sanity's
+  // server is a race). Multiple passes fix this without needing to work
+  // out the real dependency order by hand: each pass's successes clear
+  // the way for whatever failed only because of a still-unpublished
+  // sibling, so a comment that fails now typically succeeds next pass.
+  // Stops once a pass fails on the exact same set as the pass before it
+  // -- that's not an ordering issue anymore, it's a real, different
+  // failure, and retrying it again would just spin.
+  const PUBLISH_MAX_PASSES = 6
 
   async function publishAllDraftComments() {
     setPublishingDrafts(true)
     setPublishDraftsError(null)
-    setPublishProgress({done: 0, total: draftComments.length})
-    const failed: string[] = []
-    let done = 0
+    const total = draftComments.length
+    setPublishProgress({done: 0, total})
+    let remaining = draftComments
+    let publishedCount = 0
+    let previousFailedSignature: string | null = null
+    let lastFailures: {name: string; id: string; reason: string}[] = []
     try {
-      for (let i = 0; i < draftComments.length; i += PUBLISH_BATCH_SIZE) {
-        const batch = draftComments.slice(i, i + PUBLISH_BATCH_SIZE)
-        const results = await Promise.allSettled(batch.map((c) => publishComment(c._id)))
-        results.forEach((result, idx) => {
-          done++
-          if (result.status === 'rejected') {
+      for (let pass = 0; pass < PUBLISH_MAX_PASSES && remaining.length > 0; pass++) {
+        const stillFailing: typeof remaining = []
+        const passFailures: {name: string; id: string; reason: string}[] = []
+        for (let i = 0; i < remaining.length; i += PUBLISH_BATCH_SIZE) {
+          const batch = remaining.slice(i, i + PUBLISH_BATCH_SIZE)
+          const results = await Promise.allSettled(batch.map((c) => publishComment(c._id)))
+          results.forEach((result, idx) => {
             const c = batch[idx]
-            const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
-            failed.push(`${c.name || '(unnamed)'} (${c._id}): ${reason}`)
-          }
-        })
-        setPublishProgress({done, total: draftComments.length})
+            if (result.status === 'fulfilled') {
+              publishedCount++
+            } else {
+              stillFailing.push(c)
+              const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
+              passFailures.push({name: c.name, id: c._id, reason})
+            }
+          })
+          setPublishProgress({done: publishedCount, total})
+        }
+        lastFailures = passFailures
+        const signature = stillFailing
+          .map((c) => c._id)
+          .sort()
+          .join(',')
+        remaining = stillFailing
+        if (signature === previousFailedSignature) break
+        previousFailedSignature = signature
       }
     } finally {
       setPublishingDrafts(false)
       setPublishProgress(null)
       setPublishDraftsError(
-        failed.length > 0
-          ? `Couldn't publish ${failed.length}: ${failed.slice(0, 20).join('; ')}${failed.length > 20 ? `; and ${failed.length - 20} more` : ''}.`
+        remaining.length > 0
+          ? `Couldn't publish ${remaining.length}: ${lastFailures
+              .slice(0, 20)
+              .map((f) => `${f.name || '(unnamed)'} (${f.id}): ${f.reason}`)
+              .join('; ')}${lastFailures.length > 20 ? `; and ${lastFailures.length - 20} more` : ''}.`
           : null,
       )
       load()

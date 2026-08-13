@@ -2366,6 +2366,26 @@ setting `_weak: true` on each — safe regardless of which order a thread's comm
 a weak reference tolerates pointing at a target that doesn't exist yet, self-healing the moment that target
 (a reply's parent, published earlier or later in the same batch) actually comes into existence.
 
+**At real scale (337 comments in one run), 73 failed with a new, different shape of the same underlying
+rule**: `Document "drafts.facebook-comment-...-0" cannot be deleted as there are references to it from
+"drafts.facebook-comment-...-2"` — a comment blocked from publishing not by a *post*, but by another
+*comment* (a reply) whose `parentComment` still held the old, un-weakened, strong reference at the exact
+moment the parent's delete was attempted. Making the field weak in the schema only changes what Studio
+writes for *new* references going forward, same lesson as `post`'s own fix earlier in this entry — an
+already-stored `parentComment` value on a reply that hasn't been processed yet is still strong until that
+reply's own `publishComment()` call rewrites it. With batches of 8 running concurrently
+(`Promise.allSettled`), a parent and one of its own replies can easily land in the same batch, and which
+one's request actually completes first on Sanity's server is a race `publishAllDraftComments` had no way to
+control.
+
+**Fixed with multiple passes instead of trying to compute the real dependency order by hand** (shipped
+2026-08-13): `publishAllDraftComments` now retries whatever failed in a pass against the *next* pass, up to
+6 times — each pass's successes (a reply finally getting weakened and moved off its draft ID) clear the way
+for whatever they were blocking, so a parent that failed only because of an unprocessed sibling typically
+succeeds one pass later with zero manual intervention. Stops retrying a comment once its failure signature
+(the exact same set of still-failing IDs) repeats between two consecutive passes — that's not a race
+anymore, it's a real, different failure, and shown as such instead of spun on forever.
+
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
 The other IDEAS.md entry — emailing a commenter when there's a reply — is now built, but not as originally
