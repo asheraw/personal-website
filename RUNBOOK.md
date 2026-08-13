@@ -2413,6 +2413,47 @@ succeeds one pass later with zero manual intervention. Stops retrying a comment 
 (the exact same set of still-failing IDs) repeats between two consecutive passes — that's not a race
 anymore, it's a real, different failure, and shown as such instead of spun on forever.
 
+## Comments tool lag after the Facebook import (found and partly fixed 2026-08-14)
+
+**Symptom**: Asher reported Studio → Comments feeling "very laggy" after the 48-post Facebook import (and
+the subsequent screenshot cross-check passes on top of it) landed hundreds more comments than this tool had
+ever run against before. Diagnosed with real numbers against the live dataset, not guessed:
+
+- **808 comments total** (801 live, not trashed) — the tool had only ever been tested and tuned against
+  dozens.
+- The exact GROQ query `CommentsTool.tsx`'s `load()` runs (`*[_type == "comment"] | order(createdAt desc)
+  {...}` — no limit, dereferences `post->title`/`post->slug` per row) took **~850ms** and returned a
+  **~450KB** JSON payload when run directly against the dataset.
+- **40 of 54 posts with comments have at least one `pending` comment**, and a group with anything pending
+  auto-expands by default (see the "Comments: how the moderation queue works" section above) — meaning
+  **677 of the 801 live comment rows render as full `CommentCard` component trees simultaneously**, with no
+  virtualization/windowing at all. This part is unchanged by the fix below; see "not yet addressed."
+
+**Fixed: the compounding per-render cost, which was the sharper part of the problem.** The render loop
+found each comment's replies by calling `group.comments.filter((r) => r.parentComment === comment._id)`
+fresh, inline, on every single render — for every visible top-level comment *and* every depth-2 reply
+(finding depth-3 replies), an O(n) scan repeated across hundreds of rows. Because this lived directly in the
+render body (not memoized), it re-ran on **every** state change in the whole tool — typing a single
+character in the search box, hovering a button, opening one row's status `Select` — regardless of whether
+the underlying comment data had actually changed. `threadFamily()` (the search-match helper) had the exact
+same pattern, which mattered specifically while typing a search query, since `visibleGroups` is memoized on
+`searchTerm` and therefore re-runs on every keystroke by design.
+
+**Fix**: `repliesByParentId`, a `Map<parentId, CommentRow[]>` built once per `live` change via `useMemo`
+(each bucket pre-sorted at build time, not per-read), giving O(1) lookup per row instead of an O(n) rescan.
+Same total work, done once instead of once-per-row-per-render. Behavior-identical — same rows, same order,
+same threading — purely a performance change, verified with `npx tsc --noEmit` + `npm run build` clean and
+Studio's schema-bootstrap check showing no errors before shipping.
+
+**Not yet addressed: the 677-simultaneously-rendered-rows part.** This is a real scale issue distinct from
+the per-render cost above, and fixing it properly (capping how much renders per group, paginating within a
+huge thread, or true list virtualization) changes what Asher actually sees by default, which is a real UX
+call, not a pure performance fix — flagged to him rather than decided unilaterally. If this comes up again:
+the lowest-risk option in that direction is probably capping the auto-rendered comment count within an
+individual very-large group (mirroring `NotFoundHitsTool.tsx`'s existing "show full hit log, capped at 500"
+pattern) rather than changing the collapse-by-default threshold globally, since most groups are still small
+and the auto-expand-when-pending behavior itself is working as intended for those.
+
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
 The other IDEAS.md entry — emailing a commenter when there's a reply — is now built, but not as originally
