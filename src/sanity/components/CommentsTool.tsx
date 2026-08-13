@@ -465,7 +465,21 @@ export function CommentsTool() {
       for (const blocker of stuck.blockers) {
         if (!blocker.fieldName) continue
         try {
-          await client.patch(blocker._id).set({[`${blocker.fieldName}._ref`]: stuck.publishedId}).commit()
+          // _weak: true alongside the repointed _ref, not just the _ref
+          // alone -- confirmed by the real error text a plain _ref fix
+          // produced here ("references non-existent document ..."): a
+          // normal (strong) reference can't be written pointing at a
+          // document that doesn't exist yet, and this post has never
+          // published, so its published-ID document genuinely doesn't
+          // exist until publishing succeeds -- which is exactly what's
+          // blocked. A weak reference is allowed to point at a
+          // not-yet-existing document; once Asher publishes and that
+          // document comes into existence, this same reference resolves
+          // correctly with no further action needed.
+          await client
+            .patch(blocker._id)
+            .set({[`${blocker.fieldName}._ref`]: stuck.publishedId, [`${blocker.fieldName}._weak`]: true})
+            .commit()
         } catch (err) {
           // The real reason matters here -- a bare catch that only records
           // which document failed (an earlier version of this) gives

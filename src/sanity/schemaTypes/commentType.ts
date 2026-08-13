@@ -16,6 +16,25 @@ export const commentType = defineType({
       title: 'Post',
       type: 'reference',
       to: [{type: 'post'}],
+      // Weak, not the default strong reference -- a strong reference is
+      // what actually caused the "cannot be deleted, referenced by ..."
+      // publish failure documented in RUNBOOK.md: Sanity refuses to
+      // delete a draft (which is what publishing does under the hood)
+      // while any strong reference still points at its exact ID, and
+      // it separately refuses to WRITE a strong reference pointing at a
+      // document that doesn't exist yet -- a genuine deadlock for a post
+      // that's never published: no published copy can exist until the
+      // blocking reference is fixed, and the reference can't be fixed
+      // until a published copy exists. A weak reference does neither --
+      // it doesn't block deleting its target, and Sanity allows writing
+      // one to a not-yet-existing document. The one real trade-off: if a
+      // published post is ever deleted while comments still reference
+      // it, those comments are left pointing at nothing (shown as a
+      // broken-reference warning in Studio, `post->title` resolves to
+      // null) instead of Sanity protecting against that deletion --
+      // acceptable here since posts on this site are essentially never
+      // deleted once real comments exist on them.
+      weak: true,
       validation: (rule) => rule.required(),
     }),
     defineField({

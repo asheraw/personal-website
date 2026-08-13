@@ -2303,9 +2303,42 @@ flat comment count across the whole site, and "Fix them now" repoints every bloc
 the post's published ID — each one its own `try`/`catch`, same lesson kept from the false start two versions
 back, so one real failure surfaces as a specific message instead of silently killing the rest.
 
-**The script stays in the repo** (`scripts/fix-draft-referenced-comments.mjs`) but is now the *old*,
-`comment`-scoped approach and hasn't been rebuilt to match the type-agnostic query above — a real gap if it
-is ever reached for from a terminal, worth fixing before relying on it again.
+**Deployed, then failed again with a real, specific error for the first time** (the `try`/`catch` fix above
+finally earned its keep): `Document "drafts.facebook-comment-wrote-these-in-2009-0" references non-existent
+document "facebook-wrote-these-in-2009"`. This is the actual root cause, and it's a genuine deadlock in
+Sanity's own reference model, not a bug in any version of this fix: `comment.post` is a normal (strong)
+reference. A strong reference (1) blocks its target from being deleted while anything still points at it
+(the original publish failure), **and separately (2) can't be written pointing at a document that doesn't
+exist yet at all** — confirmed here by the error text, not assumed this time. This post has never
+successfully published, so its published-ID document (`facebook-wrote-these-in-2009`, no `drafts.` prefix)
+genuinely does not exist yet — nothing can repoint a strong reference there until it does, and it can't come
+into existence until the reference blocking publish is gone. Every previous version of this fix tried to
+write a plain strong reference to that not-yet-existing ID and got silently or (once the per-item
+`try`/`catch` landed) visibly rejected for exactly this reason.
+
+**Real fix (shipped 2026-08-13): `comment.post` is now a weak reference** (`weak: true` in
+`commentType.ts`). A weak reference does neither of the two things above — it doesn't block its target from
+being deleted, and Sanity allows writing one pointing at a document that doesn't exist yet (confirmed by
+`@sanity/types`' own type comments, which document a dedicated broken-weak-reference UI state specifically
+for this case — dangling is an expected, supported state for a weak reference, not an edge case). The one
+real trade-off, worth having made deliberately rather than by accident: if a *published* post is ever
+deleted while comments still reference it, Sanity no longer protects against that — those comments are left
+pointing at nothing (a broken-reference warning in Studio, `post->title` resolving to null) instead of the
+delete being blocked. Accepted here since posts on this site are essentially never deleted once real
+comments exist on them.
+
+**The schema change alone doesn't fix already-stored data** — whether a stored reference is weak is a flag
+on the value itself (`_weak: true`), not something Sanity retroactively applies to existing documents just
+because the schema changed; it only affects how Studio's own form creates *new* references going forward.
+`fixStuckPost` in the Comments tool now sets `_weak: true` alongside the repointed `_ref` in the same patch
+— writing both together succeeds even though the target doesn't exist yet (weak references tolerate that),
+and once Asher actually publishes the post, the now-existing published document is exactly what that
+reference already points at — nothing further to fix.
+
+**The script stays in the repo** (`scripts/fix-draft-referenced-comments.mjs`) but is now doubly out of
+date: still the old `comment`-scoped approach (not the type-agnostic `references()` query above), and
+doesn't set `_weak: true` either. A real gap if it's ever reached for from a terminal — needs both fixes
+applied before relying on it again.
 
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
