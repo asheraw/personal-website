@@ -2222,6 +2222,41 @@ via direct requests; confirmed `/api/gif-search` returns real results against th
 domain after shipping. Every test comment was deleted afterward, same "clean up what a real test run writes
 to production" convention used throughout this project.
 
+## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13, fix not yet run)
+
+Asher hit this trying to publish "wrote-these-in-2009": `Document "drafts.wrote-these-in-2009" cannot be
+deleted as there are references to it from "drafts.facebook-comment-wrote-these-in-2009-0"` (and `-1`, `-2`,
+`-3`). Publishing a document is, under the hood, delete-the-draft-and-write-the-published-version — Sanity
+refuses that delete when anything still strongly references the draft's exact ID, which is what these four
+did.
+
+**Root cause, confirmed by reading `commentType.ts` directly, not assumed**: `comment.post` is a plain
+(strong) reference, and `comment` documents are never meant to sit in draft state themselves — moderation
+is the `status` field, not Sanity's draft/publish mechanism (that file's own header comment says so). These
+four legacy Facebook-comment imports are both sitting as `drafts.facebook-comment-wrote-these-in-2009-N`
+*and* pointing their `post` reference at `drafts.wrote-these-in-2009` specifically — both symptoms of the
+same thing: whatever imported them ran while the post was still unpublished, and used the literal `_id` a
+draft-perspective query handed back, `drafts.` prefix included, instead of the published slug ID.
+
+**Not written anywhere in this repo** — no `facebookComment` schema type, no import script for it exists in
+version control, so this was created directly against the dataset at some point (Vision, the CLI, or an
+ad-hoc script that was never committed), outside anything trackable here.
+
+**Fix**: `scripts/fix-draft-referenced-comments.mjs` — finds every `comment` document whose `post._ref`
+starts with `drafts.` and repoints it at the same ID with that prefix stripped, dry-run first, same
+`--dry-run` / real-run pattern as this repo's other migration scripts. **Scoped to the actual bug pattern
+across every post, not just this one** — the "578 comments need review" backlog badge suggests a much
+larger bulk import, and there's no reason to assume only this post's comments got the drafts-prefixed
+reference. Only fixes the reference; does not touch the comments' own draft state or `status` — publishing
+those (if they're worth keeping and showing) is still Asher's own moderation call from the Comments tool.
+
+**Not run yet.** Unlike this repo's other migration scripts, even `--dry-run` here needs
+`SANITY_API_WRITE_TOKEN` — draft documents aren't on the public-read perspective, so an unauthenticated
+client can't see them to report on them at all. This needs running from an environment with that token
+available (nothing in this sandbox has one). Run `node scripts/fix-draft-referenced-comments.mjs --dry-run`
+first to see exactly what it found, then without the flag to actually patch. Update this entry once it's
+been run for real, same as every other migration script's documented outcome.
+
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
 The other IDEAS.md entry — emailing a commenter when there's a reply — is now built, but not as originally
