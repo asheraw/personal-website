@@ -9,6 +9,7 @@ import {DocumentIcon} from '@sanity/icons/Document'
 import {TagIcon} from '@sanity/icons/Tag'
 import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
+import {SavedStatusInput} from '../components/SavedStatusInput'
 
 /**
  * This is the schema type for block content used in the post document type
@@ -186,6 +187,7 @@ export const blockContentType = defineType({
       type: 'image',
       icon: ImageIcon,
       options: {hotspot: true},
+      components: {input: SavedStatusInput},
       fields: [
         defineField({
           name: 'alt',
@@ -461,6 +463,7 @@ export const blockContentType = defineType({
       type: 'object',
       name: 'accordion',
       title: 'Accordion (show/hide)',
+      components: {input: SavedStatusInput},
       fields: [
         defineField({name: 'title', title: 'Heading (always visible)', type: 'string'}),
         // A deliberately smaller version of the top-level block config
