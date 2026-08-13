@@ -21,34 +21,60 @@ export function CommentsNavbarBadge() {
   if (!pending) return null
 
   return (
-    <a
-      href="/studio/comments"
-      style={{
-        position: 'fixed',
-        bottom: 20,
-        left: 20,
-        zIndex: 200,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '6px 12px',
-        borderRadius: 999,
-        background: 'var(--card-critical-fg-color, #c44)',
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 700,
-        textDecoration: 'none',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.35)',
-        animation: 'asheraw-comments-badge-pulse 2s ease-in-out infinite',
-      }}
-    >
+    <a href="/studio/comments" className="asheraw-comments-badge">
       <style>{`
+        .asheraw-comments-badge {
+          position: fixed;
+          bottom: 20px;
+          left: 20px;
+          z-index: 200;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 999px;
+          background: var(--card-critical-fg-color, #c44);
+          color: white;
+          font-size: 12px;
+          font-weight: 700;
+          text-decoration: none;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+          animation: asheraw-comments-badge-pulse 2s ease-in-out infinite;
+        }
+        .asheraw-comments-badge .asheraw-comments-badge-full { display: inline; }
+        .asheraw-comments-badge .asheraw-comments-badge-short { display: none; }
+        /* Full text pill has real room to sit clear of page content on a
+           desktop-width screen -- on a phone (this tool is genuinely used
+           on the move, per Asher directly) that same fixed-position pill
+           is wide enough to sit on top of whatever's scrolled to the
+           bottom, which is exactly what happened. Collapses to a small
+           count-only circle instead of shrinking the same pill, since a
+           truncated label ("3 comm…") reads as a rendering bug rather
+           than a deliberate compact mode. */
+        @media (max-width: 480px) {
+          .asheraw-comments-badge {
+            bottom: 12px;
+            left: 12px;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            justify-content: center;
+            border-radius: 50%;
+          }
+          .asheraw-comments-badge .asheraw-comments-badge-full { display: none; }
+          .asheraw-comments-badge .asheraw-comments-badge-short { display: inline; }
+        }
         @keyframes asheraw-comments-badge-pulse {
           0%, 100% { box-shadow: 0 2px 10px rgba(0,0,0,0.35), 0 0 0 0 rgba(204,68,68,0.5); }
           50% { box-shadow: 0 2px 10px rgba(0,0,0,0.35), 0 0 0 6px rgba(204,68,68,0); }
         }
       `}</style>
-      {pending} {pending === 1 ? 'comment needs review' : 'comments need review'}
+      <span className="asheraw-comments-badge-full">
+        {pending} {pending === 1 ? 'comment needs review' : 'comments need review'}
+      </span>
+      <span className="asheraw-comments-badge-short" aria-label={`${pending} comments need review`}>
+        {pending > 99 ? '99+' : pending}
+      </span>
     </a>
   )
 }

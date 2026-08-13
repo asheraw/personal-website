@@ -692,6 +692,25 @@ export function CommentsTool() {
 
   return (
     <Box padding={4}>
+      {/* Group header's own gridTemplateColumns is fixed rem widths (see
+          GROUP_HEADER_COLUMNS) so the count/lock/show columns stay aligned
+          row to row regardless of title length -- correct on desktop, but
+          on a narrow phone those three fixed columns (~18.5rem combined)
+          crowd the title column down to nothing, exactly what happened
+          when Asher used this on mobile: every row read as a bare
+          "2 comments / Lock comments / Show" with no way to tell which
+          post it was. A stylesheet !important is what actually beats an
+          inline style's own specificity here -- the Grid needs its literal
+          gridTemplateColumns overridden below a real device width, not
+          just deprioritized. */}
+      <style>{`
+        @media (max-width: 640px) {
+          .asheraw-group-header-grid {
+            grid-template-columns: 1fr !important;
+            row-gap: 8px !important;
+          }
+        }
+      `}</style>
       <Stack space={4}>
         <Flex align="flex-start" justify="space-between" gap={3} wrap="wrap">
           <Stack space={2}>
@@ -869,7 +888,12 @@ export function CommentsTool() {
 
               return (
                 <Stack key={key} space={3}>
-                  <Grid columns={4} gap={2} style={{gridTemplateColumns: GROUP_HEADER_COLUMNS, alignItems: 'center'}}>
+                  <Grid
+                    columns={4}
+                    gap={2}
+                    className="asheraw-group-header-grid"
+                    style={{gridTemplateColumns: GROUP_HEADER_COLUMNS, alignItems: 'center'}}
+                  >
                     <Flex align="center" gap={2} style={{minWidth: 0}}>
                       <Text size={1} weight="semibold" textOverflow="ellipsis" style={{minWidth: 0}}>
                         On &ldquo;
