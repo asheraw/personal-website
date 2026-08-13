@@ -11,6 +11,74 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-14 — Cross-checked 4 more imported Facebook threads against the real comments, and Studio gets its own emoji/GIF pickers
+
+Two follow-ups. First: Asher provided screenshot folders (one per post slug) for 4 more of the imported
+posts and asked to cross-check and fill in whatever the original import missed, same as the "How
+Unremembered Books" pass the day before. Findings varied post to post: "Throwback to 2004" was already
+complete (12 comments, word-for-word match, nothing to do). "Unfollow Now" needed a full rebuild — the
+original transcription had literally merged two different people's separate comments into one document, and
+had zero of Asher's own replies. "Update on My Brother (Jan 2023)" had zero comments captured at all,
+built fresh from 47. "Update Since the Fall" was 9 of 10 already correct, one placeholder fixed, 42 added.
+Every post now matches Facebook's own comment-count badge exactly. All new/fixed comments sit as
+`pending`, same as before — review and approval still happens in Studio.
+
+Second: the public comment form has had emoji and GIF pickers since the previous pass, but replying as
+Asher from Studio's own Comments tool didn't — he pointed this out directly. Added both there too, reusing
+the exact same `/api/gif-search` proxy (no second Giphy key needed), rebuilt against `@sanity/ui`'s own
+Popover/TextArea components since Studio can't reach into the public site's component library. A Studio
+reply can now be GIF-only too, matching the public form's rule.
+
+## 2026-08-13 — 48 old Facebook posts pulled into Sanity as drafts, with real nested comments
+
+Asher wanted his old public Facebook posts on his own site — partly because Facebook comments are
+unreadable to anyone not logged in, and partly because the comments themselves are proof people actually
+engage with him, which he wanted visible on asheraw.com rather than locked inside Facebook.
+
+Fetched 48 share-link URLs he provided. 43 came back cleanly through WebFetch — Facebook still serves the
+actual post text and top comments behind a login *nag*, not a hard wall, for public posts. The other 5 hit
+a genuine login wall every time, including on retry.
+
+Before falling back to manual work, tried the "correct" route first: Meta's Graph API Explorer, to pull
+structured comment JSON directly instead of screenshotting. Confirmed dead, not just fiddly — personal
+profile "singular status" post lookups were deprecated in Graph API v2.4+, and the `/me/posts` fallback is
+blocked outright by Meta's "New Pages Experience" migration. Two clean, different failures in a row was
+enough to call it and move on rather than keep guessing at permission tweaks.
+
+So: manual capture for the 5 stragglers, via full-page Fireshot screenshots (Print-to-PDF also works, and
+is one shot instead of stitching). For the longest thread (16,800px tall), split into ~3,000px overlapping
+segments rather than reading one giant compressed image — kept transcription accuracy high enough to catch
+real detail, like discovering a "Most relevant" comment sort isn't chronological (two user-supplied
+timestamps proved the later comment listed first), which killed a plan to interpolate missing comment dates
+by position.
+
+All 48 posts staged as Markdown in `facebook-imports/`, matching the site's existing Sanity export
+frontmatter schema, each with a `## Comments` section preserving full reply nesting via indentation.
+
+Built `scripts/import-facebook-posts.mjs` (modeled on the existing legacy-post importer) to actually bring
+them in: each post becomes a Sanity draft (`drafts.facebook-<slug>`, never published until Asher says so),
+and — a real decision point, not assumed — each Facebook comment becomes an actual `comment` document using
+the site's real comment schema rather than flattened into the post body as text. That means correct
+`parentComment` threading (clamped to the site's existing 3-level nesting rule, same as live visitor
+comments), `isAuthorReply` flagged wherever Asher himself replied, and every comment landing at
+`status: "pending"` — nothing surfaces on the live site until he reviews and approves it in Studio.
+
+Ran it: 48 posts, 578 comments, all as drafts/pending. Caught two real bugs afterward by verifying against
+the live dataset instead of trusting the script's own "success" output — first, a comment-name parser bug
+where the colon from the source `**Name:**` markup leaked into the stored name, which also silently broke
+reply-nesting detection for every comment using the `(reply)`-annotation convention (not cosmetic — wrong
+`parentComment` links). Second, and more visible: every source file had a blank line between its
+frontmatter and its `# Title` heading, which a truthy-check bug caused the H1-stripping step to silently
+skip in all 48 files, leaving an invalid `h1`-style block in every post body — surfaced as a live
+"Could not find Sanity schema type for style: h1" error when Asher opened a draft in Studio. Fixed the root
+cause plus added a defensive floor (block levels can't go below `h2` — the post's own title field is
+already the page's H1), then re-ran and confirmed via a direct style audit across all 48 posts that zero
+`h1` blocks remain.
+
+Current state: 48 draft posts and 578 pending comments sitting in Studio, untouched and unpublished. Three
+posts (short video captions with no recoverable date) need a manual `publishedAt` set before Asher's ready
+to review the rest and start approving comments.
+
 ## 2026-08-13 — Suggest Image Prompt rebuilt around Asher's real visual style
 
 Asher imported 48 old posts into drafts and needed a way to get image ideas for all of them, in his actual
@@ -100,6 +168,14 @@ doesn't have easy keyboard access to the character), British/Singapore spelling 
 internal feelings or vague "something shifted" transitions. Second round of feedback was positive with two
 small refinements folded in: always address the reader 1-to-1 ("you," never "we"/"us"), and prefer numerals
 over spelled-out numbers ("day 4" not "day four").
+
+Shipped to every surface Asher actually writes from. Committed and pushed to `origin/main`
+(`80ea611`), so it's now available in Claude Code web sessions on this repo, not just this machine.
+Also packaged as a standalone `.skill` file (`scripts/package_skill.py`, after installing the missing
+`pyyaml` dependency it needed) for upload into claude.ai's own separate Skills feature — a different
+product with no shared install path from Claude Code, so that copy needs uploading by hand through
+claude.ai's Settings → Capabilities → Skills, and won't stay in sync automatically if the skill is
+revised later.
 
 ## 2026-08-11 — Internal links validated against Sanity data, not a live fetch; dismissed links actually disappear
 

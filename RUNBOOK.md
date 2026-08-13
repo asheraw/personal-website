@@ -2222,6 +2222,33 @@ via direct requests; confirmed `/api/gif-search` returns real results against th
 domain after shipping. Every test comment was deleted afterward, same "clean up what a real test run writes
 to production" convention used throughout this project.
 
+**Studio side got the same two pickers too (shipped 2026-08-14).** The emoji/GIF pickers above only ever
+shipped on the *public* comment form -- replying as Asher from Studio → Comments' inline reply box had
+neither, which he pointed out directly. `CommentsTool.tsx` gained its own `EmojiPickerButton` (same curated
+`COMMENT_EMOJIS` list) and `GifPickerButton` (reuses the exact same `/api/gif-search` proxy -- no second
+Giphy integration, no second API key), built with `@sanity/ui`'s own `Popover`/`TextArea`/`TextInput`
+rather than the public form's shadcn/Radix ones, since Studio components can't reach into the site's own
+`components/ui/*`.
+
+**Cursor-position emoji insertion needed a different approach here.** The public form's textarea is
+uncontrolled (DOM mutated directly via a ref); Studio's `TextArea` is a *controlled* component (`value=
+{replyText}`, driven by React state in `CommentsTool`). Inserting at the cursor still reads
+`selectionStart`/`selectionEnd` off the same kind of ref, but the actual insertion goes through
+`onChange(newValue)` (updating React state) rather than mutating `el.value` directly, and the cursor
+position is restored via `el.setSelectionRange(...)` inside `requestAnimationFrame` -- deferred one frame
+so it runs *after* React has committed the re-render with the new controlled value, not before.
+
+**A Studio-created reply can be GIF-only too**, matching the public form's rule. `submitReply()` now
+accepts an optional `gifUrl` alongside `message` (at least one required, same as `/api/comments`'s check),
+and carries it through to both the created Sanity document and the local optimistic UI update. No
+server-side hostname re-validation needed the way `/api/comments` enforces one for public submissions --
+the URL only ever comes from a real `/api/gif-search` result the button itself fetched, never typed in by
+hand, and Studio access is already an authenticated, trusted write path.
+
+**Verified**: `npx tsc --noEmit` and `npm run build` clean, Studio's schema bootstrap check shows no
+"Schema errors" text after the change, and `/api/gif-search` re-confirmed working (same route, no changes
+needed there) before deploying.
+
 ## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13)
 
 Asher hit this trying to publish the post whose **slug** is "wrote-these-in-2009": `Document
