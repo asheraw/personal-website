@@ -11,6 +11,25 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-14 — Fixed why Studio's Comments page was laggy, then fixed the bigger part of it
+
+Asher asked directly why Comments felt slow. Checked with real numbers rather than guessing: 808 comments
+now exist (versus the dozens this tool was ever tested against), and the page was re-scanning the entire
+comment list from scratch on every single interaction — a keystroke in search, hovering a button — not just
+when data actually changed. Fixed by building a lookup once instead of re-scanning every time; same data,
+same order, just far less repeated work. Should make typing and clicking noticeably snappier on its own.
+
+Flagged the bigger, remaining piece honestly rather than just fixing it unilaterally: with hundreds of posts
+sitting pending mid-import, nearly all of them were auto-expanding open at once, which was probably the
+actual "heavy page" feeling. Asher's answer was clear and specific: keep everything collapsed by default
+while he's still working through the import (real visitor traffic on old posts is basically nonexistent —
+his words, "no one, except a good friend Joycelyn, comes by"), but once pending comments drop back under 10,
+auto-expanding the odd one or two again is exactly right. Built as a threshold, not a one-way switch — it
+self-corrects once the import's done and stays out of the way in the meantime. Also switched the group
+sort's "most recent" signal from a comment's own (often years-old, imported-from-Facebook) date to when it
+was actually added to this site, so working through the import surfaces "the one I just finished" at the
+top instead of burying it under old threads that happen to carry a more recent original date.
+
 ## 2026-08-14 — Cross-checked 4 more imported Facebook threads against the real comments, and Studio gets its own emoji/GIF pickers
 
 Two follow-ups. First: Asher provided screenshot folders (one per post slug) for 4 more of the imported
