@@ -203,6 +203,7 @@ export function CommentsTool() {
   const [search, setSearch] = useState('')
   const [stuckPosts, setStuckPosts] = useState<StuckPost[]>([])
   const [fixingStuckId, setFixingStuckId] = useState<string | null>(null)
+  const [fixStuckProgress, setFixStuckProgress] = useState<{done: number; total: number} | null>(null)
   const [fixError, setFixError] = useState<{draftId: string; message: string} | null>(null)
   const [publishingDrafts, setPublishingDrafts] = useState(false)
   const [publishProgress, setPublishProgress] = useState<{done: number; total: number} | null>(null)
@@ -643,10 +644,11 @@ export function CommentsTool() {
   async function fixStuckPost(stuck: StuckPost) {
     setFixingStuckId(stuck.draftId)
     setFixError(null)
+    const knownBlockers = stuck.blockers.filter((b) => b.fieldName)
+    setFixStuckProgress({done: 0, total: knownBlockers.length})
     const failed: string[] = []
     try {
-      for (const blocker of stuck.blockers) {
-        if (!blocker.fieldName) continue
+      for (const [i, blocker] of knownBlockers.entries()) {
         try {
           // _weak: true alongside the repointed _ref, not just the _ref
           // alone -- confirmed by the real error text a plain _ref fix
@@ -669,10 +671,16 @@ export function CommentsTool() {
           // nothing to actually diagnose a repeat failure with.
           const reason = err instanceof Error ? err.message : String(err)
           failed.push(`${blocker._type} (${blocker._id}): ${reason}`)
+        } finally {
+          // Counted whether this one succeeded or failed -- either way
+          // it's been attempted, and Asher's watching this number to know
+          // how much longer the fix has left, not how many succeeded.
+          setFixStuckProgress({done: i + 1, total: knownBlockers.length})
         }
       }
     } finally {
       setFixingStuckId(null)
+      setFixStuckProgress(null)
       setFixError(
         failed.length > 0
           ? {draftId: stuck.draftId, message: `Couldn't fix ${failed.length}: ${failed.join('; ')}.`}
@@ -828,11 +836,17 @@ export function CommentsTool() {
                   post was published. Harmless on its own, but Sanity won't let a post publish while anything
                   still points at its unpublished version. Fixing this only repoints those items at the right
                   post -- nothing else about them changes.
+                  {knownBlockers.length > 50 &&
+                    ` That's a lot at once, so this counts up as it goes -- stay on this page until it finishes rather than closing the tab partway through.`}
                 </Text>
                 {knownBlockers.length > 0 && (
                   <Box>
                     <Button
-                      text={fixingStuckId === stuck.draftId ? 'Fixing…' : `Fix ${knownBlockers.length === 1 ? 'it' : 'them'} now`}
+                      text={
+                        fixingStuckId === stuck.draftId
+                          ? `Fixing… ${fixStuckProgress ? `${fixStuckProgress.done}/${fixStuckProgress.total}` : ''}`
+                          : `Fix ${knownBlockers.length === 1 ? 'it' : 'them'} now`
+                      }
                       tone="critical"
                       fontSize={1}
                       disabled={fixingStuckId === stuck.draftId}
