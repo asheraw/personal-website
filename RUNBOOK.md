@@ -2340,6 +2340,32 @@ date: still the old `comment`-scoped approach (not the type-agnostic `references
 doesn't set `_weak: true` either. A real gap if it's ever reached for from a terminal — needs both fixes
 applied before relying on it again.
 
+**Post published, but its 4 comments still didn't show on the live site after Asher approved them.**
+Different bug, same root cause family. `comment` documents are never meant to sit in draft state —
+moderation is the `status` field, not Sanity's draft/publish mechanism (`commentType.ts`'s own header
+comment says so) — but these four, imported the same way as everything else in this saga, were sitting as
+real drafts (`drafts.facebook-comment-wrote-these-in-2009-N`) with no published counterpart at all.
+Approving one (the existing Approve button, unchanged — `client.patch(id).set({status: 'approved'})`) only
+patches whichever document `id` actually points at: the draft. `/api/comments`'s own `GET` handler, which is
+what the live site actually reads from, only ever sees published content — an "approved" status on a draft
+that's never been published is invisible to it regardless, with nothing in Studio hinting anything's wrong
+(Studio's own client sees drafts fine, so the comment looks completely normal there).
+
+**Fix (shipped 2026-08-13, same day): a `draftComments` detector + "Publish them now"**, same shape as the
+stuck-post banner above but for comments sitting in draft state. Sanity's client has no single "publish"
+verb — `publishComment()` fetches the full draft via `client.getDocument(id)`, then
+`client.transaction().createOrReplace({...doc, _id: strippedId}).delete(draftId).commit()`, one atomic
+write so there's never a moment with both the draft and the published copy existing, or neither.
+
+**`parentComment` needed the exact same `weak: true` fix as `post`, and for a reason that mattered
+immediately, not hypothetically**: two of these four comments are replies to the other two (visible as
+nested in Asher's own screenshot), so `parentComment._ref` pointing at another still-drafted comment's ID
+is exactly the same deadlock shape as `post` was. `publishComment()` repoints both `post` and
+`parentComment` at their drafts.-stripped form in the same write when either one still has the prefix,
+setting `_weak: true` on each — safe regardless of which order a thread's comments get published in, since
+a weak reference tolerates pointing at a target that doesn't exist yet, self-healing the moment that target
+(a reply's parent, published earlier or later in the same batch) actually comes into existence.
+
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
 The other IDEAS.md entry — emailing a commenter when there's a reply — is now built, but not as originally

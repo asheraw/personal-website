@@ -105,6 +105,13 @@ export const commentType = defineType({
       to: [{type: 'comment'}],
       description: 'Set when this comment is a reply to another one -- either a visitor replying from the live site, or Asher replying from the Comments tool. Nests up to 3 levels deep (comment -> reply -> reply to that reply); replying to an already-3rd-level comment attaches to that comment\'s own parent instead, flattening to a sibling rather than a 4th level (enforced in /api/comments\'s POST handler, not just the UI).',
       readOnly: true,
+      // Same reasoning as `post` above -- a reply referencing a parent
+      // comment that's itself still an unpublished draft (exactly the
+      // shape of a legacy-imported thread) would hit the identical
+      // deadlock otherwise: a strong reference can't be written pointing
+      // at a not-yet-existing document, and can't block that document's
+      // eventual publish either. See RUNBOOK.md.
+      weak: true,
     }),
     defineField({
       name: 'isAuthorReply',

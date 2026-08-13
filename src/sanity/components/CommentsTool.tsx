@@ -167,6 +167,8 @@ export function CommentsTool() {
   const [stuckPosts, setStuckPosts] = useState<StuckPost[]>([])
   const [fixingStuckId, setFixingStuckId] = useState<string | null>(null)
   const [fixError, setFixError] = useState<{draftId: string; message: string} | null>(null)
+  const [publishingDrafts, setPublishingDrafts] = useState(false)
+  const [publishDraftsError, setPublishDraftsError] = useState<string | null>(null)
   // Explicit overrides of the default expand/collapse state (see
   // groupIsExpanded below) -- a group the user has opened or closed by hand
   // stays that way regardless of its pending status, until they toggle it
@@ -448,7 +450,60 @@ export function CommentsTool() {
     [comments],
   )
   const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
+  // `comment` documents are never meant to sit in draft state -- moderation
+  // is the `status` field, not Sanity's draft/publish mechanism (see this
+  // file's own header comment) -- so any comment whose _id is still
+  // drafts.-prefixed is a leftover from the same legacy-import quirk
+  // documented in RUNBOOK.md. Setting `status: 'approved'` on one of these
+  // (the normal Approve button, unchanged) only patches the draft -- the
+  // live site's own comment query only ever reads published content, so an
+  // "approved" draft comment silently never shows up for a visitor, with
+  // nothing in Studio itself hinting that anything's wrong.
+  const draftComments = useMemo(() => (comments ?? []).filter((c) => c._id.startsWith(DRAFTS_PREFIX)), [comments])
   const searchTerm = search.trim().toLowerCase()
+
+  // Sanity's client has no single "publish" verb -- publishing a draft is,
+  // under the hood, write the same content at the ID with the drafts.
+  // prefix stripped, then delete the draft, done as one transaction so
+  // there's never a moment with both or neither existing. `parentComment`
+  // and `post` are repointed at their own already-published (drafts.-
+  // stripped) form in the same write, since a comment thread's own
+  // internal references need the same fix -- both fields are weak
+  // references now specifically so this can be written even if a reply
+  // publishes before whatever it's replying to.
+  async function publishComment(id: string) {
+    const doc = await client.getDocument(id)
+    if (!doc) throw new Error('draft document not found')
+    const publishedId = id.slice(DRAFTS_PREFIX.length)
+    const patched: Record<string, unknown> = {...doc, _id: publishedId}
+    for (const field of ['post', 'parentComment'] as const) {
+      const ref = patched[field] as {_ref?: string} | undefined
+      if (ref?._ref?.startsWith(DRAFTS_PREFIX)) {
+        patched[field] = {...ref, _ref: ref._ref.slice(DRAFTS_PREFIX.length), _weak: true}
+      }
+    }
+    await client.transaction().createOrReplace(patched as never).delete(id).commit()
+  }
+
+  async function publishAllDraftComments() {
+    setPublishingDrafts(true)
+    setPublishDraftsError(null)
+    const failed: string[] = []
+    try {
+      for (const c of draftComments) {
+        try {
+          await publishComment(c._id)
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err)
+          failed.push(`${c.name || '(unnamed)'} (${c._id}): ${reason}`)
+        }
+      }
+    } finally {
+      setPublishingDrafts(false)
+      setPublishDraftsError(failed.length > 0 ? `Couldn't publish ${failed.length}: ${failed.join('; ')}.` : null)
+      load()
+    }
+  }
 
   // Repoints every blocker with a known field at the post's published ID
   // in one go -- one blocker at a time, each its own try/catch (not one
@@ -644,6 +699,42 @@ export function CommentsTool() {
             </Card>
           )
         })}
+
+        {draftComments.length > 0 && (
+          <Card padding={4} radius={3} tone="critical" border>
+            <Stack space={3}>
+              <Flex align="center" gap={3} wrap="wrap">
+                <Badge tone="critical" fontSize={2}>
+                  {draftComments.length}
+                </Badge>
+                <Text size={2} weight="semibold">
+                  {draftComments.length === 1 ? "comment is" : "comments are"} sitting unpublished and won't show on
+                  your site
+                </Text>
+              </Flex>
+              <Text size={1} muted>
+                Same legacy-import issue as the other box above, but on the comment itself this time -- these were
+                imported directly into a draft state that never got published. Approving one only updates the draft;
+                your live site only shows fully published content, so it stays invisible to visitors either way.
+                Fixing this publishes them for real -- their content, name, and status all stay exactly as they are.
+              </Text>
+              <Box>
+                <Button
+                  text={publishingDrafts ? 'Publishing…' : `Publish ${draftComments.length === 1 ? 'it' : 'them'} now`}
+                  tone="critical"
+                  fontSize={1}
+                  disabled={publishingDrafts}
+                  onClick={publishAllDraftComments}
+                />
+              </Box>
+              {publishDraftsError && (
+                <Text size={1} weight="semibold">
+                  {publishDraftsError}
+                </Text>
+              )}
+            </Stack>
+          </Card>
+        )}
 
         {!viewingTrash && (
           <TextInput
