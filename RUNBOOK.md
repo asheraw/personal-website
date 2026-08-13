@@ -2473,6 +2473,49 @@ the auto-expand branch evaluates false; confirmed the new sort order's top few g
 posts cross-checked the day before (their `addedAt` timestamps are the most recent in the dataset) —
 matching what "the newest ones on top" should mean in practice, not just in theory.
 
+## A verification script without a write token can't see drafts (learned 2026-08-14)
+
+**While rebuilding comments for "The Joy Was Cut Short" from screenshots**, a one-off script checking
+whether the post was still a safe, unpublished draft used `createClient({..., perspective: 'raw'})` with no
+`token`. It reported, in sequence, that the post had gone live without review, and then — after a "fix" —
+that the post had been deleted entirely. Neither was true.
+
+**Root cause**: in this project, an unauthenticated client cannot reliably see `drafts.*` documents,
+especially freshly-written ones, no matter what `perspective` is set to. `perspective: 'raw'` controls
+*which* version of a document a query returns (draft vs. published) — it does not grant visibility into
+draft content an anonymous request wouldn't otherwise have. Re-running the identical check with
+`token: process.env.SANITY_API_WRITE_TOKEN` added gave the correct answer immediately: the post was exactly
+where it should have been, a normal untouched draft.
+
+**Rule going forward**: any one-off verification script that needs to see draft content — not just "the
+published version if one exists" — must use an authenticated client (`token:
+process.env.SANITY_API_WRITE_TOKEN`, same as `write-client.ts` already uses for real writes). `perspective:
+'raw'` alone is not sufficient and has already produced one false emergency.
+
+**Separate, real side effect of the confusion window**: the post's first "fix" attempt (run before the
+false alarm was understood) briefly did publish it for real, and Vercel's ISR cache captured that moment —
+so `curl`ing the live URL kept returning real post content even after Sanity was confirmed correctly
+draft-only again. Fixed with the site's own no-auth `/api/revalidate?path=/blog/<slug>` route (see its own
+route comments: worst case of misuse is a few extra Sanity reads, never data exposure) — confirmed the URL
+returned 404 again immediately after.
+
+## Stuck-post fix button: progress counter (shipped 2026-08-14)
+
+**Asked for directly**: after clicking "Fix them now" on a 93-blocker instance of the "blocking publish"
+banner above and having no way to tell how far along it was, Asher asked for the same visibility the
+sibling "Publish them now" draft-comments tool already has (`publishProgress: {done, total}`, rendered as
+"Publishing… N/total" on its own button) — not a new mechanism, just parity with one that already existed
+a few hundred lines away in the same file.
+
+**Fix**: `fixStuckPost` gained the identical shape, `fixStuckProgress: {done, total} | null`, set once up
+front to `{done: 0, total: knownBlockers.length}` and bumped in a `finally` block after each blocker's own
+`try`/`catch` (so a failed patch still advances the counter — the count tracks "attempts processed," not
+"successes," matching what `publishProgress` already does for the sibling tool). Button text becomes
+"Fixing… N/total" while running, reverting to "Fix it/them now" once `fixingStuckId` clears. Same
+`> 50`-blockers hint text pattern added to the banner's description ("stay on this page until it
+finishes") for the same reason the sibling tool has one — nothing about the fix logic itself changed, only
+what's shown while it runs.
+
 ## Reply-notification subscriptions (shipped 2026-07-31)
 
 The other IDEAS.md entry — emailing a commenter when there's a reply — is now built, but not as originally

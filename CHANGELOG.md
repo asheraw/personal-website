@@ -11,6 +11,41 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-14 — Progress counter on the "blocking publish" fix button
+
+Asher hit the "N document(s) are blocking '...' from ever publishing" banner again (93 this time), clicked
+"Fix them now," and asked for visibility into how far along it was — the same thing the tool's sibling
+"Publish them now" button already shows for stuck draft comments. Gave it the identical treatment: the
+button now reads "Fixing… N/total" while it works through each blocker one at a time, instead of just
+sitting on "Fixing…" with no sense of progress. Nothing about what the fix actually does changed, only what
+Asher can see while it runs.
+
+## 2026-08-14 — Rebuilt "The Joy Was Cut Short" comments from screenshots (93 total), and a self-caused publish scare along the way
+
+Asher provided 10 screenshots for this post's real Facebook thread. The original imported version only had
+10 terse comments; the real thread was much deeper — full transcription came to 93 comments once every
+reply chain was accounted for, matching Facebook's own comment-count badge exactly as the correctness check.
+
+Along the way, a verification script gave a false reading: it checked for draft content using a Sanity
+client with no write token, which — confirmed after the fact — can't reliably see `drafts.*` documents in
+this project regardless of any other setting. That made it look first like the post had gone live without
+review, then like it had vanished entirely, neither of which was true. Re-checked with a properly
+authenticated client and got the real picture immediately: nothing was lost, the post was exactly where it
+should have been. One real side effect from the confusion window: the post genuinely was briefly live during
+it, and Vercel's page cache had captured that moment, so the live URL kept serving stale content even after
+Sanity itself was confirmed correct. Cleared with the site's own `/api/revalidate` route. Disclosed the full
+mistake to Asher directly rather than quietly moving past it — no data was actually lost, but the diagnosis
+process itself was wrong for a while.
+
+## 2026-08-14 — Cross-checked "The White Stuff" comments against Facebook
+
+Same screenshot cross-check pattern as the other posts this week, 4 screenshots this time. Found and fixed
+the same two recurring issues as before: a few separate commenters' messages had been merged into one
+document, and one very long reply chain (7 levels deep on Facebook, one exchange about a knee injury) had to
+be clamped to this site's 3-level nesting limit, same rule the import script itself already enforces —
+flattened into siblings past that depth rather than dropped, so no actual conversation content was lost,
+just its exact visual indentation past level 3. Final count matches Facebook's badge exactly.
+
 ## 2026-08-14 — Fixed why Studio's Comments page was laggy, then fixed the bigger part of it
 
 Asher asked directly why Comments felt slow. Checked with real numbers rather than guessing: 808 comments
