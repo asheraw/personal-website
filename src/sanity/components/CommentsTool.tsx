@@ -168,6 +168,7 @@ export function CommentsTool() {
   const [fixingStuckId, setFixingStuckId] = useState<string | null>(null)
   const [fixError, setFixError] = useState<{draftId: string; message: string} | null>(null)
   const [publishingDrafts, setPublishingDrafts] = useState(false)
+  const [publishProgress, setPublishProgress] = useState<{done: number; total: number} | null>(null)
   const [publishDraftsError, setPublishDraftsError] = useState<string | null>(null)
   // Explicit overrides of the default expand/collapse state (see
   // groupIsExpanded below) -- a group the user has opened or closed by hand
@@ -485,22 +486,44 @@ export function CommentsTool() {
     await client.transaction().createOrReplace(patched as never).delete(id).commit()
   }
 
+  // At the scale of the actual legacy-import backlog (hundreds, not a
+  // handful), one-at-a-time sequential publishing has no visible progress
+  // and takes long enough to genuinely look frozen -- exactly what Asher
+  // hit. Small concurrent batches (Promise.allSettled, not Promise.all --
+  // one failure in a batch shouldn't lose the rest of that same batch's
+  // results) cut the wall-clock time substantially while still bounding
+  // how many requests fire at once, and a live done/total count means
+  // "Publishing…" is never the only signal something's still happening.
+  const PUBLISH_BATCH_SIZE = 8
+
   async function publishAllDraftComments() {
     setPublishingDrafts(true)
     setPublishDraftsError(null)
+    setPublishProgress({done: 0, total: draftComments.length})
     const failed: string[] = []
+    let done = 0
     try {
-      for (const c of draftComments) {
-        try {
-          await publishComment(c._id)
-        } catch (err) {
-          const reason = err instanceof Error ? err.message : String(err)
-          failed.push(`${c.name || '(unnamed)'} (${c._id}): ${reason}`)
-        }
+      for (let i = 0; i < draftComments.length; i += PUBLISH_BATCH_SIZE) {
+        const batch = draftComments.slice(i, i + PUBLISH_BATCH_SIZE)
+        const results = await Promise.allSettled(batch.map((c) => publishComment(c._id)))
+        results.forEach((result, idx) => {
+          done++
+          if (result.status === 'rejected') {
+            const c = batch[idx]
+            const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
+            failed.push(`${c.name || '(unnamed)'} (${c._id}): ${reason}`)
+          }
+        })
+        setPublishProgress({done, total: draftComments.length})
       }
     } finally {
       setPublishingDrafts(false)
-      setPublishDraftsError(failed.length > 0 ? `Couldn't publish ${failed.length}: ${failed.join('; ')}.` : null)
+      setPublishProgress(null)
+      setPublishDraftsError(
+        failed.length > 0
+          ? `Couldn't publish ${failed.length}: ${failed.slice(0, 20).join('; ')}${failed.length > 20 ? `; and ${failed.length - 20} more` : ''}.`
+          : null,
+      )
       load()
     }
   }
@@ -717,10 +740,16 @@ export function CommentsTool() {
                 imported directly into a draft state that never got published. Approving one only updates the draft;
                 your live site only shows fully published content, so it stays invisible to visitors either way.
                 Fixing this publishes them for real -- their content, name, and status all stay exactly as they are.
+                {draftComments.length > 50 &&
+                  ` That's a lot at once, so this counts up as it goes -- stay on this page until it finishes rather than closing the tab partway through.`}
               </Text>
               <Box>
                 <Button
-                  text={publishingDrafts ? 'Publishing…' : `Publish ${draftComments.length === 1 ? 'it' : 'them'} now`}
+                  text={
+                    publishingDrafts
+                      ? `Publishing… ${publishProgress ? `${publishProgress.done}/${publishProgress.total}` : ''}`
+                      : `Publish ${draftComments.length === 1 ? 'it' : 'them'} now`
+                  }
                   tone="critical"
                   fontSize={1}
                   disabled={publishingDrafts}
