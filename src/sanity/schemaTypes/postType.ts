@@ -2,6 +2,7 @@ import {DocumentTextIcon} from '@sanity/icons/DocumentText'
 import {defineArrayMember, defineField, defineType} from 'sanity'
 import {estimateReadingTimeMinutes} from '../../lib/portableText'
 import {CategoryCheckboxInput} from '../components/CategoryCheckboxInput'
+import {PrimaryCategoryInput} from '../components/PrimaryCategoryInput'
 import {TagsAutocompleteInput} from '../components/TagsAutocompleteInput'
 import {DistractionFreeWritingPanel} from '../components/DistractionFreeWritingPanel'
 
@@ -82,7 +83,7 @@ export const postType = defineType({
       fieldset: 'organize',
       to: {type: 'category'},
       description:
-        "Which category should show in the breadcrumb and drive this post's main topic. Only matters if you picked more than one category above — leave blank to just use the first one.",
+        "Which category should show in the breadcrumb and drive this post's main topic. Only matters if you picked more than one category above — leave blank to just use the first one. Tap one of the buttons below to pick it -- only ever shows categories you've already ticked above, so there's nothing to search for.",
       options: {
         disableNew: true,
         filter: ({document}) => {
@@ -90,6 +91,7 @@ export const postType = defineType({
           return {filter: '_id in $selected', params: {selected}}
         },
       },
+      components: {input: PrimaryCategoryInput},
     }),
     defineField({
       name: 'tags',
