@@ -63,6 +63,23 @@ type CommentRow = {
   isAuthorReply: boolean
 }
 
+// `post->title` (and `post->slug`) only resolve once a real document
+// exists at the referenced ID -- for a comment whose post hasn't been
+// published yet, `post._ref` deliberately already points at where that
+// post *will* live once it is (see the weak-reference fix documented in
+// RUNBOOK.md), so both come back null until publishing actually happens.
+// A bare "unknown post" in the meantime gives no way to tell one such
+// comment apart from another. Post IDs in this project are the same
+// string as their slug, so turning the ID itself into words is a real,
+// readable stand-in, not a guess -- "wrote-these-in-2009" becomes "Wrote
+// These In 2009 (not yet published)".
+function fallbackPostLabel(postId: string | null): string {
+  if (!postId) return 'unknown post'
+  const slug = postId.replace(/^drafts\./, '')
+  const words = slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  return `${words} (not yet published)`
+}
+
 // A post that's never been published can't be published *at all* while
 // anything still strongly references its draft ID (Sanity refuses to
 // delete a document something else points at, and publishing a document
@@ -904,10 +921,10 @@ export function CommentsTool() {
                             rel="noreferrer"
                             style={{color: 'inherit', textDecoration: 'underline'}}
                           >
-                            {group.postTitle ?? 'unknown post'}
+                            {group.postTitle ?? fallbackPostLabel(group.postId)}
                           </a>
                         ) : (
-                          group.postTitle ?? 'unknown post'
+                          group.postTitle ?? fallbackPostLabel(group.postId)
                         )}
                         &rdquo;
                       </Text>
@@ -1372,10 +1389,10 @@ function TrashedCommentCard({
                 rel="noreferrer"
                 style={{color: 'inherit', textDecoration: 'underline'}}
               >
-                {comment.postTitle ?? 'unknown post'}
+                {comment.postTitle ?? fallbackPostLabel(comment.postId)}
               </a>
             ) : (
-              comment.postTitle ?? 'unknown post'
+              comment.postTitle ?? fallbackPostLabel(comment.postId)
             )}
             &rdquo;
           </Text>
