@@ -239,7 +239,7 @@ export const blockContentType = defineType({
               {title: 'Masonry grid (many photos at once, Pinterest-style)', value: 'masonry'},
             ],
           },
-          initialValue: 'carousel',
+          initialValue: 'slideshow',
         }),
         defineField({
           name: 'displaySize',

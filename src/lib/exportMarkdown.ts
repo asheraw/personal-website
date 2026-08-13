@@ -89,7 +89,13 @@ const imageRenderer: PortableTextTypeRenderer<
   const extra = value.additionalImages ?? [];
   if (extra.length === 0) return main;
   const styleLabel =
-    value.displayStyle === "slideshow" ? "slideshow" : value.displayStyle === "scroll-strip" ? "scrolling strip" : "carousel";
+    value.displayStyle === "carousel"
+      ? "carousel"
+      : value.displayStyle === "scroll-strip"
+        ? "scrolling strip"
+        : value.displayStyle === "masonry"
+          ? "masonry grid"
+          : "slideshow";
   const rest = extra.map(renderImage).filter(Boolean).join("\n\n");
   return `${main}\n\n<!-- gallery (${styleLabel}), continued -->\n\n${rest}`;
 };
