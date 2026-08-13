@@ -466,15 +466,19 @@ export function CommentsTool() {
         if (!blocker.fieldName) continue
         try {
           await client.patch(blocker._id).set({[`${blocker.fieldName}._ref`]: stuck.publishedId}).commit()
-        } catch {
-          failed.push(`${blocker._type} (${blocker._id})`)
+        } catch (err) {
+          // The real reason matters here -- a bare catch that only records
+          // which document failed (an earlier version of this) gives
+          // nothing to actually diagnose a repeat failure with.
+          const reason = err instanceof Error ? err.message : String(err)
+          failed.push(`${blocker._type} (${blocker._id}): ${reason}`)
         }
       }
     } finally {
       setFixingStuckId(null)
       setFixError(
         failed.length > 0
-          ? {draftId: stuck.draftId, message: `Couldn't fix ${failed.length}: ${failed.join(', ')}.`}
+          ? {draftId: stuck.draftId, message: `Couldn't fix ${failed.length}: ${failed.join('; ')}.`}
           : null,
       )
       loadStuckPosts()
