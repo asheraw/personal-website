@@ -47,7 +47,32 @@ function CompressedUploadSourceComponent(props: AssetSourceComponentProps) {
     fileInputRef.current?.click()
   }, [])
 
-  if (props.action && props.action !== 'upload') return null
+  // Sanity lists every registered image source under both the Upload
+  // *and* Select buttons unconditionally -- confirmed by reading
+  // @sanity/types' own AssetSource definition, not assumed: there's no
+  // field on it for "upload only," so this shows up as a menu option
+  // under Select too even though it only makes sense for a brand-new
+  // file. Can't remove the menu item itself, but the blank dead-end this
+  // used to render when picked from Select (a bare `return null`, no
+  // explanation) is fixable -- Asher flagged it as exactly the kind of
+  // confusing "nothing happened" this whole panel exists to avoid.
+  if (props.action && props.action !== 'upload') {
+    return (
+      <Box padding={4}>
+        <Stack space={4}>
+          <Text size={1}>&ldquo;Upload (compressed)&rdquo; only applies to a brand-new file — there&rsquo;s nothing to select here.</Text>
+          <Text size={1} muted>
+            Everything already in the Media library was squeezed on the way in already (same automatic
+            compression, just done once, up front) — close this and pick &ldquo;default&rdquo; instead to choose
+            from it.
+          </Text>
+          <Flex justify="flex-end">
+            <Button text="Close" mode="ghost" onClick={props.onClose} />
+          </Flex>
+        </Stack>
+      </Box>
+    )
+  }
 
   async function handleFile(file: File) {
     setStatus('working')

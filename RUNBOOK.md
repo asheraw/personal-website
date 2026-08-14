@@ -1348,6 +1348,19 @@ Studio's own config/schema bootstrap still loads with zero errors after adding t
 field** — that specific, final check needs an actual login this sandbox doesn't have. If it doesn't show up
 as expected, the resolver in `sanity.config.ts`'s `form.image.assetSources` is the first place to look.
 
+**Also shows up under Select, confirmed unfixable at the menu-item level (found 2026-08-14).** Asher flagged
+that the "Select" button (choose an already-uploaded image, not add a new one) also lists "Upload
+(compressed)" as an option, which makes no sense there. Checked `@sanity/types`' own `AssetSource`
+definition directly rather than guessing at a fix: there's no field on it for "show under Upload only" —
+every registered `assetSources` entry is listed under **both** Upload and Select unconditionally, a Studio
+platform behavior, not something this codebase's own config controls. What *was* fixable: picking it from
+Select used to render a blank panel (`if (props.action !== 'upload') return null`, no explanation) — a
+confusing dead-end Asher correctly called out as exactly what this feature exists to avoid elsewhere. Now
+shows a plain message instead ("only applies to a brand-new file... pick 'default' instead") with a Close
+button, for `action === 'select'` and `'openInSource'` alike. The menu item itself still shows under Select
+and can't be hidden without overriding Studio's own image-field UI entirely — the same "too risky to ship
+without a real login to verify against" tradeoff already made once above, still holds.
+
 **"Compress Library" — a one-time pass for photos already there (shipped 2026-08-08).** Automatic
 compression above only ever applied going forward. Asher asked whether the photos already in the library
 before that shipped were compressed too — checked against real data: 28 of 49 images were 300KB or larger,
