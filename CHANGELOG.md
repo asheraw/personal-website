@@ -11,6 +11,13 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Fixed the Media library lightbox never loading a GIF
+
+Asher noticed clicking a GIF thumbnail opened the lightbox but nothing ever appeared. Measured it directly:
+the full-size request was quietly ballooning a 3.8MB GIF into a 79.6MB file, because resizing an animated
+GIF means re-encoding every single frame at the new size. Fixed by skipping the resize entirely for GIFs and
+loading the original file untouched — same rule already applied to GIFs everywhere else on the site.
+
 ## 2026-08-16 — Bulk photo picker now marks what's already in the gallery
 
 Asher noticed reopening the "Add multiple from Media Library" picker to add more photos showed every tile

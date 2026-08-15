@@ -1615,6 +1615,18 @@ This sandbox's headless Playwright hits Studio's "Connect this Studio to your pr
 real data loads, the same wall documented throughout this file; there's no login session available here to
 get past it.
 
+**Lightbox never loaded for a GIF (found and fixed 2026-08-16).** Asher reported clicking a GIF thumbnail
+opened the lightbox but nothing ever appeared inside it. Root cause confirmed by direct measurement, not
+guessed: the lightbox's `?w=1600` request against a real animated GIF asset in the library returned 200
+eventually, but as a **79.6MB file** re-encoded at the new width — up from the original 3.8MB. Sanity's CDN
+re-encodes every frame of an animated GIF when resizing it, and GIF compression doesn't scale efficiently,
+so a routine width bump balloons the file by ~20x and effectively never finishes loading in a browser. Fixed
+with `isAnimatedGifUrl()` (the same helper already used on the public site's `FeaturedImage`/`SizedImage`/
+`ImageCarousel`): a GIF's lightbox `<img>` now requests the **untouched original URL**, no `?w=1600` at all
+— 3.8MB loads fine, same "never transform a GIF" rule now applied consistently everywhere on the site, not
+just the public-facing pages. The small 200×200 grid thumbnail was left alone — Asher confirmed those
+already display fine, and there was no evidence the same hang applies at that much smaller target size.
+
 ---
 
 ## Export: Markdown, JSON, HTML, EPUB, PDF — per-post and full-archive (shipped 2026-08-05)

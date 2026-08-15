@@ -17,6 +17,7 @@ import {
 import {ChevronLeftIcon} from '@sanity/icons/ChevronLeft'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {useClient} from 'sanity'
+import {isAnimatedGifUrl} from '../../lib/isAnimatedGif'
 import {UploadIcon} from '@sanity/icons/Upload'
 import {SyncIcon} from '@sanity/icons/Sync'
 import {DocumentZipIcon} from '@sanity/icons/DocumentZip'
@@ -1235,7 +1236,12 @@ export function MediaLibraryTool() {
                   />
                 )}
                 <img
-                  src={`${lightboxAsset.url}?w=1600`}
+                  // A width transform on an animated GIF hangs Sanity's CDN
+                  // outright (confirmed directly -- the request just never
+                  // resolves, not a quick failure), so GIFs are served
+                  // untouched here, same "never transform a GIF" rule
+                  // already applied everywhere else on the site.
+                  src={isAnimatedGifUrl(lightboxAsset.url) ? lightboxAsset.url : `${lightboxAsset.url}?w=1600`}
                   alt={lightboxAsset.originalFilename ?? 'Untitled image'}
                   style={{maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', display: 'block'}}
                 />
