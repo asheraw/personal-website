@@ -11,6 +11,22 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Cleared the last 25 posts' SEO fields without Gemini
+
+Asher decided to generate the remaining backlog images himself manually (no billing wall to work around
+there), and asked whether the text half — SEO title, excerpt, tags, category — could be done without
+Gemini too, since that's what had hit its own free-tier daily cap. It could: read each of the 25 remaining
+posts' real content directly, drafted the SEO title/excerpt/tags/category for each by hand following the
+exact tuned prompt and voice instructions already saved under Studio's AI Workspace (not the generic
+defaults), and wrote them straight to Sanity — no API calls, so no quota to hit. One deliberate exception:
+"Stop Saying AI Won't Replace People" reads as an opinion piece rather than a life update, so it got both
+Authenticity and the existing "Artificial Intelligence" category rather than Authenticity alone, matching
+how a couple of the original 8 posts already carried a second category when it genuinely fit. All 25
+verified written and spot-checked; everything stays a draft for Asher's own read-through before publishing,
+same as always. One source file flagged its own content as reconstructed from an AI summary rather than a
+verbatim transcript ("Recovering From COVID, Reflecting at Nas Summit") — worth a glance against the
+original before that one goes live.
+
 ## 2026-08-16 — Fixed the new bulk photo picker stalling past 60 images
 
 Asher reported the "Add multiple from Media Library" picker (shipped earlier today) wouldn't load past a
