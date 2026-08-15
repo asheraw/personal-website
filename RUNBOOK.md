@@ -1447,6 +1447,19 @@ fixed-height dialog, not the whole window) to auto-load the next 60 as it's scro
 returns up to 100 in one shot with no further paging, same reasoning as the Media library's own search: a
 real filename search narrows results enough that a second page is never realistically needed.
 
+**Reopening the picker showed everything unchecked again, even photos already added (found and fixed
+2026-08-16).** Asher flagged this directly: add a batch, close the dialog, reopen it to add more, and every
+tile — including the ones already sitting in the gallery — looked identical to one never added at all,
+making an accidental duplicate an easy mistake. Considered just pre-checking those tiles with the same
+`selectedIds` state the "Add" button reads from, but that would still let a duplicate happen: `selectedIds`
+is exactly the set `addSelected()` re-appends on confirm, so a pre-checked-but-not-unchecked tile would get
+added a second time. Built as a genuinely separate state instead: `alreadyAddedIds`, derived straight from
+`props.value` (the field's own live array — every existing item's `asset._ref`), checked before rendering
+each tile. An already-added photo shows a positive-toned "Added" badge instead of a checkbox and its
+`onClick` is dropped entirely (`undefined`, not a no-op handler) — it can never enter `selectedIds` in the
+first place, so a duplicate isn't just visually discouraged, it's structurally impossible through this
+picker.
+
 **"Compress Library" — a one-time pass for photos already there (shipped 2026-08-08).** Automatic
 compression above only ever applied going forward. Asher asked whether the photos already in the library
 before that shipped were compressed too — checked against real data: 28 of 49 images were 300KB or larger,

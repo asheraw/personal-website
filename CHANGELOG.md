@@ -11,6 +11,13 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Bulk photo picker now marks what's already in the gallery
+
+Asher noticed reopening the "Add multiple from Media Library" picker to add more photos showed every tile
+unchecked again, including ones already added — an easy way to add the same photo twice by accident.
+Already-added photos now show a clear "Added" badge and can't be clicked at all, so a duplicate isn't just
+harder to cause by mistake, it's not possible through this picker.
+
 ## 2026-08-16 — Cleared the last 25 posts' SEO fields without Gemini
 
 Asher decided to generate the remaining backlog images himself manually (no billing wall to work around

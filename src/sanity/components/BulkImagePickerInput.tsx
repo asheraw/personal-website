@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
-import {Box, Button, Card, Checkbox, Dialog, Flex, Grid, Spinner, Stack, Text, TextInput} from '@sanity/ui'
+import {Badge, Box, Button, Card, Checkbox, Dialog, Flex, Grid, Spinner, Stack, Text, TextInput} from '@sanity/ui'
 import {useClient} from 'sanity'
 import type {ArrayOfObjectsInputProps} from 'sanity'
 import {ImagesIcon} from '@sanity/icons/Images'
@@ -27,8 +27,20 @@ const SEARCH_DEBOUNCE_MS = 350
  * "wrap, don't replace" approach as SavedStatusInput.tsx.
  */
 export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
-  const {renderDefault, onItemAppend} = props
+  const {renderDefault, onItemAppend, value} = props
   const client = useClient({apiVersion: '2026-07-22'})
+  // What's already sitting in this field, right now -- reopening the
+  // picker after adding a batch used to show every tile unchecked again,
+  // with nothing distinguishing "already in the gallery" from "not added
+  // yet," so re-adding the same photo by mistake was easy. Every already-
+  // present asset gets marked and made unselectable here instead of just
+  // pre-checking its box, since re-selecting and re-adding it would still
+  // create a real duplicate -- this makes that impossible, not just visible.
+  const alreadyAddedIds = new Set(
+    (value ?? [])
+      .map((item) => (item as {asset?: {_ref?: string}}).asset?._ref)
+      .filter((ref): ref is string => Boolean(ref))
+  )
   const [dialogOpen, setDialogOpen] = useState(false)
   const [assets, setAssets] = useState<LibraryAsset[] | null>(null)
   const [hasMore, setHasMore] = useState(false)
@@ -161,15 +173,16 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
                 <Box ref={scrollBoxRef} style={{maxHeight: 420, overflowY: 'auto'}}>
                   <Grid columns={[3, 4, 5]} gap={2}>
                     {assets.map((a) => {
+                      const alreadyAdded = alreadyAddedIds.has(a._id)
                       const selected = selectedIds.has(a._id)
                       return (
                         <Card
                           key={a._id}
                           radius={2}
                           padding={1}
-                          tone={selected ? 'primary' : 'default'}
-                          onClick={() => toggle(a._id)}
-                          style={{cursor: 'pointer', position: 'relative'}}
+                          tone={alreadyAdded ? 'positive' : selected ? 'primary' : 'default'}
+                          onClick={alreadyAdded ? undefined : () => toggle(a._id)}
+                          style={{cursor: alreadyAdded ? 'default' : 'pointer', position: 'relative', opacity: alreadyAdded ? 0.7 : 1}}
                         >
                           <div
                             style={{
@@ -177,12 +190,17 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
                               top: 6,
                               left: 6,
                               zIndex: 1,
-                              background: 'rgba(255,255,255,0.9)',
-                              borderRadius: 4,
-                              padding: 2,
                             }}
                           >
-                            <Checkbox checked={selected} readOnly />
+                            {alreadyAdded ? (
+                              <Badge tone="positive" fontSize={0}>
+                                Added
+                              </Badge>
+                            ) : (
+                              <div style={{background: 'rgba(255,255,255,0.9)', borderRadius: 4, padding: 2}}>
+                                <Checkbox checked={selected} readOnly />
+                              </div>
+                            )}
                           </div>
                           <img
                             src={`${a.url}?w=150&h=150&fit=crop`}
