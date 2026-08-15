@@ -8,6 +8,7 @@ import AutoScroll from "embla-carousel-auto-scroll";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { urlFor } from "@/sanity/lib/image";
 import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
+import { isAnimatedGifUrl } from "@/lib/isAnimatedGif";
 import type { DisplaySize } from "@/components/asher/blog/SizedImage";
 
 const SLIDESHOW_INTERVAL_MS = 5000;
@@ -122,13 +123,22 @@ function SlideCarousel({
                 className="relative aspect-[3/2] w-full shrink-0 grow-0 basis-full cursor-zoom-in"
               >
                 {img.asset && (
-                  <Image
-                    src={urlFor(img).width(1400).url()}
-                    alt={img.alt ?? ""}
-                    fill
-                    loading="lazy"
-                    className="object-contain"
-                  />
+                  isAnimatedGifUrl(urlFor(img).url()) ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- animated GIF, not safe to route through next/image's optimizer (see isAnimatedGif.ts)
+                    <img
+                      src={urlFor(img).width(1400).url()}
+                      alt={img.alt ?? ""}
+                      className="absolute inset-0 h-full w-full object-contain"
+                    />
+                  ) : (
+                    <Image
+                      src={urlFor(img).width(1400).url()}
+                      alt={img.alt ?? ""}
+                      fill
+                      loading="lazy"
+                      className="object-contain"
+                    />
+                  )
                 )}
               </button>
             ))}

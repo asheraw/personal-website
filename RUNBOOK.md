@@ -1391,6 +1391,52 @@ button, for `action === 'select'` and `'openInSource'` alike. The menu item itse
 and can't be hidden without overriding Studio's own image-field UI entirely — the same "too risky to ship
 without a real login to verify against" tradeoff already made once above, still holds.
 
+**"Insert GIF (Giphy)" — a third `AssetSource`, same mechanism, added 2026-08-16.** Asher could search and
+insert a Giphy GIF into a comment (public form and Studio's own reply box both), but not into a post's
+actual content — there was simply nothing offering that on an image field. `src/sanity/components/
+GiphyAssetSource.tsx` registers alongside `compressedUploadSource` in the same `assetSources` array, so it's
+the exact same pattern as "Upload (compressed)" above, just a different source. Reuses the existing
+`/api/gif-search` proxy (no second Giphy key) for the search/thumbnail grid, then a new
+`/api/gif-upload/route.ts` downloads the chosen GIF server-side and re-uploads it into Sanity as a real
+image asset, returning the id via the same stable `onSelect([{kind: 'assetDocumentId', ...}])` contract.
+Server-side download specifically because the site's CSP only allowlists `*.giphy.com` under `img-src` (for
+the comment thread's plain `<img>` GIFs), not `connect-src` — a client-side `fetch()` to Giphy's CDN from
+this component would be blocked outright, and widening the CSP just for one editor action wasn't worth it
+when routing through a server route avoids the question entirely. `/api/gif-search` also gained a second URL
+per result, `originalUrl` (Giphy's full-resolution source) — comments only ever needed the smaller
+`fixed_height` rendition already returned as `url`, but a GIF actually inserted into post content deserves
+real quality, not a comment-thumbnail-sized copy. Verified end-to-end against the real Giphy API and real
+Sanity, not just typechecked: searched, picked a real GIF, confirmed `/api/gif-upload` produced a real
+`sanity.imageAsset` document, confirmed the resulting CDN URL actually serves as `image/gif` (not silently
+re-encoded), then deleted the test asset — same "verify against production, clean up after" approach used
+everywhere else in this project needing a real external service.
+
+**GIFs used as a Featured Image or in the post body were losing their animation (found and fixed
+2026-08-16).** Same root cause as the comment-GIF fix above, just never extended past comments:
+`next.config.ts` forces every `next/image`-rendered image through AVIF/WebP re-encoding (`images.formats`),
+which flattens an animated GIF to a single static frame. Confirmed against a real GIF asset already sitting
+in the library (`hamster-hamster-wheel.gif`) before touching anything. Fixed with the same "detect it's a
+GIF, use a plain `<img>` instead" approach: a new `src/lib/isAnimatedGif.ts` checks the Sanity CDN URL
+itself for a `.gif` extension (Sanity keeps the real file extension in the URL path; transform params are
+query-string only, so this needs no extra GROQ field) — applied in `FeaturedImage.tsx`, `SizedImage.tsx`
+(the single-image body block), and `ImageCarousel.tsx`'s slide/slideshow mode (its masonry-grid and
+scroll-strip modes already used a plain `<img>` for unrelated reasons and were never affected). Deliberately
+**not** applied to `PostCard.tsx` or `RelatedPosts.tsx` — both already force `.format("jpg")` on purpose for
+their small listing thumbnails, and a blog index page with several GIFs auto-playing at once would be worse,
+not better; that's an intentional design choice, not the bug being fixed here.
+
+**"Add multiple from Media Library" — bulk-adding to the gallery block (shipped 2026-08-16).** Asher
+bulk-uploaded a batch of photos into the Media library, then found no way to add more than one at a time
+into a post's own photo gallery — Sanity's default array-of-images input only offers one-at-a-time
+Upload/Select per new row. `src/sanity/components/BulkImagePickerInput.tsx` wraps the Image block's
+`additionalImages` field (`components: {input: BulkImagePickerInput}` in `blockContentType.ts`) the same
+"wrap, don't replace" way `SavedStatusInput.tsx` already does for the Saved-status badge: renders its own
+"Add multiple from Media Library" button, then `renderDefault(props)` for everything else, completely
+unchanged. The button opens a searchable, checkbox-multi-select grid of existing library assets; confirming
+calls `onItemAppend()` once per selected image, each wrapped as `{_type: 'image', _key: <random>, asset:
+{_type: 'reference', _ref: assetId}}` — the same shape Sanity's own default input would produce, so nothing
+downstream (the carousel/slideshow renderer, reordering, per-item remove) needs to know this button exists.
+
 **"Compress Library" — a one-time pass for photos already there (shipped 2026-08-08).** Automatic
 compression above only ever applied going forward. Asher asked whether the photos already in the library
 before that shipped were compressed too — checked against real data: 28 of 49 images were 300KB or larger,
@@ -2571,6 +2617,51 @@ so `curl`ing the live URL kept returning real post content even after Sanity was
 draft-only again. Fixed with the site's own no-auth `/api/revalidate?path=/blog/<slug>` route (see its own
 route comments: worst case of misuse is a few extra Sanity reads, never data exposure) — confirmed the URL
 returned 404 again immediately after.
+
+## Facebook comment re-extraction: a parseable text format instead of screenshots (2026-08-16)
+
+**A new source format showed up for 9 more posts** — plain `comments_<id>.txt` files (one per
+`Downloads/comments/<facebook-share-id>/` folder) instead of screenshot transcription. Each file: a header
+banner with the post's real `facebook.com/share/p/<id>/` URL, an honest count comparison against Facebook's
+own displayed total (how many came from automated DOM scraping vs. manual screenshot fallback, and the exact
+size of any remaining gap), then every comment/reply with `>> ` per nesting level plus an explicit `[NESTED
+reply, level N]` annotation — deep enough structure to parse programmatically instead of transcribing by
+hand.
+
+**Matching a folder to the right post**: use the folder ID directly against `legacyFacebookThreadUrl`
+(`*[_type == "post" && legacyFacebookThreadUrl match "*<id>*"]`), never the post's current title/slug — both
+drift after import (an AI-suggested SEO title, or a manual rename) while the _id embeds whatever slug
+existed at creation time. Confirmed necessary, not theoretical: one of the 9 folders this round mapped to a
+post whose live _id (`drafts.facebook-41-year-old-asher-aclp-complete`) no longer matches either its current
+slug or title (`41-year-old-asher-photoshoot` / "41-Year-Old Asher Photoshoot") — a legitimate rename, not a
+bug, but a real trap for any script deriving a post's _id from its current slug field.
+
+**Parser gotcha**: a reply header can carry a trailing `[Edited]` tag *after* the `[NESTED reply, level N]`
+bracket (`>> Name  [NESTED reply, level 1]  [Edited]`) — an early regex only expecting one trailing bracket
+group silently folded 2-3 entries per affected file into the wrong message text. Fixed by accepting any
+number of trailing `[...]` tags and validating the parsed count against each file's own stated total before
+writing anything — every file matched exactly once the regex was fixed, treated as the real correctness
+check, not merely a sanity check to skim past.
+
+**When a post's comment count already matches the new extraction exactly, don't assume "no work needed" —
+diff the actual content.** Two of the 9 posts this round had counts that already matched (from an earlier
+screenshot-based pass this same week). Diffing content-by-content (not just count) found only cosmetic
+differences — mostly whether Asher's reply text includes the recipient's name inline ("Julie Cox thank you"
+vs. "thank you," a stylistic choice, not an error) — plus one case where the *earlier* manual work was
+actually more accurate than the new automated scrape: a sticker-only comment the automated DOM scrape
+recorded as literally "Tenor" (the GIF platform's own attribution text bleeding into the scrape) versus the
+earlier screenshot pass's visual description ("shared a 'you got this!' cheerleader sticker"). Left both
+posts untouched rather than overwrite already-approved, already-public comments with a strictly-newer but
+not strictly-better source.
+
+**Rebuilding a post whose existing comments are already `approved`** (already live, reviewed) needs to
+preserve that status for whatever's still genuinely the same comment, not blanket-reset everything to
+`pending` just because the underlying content is being replaced with a fuller extraction. Matched by exact
+name + message (or one containing the other, for minor emoji/punctuation drift) first; when that fails,
+fell back to name-only matching for top-level comments and printed every match for a visual check before
+writing — the old approved text sometimes turned out to be a condensed paraphrase of a much longer original
+(a straight substring check would have missed it entirely), confirmed real by pulling the full original text
+and comparing by eye, not assumed.
 
 ## Stuck-post fix button: progress counter (shipped 2026-08-14)
 

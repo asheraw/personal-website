@@ -11,6 +11,47 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Cross-checked 9 more Facebook comment threads, fixed GIFs breaking on the site, and added GIF search + bulk photo picking to post editing
+
+Asher sent a new, richer round of Facebook comment extractions (this time real text files instead of
+screenshots — a mix of automated scraping plus manual fallback for whatever the scraper missed) for 9 posts,
+and asked to cross-check and update the comments database against them. Since the new format was
+machine-generated and highly consistent (a source URL, an explicit gap-vs-Facebook's-own-count summary,
+nesting marked with `>>`/level annotations), built a real parser instead of transcribing by hand — validated
+it against every file's own stated total before writing anything, catching and fixing one parsing bug (a
+trailing "[Edited]" tag after the nesting annotation) along the way. Two of the 9 already had exactly
+matching comment counts from an earlier pass this week; diffed them content-by-content rather than trusting
+the count alone, found only cosmetic differences (plus one case where the earlier manual work was actually
+more accurate than the new automated scrape — a sticker described visually vs. the scraper just grabbing
+Tenor's attribution text), so left those two untouched. The other 7 needed real work: 5 built fresh, 2
+rebuilt from a much larger set than before, with already-approved comments carried forward under their
+approved status by content match (avoiding hiding real, already-public comments from the site while still
+adding everything the earlier rough import missed).
+
+Separately, three site issues Asher raised in the same message:
+
+- **GIFs looked broken on the site.** Root cause: `next.config.ts` forces every image through Next's
+  AVIF/WebP optimizer, which flattens an animated GIF to a single static frame — the exact bug already
+  fixed for comment GIFs, just never extended to a post's own Featured Image or body images. Fixed the same
+  way: detect a GIF by its Sanity CDN URL (which keeps the real file extension) and render it as a plain
+  `<img>` instead, in the featured image, single body images, and the image-gallery block's carousel mode.
+  Listing-card thumbnails and related-post cards intentionally stay static JPGs — animating dozens of GIFs
+  across a blog index page isn't something to "fix," it's already the right call.
+- **No way to insert a Giphy GIF into a post's actual content**, only into comments. Added "Insert GIF
+  (Giphy)" as a third option on every image field site-wide, alongside the existing Upload/Upload
+  (compressed) — searches the same Giphy proxy the comment pickers already use, downloads the chosen GIF
+  server-side, and uploads it into Sanity as a real image asset (an image field needs a real asset, not
+  just an external URL).
+- **Bulk-uploaded photos into the Media Library, but no way to bulk-add them into a post.** The gallery
+  block's "More photos" field now has an "Add multiple from Media Library" button above the existing
+  one-at-a-time Upload/Select flow — opens a searchable, multi-select grid and adds everything picked in
+  one go.
+
+All three verified with `tsc`/`npm run build`/Studio's schema-bootstrap check, plus a real end-to-end test
+of the new GIF pipeline (searched Giphy, downloaded, uploaded into Sanity, confirmed the resulting asset
+actually serves as `image/gif`) — test asset cleaned up afterward, same as every other real-data
+verification this project does.
+
 ## 2026-08-14 — Media library: smaller thumbnails, a lightbox, auto-loading on scroll, and sorting
 
 Asher asked for four fixes to Studio's Media library in one go: thumbnails felt too large, clicking one did

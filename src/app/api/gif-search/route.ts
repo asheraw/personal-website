@@ -29,6 +29,7 @@ type GiphyGif = {
   images: {
     fixed_height?: GiphyImage;
     fixed_height_small?: GiphyImage;
+    original?: GiphyImage;
   };
 };
 
@@ -66,8 +67,13 @@ export async function GET(request: NextRequest) {
         title: g.title || "GIF",
         thumbUrl: g.images.fixed_height_small?.url ?? g.images.fixed_height?.url,
         url: g.images.fixed_height?.url,
+        // Full-resolution source -- comments only ever needed the smaller
+        // fixed_height rendition, but inserting one into a post's actual
+        // body (see gif-upload/route.ts) deserves the real quality Giphy
+        // has, not the comment-thumbnail size.
+        originalUrl: g.images.original?.url ?? g.images.fixed_height?.url,
       }))
-      .filter((g): g is { id: string; title: string; thumbUrl: string; url: string } => !!g.url && !!g.thumbUrl);
+      .filter((g): g is { id: string; title: string; thumbUrl: string; url: string; originalUrl: string } => !!g.url && !!g.thumbUrl);
     return NextResponse.json({ gifs });
   } catch {
     return NextResponse.json({ error: "GIF search failed." }, { status: 502 });

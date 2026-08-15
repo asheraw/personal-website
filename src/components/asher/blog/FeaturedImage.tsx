@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
+import { isAnimatedGifUrl } from "@/lib/isAnimatedGif";
 
 // The post's Featured Image, at the top of the article -- always full
 // width (it's the hero, not a Display-size-able body image), but opens the
@@ -10,6 +11,7 @@ import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
 // down in the post body.
 export function FeaturedImage({ src, fullSrc, alt }: { src: string; fullSrc: string; alt: string }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const isGif = isAnimatedGifUrl(src);
 
   return (
     <div className="mt-10">
@@ -19,7 +21,12 @@ export function FeaturedImage({ src, fullSrc, alt }: { src: string; fullSrc: str
         aria-label="View full size"
         className="block w-full cursor-zoom-in"
       >
-        <Image src={src} alt={alt} width={1200} height={675} className="h-auto w-full" priority />
+        {isGif ? (
+          // eslint-disable-next-line @next/next/no-img-element -- animated GIF, not safe to route through next/image's optimizer (see isAnimatedGif.ts)
+          <img src={src} alt={alt} className="h-auto w-full" />
+        ) : (
+          <Image src={src} alt={alt} width={1200} height={675} className="h-auto w-full" priority />
+        )}
       </button>
       {lightboxOpen && <ImageLightbox src={fullSrc} alt={alt} onClose={() => setLightboxOpen(false)} />}
     </div>

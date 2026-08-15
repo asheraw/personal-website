@@ -10,6 +10,7 @@ import {TagIcon} from '@sanity/icons/Tag'
 import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
 import {SavedStatusInput} from '../components/SavedStatusInput'
+import {BulkImagePickerInput} from '../components/BulkImagePickerInput'
 
 /**
  * This is the schema type for block content used in the post document type
@@ -253,6 +254,7 @@ export const blockContentType = defineType({
           name: 'additionalImages',
           title: 'More photos (optional -- turns this into a carousel)',
           type: 'array',
+          components: {input: BulkImagePickerInput},
           of: [
             defineArrayMember({
               type: 'image',

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
+import { isAnimatedGifUrl } from "@/lib/isAnimatedGif";
 
 export type DisplaySize = "small" | "medium" | "original";
 
@@ -40,6 +41,7 @@ export function SizedImage({
   size?: DisplaySize;
 }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const isGif = isAnimatedGifUrl(src);
 
   return (
     <figure className={`my-8 w-full ${size === "original" ? "" : `${WIDTH_CLASSES[size]} sm:mx-auto`}`}>
@@ -49,7 +51,12 @@ export function SizedImage({
         aria-label="View full size"
         className="block w-full cursor-zoom-in"
       >
-        <Image src={src} alt={alt} width={1200} height={800} loading="lazy" className="h-auto w-full" />
+        {isGif ? (
+          // eslint-disable-next-line @next/next/no-img-element -- animated GIF, not safe to route through next/image's optimizer (see isAnimatedGif.ts)
+          <img src={src} alt={alt} loading="lazy" className="h-auto w-full" />
+        ) : (
+          <Image src={src} alt={alt} width={1200} height={800} loading="lazy" className="h-auto w-full" />
+        )}
       </button>
       {caption && (
         <figcaption className="mt-2 text-center font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60">
