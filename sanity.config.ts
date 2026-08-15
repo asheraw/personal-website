@@ -18,6 +18,7 @@ import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
+import {createGenerateFeaturedImageAction} from './src/sanity/actions/generateFeaturedImage'
 import {createExportAction} from './src/sanity/actions/exportPost'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
@@ -91,6 +92,7 @@ export default defineConfig({
         createSuggestSeoAction(),
         createSuggestSocialCopyAction(),
         createSuggestImagePromptAction(),
+        createGenerateFeaturedImageAction(),
         createExportAction(),
         ...withDateAction.slice(1),
       ]

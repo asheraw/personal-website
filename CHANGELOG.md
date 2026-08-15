@@ -11,6 +11,67 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-14 — Media library: smaller thumbnails, a lightbox, auto-loading on scroll, and sorting
+
+Asher asked for four fixes to Studio's Media library in one go: thumbnails felt too large, clicking one did
+nothing, more photos only appeared after clicking "Load more," and there was no way to sort the library at
+all. Built all four:
+
+- **More columns** (2 up to 7 depending on screen width, was capped at 5) so each thumbnail renders smaller
+  without touching the underlying 200×200 crop.
+- **A lightbox**: clicking a thumbnail (outside "Select" mode, which still uses a click to tick the
+  checkbox) now opens a full-size view with filename, size, and which posts use it — plus arrow-key/on-screen
+  prev-next navigation through whatever's currently visible.
+- **Auto-loads on scroll**: a small sentinel below the grid triggers the next page automatically via
+  `IntersectionObserver` once it nears the viewport, replacing the manual "Load more" button. Search results
+  are unaffected (already return up to 100 in one shot, nothing to page through).
+- **Sorting**: a dropdown next to the search box — Newest/Oldest, Filename A–Z, Largest file first, and
+  "Unused only" (surfacing the existing "not used anywhere" flag as an actual filter instead of something
+  you'd have to scroll the whole library to find). Applies to search results too, not just the plain browse
+  view, so switching to "Unused only" then searching doesn't quietly show used images again.
+
+Verified with `tsc`/`npm run build` clean and Studio's schema-bootstrap check; real click-through (lightbox,
+scroll-triggered loading, sort switching) still needs confirming after deploy — this sandbox has no way to
+get past Studio's own "Connect this Studio to your project" CORS gate to click-test it directly, a known,
+already-documented limitation (see RUNBOOK.md), not new to this change.
+
+## 2026-08-14 — Started clearing the Facebook-import backlog with AI: SEO fields, categories, and a real image-generation blocker
+
+Asher wanted the 40 still-bare Facebook-import drafts (title/body only, no image/excerpt/SEO/category) run
+through the site's existing AI tools automatically instead of one at a time by hand, prioritizing speed over
+polish — the AI-suggested image was explicitly fine as a placeholder to swap later. Built a resumable batch
+script (`scripts/process-facebook-backlog.mjs`) rather than a Studio button, since this is a one-time job:
+it calls the site's own `/api/ai/suggest-seo` and a new `/api/ai/generate-featured-image` route per post,
+re-derives what's still missing from each post's actual current fields (not a fragile one-shot flag) so
+it's always safe to just re-run, and applies SEO title/excerpt/tags plus a default "Authenticity" category
+(matching every previously-published Facebook import) directly — everything stays a draft for Asher's own
+final skim, nothing auto-publishes.
+
+**New, permanent capability, not just script glue**: `generate-featured-image/route.ts` + a new "Generate
+Featured Image" Studio action (`generateFeaturedImage.tsx`) — the automated sibling of the existing "Suggest
+Image Prompt" action. That one deliberately stops at 3 prompts to paste into DreamLab by hand (the spec's
+own rule against automating a workflow with no stable official API). Gemini's own image model IS a stable
+official API, so this one picks the single most visually appealing/curiosity-driving concept (reusing
+Asher's exact established steel-plate-engraving template, unchanged), renders it, and attaches it as the
+post's Featured Image directly — kept as a real one-click button for any future post, not deleted once the
+backlog's cleared.
+
+**Hit two real, distinct free-tier walls, not the same problem twice.** Every Gemini image model this API
+key can see (Nano Banana, Nano Banana 2, Nano Banana Pro, and the lite variant — checked directly via
+`ai.models.list()`, not guessed) returns a hard `limit: 0` on the free tier — not a quota that resets,
+image generation on this project needs billing enabled, full stop. Separately, the *text* model used for
+SEO suggestions (`gemini-3.6-flash`) turned out to have a real but much smaller free daily cap than assumed
+(20 requests/day, not the ~500 general docs suggested) — discovered when a batch of failures turned out to
+be `RESOURCE_EXHAUSTED` errors the API route was silently flattening into a generic "couldn't get a
+suggestion" message before the script ever saw them. Fixed both routes to surface the real error/429 status
+so a future run can detect and stop cleanly instead of thrashing through a wall of doomed retries.
+
+**Result so far**: 15 of 40 drafts have SEO title/excerpt/tags/category applied and spot-checked for
+quality (coherent titles, curiosity-driving excerpts, sensible tags, correct category). The rest is paused
+pending Asher's call on whether to enable Gemini billing — cheap either way (text calls are near-free,
+images run roughly $0.02–0.04 each) but a real decision on his account, not one to make unilaterally. The
+script picks up exactly where it left off either way, no rework needed once unblocked.
+
 ## 2026-08-14 — Progress counter on the "blocking publish" fix button
 
 Asher hit the "N document(s) are blocking '...' from ever publishing" banner again (93 this time), clicked

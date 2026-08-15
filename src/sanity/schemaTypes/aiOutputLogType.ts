@@ -24,7 +24,7 @@ export const aiOutputLogType = defineType({
       title: 'Feature',
       type: 'string',
       readOnly: true,
-      options: {list: [{title: 'Suggest SEO & Excerpt', value: 'seo'}, {title: 'Draft Social Copy', value: 'social'}, {title: 'Suggest Image Prompt', value: 'imagePrompt'}]},
+      options: {list: [{title: 'Suggest SEO & Excerpt', value: 'seo'}, {title: 'Draft Social Copy', value: 'social'}, {title: 'Suggest Image Prompt', value: 'imagePrompt'}, {title: 'Generate Featured Image', value: 'featuredImage'}]},
     }),
     defineField({name: 'postTitle', title: 'Post', type: 'string', readOnly: true}),
     defineField({name: 'postSlug', title: 'Post slug', type: 'string', readOnly: true}),
@@ -70,7 +70,14 @@ export const aiOutputLogType = defineType({
   preview: {
     select: {feature: 'feature', postTitle: 'postTitle', used: 'used'},
     prepare: ({feature, postTitle, used}) => {
-      const label = feature === 'social' ? 'Social copy' : feature === 'imagePrompt' ? 'Image prompt' : 'SEO'
+      const label =
+        feature === 'social'
+          ? 'Social copy'
+          : feature === 'imagePrompt'
+            ? 'Image prompt'
+            : feature === 'featuredImage'
+              ? 'Featured image'
+              : 'SEO'
       return {
         title: `${label} — ${postTitle || '(untitled post)'}`,
         subtitle: used ? '✓ used' : 'not used',

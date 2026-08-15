@@ -510,6 +510,36 @@ session — even across a full server restart with the cache cleared. This isn't
 reproduces identically with long-standing fields too. Editing through Studio itself doesn't have this problem
 (Studio maintains a live connection that revalidates properly) — it only bites raw-script testing.
 
+**"Generate Featured Image" — the automated sibling, added 2026-08-14.** The DreamLab flow above stays
+manual on purpose (no stable official API for Canva). Gemini's own image model *is* a stable official
+API, so a second action exists for exactly that case: `src/sanity/actions/generateFeaturedImage.tsx` +
+`/api/ai/generate-featured-image/route.ts`. One Gemini text call picks the single most visually
+appealing/curiosity-driving concept (not 3 options — there's no human choosing here), reusing the exact
+same template-substitution mechanism and Asher's own established steel-plate-engraving template
+(`DEFAULT_IMAGE_PROMPT_TEMPLATE` in `aiPromptDefaults.ts`, byte-for-byte identical style wording — only
+`{SUBJECT}`/`{COMPOSITION_MODE}` change), then one Gemini image call (`gemini-2.5-flash-image`,
+`responseModalities: [TEXT, IMAGE]`) renders it, and the result is uploaded straight into Sanity
+(`writeClient.assets.upload`) and patched onto `mainImage` in the same request — no copy/paste/upload round
+trip. Built while clearing the Facebook-import backlog (see `scripts/process-facebook-backlog.mjs`) but
+kept as a permanent one-click action, not deleted once that backlog's cleared.
+
+**Image generation needs a billed Gemini project — confirmed by testing, not assumed.** Every image-capable
+model this API key can see (`ai.models.list()`: Nano Banana, Nano Banana 2 and its Lite variant, Nano
+Banana Pro) returned a hard `limit: 0` free-tier quota when actually called — not a quota that resets at
+midnight, a flat exclusion. Text generation (`gemini-3.6-flash`, used by both the DreamLab prompt action
+and SEO suggestions) is a separate quota and unaffected. If this action ever fails with a `RESOURCE_EXHAUSTED`
+/ `limit: 0` error, that's this — billing needs enabling on the Google Cloud project behind
+`GEMINI_API_KEY`, retrying later won't help. Once billing's on, cost is roughly $0.02–0.04 per image.
+
+**The text quota has a real, much smaller free cap than assumed, too.** `gemini-3.6-flash` turned out to
+allow only **20 requests/day** free (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, confirmed from
+the actual Gemini error payload, not general docs, which suggested closer to 500/day for other models).
+Both `suggest-image-prompt` and `suggest-seo`'s route handlers previously flattened every Gemini error into
+a generic "couldn't get a suggestion right now" 500 before returning it to the client, hiding whether a
+given failure was a real rate limit or something else — fixed 2026-08-14 to surface the real error/429
+status so a caller (Studio or a script) can actually tell the difference and stop cleanly instead of
+retrying into a wall.
+
 ---
 
 ## Skip-to-content link (shipped 2026-07-31)
@@ -1485,6 +1515,36 @@ references — then cleaned up every test document and asset afterward. **Couldn
 own browser UI in this sandbox**: it requires an authenticated login session that a fresh headless
 Playwright context doesn't have, so this exercises the real shipped logic directly against the live API
 instead — the same approach already used for this repo's other Studio-side write operations.
+
+**Smaller thumbnails, a lightbox, auto-load on scroll, sorting (shipped 2026-08-14).** Asher flagged four
+gaps directly: thumbnails felt oversized, clicking one did nothing, "Load more" required a manual click
+instead of loading as you scroll, and there was no way to sort. All four in `MediaLibraryTool.tsx`:
+
+- `Grid columns` extended from `[2, 3, 4, 5]` to `[2, 3, 4, 5, 6, 7]` — same 200×200 crop request, just more
+  columns at wider viewports, so each tile renders smaller without a second image size to manage.
+- A lightbox `Dialog` opens on clicking a thumbnail's `<img>` directly (not the surrounding `Card`, which
+  still needs its own click-to-toggle behavior in Select mode) — full-size `?w=1600` image, usage list,
+  and prev/next navigation through whatever's currently visible (`visibleAssets`, so it respects an active
+  search or sort), wired to both on-screen chevron buttons and arrow/Escape keys via a `keydown` listener
+  scoped to only being attached while the lightbox is actually open.
+- The "Load more" button is gone — a 1px sentinel `<div>` below the grid is watched by an
+  `IntersectionObserver` (`rootMargin: '400px'`, so the next page starts loading before the user actually
+  hits the bottom) and calls the same `loadMore()` that used to be the button's `onClick`. Only wired up
+  outside search (search already returns up to 100 results in one shot with nothing to page through).
+- A `Select` next to the search box: Newest/Oldest first, Filename A–Z, Largest file first, and "Unused
+  only." All five feed into one shared `sortClauses()` helper (an `order()` clause plus, for "Unused only,"
+  an extra `count(*[_type == "post" && references(^._id)]) == 0` filter) used by **both** the paginated
+  library query and the search query — so switching to "Unused only" and then searching doesn't quietly
+  drop the filter and show used images again. Changing sort re-triggers the existing page-0 fetch for free,
+  since `loadPage`'s `useCallback` already depends on `sortOption` and the mount effect already depends on
+  `loadPage`.
+
+**Same verification ceiling as "Replace" above, not a new limitation**: `tsc`/`npm run build`/the
+schema-bootstrap check all came back clean, but real click-through — does the lightbox actually open, does
+scrolling actually trigger a load, does the sort dropdown actually reorder — needs confirming after deploy.
+This sandbox's headless Playwright hits Studio's "Connect this Studio to your project" CORS gate before any
+real data loads, the same wall documented throughout this file; there's no login session available here to
+get past it.
 
 ---
 

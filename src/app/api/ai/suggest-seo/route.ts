@@ -177,9 +177,18 @@ ${bodyText.slice(0, 6000)}`,
     return NextResponse.json({ seoTitles, excerpts, tags, altHeadlines, pullQuotes, faqs, logId });
   } catch (error) {
     console.error("[ai/suggest-seo] failed:", error);
+    // Surfaced as a real 429 rather than the generic 500 below -- a caller
+    // (Studio or a script) needs to be able to tell "hit a rate limit,
+    // stop and wait" apart from "one-off failure, fine to retry."
+    const message = error instanceof Error ? error.message : String(error);
+    const rateLimited = /RESOURCE_EXHAUSTED|429|quota/i.test(message);
     return NextResponse.json(
-      { error: "Couldn't get a suggestion right now — try again in a moment." },
-      { status: 500 }
+      {
+        error: rateLimited
+          ? "Hit the free-tier daily limit for AI suggestions -- try again after it resets, or enable billing on the Gemini API project. See RUNBOOK.md."
+          : "Couldn't get a suggestion right now — try again in a moment.",
+      },
+      { status: rateLimited ? 429 : 500 }
     );
   }
 }

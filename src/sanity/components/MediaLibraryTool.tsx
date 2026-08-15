@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {
   Badge,
   Box,
@@ -8,11 +8,14 @@ import {
   Dialog,
   Flex,
   Grid,
+  Select,
   Spinner,
   Stack,
   Text,
   TextInput,
 } from '@sanity/ui'
+import {ChevronLeftIcon} from '@sanity/icons/ChevronLeft'
+import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {useClient} from 'sanity'
 import {UploadIcon} from '@sanity/icons/Upload'
 import {SyncIcon} from '@sanity/icons/Sync'
@@ -72,6 +75,39 @@ const PAGE_SIZE = 60
 const TRASH_RETENTION_DAYS = 30
 const SEARCH_DEBOUNCE_MS = 400
 
+type SortOption = 'newest' | 'oldest' | 'filename' | 'largest' | 'unused'
+
+const SORT_OPTIONS: {value: SortOption; label: string}[] = [
+  {value: 'newest', label: 'Newest first'},
+  {value: 'oldest', label: 'Oldest first'},
+  {value: 'filename', label: 'Filename A–Z'},
+  {value: 'largest', label: 'Largest file first'},
+  {value: 'unused', label: 'Unused only'},
+]
+
+// One shared place for how a chosen sort translates to GROQ -- used by both
+// the paginated library query and the search query below, so picking
+// "Unused only" then searching doesn't quietly drop back to showing used
+// images again.
+function sortClauses(sort: SortOption): {order: string; extraFilter: string} {
+  switch (sort) {
+    case 'oldest':
+      return {order: 'order(_createdAt asc)', extraFilter: ''}
+    case 'filename':
+      return {order: 'order(originalFilename asc)', extraFilter: ''}
+    case 'largest':
+      return {order: 'order(size desc)', extraFilter: ''}
+    case 'unused':
+      return {
+        order: 'order(_createdAt desc)',
+        extraFilter: ' && count(*[_type == "post" && references(^._id)]) == 0',
+      }
+    case 'newest':
+    default:
+      return {order: 'order(_createdAt desc)', extraFilter: ''}
+  }
+}
+
 const LIBRARY_PROJECTION = `{
   _id,
   url,
@@ -99,6 +135,9 @@ export function MediaLibraryTool() {
   const [searchTerm, setSearchTerm] = useState('')
   const [searchResults, setSearchResults] = useState<ImageAsset[] | null>(null)
   const [searching, setSearching] = useState(false)
+  const [sortOption, setSortOption] = useState<SortOption>('newest')
+  const [lightboxAssetId, setLightboxAssetId] = useState<string | null>(null)
+  const loadMoreSentinelRef = useRef<HTMLDivElement>(null)
 
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
@@ -151,11 +190,12 @@ export function MediaLibraryTool() {
 
   const loadPage = useCallback(
     (offset: number) => {
+      const {order, extraFilter} = sortClauses(sortOption)
       return client.fetch<ImageAsset[]>(
-        `*[_type == "sanity.imageAsset" && ${NOT_TRASHED_FILTER}] | order(_createdAt desc) [${offset}...${offset + PAGE_SIZE + 1}] ${LIBRARY_PROJECTION}`,
+        `*[_type == "sanity.imageAsset" && ${NOT_TRASHED_FILTER}${extraFilter}] | ${order} [${offset}...${offset + PAGE_SIZE + 1}] ${LIBRARY_PROJECTION}`,
       )
     },
-    [client],
+    [client, sortOption],
   )
 
   const loadTrash = useCallback(() => {
@@ -211,9 +251,10 @@ export function MediaLibraryTool() {
     }
     let cancelled = false
     setSearching(true)
+    const {order, extraFilter} = sortClauses(sortOption)
     client
       .fetch<ImageAsset[]>(
-        `*[_type == "sanity.imageAsset" && originalFilename match $term && ${NOT_TRASHED_FILTER}] | order(_createdAt desc) [0...100] ${LIBRARY_PROJECTION}`,
+        `*[_type == "sanity.imageAsset" && originalFilename match $term && ${NOT_TRASHED_FILTER}${extraFilter}] | ${order} [0...100] ${LIBRARY_PROJECTION}`,
         {term: `*${searchTerm}*`},
       )
       .then((result) => {
@@ -228,19 +269,37 @@ export function MediaLibraryTool() {
     return () => {
       cancelled = true
     }
-  }, [searchTerm, client])
+  }, [searchTerm, sortOption, client])
 
-  async function loadMore() {
+  const loadMore = useCallback(async () => {
     if (!assets) return
     setLoadingMore(true)
     try {
       const result = await loadPage(assets.length)
       setHasMore(result.length > PAGE_SIZE)
-      setAssets([...assets, ...result.slice(0, PAGE_SIZE)])
+      setAssets((prev) => (prev ? [...prev, ...result.slice(0, PAGE_SIZE)] : result.slice(0, PAGE_SIZE)))
     } finally {
       setLoadingMore(false)
     }
-  }
+  }, [assets, loadPage])
+
+  // Auto-loads the next page once the sentinel below the grid scrolls into
+  // view, instead of waiting for a "Load more" click. Only wired up for the
+  // default browse view -- search already returns up to 100 results in one
+  // shot with nothing further to page through.
+  useEffect(() => {
+    if (viewingTrash || searchTerm || !hasMore) return
+    const el = loadMoreSentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !loadingMore) loadMore()
+      },
+      {rootMargin: '400px'},
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [viewingTrash, searchTerm, hasMore, loadingMore, loadMore])
 
   async function saveAlt(assetId: string, altText: string) {
     setSavingId(assetId)
@@ -293,6 +352,31 @@ export function MediaLibraryTool() {
   const visibleAssets = searchTerm ? searchResults : assets
   const selectedAssets = (visibleAssets ?? []).filter((a) => selectedIds.has(a._id))
   const selectedInUseCount = selectedAssets.filter((a) => a.usedBy.length > 0).length
+
+  const lightboxIndex = useMemo(
+    () => (visibleAssets ?? []).findIndex((a) => a._id === lightboxAssetId),
+    [visibleAssets, lightboxAssetId],
+  )
+  const lightboxAsset = lightboxIndex >= 0 ? (visibleAssets ?? [])[lightboxIndex] : null
+  const showPrev = useCallback(() => {
+    const list = visibleAssets ?? []
+    if (lightboxIndex > 0) setLightboxAssetId(list[lightboxIndex - 1]._id)
+  }, [visibleAssets, lightboxIndex])
+  const showNext = useCallback(() => {
+    const list = visibleAssets ?? []
+    if (lightboxIndex >= 0 && lightboxIndex < list.length - 1) setLightboxAssetId(list[lightboxIndex + 1]._id)
+  }, [visibleAssets, lightboxIndex])
+
+  useEffect(() => {
+    if (!lightboxAssetId) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setLightboxAssetId(null)
+      else if (e.key === 'ArrowLeft') showPrev()
+      else if (e.key === 'ArrowRight') showNext()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [lightboxAssetId, showPrev, showNext])
 
   async function trashSelected() {
     if (selectedIds.size === 0) return
@@ -791,14 +875,30 @@ export function MediaLibraryTool() {
         {saveError && <ErrorMessage>{saveError}</ErrorMessage>}
 
         {!viewingTrash && (
-          <TextInput
-            fontSize={1}
-            placeholder="Search by filename…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.currentTarget.value)}
-            clearButton={searchInput.length > 0}
-            onClear={() => setSearchInput('')}
-          />
+          <Flex gap={2} wrap="wrap">
+            <Box flex={1} style={{minWidth: 200}}>
+              <TextInput
+                fontSize={1}
+                placeholder="Search by filename…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.currentTarget.value)}
+                clearButton={searchInput.length > 0}
+                onClear={() => setSearchInput('')}
+              />
+            </Box>
+            <Select
+              fontSize={1}
+              style={{width: 180}}
+              value={sortOption}
+              onChange={(e) => setSortOption(e.currentTarget.value as SortOption)}
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+          </Flex>
         )}
 
         {selectMode && (
@@ -871,7 +971,7 @@ export function MediaLibraryTool() {
                 No images match &ldquo;{searchTerm}&rdquo;.
               </Text>
             )}
-            <Grid columns={[2, 3, 4, 5]} gap={3}>
+            <Grid columns={[2, 3, 4, 5, 6, 7]} gap={3}>
               {(visibleAssets ?? []).map((asset) => (
                 <AssetCard
                   key={asset._id}
@@ -879,6 +979,7 @@ export function MediaLibraryTool() {
                   selectMode={selectMode}
                   selected={selectedIds.has(asset._id)}
                   onToggleSelected={() => toggleSelected(asset._id)}
+                  onOpenLightbox={() => setLightboxAssetId(asset._id)}
                   draftValue={drafts[asset._id] ?? asset.defaultAlt ?? ''}
                   onDraftChange={(value) => setDrafts((prev) => ({...prev, [asset._id]: value}))}
                   saving={savingId === asset._id}
@@ -889,9 +990,14 @@ export function MediaLibraryTool() {
               ))}
             </Grid>
             {!searchTerm && hasMore && (
-              <Flex justify="center">
-                <Button text={loadingMore ? 'Loading…' : 'Load more'} mode="ghost" loading={loadingMore} onClick={loadMore} />
-              </Flex>
+              <>
+                <div ref={loadMoreSentinelRef} style={{height: 1}} />
+                {loadingMore && (
+                  <Flex justify="center" padding={3}>
+                    <Spinner muted />
+                  </Flex>
+                )}
+              </>
             )}
           </>
         )}
@@ -1108,6 +1214,64 @@ export function MediaLibraryTool() {
           </Box>
         </Dialog>
       )}
+
+      {lightboxAsset && (
+        <Dialog
+          id="asset-lightbox"
+          header={lightboxAsset.originalFilename ?? 'Untitled'}
+          onClose={() => setLightboxAssetId(null)}
+          width={3}
+        >
+          <Box padding={4}>
+            <Stack space={4}>
+              <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                {lightboxIndex > 0 && (
+                  <Button
+                    aria-label="Previous image"
+                    icon={ChevronLeftIcon}
+                    mode="bleed"
+                    style={{position: 'absolute', left: 0, zIndex: 1}}
+                    onClick={showPrev}
+                  />
+                )}
+                <img
+                  src={`${lightboxAsset.url}?w=1600`}
+                  alt={lightboxAsset.originalFilename ?? 'Untitled image'}
+                  style={{maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', display: 'block'}}
+                />
+                {visibleAssets && lightboxIndex < visibleAssets.length - 1 && (
+                  <Button
+                    aria-label="Next image"
+                    icon={ChevronRightIcon}
+                    mode="bleed"
+                    style={{position: 'absolute', right: 0, zIndex: 1}}
+                    onClick={showNext}
+                  />
+                )}
+              </div>
+              <Stack space={2}>
+                <Text size={1}>{formatBytes(lightboxAsset.size)}</Text>
+                {lightboxAsset.usedBy.length > 0 ? (
+                  <Stack space={1}>
+                    <Badge tone="positive" fontSize={0}>
+                      Used in {lightboxAsset.usedBy.length} post{lightboxAsset.usedBy.length === 1 ? '' : 's'}
+                    </Badge>
+                    {lightboxAsset.usedBy.map((post) => (
+                      <Text key={post.slug ?? post.title} size={0} muted>
+                        · {post.title}
+                      </Text>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Badge tone="caution" fontSize={0}>
+                    Not used
+                  </Badge>
+                )}
+              </Stack>
+            </Stack>
+          </Box>
+        </Dialog>
+      )}
     </Box>
   )
 }
@@ -1117,6 +1281,7 @@ function AssetCard({
   selectMode,
   selected,
   onToggleSelected,
+  onOpenLightbox,
   draftValue,
   onDraftChange,
   saving,
@@ -1128,6 +1293,7 @@ function AssetCard({
   selectMode: boolean
   selected: boolean
   onToggleSelected: () => void
+  onOpenLightbox: () => void
   draftValue: string
   onDraftChange: (value: string) => void
   saving: boolean
@@ -1155,7 +1321,14 @@ function AssetCard({
             src={`${asset.url}?w=200&h=200&fit=crop`}
             alt={asset.originalFilename ?? 'Untitled image'}
             loading="lazy"
-            style={{width: '100%', height: '100%', objectFit: 'cover', display: 'block'}}
+            onClick={selectMode ? undefined : onOpenLightbox}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              cursor: selectMode ? undefined : 'zoom-in',
+            }}
           />
         </div>
         <Text size={0} textOverflow="ellipsis" title={asset.originalFilename ?? undefined}>
