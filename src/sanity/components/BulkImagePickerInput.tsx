@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import {Box, Button, Card, Checkbox, Dialog, Flex, Grid, Spinner, Stack, Text, TextInput} from '@sanity/ui'
 import {useClient} from 'sanity'
 import type {ArrayOfObjectsInputProps} from 'sanity'
@@ -31,29 +31,84 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
   const client = useClient({apiVersion: '2026-07-22'})
   const [dialogOpen, setDialogOpen] = useState(false)
   const [assets, setAssets] = useState<LibraryAsset[] | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [searchInput, setSearchInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const scrollBoxRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const id = setTimeout(() => setSearchTerm(searchInput.trim()), SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(id)
   }, [searchInput])
 
+  const loadPage = useCallback(
+    (offset: number) =>
+      client.fetch<LibraryAsset[]>(
+        `*[_type == "sanity.imageAsset"] | order(_createdAt desc) [${offset}...${offset + PAGE_SIZE + 1}]{_id, url, originalFilename}`
+      ),
+    [client]
+  )
+
+  // Only the plain browse view paginates -- a real search narrows results
+  // enough that more than 100 matches is never realistically needed, same
+  // reasoning MediaLibraryTool.tsx's own search already settled on.
   useEffect(() => {
     if (!dialogOpen) return
     let cancelled = false
     setAssets(null)
-    const query = searchTerm
-      ? `*[_type == "sanity.imageAsset" && originalFilename match $term] | order(_createdAt desc) [0...100]{_id, url, originalFilename}`
-      : `*[_type == "sanity.imageAsset"] | order(_createdAt desc) [0...${PAGE_SIZE}]{_id, url, originalFilename}`
-    client.fetch<LibraryAsset[]>(query, searchTerm ? {term: `*${searchTerm}*`} : {}).then((result) => {
-      if (!cancelled) setAssets(result)
-    })
+    if (searchTerm) {
+      client
+        .fetch<LibraryAsset[]>(
+          `*[_type == "sanity.imageAsset" && originalFilename match $term] | order(_createdAt desc) [0...100]{_id, url, originalFilename}`,
+          {term: `*${searchTerm}*`}
+        )
+        .then((result) => {
+          if (!cancelled) {
+            setAssets(result)
+            setHasMore(false)
+          }
+        })
+    } else {
+      loadPage(0).then((result) => {
+        if (cancelled) return
+        setHasMore(result.length > PAGE_SIZE)
+        setAssets(result.slice(0, PAGE_SIZE))
+      })
+    }
     return () => {
       cancelled = true
     }
-  }, [dialogOpen, searchTerm, client])
+  }, [dialogOpen, searchTerm, client, loadPage])
+
+  const loadMore = useCallback(async () => {
+    if (!assets) return
+    setLoadingMore(true)
+    try {
+      const result = await loadPage(assets.length)
+      setHasMore(result.length > PAGE_SIZE)
+      setAssets((prev) => (prev ? [...prev, ...result.slice(0, PAGE_SIZE)] : result.slice(0, PAGE_SIZE)))
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [assets, loadPage])
+
+  useEffect(() => {
+    if (!dialogOpen || searchTerm || !hasMore) return
+    const el = sentinelRef.current
+    const root = scrollBoxRef.current
+    if (!el || !root) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !loadingMore) loadMore()
+      },
+      {root, rootMargin: '200px'}
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [dialogOpen, searchTerm, hasMore, loadingMore, loadMore])
 
   function toggle(id: string) {
     setSelectedIds((prev) => {
@@ -103,7 +158,7 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
                   No images found.
                 </Text>
               ) : (
-                <Box style={{maxHeight: 420, overflowY: 'auto'}}>
+                <Box ref={scrollBoxRef} style={{maxHeight: 420, overflowY: 'auto'}}>
                   <Grid columns={[3, 4, 5]} gap={2}>
                     {assets.map((a) => {
                       const selected = selectedIds.has(a._id)
@@ -139,6 +194,16 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
                       )
                     })}
                   </Grid>
+                  {!searchTerm && hasMore && (
+                    <>
+                      <div ref={sentinelRef} style={{height: 1}} />
+                      {loadingMore && (
+                        <Flex justify="center" padding={3}>
+                          <Spinner muted />
+                        </Flex>
+                      )}
+                    </>
+                  )}
                 </Box>
               )}
               <Flex justify="space-between" align="center">

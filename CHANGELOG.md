@@ -11,6 +11,13 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Fixed the new bulk photo picker stalling past 60 images
+
+Asher reported the "Add multiple from Media Library" picker (shipped earlier today) wouldn't load past a
+certain number of photos. Real bug: the first version fetched a flat 60-image slice with no way to see more
+at all. Fixed by giving it the same scroll-to-load-more behavior the Media library page itself already has —
+scrolling toward the bottom of the picker's own grid now loads the next batch automatically.
+
 ## 2026-08-16 — Cross-checked 9 more Facebook comment threads, fixed GIFs breaking on the site, and added GIF search + bulk photo picking to post editing
 
 Asher sent a new, richer round of Facebook comment extractions (this time real text files instead of

@@ -1437,6 +1437,16 @@ calls `onItemAppend()` once per selected image, each wrapped as `{_type: 'image'
 {_type: 'reference', _ref: assetId}}` — the same shape Sanity's own default input would produce, so nothing
 downstream (the carousel/slideshow renderer, reordering, per-item remove) needs to know this button exists.
 
+**Couldn't load past 60 images, same day.** The first version's browse query was a flat `[0...60]` slice
+with no further pagination at all — anyone with more than 60 photos in the library (Asher included) simply
+couldn't scroll to see the rest, let alone select them. Fixed by copying `MediaLibraryTool.tsx`'s own
+proven pattern wholesale: `loadPage(offset)` re-fetches `[offset...offset+61]` (one extra row to know
+whether more exist), and an `IntersectionObserver` watches a 1px sentinel at the bottom of the picker's own
+scrollable box (`root: scrollBoxRef.current`, not the page viewport — the grid scrolls inside a
+fixed-height dialog, not the whole window) to auto-load the next 60 as it's scrolled into view. Search still
+returns up to 100 in one shot with no further paging, same reasoning as the Media library's own search: a
+real filename search narrows results enough that a second page is never realistically needed.
+
 **"Compress Library" — a one-time pass for photos already there (shipped 2026-08-08).** Automatic
 compression above only ever applied going forward. Asher asked whether the photos already in the library
 before that shipped were compressed too — checked against real data: 28 of 49 images were 300KB or larger,
