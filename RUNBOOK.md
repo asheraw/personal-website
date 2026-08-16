@@ -2766,6 +2766,36 @@ writing — the old approved text sometimes turned out to be a condensed paraphr
 (a straight substring check would have missed it entirely), confirmed real by pulling the full original text
 and comparing by eye, not assumed.
 
+**Full-directory audit, 2026-08-16**: Asher flagged one post's comments as missing and asked for a status
+check across everything in `Downloads\comments\`. Comparing each of the 44 `comments_<id>.txt` files' own
+stated total against a live Sanity count turned up 12 posts stuck at a small partial import (often exactly 9
+or 10 comments, regardless of the post's real total) — the fingerprint of a batch-import script dying
+silently partway through, same failure mode as the sequential-`await` writes documented elsewhere in this
+file. A `legacyFacebookThreadUrl match` lookup returning nothing doesn't necessarily mean the post is
+missing either: one folder's 93 comments belonged to a real, already-published, already-fully-imported post
+that simply never had its `legacyFacebookThreadUrl` field backfilled — worth checking by title/content
+before assuming a gap needs filling.
+
+**Parser gotcha, round 2**: the trailing-`[Edited]`-after-`[NESTED reply...]` fix from the first round wasn't
+enough — free-form trailing tags also show up (`[note: reply addresses "X" — same commenter]`, `[second,
+separate top-level comment]`), and a fixed-order regex silently drops the whole line's match the moment
+*any* unexpected trailing bracket appears, folding that entry into the previous one's message instead of
+erroring. Rewrote the header parser to strip *all* `[...]` groups as a set (order- and content-independent),
+keeping only the one matching `NESTED reply, level N` for structure, and to stop parsing entirely at a third
+`====` divider (some files append a closing summary block after the real content — its prose was getting
+parsed as fake top-level comments otherwise). Same validate-against-the-file's-own-stated-total discipline
+caught both bugs before anything was written: an 8-comment gap on the largest file (199 stated) narrowed to
+a single 1-comment human tally error in Asher's own header notes once the parser was fixed, confirmed by
+counting the auto (27) and manual (171) sections separately rather than trusting the header's summed "172."
+
+**"More comments in Sanity than the extraction file states" isn't automatically a problem.** Five posts hit
+this during the same audit; all five turned out fine on inspection — either Sanity already held a more
+thorough transcription than the current extraction file (visible from bracketed clarifying notes like
+`*(reply, exact Chinese text uncertain from the screenshot)*` that only show up in hand-refined versions),
+or the extra comments were genuine live-site visitor submissions (recognizable by their random Sanity-style
+`_id`, versus the deterministic `facebook-comment-<slug>-N` scheme every legacy import uses) unrelated to
+the Facebook import entirely. Always check content before treating an overcount as a bug.
+
 ## Stuck-post fix button: progress counter (shipped 2026-08-14)
 
 **Asked for directly**: after clicking "Fix them now" on a 93-blocker instance of the "blocking publish"

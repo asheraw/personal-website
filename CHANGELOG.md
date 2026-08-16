@@ -11,6 +11,33 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Cross-checked every remaining Facebook comment folder against Sanity, fixed 13
+
+Asher flagged one specific post ("I Made 100 Videos But 1 Text Post Changed Everything") whose comments
+looked like they hadn't loaded, then asked for a full check of everything in `Downloads\comments\` against
+what's actually in Sanity, since he'd finished handing over extractions for his complete list of Facebook
+post URLs. Audited all 51 folders (44 with a `comments_<id>.txt` file, 6 older screenshot-based folders, one
+`_to_delete`) by comparing each file's own stated comment total against a live count query per matched post.
+
+Found a systemic issue, not just the one flagged post: 12 posts were stuck on a small partial import (often
+exactly 9 or 10 comments regardless of how many the post actually had) — the fingerprint of a batch-import
+script that had died silently partway through rather than failing loudly, the same failure mode documented
+elsewhere in this log. Wrote a general-purpose parser for the established `>>`-nesting comment-file format
+(handling exact timestamps, Facebook's relative-only "1y"/"[Edited]" timestamps on screenshot-transcribed
+sections, and multi-tag header lines like `[NESTED reply, level 1]  [note: reply addresses "X"]`), validated
+it against each file's own stated total before writing anything, then rebuilt all 12 threads via batched
+`client.transaction()` writes (never the sequential-await pattern that caused the original silent failures).
+One file's own header count (199) turned out to be a 1-comment human tally error against its own transcribed
+content (198) — left as-is rather than fabricating a 199th comment that was never actually transcribed.
+
+Five more posts looked mismatched at first glance (Sanity showing *more* comments than the extraction file's
+stated total) but turned out fine on inspection — either Sanity already held a more thorough transcription
+than the current extraction file, or the "extra" comments were genuine live-site visitor submissions
+unrelated to the Facebook import. Also found one real Facebook post ("The Joy Was Cut Short...", about
+Asher's brother's hospital readmission) whose 93 comments had no post to attach to by URL match — turned out
+the post already existed and already had all 93 comments, just missing its `legacyFacebookThreadUrl` field
+(backfilled). Net result: every folder in the directory is now confirmed either complete or accounted for.
+
 ## 2026-08-16 — Added a one-click "Approve all pending" button to the Comments tool
 
 The last mass-approval (614 comments, see the "approved the whole backlog" entry further below) was done as
