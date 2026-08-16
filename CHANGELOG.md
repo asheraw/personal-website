@@ -11,6 +11,26 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Fixed a self-referencing reply bug, added 3 more Facebook posts as drafts
+
+Asher manually counted the comments on "I Made 100 Videos..." after the audit above and found only 20
+visible against a badge showing 23 — a real bug, not a stale count. Three of Asher's own replies had their
+`parentComment` pointing at themselves instead of the comment they were replying to (a copy-paste indexing
+slip in that post's original hand-transcription, before the general parser existed). A comment referencing
+itself as its own parent doesn't render as either a top-level comment or a nested reply, so it silently
+vanishes from the threaded view while still counting toward the total. Fixed the 3 affected documents and
+swept every comment on the site for the same shape of bug — confirmed nowhere else, isolated to this one
+post.
+
+Also added 3 more Facebook posts as drafts that Asher flagged as missing, using the parallel session's
+`scripts/import-facebook-posts.mjs` importer (`.md` files with frontmatter + a "## Comments" section):
+"2nd Warning: A Spoiler-Full Review of Mulan" (Part 2 of the existing Part 1), "How Would I Measure My
+Success?", and "How Exactly Do You Stand Out?" — the last one's original 24-comment thread was a heavily
+downscaled screenshot too low-resolution to transcribe reliably, so its body imported but its comments were
+deliberately left out rather than guessed at. None of the three have a featured image yet — pasted chat
+images aren't accessible as files to write against Sanity's asset API, so all three need Asher to add their
+photo manually in Studio, same as the rest of this week's backlog.
+
 ## 2026-08-16 — Cross-checked every remaining Facebook comment folder against Sanity, fixed 13
 
 Asher flagged one specific post ("I Made 100 Videos But 1 Text Post Changed Everything") whose comments
