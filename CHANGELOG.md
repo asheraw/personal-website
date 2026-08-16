@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Cross-checked the final 13 Facebook comment threads, and approved the whole backlog
+
+The last 13 posts from the "still in progress" list got their text-file extractions finished, so cross-checked
+and updated all of them the same way as the earlier 9 — same parser, revalidated against every file's own
+stated total before writing (all 13 matched exactly). 12 built fresh; one ("Bringing Luke to Church",
+already published with 8 real comments) got rebuilt from the fuller 19-comment extraction with the existing
+8 carried forward under their approved status, same content-matching approach as the earlier batch.
+
+A handful of entries across 4 of these files came with an explicit note flagging a specific mis-scrape (a
+reaction/sticker the automated pass read as textless, corrected by cross-referencing the screenshot) — applied
+those by hand, keyed on more than just name+timestamp after catching a real near-miss: two different people's
+replies from Asher landed in the exact same minute in one thread, and a looser match would have overwritten
+the wrong one. One of the seven flagged corrections was missed on the first pass (a comment on "Appreciate
+Every Prayer") and caught during final verification — fixed directly afterward.
+
+Separately, Asher asked to approve the entire pending backlog now rather than one at a time — 614 comments
+at the time, since he'll still review them individually later regardless. Batch-approved all of them (3
+already-rejected ones left untouched, that was a deliberate earlier call). Since every comment's `post`
+reference already points at each post's eventual published ID (not the temporary draft ID — see RUNBOOK),
+nothing further needs to happen for approved comments to appear the moment each post actually goes live.
+
 ## 2026-08-16 — Fixed the Media library lightbox never loading a GIF
 
 Asher noticed clicking a GIF thumbnail opened the lightbox but nothing ever appeared. Measured it directly:

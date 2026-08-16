@@ -2567,6 +2567,31 @@ succeeds one pass later with zero manual intervention. Stops retrying a comment 
 (the exact same set of still-failing IDs) repeats between two consecutive passes — that's not a race
 anymore, it's a real, different failure, and shown as such instead of spun on forever.
 
+## Comments already point at a draft post's eventual published ID, not its draft ID (confirmed 2026-08-16)
+
+Asher asked directly: if he approves a Facebook-import comment now, while its post is still a draft, does
+anything need to happen at publish time for that comment to actually show up? Checked against real data
+rather than answering from the schema alone. Every comment written since the `weak: true` fix above
+(`commentType.ts`) has its `post._ref` set to the post's **bare, eventual published ID** — e.g.
+`facebook-thank-you-for-standing-by-me` — even while the post itself currently only exists as
+`drafts.facebook-thank-you-for-standing-by-me` and the bare-ID document doesn't exist yet. Confirmed across
+all 1,270 comments in the dataset at the time: zero still carried a `drafts.`-prefixed `post._ref`, on
+either draft or already-published posts.
+
+This means the "stuck post" banner/fix documented above genuinely has nothing to do at publish time for
+*these* references — there's no repointing needed, because the reference was never pointed at the draft ID
+to begin with. A weak reference tolerates pointing at a not-yet-existing document, so it just sits dangling
+(by design, not by accident) until the post is published and the bare-ID document comes into existence,
+at which point it resolves on its own. **The practical upshot Asher was actually asking about**: it's
+completely safe to review and approve a draft post's comments well ahead of publishing it — nothing about
+approving early creates extra cleanup work, and nothing needs re-checking once the post actually goes live.
+
+**If a future comment import script ever writes `post._ref` using whatever `_id` a draft-perspective query
+handed back (drafts.-prefixed) instead of the bare form**, that one *would* need the stuck-post fix at
+publish time — this is exactly the failure mode documented in the "Cannot be deleted" saga above. Worth
+checking any new import script explicitly strips a leading `drafts.` before writing `post._ref`, matching
+what every script in this repo already does today.
+
 ## Comments tool lag after the Facebook import (found and fixed 2026-08-14)
 
 **Symptom**: Asher reported Studio → Comments feeling "very laggy" after the 48-post Facebook import (and
