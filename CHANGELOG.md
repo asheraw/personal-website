@@ -25,11 +25,21 @@ post.
 Also added 3 more Facebook posts as drafts that Asher flagged as missing, using the parallel session's
 `scripts/import-facebook-posts.mjs` importer (`.md` files with frontmatter + a "## Comments" section):
 "2nd Warning: A Spoiler-Full Review of Mulan" (Part 2 of the existing Part 1), "How Would I Measure My
-Success?", and "How Exactly Do You Stand Out?" — the last one's original 24-comment thread was a heavily
-downscaled screenshot too low-resolution to transcribe reliably, so its body imported but its comments were
-deliberately left out rather than guessed at. None of the three have a featured image yet — pasted chat
-images aren't accessible as files to write against Sanity's asset API, so all three need Asher to add their
-photo manually in Studio, same as the rest of this week's backlog.
+Success?", and "How Exactly Do You Stand Out?" — the last one's comment thread was initially skipped since
+the only version available was a heavily downscaled screenshot too low-resolution to transcribe reliably.
+Asher then sent the real, full-resolution screenshot chunks, and all 35 comments (matching Facebook's own
+displayed count exactly) got added in a follow-up pass. None of the three have a featured image yet — pasted
+chat images aren't accessible as files to write against Sanity's asset API, so all three need Asher to add
+their photo manually in Studio, same as the rest of this week's backlog.
+
+**Two gotchas working with `import-facebook-posts.mjs` directly** (not bugs in the script itself, just its
+behavior worth knowing): it uses `createOrReplace` on the whole post document, so re-running it on a post
+after manually patching a field the script doesn't set (like `legacyFacebookThreadUrl`) silently wipes that
+field back out — patch such fields *after* the last import run, not before. And comments lacking an exact
+timestamp all fall back to the same `createdAt` (the post's `publishedAt`), which is fine for the parent/child
+links but leaves every comment tied on "Newest first" sort — spread them a minute apart in thread order
+afterward if display order matters, same fix applied earlier in this same session for relative-timestamp-only
+comments.
 
 ## 2026-08-16 — Cross-checked every remaining Facebook comment folder against Sanity, fixed 13
 
