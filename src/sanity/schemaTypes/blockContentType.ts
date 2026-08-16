@@ -298,12 +298,13 @@ export const blockContentType = defineType({
           title: 'Display size',
           type: 'string',
           description:
-            'How wide this shows in the post. "Original" fills the post column, same as always -- pick Small or Medium for a photo that doesn\'t need to dominate the page. Readers can still tap/click through to the full-size original either way.',
+            'How wide this shows in the post. "Original" fills the post column, same as always -- pick Small or Medium for a photo that doesn\'t need to dominate the page, or "Wide" to break out past the column on desktop (useful for a gallery with a lot of photos in it -- more fit per row instead of one long scroll). Readers can still tap/click through to the full-size original either way. "Wide" looks the same as "Original" on a phone -- there isn\'t extra screen width to break out into there.',
           options: {
             list: [
               {title: 'Small', value: 'small'},
               {title: 'Medium', value: 'medium'},
               {title: 'Original (fills the column)', value: 'original'},
+              {title: 'Wide (breaks out of the column on desktop)', value: 'wide'},
             ],
           },
           initialValue: 'original',

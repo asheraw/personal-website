@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
+import { WideBreakout } from "@/components/asher/blog/WideBreakout";
 import { isAnimatedGifUrl } from "@/lib/isAnimatedGif";
 
-export type DisplaySize = "small" | "medium" | "original";
+export type DisplaySize = "small" | "medium" | "original" | "wide";
 
 // Percentage of the article column's width, not a fixed pixel cap -- the
 // column itself (max-w-3xl, minus padding) works out to ~704px on desktop,
@@ -16,8 +17,10 @@ export type DisplaySize = "small" | "medium" | "original";
 // screen size. Only applied from `sm:` up -- below that, the column is
 // already narrower than either cap would meaningfully shrink it to, so
 // Small/Medium would otherwise pointlessly shrink an already-small photo
-// on a phone for no readability benefit.
-const WIDTH_CLASSES: Record<DisplaySize, string> = {
+// on a phone for no readability benefit. "Wide" isn't a percentage of this
+// column at all -- it breaks out of it entirely (see WideBreakout), so it
+// deliberately has no entry here.
+const WIDTH_CLASSES: Record<"small" | "medium" | "original", string> = {
   small: "sm:w-1/2",
   medium: "sm:w-3/4",
   original: "w-full",
@@ -42,9 +45,10 @@ export function SizedImage({
 }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isGif = isAnimatedGifUrl(src);
+  const isWide = size === "wide";
 
-  return (
-    <figure className={`my-8 w-full ${size === "original" ? "" : `${WIDTH_CLASSES[size]} sm:mx-auto`}`}>
+  const figure = (
+    <figure className={`my-8 w-full ${isWide || size === "original" ? "" : `${WIDTH_CLASSES[size]} sm:mx-auto`}`}>
       <button
         type="button"
         onClick={() => setLightboxOpen(true)}
@@ -66,4 +70,6 @@ export function SizedImage({
       {lightboxOpen && <ImageLightbox src={fullSrc} alt={alt} onClose={() => setLightboxOpen(false)} />}
     </figure>
   );
+
+  return isWide ? <WideBreakout>{figure}</WideBreakout> : figure;
 }

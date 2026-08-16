@@ -13,17 +13,38 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ## 2026-08-16 — Added a one-click "Approve all pending" button to the Comments tool
 
-The last mass-approval (614 comments, see the entry right below) was done as a one-off direct write against
-Sanity, not through anything in Studio itself — there was no button for it, so a fresh backlog of pending
-comments piling back up (491 by the time Asher asked again) had no faster path than approving them one at a
-time. Built the real thing this time: a banner in the Comments tool, matching the existing "Publish all
-draft comments" banner's look and behavior (batched writes, a live done/total counter, per-comment error
-reporting instead of one failure aborting the rest), that shows up once pending comments cross 20 at once —
-below that, the normal one-by-one Approve button is still the better fit, so the banner deliberately doesn't
-show for an ordinary handful of day-to-day pending comments. Reuses the same reply-notification call the
-single Approve button already makes, so a batch that happens to include a real subscriber-eligible reply
-still emails them — in practice that's always empty for legacy-imported comments, since `notifyOnReply` is
-only ever set by someone submitting through the live comment form.
+The last mass-approval (614 comments, see the "approved the whole backlog" entry further below) was done as
+a one-off direct write against Sanity, not through anything in Studio itself — there was no button for it,
+so a fresh backlog of pending comments piling back up (491 by the time Asher asked again) had no faster path
+than approving them one at a time. Built the real thing this time: a banner in the Comments tool, matching
+the existing "Publish all draft comments" banner's look and behavior (batched writes, a live done/total
+counter, per-comment error reporting instead of one failure aborting the rest), that shows up once pending
+comments cross 20 at once — below that, the normal one-by-one Approve button is still the better fit, so the
+banner deliberately doesn't show for an ordinary handful of day-to-day pending comments. Reuses the same
+reply-notification call the single Approve button already makes, so a batch that happens to include a real
+subscriber-eligible reply still emails them — in practice that's always empty for legacy-imported comments,
+since `notifyOnReply` is only ever set by someone submitting through the live comment form.
+
+## 2026-08-16 — A "Wide" option for photo galleries, and a Comments/Media review
+
+Asher asked whether certain posts could use the full screen width on desktop — his example was a 123-photo
+gallery that felt like an endless scroll in the normal text column. Built as a new "Wide" choice on the
+Image block's existing Display size field, scoped to that block only rather than the whole post: stretching
+actual paragraph text across a full wide screen makes it harder to read, so a whole-post toggle would have
+fixed the gallery at the cost of quietly hurting anything written on the same post. Masonry galleries
+specifically needed more than just a wider box — a wider container with the same fixed column count just
+makes existing photos bigger, not more per row, so Wide also adds real extra columns at desktop widths.
+Confirmed on mobile there's nothing to change: Wide looks identical to normal there, since there's no extra
+screen width to break out into on a phone in the first place. Verified against a real temporary post with
+real photos (screenshotted, checked for the wide-mode 100vw scrollbar-overflow bug specifically, none found)
+before shipping, then deleted the test post.
+
+Also reviewed Studio's Comments and Media Library tools for UX gaps and checked the site for anything genuinely
+stale — nothing urgent came up. Real findings: 21 of 255 image assets are currently unused, the Comments list
+still has no pagination/virtualization (a known, already-documented gap that hasn't mattered yet but the
+comment count has roughly doubled since it was last measured), and one old script
+(`scripts/fix-draft-referenced-comments.mjs`) is confirmed still outdated and safe to delete. Scheduled a
+one-time check-in for 2026-09-16 to revisit these rather than act on them now.
 
 ## 2026-08-16 — Cross-checked the final 13 Facebook comment threads, and approved the whole backlog
 

@@ -8,6 +8,7 @@ import AutoScroll from "embla-carousel-auto-scroll";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { urlFor } from "@/sanity/lib/image";
 import { ImageLightbox } from "@/components/asher/blog/ImageLightbox";
+import { WideBreakout } from "@/components/asher/blog/WideBreakout";
 import { isAnimatedGifUrl } from "@/lib/isAnimatedGif";
 import type { DisplaySize } from "@/components/asher/blog/SizedImage";
 
@@ -16,12 +17,17 @@ const SLIDESHOW_INTERVAL_MS = 5000;
 // -- this is genuinely a different kind of "size" (how tall one row of
 // auto-scrolling photos is), not "how much of the text column this takes
 // up," so a pixel value is the right unit here, unlike SLIDE_WIDTH_CLASSES below.
-const SCROLL_STRIP_HEIGHT: Record<DisplaySize, number> = { small: 180, medium: 280, original: 380 };
+// "Wide" keeps the same height as "original" -- the benefit there is a wider
+// viewport showing more of the strip at once (see WideBreakout below), not
+// a taller row.
+const SCROLL_STRIP_HEIGHT: Record<DisplaySize, number> = { small: 180, medium: 280, original: 380, wide: 380 };
 // Percentage of the article column's width, same reasoning as SizedImage.tsx's
 // WIDTH_CLASSES -- a fixed pixel cap here had the same bug (720px never
 // actually bound against the ~704px real column width, so Medium and
-// Original always rendered identically).
-const SLIDE_WIDTH_CLASSES: Record<DisplaySize, string> = {
+// Original always rendered identically). "Wide" breaks out of the column
+// entirely instead (see WideBreakout), so it has no entry here, same as
+// SizedImage.tsx's WIDTH_CLASSES.
+const SLIDE_WIDTH_CLASSES: Record<"small" | "medium" | "original", string> = {
   small: "sm:w-1/2",
   medium: "sm:w-3/4",
   original: "w-full",
@@ -55,7 +61,7 @@ export function ImageCarousel({
 }) {
   if (!images?.length) return null;
   if (mode === "scroll-strip") return <ScrollStrip images={images} size={size} />;
-  if (mode === "masonry") return <MasonryGrid images={images} />;
+  if (mode === "masonry") return <MasonryGrid images={images} size={size} />;
   return <SlideCarousel images={images} mode={mode} size={size} />;
 }
 
@@ -108,9 +114,10 @@ function SlideCarousel({
   );
 
   const current = images[selectedIndex] ?? images[0];
+  const isWide = size === "wide";
 
-  return (
-    <figure className={`my-8 w-full ${size === "original" ? "" : `${SLIDE_WIDTH_CLASSES[size]} sm:mx-auto`}`}>
+  const figure = (
+    <figure className={`my-8 w-full ${isWide || size === "original" ? "" : `${SLIDE_WIDTH_CLASSES[size]} sm:mx-auto`}`}>
       <div className="group relative overflow-hidden rounded-lg border border-amber-faint bg-stage/40">
         <div className="overflow-hidden" ref={emblaRef}>
           <div className="flex">
@@ -194,6 +201,8 @@ function SlideCarousel({
       )}
     </figure>
   );
+
+  return isWide ? <WideBreakout>{figure}</WideBreakout> : figure;
 }
 
 // "Masonry grid" -- for a genuinely large batch of photos (a post with
@@ -208,11 +217,23 @@ function SlideCarousel({
 // ImageLightbox as every other mode on click -- no next/prev arrows added
 // inside the lightbox itself, consistent with how Carousel/Slideshow/
 // Scrolling strip already only ever show one enlarged photo at a time too.
-function MasonryGrid({ images }: { images: GalleryImage[] }) {
+function MasonryGrid({ images, size }: { images: GalleryImage[]; size: DisplaySize }) {
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null);
+  const isWide = size === "wide";
 
-  return (
-    <div className="my-8 columns-2 gap-3 sm:columns-3">
+  // Widening the container alone wouldn't shorten a long masonry scroll --
+  // `columns-N` fixes the column COUNT, so a wider box with the same count
+  // just makes each existing column (and photo) bigger, not more photos
+  // per row. "Wide" adds real extra columns at wider breakpoints instead,
+  // on top of the wider box from WideBreakout -- that's what actually
+  // turns into fewer rows. Mobile stays exactly as it was (2 columns,
+  // unaffected by this field either way).
+  const columnsClassName = isWide
+    ? "columns-2 gap-3 sm:columns-3 lg:columns-4 xl:columns-5"
+    : "columns-2 gap-3 sm:columns-3";
+
+  const grid = (
+    <div className={`my-8 ${columnsClassName}`}>
       {images.map((img) =>
         img.asset ? (
           <figure key={img._key} className="mb-3 break-inside-avoid">
@@ -241,6 +262,8 @@ function MasonryGrid({ images }: { images: GalleryImage[] }) {
       )}
     </div>
   );
+
+  return isWide ? <WideBreakout>{grid}</WideBreakout> : grid;
 }
 
 function ScrollStrip({ images, size }: { images: GalleryImage[]; size: DisplaySize }) {
@@ -250,6 +273,7 @@ function ScrollStrip({ images, size }: { images: GalleryImage[]; size: DisplaySi
   );
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null);
   const height = SCROLL_STRIP_HEIGHT[size];
+  const isWide = size === "wide";
 
   const openIfNotDragging = useCallback(
     (img: GalleryImage) => {
@@ -259,7 +283,7 @@ function ScrollStrip({ images, size }: { images: GalleryImage[]; size: DisplaySi
     [emblaApi]
   );
 
-  return (
+  const strip = (
     <div className="my-8 overflow-hidden" ref={emblaRef}>
       <div className="flex gap-3">
         {images.map((img) =>
@@ -296,4 +320,6 @@ function ScrollStrip({ images, size }: { images: GalleryImage[]; size: DisplaySi
       )}
     </div>
   );
+
+  return isWide ? <WideBreakout>{strip}</WideBreakout> : strip;
 }

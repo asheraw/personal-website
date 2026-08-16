@@ -198,7 +198,9 @@ export const postBodyComponents: PortableTextComponents = {
     image: ({ value }) => {
       if (!value?.asset) return null;
       const size: DisplaySize =
-        value.displaySize === "small" || value.displaySize === "medium" ? value.displaySize : "original";
+        value.displaySize === "small" || value.displaySize === "medium" || value.displaySize === "wide"
+          ? value.displaySize
+          : "original";
       const additional = (value.additionalImages ?? []) as GalleryImage[];
       if (additional.length > 0) {
         const images: GalleryImage[] = [

@@ -778,6 +778,49 @@ misfire after this: the click handler checks `emblaApi.internalEngine().dragHand
 out if a drag is still in progress — without that guard, dragging to the next slide also pops the lightbox
 open, since a drag ends in a pointerup that looks just like a click.
 
+**"Wide" added as a fourth Display size (shipped 2026-08-16).** Asher's own example: a 123-photo Masonry
+gallery ("41-Year-Old Asher Photoshoot") felt like an endless scroll in the normal ~700px column. Deliberately
+**not** a whole-post-width toggle — stretching actual paragraph text across a full wide desktop screen makes
+it measurably harder to read, which is the whole reason that column is narrow to begin with, so a whole-post
+option would fix the gallery at the cost of quietly hurting anything written on that same post. "Wide" is
+scoped to the Image block itself: headings and paragraphs on the same post stay exactly as narrow as always.
+
+- **`src/components/asher/blog/WideBreakout.tsx`** (new) — the actual breakout mechanism, shared by every
+  display style. The classic `width: 100vw; margin-left: calc(50% - 50vw)` trick, which re-centers a block on
+  the *viewport* regardless of how deeply it's nested inside the centered `max-w-3xl` article column — it
+  doesn't need to know that column's width, or care about any padding on the way there, as long everything
+  above it is centered and symmetric (true here: `mx-auto` plus matching left/right `px-5`/`sm:px-8`). Capped
+  at 1400px, not edge-to-edge — re-centered inside that width with the same `px-5`/`sm:px-8` gutter the
+  article column itself uses, so it doesn't slam into the browser edge on a merely-wide (not ultrawide)
+  screen. `overflow-x: hidden` on the outer breakout box is a deliberate safeguard, not decoration: `100vw` is
+  very slightly wider than the true visible viewport on some browsers (it doesn't subtract the scrollbar's own
+  width the way `100%` does), which can otherwise introduce a sliver of page-wide horizontal scroll — checked
+  directly with Playwright (`document.documentElement.scrollWidth > clientWidth`) at both 1600px and 390px
+  after shipping; came back `false` either way, but the safeguard costs nothing and closes the class of bug
+  regardless.
+- **Masonry specifically needed more than a wider box.** `columns-N` (the CSS multi-column property this grid
+  is built on) fixes the column *count* — widening the container without touching that count just makes the
+  same number of columns individually wider (bigger photos), not more photos per row, which does nothing for
+  a long scroll. `MasonryGrid` now takes a `size` prop it never accepted before (`ImageCarousel`'s dispatcher
+  was dropping it on the floor for masonry specifically) and adds real extra columns at wider breakpoints when
+  `size === "wide"` (`lg:columns-4 xl:columns-5`, on top of the existing `columns-2 sm:columns-3`) — that's
+  what actually turns into fewer rows. Mobile is completely untouched by this field either way (still 2
+  columns, matches what Asher already had without realizing it — see the two-column question earlier the
+  same session).
+- **The single-image and Carousel/Slideshow/Scrolling-strip paths also got "wide"**, each wrapped in the same
+  `WideBreakout` — a smaller but free bonus once the mechanism existed, not the original ask.
+- **`portableTextComponents.tsx`'s own `displaySize` validation had to be updated too** — it explicitly
+  whitelisted only `"small" | "medium"` and silently coerced anything else (a stray value, or a brand new one
+  like `"wide"`) down to `"original"`. Adding the schema option alone would have done nothing on the page
+  without this fix; caught before shipping, not after, by reading this file rather than assuming the schema
+  change was sufficient on its own.
+- **Verified against a real, temporary published post** (10 real existing photos in a Masonry gallery set to
+  Wide, plus body text before and after it) rather than just trusting the code: screenshotted at 1600px
+  (gallery visibly breaks out to 5 columns, text before/after stays in the normal narrow column) and 390px
+  (indistinguishable from Original — no extra width to break out into on a phone in the first place, so this
+  wasn't a media-query decision, it falls out naturally from the same viewport-centering math). Deleted the
+  test post immediately after.
+
 **Small/Medium changed from fixed pixel caps to percentages of the column width (2026-08-06), per Asher's
 question about whether hardcoded sizing had a real reason behind it.** It didn't, and the specific values
 chosen had a live bug: the article column (`max-w-3xl` minus padding) works out to ~704px wide on desktop, so
