@@ -742,6 +742,21 @@ Carousel/Slideshow are rendered by `SlideCarousel` and Scrolling strip by `Scrol
 no additional photos never touches this path at all. No GROQ query changes were needed — `POST_BY_SLUG_QUERY`
 already fetches the whole `body[]` array as a spread.
 
+**Scrolling strip didn't loop with only 2 photos (fixed 2026-08-16).** Embla's `loop: true` clones the far
+slide onto the opposite edge to fake a seamless wrap, but only commits to it if `engine.slideLooper.canLoop()`
+passes — internally, that requires every *other* slide's combined width to already cover the full viewport on
+its own (see `SlideLooper` in `node_modules/embla-carousel/esm/embla-carousel.esm.js`). With 2 variable-width
+photos at a fixed height, that's rarely true, so Embla silently falls back to `{...options, loop: false}` (no
+console warning, no error — just quietly disabled), and `embla-carousel-auto-scroll` correctly stops dead at
+the end once it sees looping is off. Not a bug in either plugin, just their documented behavior meeting a real
+gallery. Fixed by having `ScrollStrip` repeat the image set (unique `_key` per copy) until there are at least
+`MIN_SCROLL_STRIP_SLIDES` (6) total, whenever the real photo count is below that — comfortably clears Embla's
+width check regardless of aspect ratio, and repeating 1-2 photos is also just the only sensible way to fill an
+"auto-scroll forever" strip that short to begin with. Verified by publishing a real temporary 2-photo test
+post and sampling the strip's translate-X position every ~1.5s over several cycles: it decreases steadily,
+jumps back to a large positive value at the wrap point, then keeps decreasing again — confirming a genuine
+loop rather than a stall — before the test post was deleted.
+
 **This used to be two separate block types** (a plain Image, and a standalone `imageGallery` requiring 2+
 photos) until Asher asked whether they could become one field instead of two. The merge is additive and fully
 backward compatible — `additionalImages`/`displayStyle` are optional fields on the *same* `image` type that's

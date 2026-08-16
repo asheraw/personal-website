@@ -21,6 +21,17 @@ const SLIDESHOW_INTERVAL_MS = 5000;
 // viewport showing more of the strip at once (see WideBreakout below), not
 // a taller row.
 const SCROLL_STRIP_HEIGHT: Record<DisplaySize, number> = { small: 180, medium: 280, original: 380, wide: 380 };
+// Embla's loop mode clones slides onto the opposite end to fake a seamless
+// wrap, which only works when the *other* slides already cover the full
+// viewport width on their own -- with too few images that's rarely true
+// (2 images at a fixed height almost never add up to a whole viewport width
+// between them), so Embla silently falls back to loop: false and the strip
+// just stops dead at the end instead of wrapping. Repeating the image set
+// below this count sidesteps that by giving Embla enough total width to
+// loop with, regardless of each photo's actual aspect ratio -- and doubles
+// as the correct visual for a 1-2 photo marquee anyway (cycling the same
+// couple of photos is the only sensible "auto-scroll forever" for so few).
+const MIN_SCROLL_STRIP_SLIDES = 6;
 // Percentage of the article column's width, same reasoning as SizedImage.tsx's
 // WIDTH_CLASSES -- a fixed pixel cap here had the same bug (720px never
 // actually bound against the ~704px real column width, so Medium and
@@ -283,10 +294,19 @@ function ScrollStrip({ images, size }: { images: GalleryImage[]; size: DisplaySi
     [emblaApi]
   );
 
+  const withAssets = images.filter((img) => img.asset);
+  const repeats = withAssets.length > 0 ? Math.ceil(MIN_SCROLL_STRIP_SLIDES / withAssets.length) : 1;
+  const slides =
+    withAssets.length < MIN_SCROLL_STRIP_SLIDES
+      ? Array.from({ length: repeats }, (_, copy) =>
+          withAssets.map((img) => ({ ...img, _key: `${img._key}-copy${copy}` }))
+        ).flat()
+      : withAssets;
+
   const strip = (
     <div className="my-8 overflow-hidden" ref={emblaRef}>
       <div className="flex gap-3">
-        {images.map((img) =>
+        {slides.map((img) =>
           img.asset ? (
             <figure key={img._key} className="shrink-0 grow-0">
               <button type="button" onClick={() => openIfNotDragging(img)} aria-label="View full size" className="block cursor-zoom-in">

@@ -11,6 +11,23 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Fixed the Scrolling Strip gallery not looping with only 2 photos
+
+Asher noticed the "Scrolling strip" display style (variable-width photos, auto-scrolls sideways forever)
+looped fine with several photos but stalled at the end with only 2. Root cause: Embla Carousel's loop mode
+works by cloning the far slide onto the opposite edge to fake a seamless wrap, and that trick only holds up
+if the *other* slides already span the full viewport width on their own -- with just 2 photos at a fixed
+height, their combined width is almost never enough, so Embla silently drops back to `loop: false` (no error,
+no warning surfaced to Studio) and the auto-scroll plugin correctly stops dead at the end since it can see
+looping is off.
+
+Fixed in `ImageCarousel.tsx`'s `ScrollStrip`: below 6 total images, the strip now repeats the photo set
+enough times to comfortably clear Embla's internal width check, regardless of each photo's actual aspect
+ratio. Repeating 1-2 photos is also just the correct behavior for an "auto-scroll forever" strip that short
+on its own -- there's no other sensible way to fill an infinite scroll with so few images. Verified against
+a real temporary post with exactly 2 real photos: tracked the strip's pixel position over several seconds and
+confirmed it wraps and keeps moving indefinitely rather than freezing, then deleted the test post.
+
 ## 2026-08-16 — Fixed a self-referencing reply bug, added 3 more Facebook posts as drafts
 
 Asher manually counted the comments on "I Made 100 Videos..." after the audit above and found only 20
