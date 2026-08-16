@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Added a one-click "Approve all pending" button to the Comments tool
+
+The last mass-approval (614 comments, see the entry right below) was done as a one-off direct write against
+Sanity, not through anything in Studio itself — there was no button for it, so a fresh backlog of pending
+comments piling back up (491 by the time Asher asked again) had no faster path than approving them one at a
+time. Built the real thing this time: a banner in the Comments tool, matching the existing "Publish all
+draft comments" banner's look and behavior (batched writes, a live done/total counter, per-comment error
+reporting instead of one failure aborting the rest), that shows up once pending comments cross 20 at once —
+below that, the normal one-by-one Approve button is still the better fit, so the banner deliberately doesn't
+show for an ordinary handful of day-to-day pending comments. Reuses the same reply-notification call the
+single Approve button already makes, so a batch that happens to include a real subscriber-eligible reply
+still emails them — in practice that's always empty for legacy-imported comments, since `notifyOnReply` is
+only ever set by someone submitting through the live comment form.
+
 ## 2026-08-16 — Cross-checked the final 13 Facebook comment threads, and approved the whole backlog
 
 The last 13 posts from the "still in progress" list got their text-file extractions finished, so cross-checked

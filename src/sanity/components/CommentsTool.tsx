@@ -208,6 +208,9 @@ export function CommentsTool() {
   const [publishingDrafts, setPublishingDrafts] = useState(false)
   const [publishProgress, setPublishProgress] = useState<{done: number; total: number} | null>(null)
   const [publishDraftsError, setPublishDraftsError] = useState<string | null>(null)
+  const [approvingAll, setApprovingAll] = useState(false)
+  const [approveProgress, setApproveProgress] = useState<{done: number; total: number} | null>(null)
+  const [approveAllError, setApproveAllError] = useState<string | null>(null)
   // Explicit overrides of the default expand/collapse state (see
   // groupIsExpanded below) -- a group the user has opened or closed by hand
   // stays that way regardless of its pending status, until they toggle it
@@ -634,6 +637,69 @@ export function CommentsTool() {
     }
   }
 
+  // Same batched-with-progress shape as publishAllDraftComments above, but
+  // simpler: approving is just a `status` patch on each comment's own
+  // document, so unlike publishing there's no cross-comment reference to
+  // race against and no need for a second pass -- one comment failing to
+  // patch can never be the reason a different comment fails too. Asher's
+  // own call (2026-08-16): approve the whole pending backlog in one go
+  // rather than one at a time, since he's still planning to read through
+  // them individually afterward regardless -- this doesn't skip that
+  // review, it just stops "pending" from being the reason nothing shows up
+  // on the live site while he works through it. Reuses notifySubscribers
+  // exactly like the single-comment Approve button does, so a reply that's
+  // part of this batch still emails whoever's subscribed to that thread --
+  // in practice that's always empty for the legacy import (notifyOnReply
+  // only gets set by someone submitting through the live comment form),
+  // but it stays correct if a handful of this batch turn out to be real,
+  // recent pending comments too.
+  const APPROVE_BATCH_SIZE = 15
+
+  async function approveAllPending() {
+    setApprovingAll(true)
+    setApproveAllError(null)
+    const targets = pending
+    const total = targets.length
+    setApproveProgress({done: 0, total})
+    let approvedCount = 0
+    const failures: {name: string; id: string; reason: string}[] = []
+    try {
+      for (let i = 0; i < targets.length; i += APPROVE_BATCH_SIZE) {
+        const batch = targets.slice(i, i + APPROVE_BATCH_SIZE)
+        const results = await Promise.allSettled(
+          batch.map((c) => client.patch(c._id).set({status: 'approved'}).commit()),
+        )
+        const approvedIds = new Set<string>()
+        results.forEach((result, idx) => {
+          const c = batch[idx]
+          if (result.status === 'fulfilled') {
+            approvedCount++
+            approvedIds.add(c._id)
+            if (c.parentComment) notifySubscribers(c._id)
+          } else {
+            const reason = result.reason instanceof Error ? result.reason.message : String(result.reason)
+            failures.push({name: c.name, id: c._id, reason})
+          }
+        })
+        setApproveProgress({done: approvedCount, total})
+        setComments((prev) =>
+          prev ? prev.map((c) => (approvedIds.has(c._id) ? {...c, status: 'approved'} : c)) : prev,
+        )
+      }
+    } finally {
+      setApprovingAll(false)
+      setApproveProgress(null)
+      setApproveAllError(
+        failures.length > 0
+          ? `Couldn't approve ${failures.length}: ${failures
+              .slice(0, 20)
+              .map((f) => `${f.name || '(unnamed)'} (${f.id}): ${f.reason}`)
+              .join('; ')}${failures.length > 20 ? `; and ${failures.length - 20} more` : ''}.`
+          : null,
+      )
+    }
+  }
+
   // Repoints every blocker with a known field at the post's published ID
   // in one go -- one blocker at a time, each its own try/catch (not one
   // around the whole loop), so a single real failure surfaces as a
@@ -869,6 +935,46 @@ export function CommentsTool() {
             </Card>
           )
         })}
+
+        {pending.length > 20 && (
+          <Card padding={4} radius={3} tone="caution" border>
+            <Stack space={3}>
+              <Flex align="center" gap={3} wrap="wrap">
+                <Badge tone="caution" fontSize={2}>
+                  {pending.length}
+                </Badge>
+                <Text size={2} weight="semibold">
+                  comments are waiting for moderation
+                </Text>
+              </Flex>
+              <Text size={1} muted>
+                Approves every pending comment below in one go -- their content, name, and status all stay
+                exactly as they are, this only flips them from &ldquo;pending&rdquo; to &ldquo;approved&rdquo; so
+                they show up on the live site. Already-rejected or spam-marked comments are left untouched.
+                {pending.length > 50 &&
+                  ` That's a lot at once, so this counts up as it goes -- stay on this page until it finishes rather than closing the tab partway through.`}
+              </Text>
+              <Box>
+                <Button
+                  text={
+                    approvingAll
+                      ? `Approving… ${approveProgress ? `${approveProgress.done}/${approveProgress.total}` : ''}`
+                      : `Approve all ${pending.length} now`
+                  }
+                  tone="caution"
+                  fontSize={1}
+                  disabled={approvingAll}
+                  onClick={approveAllPending}
+                />
+              </Box>
+              {approveAllError && (
+                <Text size={1} weight="semibold">
+                  {approveAllError}
+                </Text>
+              )}
+            </Stack>
+          </Card>
+        )}
 
         {draftComments.length > 0 && (
           <Card padding={4} radius={3} tone="critical" border>
