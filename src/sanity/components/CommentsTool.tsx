@@ -198,6 +198,7 @@ export function CommentsTool() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [editDate, setEditDate] = useState('')
+  const [editGif, setEditGif] = useState<SelectedGif | null>(null)
   const [editBusy, setEditBusy] = useState(false)
   const [viewingTrash, setViewingTrash] = useState(false)
   const [search, setSearch] = useState('')
@@ -400,17 +401,39 @@ export function CommentsTool() {
     setEditingId(comment._id)
     setEditText(comment.message ?? '')
     setEditDate(isoToLocalInputValue(comment.createdAt))
+    // The original Giphy search title isn't stored, only the chosen GIF's
+    // own URL -- "GIF" is a fine generic alt/preview label for one that was
+    // already attached before this edit session opened.
+    setEditGif(comment.gifUrl ? {url: comment.gifUrl, title: 'GIF'} : null)
   }
 
   async function saveEdit(id: string) {
-    if (!editText.trim() || !editDate) return
+    // Same "a GIF alone is valid" rule as new comments/replies -- editing
+    // shouldn't be more restrictive than creating.
+    if ((!editText.trim() && !editGif) || !editDate) return
     setEditBusy(true)
     try {
       const editedAt = new Date().toISOString()
       const createdAt = new Date(editDate).toISOString()
-      await client.patch(id).set({message: editText.trim(), createdAt, editedAt}).commit()
+      const message = editText.trim()
+      const setFields: {message?: string; gifUrl?: string; createdAt: string; editedAt: string} = {
+        createdAt,
+        editedAt,
+      }
+      const unsetFields: string[] = []
+      if (message) setFields.message = message
+      else unsetFields.push('message')
+      if (editGif) setFields.gifUrl = editGif.url
+      else unsetFields.push('gifUrl')
+      let patch = client.patch(id).set(setFields)
+      if (unsetFields.length) patch = patch.unset(unsetFields)
+      await patch.commit()
       setComments((prev) =>
-        prev ? prev.map((c) => (c._id === id ? {...c, message: editText.trim(), createdAt, editedAt} : c)) : prev,
+        prev
+          ? prev.map((c) =>
+              c._id === id ? {...c, message: message || null, gifUrl: editGif?.url ?? null, createdAt, editedAt} : c,
+            )
+          : prev,
       )
       setEditingId(null)
     } finally {
@@ -1168,9 +1191,11 @@ export function CommentsTool() {
                             editing={editingId === comment._id}
                             editText={editText}
                             editDate={editDate}
+                            editGif={editGif}
                             editBusy={editBusy}
                             onEditTextChange={setEditText}
                             onEditDateChange={setEditDate}
+                            onEditGifChange={setEditGif}
                             onApprove={() => setStatus(comment._id, 'approved')}
                             onReject={() => setStatus(comment._id, 'rejected')}
                             onSpam={() => setStatus(comment._id, 'spam')}
@@ -1211,9 +1236,11 @@ export function CommentsTool() {
                                     editing={editingId === reply._id}
                                     editText={editText}
                                     editDate={editDate}
+                                    editGif={editGif}
                                     editBusy={editBusy}
                                     onEditTextChange={setEditText}
                                     onEditDateChange={setEditDate}
+                                    onEditGifChange={setEditGif}
                                     onApprove={() => setStatus(reply._id, 'approved')}
                                     onReject={() => setStatus(reply._id, 'rejected')}
                                     onSpam={() => setStatus(reply._id, 'spam')}
@@ -1258,9 +1285,11 @@ export function CommentsTool() {
                                           editing={editingId === reply3._id}
                                           editText={editText}
                                           editDate={editDate}
+                                          editGif={editGif}
                                           editBusy={editBusy}
                                           onEditTextChange={setEditText}
                                           onEditDateChange={setEditDate}
+                                          onEditGifChange={setEditGif}
                                           onApprove={() => setStatus(reply3._id, 'approved')}
                                           onReject={() => setStatus(reply3._id, 'rejected')}
                                           onSpam={() => setStatus(reply3._id, 'spam')}
@@ -1559,9 +1588,11 @@ function CommentCard({
   editing,
   editText,
   editDate,
+  editGif,
   editBusy,
   onEditTextChange,
   onEditDateChange,
+  onEditGifChange,
   onApprove,
   onReject,
   onSpam,
@@ -1579,9 +1610,11 @@ function CommentCard({
   editing: boolean
   editText: string
   editDate: string
+  editGif: SelectedGif | null
   editBusy: boolean
   onEditTextChange: (value: string) => void
   onEditDateChange: (value: string) => void
+  onEditGifChange: (gif: SelectedGif | null) => void
   onApprove: () => void
   onReject: () => void
   onSpam: () => void
@@ -1647,12 +1680,30 @@ function CommentCard({
 
         {editing ? (
           <Stack space={2}>
+            <Flex justify="flex-end">
+              <GifPickerButton onSelect={onEditGifChange} />
+            </Flex>
             <TextArea
               fontSize={1}
               rows={4}
               value={editText}
               onChange={(e) => onEditTextChange(e.currentTarget.value)}
             />
+            {editGif && (
+              <Box style={{position: 'relative', width: 'fit-content'}}>
+                {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF preview, not a Next page */}
+                <img src={editGif.url} alt={editGif.title} style={{maxHeight: 120, borderRadius: 6, display: 'block'}} />
+                <Button
+                  text="✕"
+                  mode="bleed"
+                  tone="critical"
+                  fontSize={0}
+                  padding={2}
+                  onClick={() => onEditGifChange(null)}
+                  style={{position: 'absolute', top: -8, right: -8, borderRadius: '50%'}}
+                />
+              </Box>
+            )}
             {/* Lets a restored, backdated comment (e.g. one recovered from
                 the Wayback Machine for an old post) show its real original
                 date instead of whenever it happened to be re-entered. */}
@@ -1672,7 +1723,7 @@ function CommentCard({
                 text="Save"
                 tone="primary"
                 fontSize={1}
-                disabled={editBusy || !editText.trim() || !editDate}
+                disabled={editBusy || (!editText.trim() && !editGif) || !editDate}
                 onClick={onSaveEdit}
               />
               <Button text="Cancel" mode="ghost" fontSize={1} disabled={editBusy} onClick={onCancelEdit} />

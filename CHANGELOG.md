@@ -11,6 +11,16 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-21 — Can now attach a GIF when editing a comment, not just when replying
+
+Asher asked why he couldn't add a GIF while editing a comment in Studio, when replying already had a GIF
+picker. Turned out editing and replying were always two separate code paths that had drifted apart — the
+reply form already had the full Giphy search/attach flow, but the edit form only ever had a plain text box
+and a date field, no `gifUrl` handling at all. Added the same `GifPickerButton` (search, pick, preview,
+remove) to the edit form, and relaxed the Save button's validation to match the reply rule already in place
+elsewhere: a GIF alone is a valid comment, same as text alone. Saving now explicitly unsets `message`/`gifUrl`
+in Sanity when either is cleared during an edit, rather than leaving a stale value behind.
+
 ## 2026-08-21 — Posts list can now sort by the post's own date
 
 Asher has a backlog of draft posts imported from Facebook posts spanning several years, and wanted to work

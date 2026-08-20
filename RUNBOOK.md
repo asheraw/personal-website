@@ -2468,6 +2468,18 @@ hand, and Studio access is already an authenticated, trusted write path.
 "Schema errors" text after the change, and `/api/gif-search` re-confirmed working (same route, no changes
 needed there) before deploying.
 
+**Editing an existing comment still had no GIF support at all (found and fixed 2026-08-21).** The reply flow
+above and the edit flow are two genuinely separate code paths in `CommentsTool.tsx` (`InlineReplyForm` vs.
+the `editing` branch inside `CommentCard`), and only the reply one ever got the `GifPickerButton` treatment
+-- the edit form stayed a plain `TextArea` + date field with no `gifUrl` handling whatsoever. Asher noticed
+directly ("I don't see the GIF button" when editing, not when replying). Fixed by adding the same
+`GifPickerButton` + preview/remove UI to the edit form, a new `editGif` state (`SelectedGif | null`, seeded
+from the comment's existing `gifUrl` when `startEdit()` runs), and relaxing `saveEdit()`'s validation to the
+same "text or GIF, not necessarily both" rule the reply/create paths already use. The save itself needed real
+`.unset()` calls, not just omitting a key from `.set()` -- Sanity's patch API only clears a field you
+explicitly unset; leaving `gifUrl` out of the `.set()` payload after the user removed a previously-attached
+GIF would have silently kept the old value in place.
+
 ## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13)
 
 Asher hit this trying to publish the post whose **slug** is "wrote-these-in-2009": `Document
