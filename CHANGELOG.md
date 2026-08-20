@@ -11,6 +11,17 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-16 — Blog page heading and tagline are now editable in Studio
+
+Asher noticed the "Dig The Mind of Asher" heading and the "still a Work-In-Progress" line under it on
+`/blog` were hardcoded and asked for them to move into Site Settings so he can change them without needing a
+code change. Added `blogHeading` and `blogTagline` fields to the `siteSettings` singleton (new "Blog page
+header" section, same pattern the site title/description/social-image fields already use), pre-filled with
+today's exact text so nothing on the live page changes until Asher actually edits them. The page still falls
+back to that same text as a hardcoded constant if Site Settings is ever missing the fields entirely (a fresh
+dataset, for instance) — same safety-net pattern as the site-wide title/description fallback in the root
+layout.
+
 ## 2026-08-16 — Fixed the Scrolling Strip gallery not looping with only 2 photos
 
 Asher noticed the "Scrolling strip" display style (variable-width photos, auto-scrolls sideways forever)

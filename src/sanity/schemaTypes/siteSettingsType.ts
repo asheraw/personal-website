@@ -26,6 +26,12 @@ export const siteSettingsType = defineType({
       options: {collapsible: false},
     },
     {
+      name: 'blog',
+      title: 'Blog page header',
+      description: 'The heading and tagline shown at the top of /blog, above the post list.',
+      options: {collapsible: false},
+    },
+    {
       name: 'publishing',
       title: 'Publishing',
       options: {collapsible: false},
@@ -62,6 +68,25 @@ export const siteSettingsType = defineType({
       type: 'image',
       fieldset: 'identity',
       description: 'Shown when a link to the site is shared (WhatsApp, X, LinkedIn, etc.) on pages that don’t set their own — the homepage, for example. Blog posts always use their own Main Image instead.',
+    }),
+    defineField({
+      name: 'blogHeading',
+      title: 'Blog heading',
+      type: 'string',
+      fieldset: 'blog',
+      description: 'The big heading at the top of the blog list page.',
+      initialValue: 'Dig The Mind of Asher',
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'blogTagline',
+      title: 'Blog tagline',
+      type: 'text',
+      rows: 2,
+      fieldset: 'blog',
+      description: 'The short line under the heading, above the search box.',
+      initialValue: "Welcome to my blog, I'm currently going through a revamp so there's many things that are still a Work-In-Progress.",
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: 'defaultAuthor',

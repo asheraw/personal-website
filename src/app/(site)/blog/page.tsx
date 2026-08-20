@@ -11,6 +11,12 @@ const SITE_URL = "https://asheraw.com";
 // (rather than importing a client component's internals into a server
 // component) since it's only used once, for the very first page.
 const FIRST_PAGE_SIZE = 8;
+// Fallbacks only -- used if Site Settings (Studio) has no value set yet,
+// e.g. a fresh dataset. The real, editable source is the same siteSettings
+// singleton generateMetadata() in the root (site) layout already reads.
+const FALLBACK_BLOG_HEADING = "Dig The Mind of Asher";
+const FALLBACK_BLOG_TAGLINE =
+  "Welcome to my blog, I'm currently going through a revamp so there's many things that are still a Work-In-Progress.";
 
 // Re-check Sanity for new or edited posts at most once per minute,
 // instead of only ever showing what existed at the last deploy.
@@ -35,11 +41,16 @@ export default async function BlogPage() {
   // separate, deliberately unpaginated, much lighter query (see
   // SEARCH_INDEX_QUERY) so search can still find a post that hasn't been
   // scrolled into view yet.
-  const [initialPosts, totalCount, searchIndex] = await Promise.all([
+  const [initialPosts, totalCount, searchIndex, settings] = await Promise.all([
     client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start: 0, end: FIRST_PAGE_SIZE }),
     client.fetch<number>(POSTS_COUNT_QUERY),
     client.fetch<SearchablePost[]>(SEARCH_INDEX_QUERY),
+    client.fetch<{ blogHeading?: string; blogTagline?: string } | null>(
+      `*[_type == "siteSettings"][0]{blogHeading, blogTagline}`
+    ),
   ]);
+  const blogHeading = settings?.blogHeading || FALLBACK_BLOG_HEADING;
+  const blogTagline = settings?.blogTagline || FALLBACK_BLOG_TAGLINE;
 
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", url: SITE_URL },
@@ -58,11 +69,9 @@ export default async function BlogPage() {
           Asher Aw
         </p>
         <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
-          Dig The Mind of Asher
+          {blogHeading}
         </h1>
-        <p className="mt-4 max-w-xl leading-relaxed text-stone/80">
-          Welcome to my blog, I&apos;m currently going through a revamp so there&apos;s many things that are still a Work-In-Progress.
-        </p>
+        <p className="mt-4 max-w-xl whitespace-pre-wrap leading-relaxed text-stone/80">{blogTagline}</p>
 
         <BlogSearch posts={searchIndex} />
 

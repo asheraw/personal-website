@@ -1269,6 +1269,13 @@ SEO fields, grouped into two labeled sections in the form:
   browser tab title, search-result snippet, and link-preview card for the homepage and any other `(site)`
   page that doesn't set its own (blog posts always use their own title/excerpt/main image instead — this is
   specifically the site-wide fallback). Previously hardcoded consts in `src/app/(site)/layout.tsx`.
+- **Blog page header** (added 2026-08-16) — Blog heading, Blog tagline: the big "Dig The Mind of Asher"
+  heading and the line under it at the top of `/blog`, above the search box. Asher asked for these directly
+  after noticing they were hardcoded in `src/app/(site)/blog/page.tsx` and wanting to change the temporary
+  "still a Work-In-Progress" tagline without a code change. Same fallback-constant pattern as the identity
+  fields above (`FALLBACK_BLOG_HEADING`/`FALLBACK_BLOG_TAGLINE` in `blog/page.tsx`), and the live singleton
+  was backfilled with the exact existing text at the time this shipped so nothing changed visually until
+  Asher actually edits it.
 - **Publishing** — Default author, as before.
 
 **Not an error, by design (clarified 2026-07-31):** Site Settings only ever controls *metadata* (tab title,
