@@ -11,6 +11,16 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-21 — Posts list can now sort by the post's own date
+
+Asher has a backlog of draft posts imported from Facebook posts spanning several years, and wanted to work
+through them in real chronological order — but Studio's built-in "Sort by" menu on the Posts list only ever
+offers Title, Last Edited, or Created, none of which is the date that actually matters here (Created is when
+the Sanity draft happened to get typed up this week, not when the original Facebook post was from). Added two
+custom orderings to `postType.ts` using the existing `publishedAt` field — "Sort by Post Date, Newest" and
+"Sort by Post Date, Oldest" — which now show up as real options in that same menu, same mechanism the
+Comments tool's own "Newest first" ordering already used.
+
 ## 2026-08-16 — Blog page heading and tagline are now editable in Studio
 
 Asher noticed the "Dig The Mind of Asher" heading and the "still a Work-In-Progress" line under it on

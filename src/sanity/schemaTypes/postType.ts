@@ -300,6 +300,26 @@ export const postType = defineType({
       ],
     }),
   ],
+  // Studio's built-in "Sort by" menu on the Posts list only ever offers
+  // Title/Last Edited/Created out of the box -- none of which is the date
+  // that actually matters for a backlog of posts imported from years-old
+  // Facebook posts (still unpublished, still being worked on): the post's
+  // own `publishedAt`, which for these is the real historical date of the
+  // original post, not whenever the Sanity draft happened to get created.
+  // Asked for directly (2026-08-21) so the backlog can be worked through in
+  // real chronological order instead of import order.
+  orderings: [
+    {
+      name: 'publishedAtDesc',
+      title: 'Sort by Post Date, Newest',
+      by: [{field: 'publishedAt', direction: 'desc'}],
+    },
+    {
+      name: 'publishedAtAsc',
+      title: 'Sort by Post Date, Oldest',
+      by: [{field: 'publishedAt', direction: 'asc'}],
+    },
+  ],
   preview: {
     select: {
       title: 'title',
