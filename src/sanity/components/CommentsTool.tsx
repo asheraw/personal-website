@@ -1422,6 +1422,11 @@ function GifPickerButton({onSelect}: {onSelect: (gif: SelectedGif) => void}) {
   const [query, setQuery] = useState('')
   const [gifs, setGifs] = useState<GifResult[] | null>(null)
   const [loadError, setLoadError] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const nextOffsetRef = useRef(0)
+  const scrollBoxRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -1432,8 +1437,13 @@ function GifPickerButton({onSelect}: {onSelect: (gif: SelectedGif) => void}) {
         .then((res) => res.json())
         .then((data) => {
           if (cancelled) return
-          if (data.gifs) setGifs(data.gifs)
-          else setLoadError(true)
+          if (data.gifs) {
+            setGifs(data.gifs)
+            setHasMore(!!data.hasMore)
+            nextOffsetRef.current = data.nextOffset ?? 24
+          } else {
+            setLoadError(true)
+          }
         })
         .catch(() => {
           if (!cancelled) setLoadError(true)
@@ -1444,6 +1454,37 @@ function GifPickerButton({onSelect}: {onSelect: (gif: SelectedGif) => void}) {
       clearTimeout(timer)
     }
   }, [open, query])
+
+  // Same "load the next batch once the sentinel scrolls into view, scoped
+  // to this popover's own results box" pattern as the bulk image picker and
+  // Media Library tool -- not the page itself, since this whole picker
+  // lives inside a portal-rendered popover.
+  useEffect(() => {
+    if (!open || !hasMore) return
+    const sentinel = sentinelRef.current
+    const root = scrollBoxRef.current
+    if (!sentinel || !root) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !loadingMore) {
+          setLoadingMore(true)
+          fetch(`/api/gif-search?q=${encodeURIComponent(query)}&offset=${nextOffsetRef.current}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.gifs) {
+                setGifs((prev) => [...(prev ?? []), ...data.gifs])
+                setHasMore(!!data.hasMore)
+                nextOffsetRef.current = data.nextOffset ?? nextOffsetRef.current + 24
+              }
+            })
+            .finally(() => setLoadingMore(false))
+        }
+      },
+      {root, rootMargin: '80px'},
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [open, hasMore, loadingMore, query])
 
   return (
     <Popover
@@ -1459,7 +1500,7 @@ function GifPickerButton({onSelect}: {onSelect: (gif: SelectedGif) => void}) {
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
             />
-            <Grid columns={3} gap={1} style={{maxHeight: 256, overflowY: 'auto'}}>
+            <Grid ref={scrollBoxRef} columns={3} gap={1} style={{maxHeight: 256, overflowY: 'auto'}}>
               {gifs === null && !loadError && (
                 <Text size={1} muted style={{gridColumn: 'span 3', textAlign: 'center', padding: 8}}>
                   Loading…
@@ -1483,12 +1524,35 @@ function GifPickerButton({onSelect}: {onSelect: (gif: SelectedGif) => void}) {
                     onSelect({url: gif.url, title: gif.title})
                     setOpen(false)
                   }}
-                  style={{border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, aspectRatio: '1', overflow: 'hidden', borderRadius: 4}}
+                  // width: 100% is load-bearing, not decorative -- without
+                  // it this button (a plain <button>, not a flex/grid item
+                  // Sanity's own Grid stretches the way a native CSS grid
+                  // would) sizes itself from its content instead of its
+                  // grid column, so aspectRatio: 1 computed a square from
+                  // the *thumbnail's own* width/height rather than the
+                  // grid cell -- every non-square Giphy thumbnail (most of
+                  // them) rendered visibly squished as a result.
+                  style={{
+                    width: '100%',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    padding: 0,
+                    aspectRatio: '1',
+                    overflow: 'hidden',
+                    borderRadius: 4,
+                  }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF thumbnail, not a Next page */}
                   <img src={gif.thumbUrl} alt={gif.title} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                 </button>
               ))}
+              {hasMore && <div ref={sentinelRef} style={{gridColumn: 'span 3', height: 1}} />}
+              {loadingMore && (
+                <Text size={1} muted style={{gridColumn: 'span 3', textAlign: 'center', padding: 4}}>
+                  Loading more…
+                </Text>
+              )}
             </Grid>
             <Text size={0} muted>
               Powered by GIPHY

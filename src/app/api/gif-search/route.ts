@@ -51,9 +51,14 @@ export async function GET(request: NextRequest) {
   }
 
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  // Clamped rather than trusted as-is -- this is a public, unauthenticated
+  // route (rate-limited above, but still), and an arbitrary huge offset is
+  // a pointless upstream request to Giphy that can only ever return nothing.
+  const offsetParam = Number(request.nextUrl.searchParams.get("offset"));
+  const offset = Number.isFinite(offsetParam) ? Math.max(0, Math.min(offsetParam, 4000)) : 0;
   const endpoint = q
-    ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=24&rating=g&lang=en`
-    : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=24&rating=g`;
+    ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=24&offset=${offset}&rating=g&lang=en`
+    : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=24&offset=${offset}&rating=g`;
 
   try {
     const res = await fetch(endpoint, { signal: AbortSignal.timeout(8000) });
@@ -74,7 +79,15 @@ export async function GET(request: NextRequest) {
         originalUrl: g.images.original?.url ?? g.images.fixed_height?.url,
       }))
       .filter((g): g is { id: string; title: string; thumbUrl: string; url: string; originalUrl: string } => !!g.url && !!g.thumbUrl);
-    return NextResponse.json({ gifs });
+    // Giphy's own pagination.total_count is the authoritative "is there
+    // more" signal -- gifs.length alone would under-count whenever this
+    // batch's own filter() above drops a malformed result, silently ending
+    // the scroll one batch early.
+    const pagination = json.pagination as { offset?: number; count?: number; total_count?: number } | undefined;
+    const hasMore = pagination
+      ? (pagination.offset ?? offset) + (pagination.count ?? gifs.length) < (pagination.total_count ?? 0)
+      : false;
+    return NextResponse.json({ gifs, hasMore, nextOffset: offset + 24 });
   } catch {
     return NextResponse.json({ error: "GIF search failed." }, { status: 502 });
   }

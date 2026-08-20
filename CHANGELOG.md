@@ -11,6 +11,30 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-21 — Fixed squished GIF thumbnails and added a "load more" to the GIF picker
+
+Asher noticed two things about the GIF picker in Studio's Comments tool: the thumbnails looked squished, and
+search never went past the first page of results. Both turned out to be real, and both got fixed everywhere
+this picker exists (Studio's reply/edit forms and the public comment form on the blog), not just where he
+happened to notice them.
+
+**The squish** was Studio-specific — its thumbnail button relied on `aspectRatio: 1` to force a square, but
+with no explicit `width` set, the button sized itself from its own content (the image's natural, usually
+non-square dimensions) instead of the grid column it sat in. The public form's identical-looking CSS
+(`aspect-square` inside a real `display: grid` container) never had this problem, since CSS Grid's default
+`stretch` behavior already gives every item a definite width to compute the square from — `@sanity/ui`'s own
+`Grid` apparently doesn't stretch children the same way. Fixed by adding an explicit `width: '100%'`, which
+sidesteps needing to know exactly why Sanity's Grid behaves differently.
+
+**The pagination** was a real, shared gap — `/api/gif-search` never accepted an offset, hardcoded to one
+batch of 24 results with no way to ask Giphy for more. Added `offset` support server-side (returning
+Giphy's own `hasMore`/`nextOffset` so the client doesn't have to guess), then wired an infinite-scroll
+sentinel into both `GifPickerButton` implementations — same `IntersectionObserver`-on-a-scoped-container
+pattern already used by the bulk image picker and Media Library tool, appending each new batch rather than
+replacing the list. Verified against the live public comment form: thumbnails came back genuinely square
+(98×98, not stretched), and scrolling the results box loaded a second batch of 24 with zero overlap with
+the first.
+
 ## 2026-08-21 — Can now attach a GIF when editing a comment, not just when replying
 
 Asher asked why he couldn't add a GIF while editing a comment in Studio, when replying already had a GIF

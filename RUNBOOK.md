@@ -2480,6 +2480,28 @@ same "text or GIF, not necessarily both" rule the reply/create paths already use
 explicitly unset; leaving `gifUrl` out of the `.set()` payload after the user removed a previously-attached
 GIF would have silently kept the old value in place.
 
+**Squished thumbnails in Studio's GIF picker, and no pagination anywhere (found and fixed 2026-08-21).**
+Two separate real bugs, both site-wide once traced, not just the one Asher happened to be looking at:
+
+- *Squish*: Studio's `GifPickerButton` thumbnail is a plain `<button>` sized via `aspectRatio: '1'` with no
+  explicit `width`. Without a definite width to compute the square from, the button fell back to sizing
+  itself from its own content (the `<img>`'s natural, almost-never-square intrinsic dimensions) instead of
+  the grid column it's in -- every non-square Giphy thumbnail rendered visibly stretched. The public
+  comment form's `GifPickerButton` (`CommentSection.tsx`) looks like it does the same thing (`aspect-square`
+  on a button inside a `grid`), but never had this bug: a real CSS `display: grid` container stretches its
+  items to fill their column by default, giving the public button a definite width for free. `@sanity/ui`'s
+  own `Grid` apparently doesn't replicate that stretch behavior for a plain `<button>` child. Fixed with an
+  explicit `width: '100%'` on the Studio button, which sidesteps needing to fully pin down why Sanity's Grid
+  differs -- confirmed correct against the (already-working) public form as the reference: 98×98px
+  thumbnails, verified via `getBoundingClientRect()` in a live Playwright check.
+- *No pagination*: `/api/gif-search` always hardcoded `limit=24` with no `offset` support at all, on either
+  picker -- there was never a "page 2" to reach. Added `offset` (clamped 0-4000) server-side, returning
+  Giphy's own `pagination.total_count`-derived `hasMore`/`nextOffset` so neither client has to guess whether
+  more exists. Wired an `IntersectionObserver` sentinel into both `GifPickerButton`s, scoped to each
+  picker's own results box (not the page) -- same pattern as the bulk image picker and Media Library tool's
+  own scroll-to-load-more. Verified live: scrolling the results grid took the public form from 24 to 48
+  thumbnails with zero ID overlap between the two batches.
+
 ## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13)
 
 Asher hit this trying to publish the post whose **slug** is "wrote-these-in-2009": `Document

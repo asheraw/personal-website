@@ -305,7 +305,16 @@ function GifPickerButton({ onSelect }: { onSelect: (gif: SelectedGif) => void })
   const [query, setQuery] = useState("");
   const [gifs, setGifs] = useState<GifResult[] | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const nextOffsetRef = useRef(0);
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // Every new search/open replaces the list from offset 0 -- debounced so
+  // normal typing doesn't fire a request per keystroke; opening the picker
+  // with an empty query shows Giphy's trending results instead of a blank
+  // panel.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -315,8 +324,13 @@ function GifPickerButton({ onSelect }: { onSelect: (gif: SelectedGif) => void })
         .then((res) => res.json())
         .then((data) => {
           if (cancelled) return;
-          if (data.gifs) setGifs(data.gifs);
-          else setLoadError(true);
+          if (data.gifs) {
+            setGifs(data.gifs);
+            setHasMore(!!data.hasMore);
+            nextOffsetRef.current = data.nextOffset ?? 24;
+          } else {
+            setLoadError(true);
+          }
         })
         .catch(() => {
           if (!cancelled) setLoadError(true);
@@ -327,6 +341,37 @@ function GifPickerButton({ onSelect }: { onSelect: (gif: SelectedGif) => void })
       clearTimeout(timer);
     };
   }, [open, query]);
+
+  // Loads the next batch and appends it -- same "scroll near the bottom of
+  // the results box, not the page" sentinel pattern already used by the
+  // bulk image picker and Media Library tool, scoped to scrollBoxRef so it
+  // doesn't fire from unrelated page scrolling while the popover is open.
+  useEffect(() => {
+    if (!open || !hasMore) return;
+    const sentinel = sentinelRef.current;
+    const root = scrollBoxRef.current;
+    if (!sentinel || !root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !loadingMore) {
+          setLoadingMore(true);
+          fetch(`/api/gif-search?q=${encodeURIComponent(query)}&offset=${nextOffsetRef.current}`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.gifs) {
+                setGifs((prev) => [...(prev ?? []), ...data.gifs]);
+                setHasMore(!!data.hasMore);
+                nextOffsetRef.current = data.nextOffset ?? nextOffsetRef.current + 24;
+              }
+            })
+            .finally(() => setLoadingMore(false));
+        }
+      },
+      { root, rootMargin: "80px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [open, hasMore, loadingMore, query]);
 
   return (
     <Popover
@@ -356,7 +401,7 @@ function GifPickerButton({ onSelect }: { onSelect: (gif: SelectedGif) => void })
           placeholder="Search Giphy…"
           className="mb-2 w-full rounded border border-amber-faint bg-stage/60 px-2 py-1.5 text-sm text-ivory outline-none placeholder:text-stone/40 focus-visible:border-spotlight"
         />
-        <div className="grid max-h-64 grid-cols-3 gap-1 overflow-y-auto">
+        <div ref={scrollBoxRef} className="grid max-h-64 grid-cols-3 gap-1 overflow-y-auto">
           {gifs === null && !loadError && (
             <p className="col-span-3 py-4 text-center text-xs text-stone/50">Loading…</p>
           )}
@@ -380,6 +425,8 @@ function GifPickerButton({ onSelect }: { onSelect: (gif: SelectedGif) => void })
               <img src={gif.thumbUrl} alt={gif.title} loading="lazy" className="h-full w-full object-cover" />
             </button>
           ))}
+          {hasMore && <div ref={sentinelRef} className="col-span-3 h-1" />}
+          {loadingMore && <p className="col-span-3 py-2 text-center text-xs text-stone/50">Loading more…</p>}
         </div>
         <p className="mt-2 text-[10px] text-stone/40">Powered by GIPHY</p>
       </PopoverContent>
