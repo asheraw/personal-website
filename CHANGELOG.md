@@ -11,19 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
-## 2026-08-21 — Found the real reason check-links was failing: a permissions-limited token on Netlify
+## 2026-08-21 — Fixed: check-links was failing on a permissions-limited token on Netlify
 
 Testing the new GitHub Actions cron replacement turned up a second, separate bug: `check-links` returned a
 500 even with the correct `CRON_SECRET`. Ruled out the secret and the Sanity connection first —
 `purge-trash` succeeded fine using the exact same `writeClient`. Asher pulled the real error from Netlify's
 own function logs: `Insufficient permissions; permission "update" required`, a 403 straight from Sanity.
 Purge-trash only ever *deletes*; check-links *updates* existing `linkCheck` documents from earlier runs —
-so whatever token is set as Netlify's `SANITY_API_WRITE_TOKEN` can create and delete but not update,
-meaning it's a more restricted token than the one Vercel was using, not the same value carried over
-correctly during the migration. No code fix needed — this is Asher copying the known-working token value
-from Vercel's own environment variables into Netlify's, replacing whatever's there now. `publish-scheduled`
-almost certainly hits the same wall (identical write pattern) but wasn't tested directly, since doing so
-would have published a real overdue post just to confirm a bug already diagnosed another way.
+so whatever token was set as Netlify's `SANITY_API_WRITE_TOKEN` could create and delete but not update.
+
+Vercel's copy of the token turned out to be locked/unreadable too, so the fix ended up being a fresh Sanity
+API token instead — scoped to just this project with the **Editor** role (full content access, no org-wide
+permissions), pasted into both the Production and Deploy Previews contexts on Netlify. One extra gotcha
+along the way: saving the new value alone didn't fix anything — Netlify only applies an environment variable
+change on the *next* deploy, not to whatever's already running, so it took an explicit "Trigger deploy"
+before the fix actually took effect. Confirmed fixed by re-testing directly: `check-links` now returns a
+clean 200 (58 links checked, 2 genuinely broken — a real, unrelated, pre-existing finding). `publish-scheduled`
+uses the identical write pattern, so it's confirmed fixed too without needing to trigger a real early publish
+just to prove it.
 
 ## 2026-08-21 — Rebuilt the 3 scheduled tasks on GitHub Actions, added a /services redirect
 

@@ -3093,25 +3093,31 @@ a proven working example of the same pattern. Needs a repository secret named `C
 exact value already set as a Netlify environment variable, added via GitHub -> repo Settings -> Secrets and
 variables -> Actions -- Asher's own access, same as the Netlify dashboard step above.
 
-**Separate real bug found while testing the fix: `SANITY_API_WRITE_TOKEN` on Netlify has the wrong
-permissions.** Calling `/api/cron/check-links` directly (with the correct `CRON_SECRET`, confirmed by
-Asher) returned a 500. `/api/cron/purge-trash` succeeded fine with the identical `writeClient` -- ruled out
-a missing/wrong `CRON_SECRET` or a broken Sanity connection entirely. The actual error, from Netlify's own
-function logs (`Site -> Logs -> Functions`, since the route's own `catch` swallows the real message into a
-generic one before responding): `Insufficient permissions; permission "update" required`, a 403 straight
+**Separate real bug found while testing the fix, resolved same day: `SANITY_API_WRITE_TOKEN` on Netlify had
+the wrong permissions.** Calling `/api/cron/check-links` directly (with the correct `CRON_SECRET`, confirmed
+by Asher) returned a 500. `/api/cron/purge-trash` succeeded fine with the identical `writeClient` -- ruled
+out a missing/wrong `CRON_SECRET` or a broken Sanity connection entirely. The actual error, from Netlify's
+own function logs (`Site -> Logs -> Functions`, since the route's own `catch` swallows the real message into
+a generic one before responding): `Insufficient permissions; permission "update" required`, a 403 straight
 from Sanity's API. Purge-trash's writes are `delete` mutations; check-links's are `createOrReplace` against
 `linkCheck` documents that already exist from earlier (Vercel-era) runs, which Sanity treats as an `update`
--- so whatever token Netlify has for `SANITY_API_WRITE_TOKEN` can create and delete but not update,
-meaning it's a different, more restrictive token than the one Vercel was using (an Editor/Administrator
-role token has all three; this one evidently doesn't). The `netlify.toml`-era migration comment listing
-"env vars to copy from Vercel" never actually named `SANITY_API_WRITE_TOKEN` in its example list either --
-consistent with it having been generated fresh rather than copied over correctly. Fix is on Netlify's side
-only, no code involved: copy the exact working value from Vercel's own Environment Variables (still valid,
-still what ran this job successfully pre-migration) into Netlify's `SANITY_API_WRITE_TOKEN`, replacing
-whatever's there now. Publish-scheduled uses the identical `writeClient` + `createOrReplace` pattern on
-existing draft documents, so it's very likely hitting this exact same 403 too, even though it wasn't
-directly tested live (it has a real side effect -- publishing an overdue draft -- so testing it was held
-off pending this same fix rather than triggered just to confirm).
+-- so whatever token Netlify had for `SANITY_API_WRITE_TOKEN` could create and delete but not update.
+Vercel's own copy of the token turned out to be locked/unreadable too (marked Sensitive there), so rather
+than chase that value, the fix was a fresh Sanity API token instead: sanity.io/manage -> project -> API ->
+Tokens -> new token scoped to *Project access* only (this project, **Editor** role -- full content
+read/write/update/delete, no org-wide permissions like Manage SDK Apps/Media Library/Canvas/Manage
+Access/Deploy Studios, none of which this token needs and all of which stayed unchecked), pasted into
+Netlify's `SANITY_API_WRITE_TOKEN` for both the Production and Deploy Previews contexts (Branch deploys /
+Preview Server & Agent Runners / Local development left blank -- not in the path of anything this fixes).
+
+**Gotcha that cost one extra round-trip: a Netlify environment variable change doesn't apply until the next
+deploy.** Saving the new token value alone didn't fix anything -- re-testing `check-links` immediately after
+still returned the identical 500, because the already-running function was still holding the old value.
+Needed an explicit **Deploys -> Trigger deploy -> Deploy site** afterward for the new value to actually reach
+the function. Confirmed fixed after that: `check-links` returns a clean 200 (`{"success":true,"checked":58,
+"broken":2}` -- the 2 broken links are a real, pre-existing, unrelated finding, not caused by any of this).
+`publish-scheduled` uses the identical `writeClient` + `createOrReplace` pattern and is therefore confirmed
+fixed by the same token change too, without needing to trigger a real publish just to prove it.
 
 ---
 
