@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-21 — Rebuilt the 3 scheduled tasks on GitHub Actions, added a /services redirect
+
+Two follow-ups from checking Google Search Console and the Netlify migration earlier today.
+
+**Scheduled tasks, rebuilt.** The nightly trash purge, link checker, and scheduled-publish routes had no
+scheduler calling them since Vercel Cron stopped applying (see the entry above). Went with GitHub Actions
+over building real Netlify Functions: it's portable to wherever the site ends up hosted next, and this repo
+already has a proven, working example (`backup.yml`) to follow. Added three focused workflows —
+`cron-purge-trash.yml`, `cron-check-links.yml`, `cron-publish-scheduled.yml` — each just a scheduled `curl`
+against its route with the same `Authorization: Bearer <CRON_SECRET>` header Vercel used to attach
+automatically, at the same original UTC times. Needs a repository secret named `CRON_SECRET` (same value as
+the one already configured on Netlify) to actually authenticate — that part needs Asher's own GitHub access,
+same as the earlier Netlify dashboard step did.
+
+**`/services` redirect added.** The one real gap from the Search Console check — an old WordPress services
+page that 404s with nothing pointing anywhere. Added a redirect to `/#coaching`, the closest modern
+equivalent, confirmed live.
+
 ## 2026-08-21 — Every deploy since moving to Netlify had been failing — fixed the config
 
 Asher moved asheraw.com's DNS over to Netlify from a mobile session (confirmed directly with him — this

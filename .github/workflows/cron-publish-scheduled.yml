@@ -1,0 +1,39 @@
+name: Cron - Publish Scheduled Posts
+
+# Calls /api/cron/publish-scheduled once a day, on GitHub's own servers --
+# the scheduler that used to do this was Vercel's built-in Cron feature
+# (see vercel.json's crons entry), which stopped applying the moment
+# asheraw.com's DNS moved to Netlify. This is that replacement: same
+# schedule, same endpoint, same secret, just triggered from here instead.
+#
+# Publishes any draft post whose scheduled publish time has passed. The
+# route itself is unchanged and still checks the same CRON_SECRET before
+# doing anything -- this workflow only needs to know that one value to be
+# allowed to call it.
+#
+# Requires a repository secret named CRON_SECRET, matching the exact
+# value set as an environment variable on the live site (Netlify).
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # every day at 02:00 UTC
+  workflow_dispatch: {} # lets a human trigger it manually from the Actions tab
+
+jobs:
+  call-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the publish-scheduled endpoint
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "::error::CRON_SECRET repository secret is not set."
+            exit 1
+          fi
+          status=$(curl -s -o /dev/stderr -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://asheraw.com/api/cron/publish-scheduled)
+          echo "HTTP status: $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::publish-scheduled returned $status"
+            exit 1
+          fi

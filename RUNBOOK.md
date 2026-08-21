@@ -3083,16 +3083,15 @@ schedule" the way Vercel Cron works). Fixed by removing the invalid blocks entir
 second syntax -- confirmed via `netlify status`/`netlify build --dry` that the parsing error is gone
 (what's left is only an expected "not logged in" in a sandbox with no Netlify auth).
 
-**Real, still-open gap this left behind: none of the 3 scheduled tasks currently run at all.** The routes
-themselves are untouched and still work if called directly (e.g. for manual testing); nothing is calling them
-on a schedule anymore. Two real options, neither picked yet since both need Asher's own input (a new
-secret/config either way): (a) write genuine Netlify Functions that each fetch their corresponding
-`/api/cron/*` URL with the right `Authorization: Bearer <CRON_SECRET>` header, scheduled via the correct
-`[functions."name"]` TOML syntax or an inline `export const config = {schedule}`; or (b) an external pinger
-(GitHub Actions' own `schedule:` trigger is the natural fit, this repo already has `.github/workflows/` with
-`backup.yml` as a working example) hitting all 3 URLs directly. Either way, `CRON_SECRET` needs to exist
-wherever the scheduler runs from, since Vercel's automatic header-injection for its own cron calls doesn't
-carry over to any replacement.
+**Resolved 2026-08-21: rebuilt on GitHub Actions.** `.github/workflows/cron-purge-trash.yml`,
+`cron-check-links.yml`, and `cron-publish-scheduled.yml` -- one focused workflow per route, same original
+UTC schedule times as `vercel.json`'s `crons` array, each just a scheduled `curl` with the
+`Authorization: Bearer <CRON_SECRET>` header attached explicitly (nothing auto-injects it the way Vercel
+used to). Picked over genuine Netlify Functions since it's portable to wherever the site ends up hosted next
+-- this same migration is exactly why that portability matters -- and this repo already had `backup.yml` as
+a proven working example of the same pattern. Needs a repository secret named `CRON_SECRET`, matching the
+exact value already set as a Netlify environment variable, added via GitHub -> repo Settings -> Secrets and
+variables -> Actions -- Asher's own access, same as the Netlify dashboard step above.
 
 ---
 
