@@ -3093,6 +3093,26 @@ a proven working example of the same pattern. Needs a repository secret named `C
 exact value already set as a Netlify environment variable, added via GitHub -> repo Settings -> Secrets and
 variables -> Actions -- Asher's own access, same as the Netlify dashboard step above.
 
+**Separate real bug found while testing the fix: `SANITY_API_WRITE_TOKEN` on Netlify has the wrong
+permissions.** Calling `/api/cron/check-links` directly (with the correct `CRON_SECRET`, confirmed by
+Asher) returned a 500. `/api/cron/purge-trash` succeeded fine with the identical `writeClient` -- ruled out
+a missing/wrong `CRON_SECRET` or a broken Sanity connection entirely. The actual error, from Netlify's own
+function logs (`Site -> Logs -> Functions`, since the route's own `catch` swallows the real message into a
+generic one before responding): `Insufficient permissions; permission "update" required`, a 403 straight
+from Sanity's API. Purge-trash's writes are `delete` mutations; check-links's are `createOrReplace` against
+`linkCheck` documents that already exist from earlier (Vercel-era) runs, which Sanity treats as an `update`
+-- so whatever token Netlify has for `SANITY_API_WRITE_TOKEN` can create and delete but not update,
+meaning it's a different, more restrictive token than the one Vercel was using (an Editor/Administrator
+role token has all three; this one evidently doesn't). The `netlify.toml`-era migration comment listing
+"env vars to copy from Vercel" never actually named `SANITY_API_WRITE_TOKEN` in its example list either --
+consistent with it having been generated fresh rather than copied over correctly. Fix is on Netlify's side
+only, no code involved: copy the exact working value from Vercel's own Environment Variables (still valid,
+still what ran this job successfully pre-migration) into Netlify's `SANITY_API_WRITE_TOKEN`, replacing
+whatever's there now. Publish-scheduled uses the identical `writeClient` + `createOrReplace` pattern on
+existing draft documents, so it's very likely hitting this exact same 403 too, even though it wasn't
+directly tested live (it has a real side effect -- publishing an overdue draft -- so testing it was held
+off pending this same fix rather than triggered just to confirm).
+
 ---
 
 ## Live preview: one-time setup, and "Preview shows an error"
