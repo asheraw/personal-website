@@ -11,6 +11,17 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-21 — The "Powered by Netlify" badge can't be hidden with CSS — removed the dead attempt
+
+A separate session had added `netlify.toml` and a `[data-netlify-badge] { display: none !important; }` rule
+in `globals.css` to hide Netlify's free-plan badge. Asher reported the badge was still showing. Checked
+Netlify's own docs directly rather than guessing at another selector: the badge is injected at Netlify's edge
+into an isolated `<iframe>` *specifically so a site's own CSS can never reach it* — no selector was ever going
+to work, correct attribute name or not. Removed the dead rule and replaced it with a comment pointing at the
+actual, officially-supported switch: Netlify dashboard → Project configuration → General → "Powered by
+Netlify badge" → off. Works on the Free plan, no upgrade needed — just needs Asher's own login, which is why
+this couldn't be finished from here.
+
 ## 2026-08-21 — Fixed squished GIF thumbnails and added a "load more" to the GIF picker
 
 Asher noticed two things about the GIF picker in Studio's Comments tool: the thumbnails looked squished, and
