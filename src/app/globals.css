@@ -246,6 +246,8 @@ body { scrollbar-gutter: stable; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(240, 184, 101, 0.45); }
 .light ::-webkit-scrollbar-thumb { background: rgba(184, 132, 46, 0.3); }
 .light ::-webkit-scrollbar-thumb:hover { background: rgba(184, 132, 46, 0.5); }
+/* Hide Netlify badge */
+[data-netlify-badge] { display: none !important; }
 
 .cursor-glow {
   position: fixed; pointer-events: none; z-index: 9998;
