@@ -1,0 +1,39 @@
+# Netlify configuration for asheraw.com
+# Deployment docs: https://docs.netlify.com/frameworks/next-js/overview/
+
+[build]
+  # Build command — same as Next.js standard
+  command = "npm run build"
+  # Where built site lives for deployment
+  publish = ".next"
+  # Node version
+  node_version = "22.12"
+
+# Environment variables are set in Netlify UI (Settings > Build & deploy > Environment)
+# Copy from Vercel: SANITY_DATASET, SANITY_PROJECT_ID, SANITY_API_READ_TOKEN, NEXT_PUBLIC_SANITY_DATASET, etc.
+
+# Scheduled Functions (replace Vercel's cron jobs)
+# These trigger the /api/cron/* endpoints on a schedule
+[[functions]]
+  path = "api/cron/purge-trash"
+  schedule = "0 3 * * *"  # 3 AM UTC daily
+
+[[functions]]
+  path = "api/cron/check-links"
+  schedule = "0 4 * * *"  # 4 AM UTC daily
+
+[[functions]]
+  path = "api/cron/publish-scheduled"
+  schedule = "0 2 * * *"  # 2 AM UTC daily
+
+# Security headers and CSP are defined in next.config.ts via the headers() function
+# No need to duplicate them here — Next.js will apply them at build time
+# (Netlify respects Next.js's built-in header configuration)
+
+# Redirects (if any) — add as needed via Sanity Studio's Redirect type
+# or manually here:
+# Example:
+# [[redirects]]
+#   from = "/old-path/*"
+#   to = "/new-path/:splat"
+#   status = 301
