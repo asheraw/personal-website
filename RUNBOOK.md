@@ -3060,6 +3060,42 @@ before running either, same as any other action with real, hard-to-reverse conse
 
 ---
 
+## Hosting moved from Vercel to Netlify (2026-08-21) — deploy pipeline was broken for a while
+
+**asheraw.com's DNS now points at Netlify, not Vercel.** Asher made this switch himself from a separate
+mobile Claude Code session; confirmed directly with him it was intentional, not a stray change. Verify which
+platform is actually live with `nslookup asheraw.com` — Netlify's load-balancer IPs are `75.2.60.5` and
+`99.83.231.61` (confirmed against Netlify's own docs); if you see those, Netlify is production, and
+`npx vercel ls` only ever shows Vercel's own (now-irrelevant-to-production) preview deployments from that
+point forward. Every "confirmed live" check elsewhere in this log that predates 2026-08-21 was checking
+Vercel, correctly, because Vercel *was* production at the time — this note is what marks the cutover, not a
+correction of earlier entries.
+
+**Every deploy failed from the moment `netlify.toml` was first added, until this was found and fixed.** The
+Netlify dashboard showed each one failing at "Reading and parsing configuration files" — confirmed the exact
+cause with `npx netlify-cli status` (no login needed just to validate the local config file): `Configuration
+property functions must be an object`. The file was trying to replicate `vercel.json`'s `crons` array (see
+that file for the original 3 scheduled routes: `purge-trash`, `check-links`, `publish-scheduled`) using
+`[[functions]]` blocks with `path`/`schedule` keys -- both structurally wrong (Netlify's `functions` config is
+a single table, not an array-of-tables) and conceptually wrong (Netlify Scheduled Functions only ever
+schedule a real Netlify Function by name; there's no direct equivalent of "just ping this arbitrary path on a
+schedule" the way Vercel Cron works). Fixed by removing the invalid blocks entirely rather than guessing at a
+second syntax -- confirmed via `netlify status`/`netlify build --dry` that the parsing error is gone
+(what's left is only an expected "not logged in" in a sandbox with no Netlify auth).
+
+**Real, still-open gap this left behind: none of the 3 scheduled tasks currently run at all.** The routes
+themselves are untouched and still work if called directly (e.g. for manual testing); nothing is calling them
+on a schedule anymore. Two real options, neither picked yet since both need Asher's own input (a new
+secret/config either way): (a) write genuine Netlify Functions that each fetch their corresponding
+`/api/cron/*` URL with the right `Authorization: Bearer <CRON_SECRET>` header, scheduled via the correct
+`[functions."name"]` TOML syntax or an inline `export const config = {schedule}`; or (b) an external pinger
+(GitHub Actions' own `schedule:` trigger is the natural fit, this repo already has `.github/workflows/` with
+`backup.yml` as a working example) hitting all 3 URLs directly. Either way, `CRON_SECRET` needs to exist
+wherever the scheduler runs from, since Vercel's automatic header-injection for its own cron calls doesn't
+carry over to any replacement.
+
+---
+
 ## Live preview: one-time setup, and "Preview shows an error"
 
 Studio has a "Preview" feature (look for it in the top navigation) that shows exactly how a draft will look on

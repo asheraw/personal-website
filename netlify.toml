@@ -12,19 +12,20 @@
 # Environment variables are set in Netlify UI (Settings > Build & deploy > Environment)
 # Copy from Vercel: SANITY_DATASET, SANITY_PROJECT_ID, SANITY_API_READ_TOKEN, NEXT_PUBLIC_SANITY_DATASET, etc.
 
-# Scheduled Functions (replace Vercel's cron jobs)
-# These trigger the /api/cron/* endpoints on a schedule
-[[functions]]
-  path = "api/cron/purge-trash"
-  schedule = "0 3 * * *"  # 3 AM UTC daily
-
-[[functions]]
-  path = "api/cron/check-links"
-  schedule = "0 4 * * *"  # 4 AM UTC daily
-
-[[functions]]
-  path = "api/cron/publish-scheduled"
-  schedule = "0 2 * * *"  # 2 AM UTC daily
+# Scheduled tasks (purge-trash, check-links, publish-scheduled -- see
+# vercel.json's `crons` for the original Vercel version of this) do NOT
+# have a working replacement here yet. This file's own [[functions]] blocks
+# were invalid Netlify config (confirmed directly via `netlify status`:
+# "Configuration property functions must be an object" -- functions is a
+# singular table, not an array, and Netlify Scheduled Functions only
+# schedule real Netlify Functions by name, not an arbitrary path like a
+# Vercel cron entry does) and broke every deploy since they were added,
+# which is why this comment exists instead of a working config: removed
+# rather than guessed at again. These three routes still exist and still
+# work when called directly -- they're just not being called on a
+# schedule by anything right now. Needs a real decision (a genuine Netlify
+# Function wrapping each route, vs. an external pinger like GitHub
+# Actions) before being reintroduced.
 
 # Security headers and CSP are defined in next.config.ts via the headers() function
 # No need to duplicate them here — Next.js will apply them at build time

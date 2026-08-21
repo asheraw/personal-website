@@ -11,6 +11,30 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-21 — Every deploy since moving to Netlify had been failing — fixed the config
+
+Asher moved asheraw.com's DNS over to Netlify from a mobile session (confirmed directly with him — this
+wasn't a stray/unauthorized change). Checking the Netlify dashboard found every deploy since `netlify.toml`
+was first added had failed at "Reading and parsing configuration files." Confirmed the exact cause with
+Netlify's own CLI (`netlify status`): `Configuration property functions must be an object` — the file's
+`[[functions]]` blocks (trying to schedule the 3 `/api/cron/*` routes the way `vercel.json`'s `crons` array
+used to) used an array-of-tables shape that isn't valid Netlify config at all; `functions` has to be a single
+table, and Netlify Scheduled Functions only ever schedule a real Netlify Function by name, not an arbitrary
+path the way Vercel Cron does. Removed the invalid blocks so deploys can succeed again, confirmed via
+`netlify status`/`netlify build --dry` locally (the config-parsing error is gone; what's left is only "not
+logged in," expected in this sandbox with no Netlify auth).
+
+**Real gap, not resolved yet**: none of the 3 scheduled tasks (nightly trash purge, link checker, scheduled
+publishing) have a working scheduler right now. The routes themselves are untouched and still work if called
+directly — they're just not being called by anything on Netlify the way Vercel's cron used to. Needs Asher to
+weigh in on the replacement (a real Netlify Function wrapping each route, vs. an external pinger like GitHub
+Actions) rather than picking one unprompted, since either needs a new secret/config choice on his end.
+
+**Also worth knowing**: DNS now resolves to Netlify's own load-balancer IPs (confirmed via `nslookup`), so
+Vercel is no longer what's actually serving asheraw.com, even though `npx vercel ls` still shows successful
+Vercel deploys — that's a live Vercel *preview* deployment, not the production domain anymore. Every
+verification step in this log that said "confirmed live" going forward needs to mean Netlify, not Vercel.
+
 ## 2026-08-21 — The "Powered by Netlify" badge can't be hidden with CSS — removed the dead attempt
 
 A separate session had added `netlify.toml` and a `[data-netlify-badge] { display: none !important; }` rule
