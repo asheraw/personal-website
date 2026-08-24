@@ -71,7 +71,15 @@ function Ground({ activeZone }: { activeZone: string | null }) {
       {/* Flat arrow on ground — custom shape pointing right */}
       <ArrowShape />
       {/* Directions label */}
-      <Html position={[-6, 1.5, -4]} center distanceFactor={12} occlude={false}>
+      {/* style={{pointerEvents:"none"}} on Html itself, not just the inner
+          div -- drei's Html wraps content in its own absolutely-positioned
+          DOM element sitting on top of the canvas, and that wrapper
+          defaults to pointer-events:auto regardless of what the child div's
+          own inline style says. Left unset, this label's wrapper (sized to
+          its rendered pill, positioned right over the zone) silently ate
+          clicks meant for the 3D floor tile underneath -- confirmed by
+          reading drei's Html source, not guessed. */}
+      <Html position={[-6, 1.5, -4]} center distanceFactor={12} occlude={false} style={{ pointerEvents: "none" }}>
         <div style={{ background: "rgba(20,16,12,0.5)", color: "rgba(245,239,228,0.4)", padding: "4px 12px", borderRadius: "999px", fontFamily: "ui-monospace, monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap", border: "1px solid rgba(240,184,101,0.15)", opacity: 0.45, pointerEvents: "none", backdropFilter: "blur(4px)" }}>Directions</div>
       </Html>
       {ZONES_3D.map((zone) => {
@@ -345,8 +353,12 @@ function ZoneStructure({ zone, active }: { zone: Zone3D; active: boolean }) {
       <mesh position={[0, 1.5, 0]} onClick={(e) => { e.stopPropagation(); onZoneClick(zone.id); }} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "default"; }}>
         <boxGeometry args={[3.8, 3, 3.8]} /><meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      {/* HTML label */}
-      <Html position={[0, 4.2, 0]} center distanceFactor={12} occlude={false}>
+      {/* HTML label -- style={{pointerEvents:"none"}} on Html itself, not
+          just the inner div (see the matching comment on the Directions
+          label above): drei's own wrapper div defaults to pointer-events:
+          auto, and was swallowing clicks meant for the invisible clickable
+          box / floor tile beneath it. */}
+      <Html position={[0, 4.2, 0]} center distanceFactor={12} occlude={false} style={{ pointerEvents: "none" }}>
         <div style={{ background: active ? zone.accentColor : "rgba(20,16,12,0.5)", color: active ? "#1a1208" : "rgba(245,239,228,0.4)", padding: "4px 12px", borderRadius: "999px", fontFamily: "ui-monospace, monospace", fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap", border: active ? `1px solid ${zone.accentColor}` : "1px solid rgba(240,184,101,0.15)", boxShadow: active ? `0 0 12px ${zone.accentColor}80` : "none", opacity: active ? 1 : 0.45, transition: "all 0.3s", pointerEvents: "none", backdropFilter: "blur(4px)" }}>{zone.label}</div>
       </Html>
     </group>
@@ -383,7 +395,24 @@ function Character3D({ position, activity, isMoving, facing, zoneId }: { positio
     const t = state.clock.elapsedTime;
     if (groupRef.current) groupRef.current.position.y = position[1] + Math.sin(t * 3) * 0.04;
     if (innerRef.current) { const currentRot = innerRef.current.rotation.y; let diff = facing - currentRot; while (diff > Math.PI) diff -= Math.PI * 2; while (diff < -Math.PI) diff += Math.PI * 2; innerRef.current.rotation.y = currentRot + diff * 0.15; }
-    if (isMoving) { const phase = t * 10; if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(phase) * 0.6; if (rightLegRef.current) rightLegRef.current.rotation.x = -Math.sin(phase) * 0.6; if (leftArmRef.current) leftArmRef.current.rotation.x = -Math.sin(phase) * 0.5; if (rightArmRef.current) rightArmRef.current.rotation.x = Math.sin(phase) * 0.5; }
+    if (isMoving) {
+      // The walk cycle only ever drove rotation.x (the swing) -- rotation.z
+      // was whatever a zone's idle pose last lerped it to (arms flung wide
+      // at "hero", crossed-in at "philosophy", etc.) and just sat there
+      // untouched for the whole walk. Combined with the swinging x-rotation,
+      // that stale z-rotation is exactly what read as the arms "shrinking"
+      // mid-walk from the steep top-down camera -- a limb rotated on two
+      // axes at once foreshortens, and only straightened back out once the
+      // idle-pose branch below (which does reset both axes) took over on
+      // arrival. Lerping z back to 0 here too, same 0.1 factor as that idle
+      // branch uses, keeps the arms hanging naturally throughout the walk
+      // instead of only fixing themselves at the destination.
+      const phase = t * 10;
+      if (leftLegRef.current) leftLegRef.current.rotation.x = Math.sin(phase) * 0.6;
+      if (rightLegRef.current) rightLegRef.current.rotation.x = -Math.sin(phase) * 0.6;
+      if (leftArmRef.current) { leftArmRef.current.rotation.x = -Math.sin(phase) * 0.5; leftArmRef.current.rotation.z += (0 - leftArmRef.current.rotation.z) * 0.1; }
+      if (rightArmRef.current) { rightArmRef.current.rotation.x = Math.sin(phase) * 0.5; rightArmRef.current.rotation.z += (0 - rightArmRef.current.rotation.z) * 0.1; }
+    }
     else {
       const setArm = (ref: React.RefObject<THREE.Group>, rotX: number, rotZ: number) => { if (ref.current) { ref.current.rotation.x += (rotX - ref.current.rotation.x) * 0.1; ref.current.rotation.z += (rotZ - ref.current.rotation.z) * 0.1; } };
       const resetLeg = (ref: React.RefObject<THREE.Mesh>) => { if (ref.current) ref.current.rotation.x += (0 - ref.current.rotation.x) * 0.1; };

@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react'
+import {useLayoutEffect, useRef, useState} from 'react'
 import {Box, Button, Card, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 import type {AssetSource, AssetSourceComponentProps} from '@sanity/types'
@@ -43,7 +43,18 @@ function CompressedUploadSourceComponent(props: AssetSourceComponentProps) {
   // `action !== 'upload'` early return below, not after -- a hook can
   // never come after a conditional return, or it stops being called in
   // the same order every render.
-  useEffect(() => {
+  //
+  // useLayoutEffect, not useEffect: browsers only honor a programmatic
+  // `.click()` on a file input while it's still within the same user
+  // gesture that triggered it (picking this source from Studio's own
+  // upload menu). useEffect runs after the browser paints, an extra tick
+  // removed from that gesture; useLayoutEffect runs synchronously right
+  // after mount, before paint -- the closest this can get to "the same
+  // click" once Studio has already inserted its own menu-close/panel-open
+  // work in between. With 3 asset sources now registered (this one plus
+  // the default and Giphy), that gap grew enough that useEffect stopped
+  // reliably landing inside the gesture window.
+  useLayoutEffect(() => {
     fileInputRef.current?.click()
   }, [])
 
