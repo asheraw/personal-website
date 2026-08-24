@@ -62,5 +62,5 @@ export const onPasteAutoEmbed: PortableTextInputProps['onPaste'] = (data) => {
     : undefined
   if (blockPlainText(focusBlock).trim().length > 0) return undefined
 
-  return {insert: [{_type: 'embed', url: text}]}
+  return {insert: [{_type: 'embed', _key: Math.random().toString(36).slice(2, 10), url: text}]}
 }
