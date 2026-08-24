@@ -41,20 +41,20 @@ export function SuggestSeoButton({documentId, source}: {documentId: string; sour
             onRetry={runSuggestion}
             onClose={() => setDialogOpen(false)}
             onUseTitle={(text, logId) => {
-              patch.execute([{set: {seoTitle: text}}]).catch(() => {})
+              patch.execute([{set: {seoTitle: text}}])
               logUsage(logId, `Used SEO title: "${text}"`)
             }}
             onUseExcerpt={(text, logId) => {
-              patch.execute([{set: {excerpt: text}}]).catch(() => {})
+              patch.execute([{set: {excerpt: text}}])
               logUsage(logId, `Used excerpt: "${text}"`)
             }}
             onUseHeadline={(text, logId) => {
-              patch.execute([{set: {title: text}}]).catch(() => {})
+              patch.execute([{set: {title: text}}])
               logUsage(logId, `Used alternative headline: "${text}"`)
             }}
             onAddTags={(selected, logId) => {
               const merged = Array.from(new Set([...currentTags, ...selected]))
-              patch.execute([{set: {tags: merged}}]).catch(() => {})
+              patch.execute([{set: {tags: merged}}])
               setCurrentTags(merged)
               logUsage(logId, `Added tags: ${selected.join(', ')}`)
             }}

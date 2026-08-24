@@ -191,20 +191,26 @@ function StatCard({
 }) {
   const badgeTone = value === 0 ? 'positive' : (tone ?? 'caution')
   return (
-    <Card as="a" href={href} radius={3} shadow={1} padding={4} tone={value && value !== 0 ? tone : undefined}>
+    // padding/badge bumped up a step on mobile -- a thumb tapping this on a
+    // phone needs a bigger target and a bigger number than a mouse pointer
+    // reading it on a desktop monitor does. minWidth: 0 on the label side
+    // lets its Text actually truncate with "..." instead of squeezing the
+    // badge off the right edge when both the icon and a long label have to
+    // share a narrow phone-width row.
+    <Card as="a" href={href} radius={3} shadow={1} padding={[4, 4, 3]} tone={value && value !== 0 ? tone : undefined}>
       <Flex align="center" justify="space-between" gap={3}>
-        <Flex align="center" gap={3}>
-          <Box>
+        <Flex align="center" gap={3} style={{minWidth: 0}}>
+          <Box flex="none">
             <Icon />
           </Box>
-          <Text size={1} muted>
+          <Text size={[2, 2, 1]} muted textOverflow="ellipsis">
             {label}
           </Text>
         </Flex>
         {value === null ? (
           <Spinner muted />
         ) : (
-          <Badge tone={badgeTone} fontSize={1} padding={2}>
+          <Badge tone={badgeTone} fontSize={[2, 2, 1]} padding={[3, 3, 2]} style={{flexShrink: 0}}>
             {value}
           </Badge>
         )}
@@ -250,14 +256,32 @@ export function DashboardTool() {
 
         <Stack space={3}>
           <SectionHeading>Quick actions</SectionHeading>
-          <Flex gap={3} wrap="wrap">
+          {/* Stacked full-width and taller on mobile (fontSize/padding bumped
+              below sm) -- Asher's own ask: this is the button he reaches for
+              one-handed, mid-commute, not just at a desk. Side-by-side +
+              default button size is fine once there's a mouse and a wide
+              screen, but on a phone two ghost/primary buttons crammed into
+              one wrapped row are easy to mis-tap or skip past. */}
+          <Flex direction={['column', 'row']} gap={3}>
             <Button
               text="New post"
               icon={AddDocumentIcon}
               tone="primary"
+              fontSize={[2, 1]}
+              padding={[4, 3]}
+              style={{justifyContent: 'center'}}
               onClick={() => openDocumentInStudio('post', crypto.randomUUID())}
             />
-            <Button as="a" href={LINKS.calendar} text="Schedule a post" icon={CalendarIcon} mode="ghost" />
+            <Button
+              as="a"
+              href={LINKS.calendar}
+              text="Schedule a post"
+              icon={CalendarIcon}
+              mode="ghost"
+              fontSize={[2, 1]}
+              padding={[4, 3]}
+              style={{justifyContent: 'center'}}
+            />
           </Flex>
         </Stack>
 
