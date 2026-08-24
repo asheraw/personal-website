@@ -1,6 +1,13 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {Badge, Box, Button, Card, Flex, Grid, Popover, Spinner, Stack, Text, TextArea, TextInput} from '@sanity/ui'
 import {useClient} from 'sanity'
+import {CheckmarkCircleIcon} from '@sanity/icons/CheckmarkCircle'
+import {CloseCircleIcon} from '@sanity/icons/CloseCircle'
+import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
+import {CommentIcon} from '@sanity/icons/Comment'
+import {EditIcon} from '@sanity/icons/Edit'
+import {TrashIcon} from '@sanity/icons/Trash'
+import {UndoIcon} from '@sanity/icons/Undo'
 
 // Shown as the name on every reply created from this tool. Cosmetic only --
 // the frontend's distinct reply styling keys off isAuthorReply, not this
@@ -156,6 +163,21 @@ const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critic
   spam: 'critical',
 }
 
+// `--card-badge-{tone}-fg-color` -- confirmed by grepping Sanity UI's own
+// compiled theme chunk for real variable names, not the shorter
+// `--card-{tone}-fg-color` guess (that one turned out not to exist as a
+// global token; it would have silently resolved to nothing here). Studio's
+// own theme sets these per light/dark mode, so the accent stays correctly
+// themed for free. Gives every card a status colour registered at a
+// glance scrolling a long list, instead of only the small text badge in
+// the corner.
+const STATUS_ACCENT: Record<CommentRow['status'], string> = {
+  pending: 'var(--card-badge-caution-fg-color)',
+  approved: 'var(--card-badge-positive-fg-color)',
+  rejected: 'var(--card-badge-critical-fg-color)',
+  spam: 'var(--card-badge-critical-fg-color)',
+}
+
 // A plain <img>, not next/image -- Studio doesn't run through Next's image
 // optimizer for arbitrary external URLs anyway, and GIF animation isn't
 // guaranteed to survive re-encoding through it. Shown here so a GIF
@@ -163,6 +185,59 @@ const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critic
 function CommentGifPreview({url}: {url: string}) {
   // eslint-disable-next-line @next/next/no-img-element -- Studio component, not a Next page; animated GIF, not safe to route through next/image's optimizer
   return <img src={url} alt="" style={{maxHeight: 160, maxWidth: '100%', borderRadius: 6, display: 'block'}} />
+}
+
+// A raw toLocaleString() dump ("8/24/2026, 4:58:06 PM") reads like a
+// database export, not a comment thread -- what's actually being scanned
+// for moderating is "roughly how old is this," which a relative phrase
+// answers faster. Nothing lost: the exact timestamp is still one hover
+// away via the native title attribute on whatever renders this.
+function relativeTime(iso: string): string {
+  const diffSec = Math.round((Date.now() - new Date(iso).getTime()) / 1000)
+  if (diffSec < 60) return 'just now'
+  const diffMin = Math.round(diffSec / 60)
+  if (diffMin < 60) return `${diffMin}m ago`
+  const diffHr = Math.round(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.round(diffHr / 24)
+  if (diffDay < 30) return `${diffDay}d ago`
+  return new Date(iso).toLocaleDateString(undefined, {year: 'numeric', month: 'short', day: 'numeric'})
+}
+
+// Deterministic per-name hue -- the same commenter gets the same avatar
+// colour everywhere in this tool, which makes a long thread scannable
+// without reading every name first. Asher's own replies get a fixed hue
+// (roughly the site's own amber accent) instead of a hashed one, so his
+// voice is instantly recognizable in his own comment section rather than
+// just another colour in the rotation.
+function nameHue(name: string): number {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0
+  return hash % 360
+}
+const AUTHOR_HUE = 36
+
+function CommentAvatar({name, isAuthorReply}: {name: string; isAuthorReply: boolean}) {
+  const initial = (name.trim()[0] || '?').toUpperCase()
+  const hue = isAuthorReply ? AUTHOR_HUE : nameHue(name || '?')
+  return (
+    <Flex
+      align="center"
+      justify="center"
+      style={{
+        width: 26,
+        height: 26,
+        minWidth: 26,
+        borderRadius: '50%',
+        background: `hsl(${hue}, 45%, 36%)`,
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 600,
+      }}
+    >
+      {initial}
+    </Flex>
+  )
 }
 
 // A custom Studio tool (not a plain document-type list) so pending comments
@@ -875,15 +950,30 @@ export function CommentsTool() {
           crowd the title column down to nothing, exactly what happened
           when Asher used this on mobile: every row read as a bare
           "2 comments / Lock comments / Show" with no way to tell which
-          post it was. A stylesheet !important is what actually beats an
-          inline style's own specificity here -- the Grid needs its literal
-          gridTemplateColumns overridden below a real device width, not
-          just deprioritized. */}
+          post it was. First fix (stacking all 4 into one column) solved
+          that but traded it for the opposite problem: title, count, lock,
+          and show each got their own full-width row, so the one thing
+          that's actually variable-length (the title) sat buried among
+          three short rows that easily fit side by side on any phone.
+          Now: title spans its own row (it's the only piece that needs
+          one), count/lock/show share a 3-column row underneath as a
+          compact toolbar -- 2 rows instead of 4, title reads first and
+          largest. A stylesheet !important is what actually beats the
+          inline style's own specificity here -- the Grid needs its
+          literal gridTemplateColumns overridden below a real device
+          width, not just deprioritized. */}
       <style>{`
         @media (max-width: 640px) {
           .asheraw-group-header-grid {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
             row-gap: 8px !important;
+          }
+          .asheraw-group-header-grid > .asheraw-group-header-title {
+            grid-column: 1 / -1 !important;
+          }
+          .asheraw-group-header-grid button span {
+            white-space: normal !important;
+            text-align: center;
           }
         }
       `}</style>
@@ -1120,7 +1210,7 @@ export function CommentsTool() {
                     className="asheraw-group-header-grid"
                     style={{gridTemplateColumns: GROUP_HEADER_COLUMNS, alignItems: 'center'}}
                   >
-                    <Flex align="center" gap={2} style={{minWidth: 0}}>
+                    <Flex align="center" gap={2} className="asheraw-group-header-title" style={{minWidth: 0}}>
                       <Text size={1} weight="semibold" textOverflow="ellipsis" style={{minWidth: 0}}>
                         On &ldquo;
                         {group.postSlug ? (
@@ -1226,7 +1316,13 @@ export function CommentsTool() {
                             const replies3 = repliesByParentId.get(reply._id) ?? []
 
                             return (
-                              <Box key={reply._id} marginLeft={4}>
+                              // A thin border-left instead of just
+                              // whitespace indentation -- a real guide line
+                              // is what actually reads as "this belongs to
+                              // the thread above it" at a glance, the way a
+                              // margin alone doesn't once a group has
+                              // several replies stacked.
+                              <Box key={reply._id} marginLeft={4} paddingLeft={3} style={{borderLeft: '2px solid var(--card-border-color)'}}>
                                 <Stack space={3}>
                                   <CommentCard
                                     comment={reply}
@@ -1276,7 +1372,7 @@ export function CommentsTool() {
                                       another card in this same list rather
                                       than nesting further. */}
                                   {replies3.map((reply3) => (
-                                    <Box key={reply3._id} marginLeft={4}>
+                                    <Box key={reply3._id} marginLeft={4} paddingLeft={3} style={{borderLeft: '2px solid var(--card-border-color)'}}>
                                       <Stack space={3}>
                                         <CommentCard
                                           comment={reply3}
@@ -1693,13 +1789,11 @@ function CommentCard({
   // confirmation step before the actually-effectful onTrash fires.
   const [confirmingTrash, setConfirmingTrash] = useState(false)
 
-  // One joined line rather than several separate Flex children with
-  // hand-glued "· " prefixes -- those misaligned the moment they wrapped
-  // onto more than one row, especially once emails got longer (restored
-  // comments use a placeholder address). A single string always wraps as
-  // plain text, so the spacing stays consistent no matter the width.
+  // Relative time now carries the "when," so the rest of the line is just
+  // whatever else there is to know -- email/IP/edited. Same joined-string
+  // approach as before (rather than separate Flex children with hand-glued
+  // "· " prefixes) so it still wraps cleanly as plain text at any width.
   const metaLine = [
-    new Date(comment.createdAt).toLocaleString(),
     comment.email || null,
     comment.ip && comment.ip !== 'unknown' ? comment.ip : null,
     comment.editedAt ? `edited ${new Date(comment.editedAt).toLocaleDateString()}` : null,
@@ -1708,32 +1802,44 @@ function CommentCard({
     .join(' · ')
 
   return (
-    <Card padding={3} radius={2} border tone={comment.isAuthorReply ? 'primary' : undefined}>
+    <Card
+      padding={3}
+      radius={2}
+      border
+      tone={comment.isAuthorReply ? 'primary' : undefined}
+      style={{borderLeft: `3px solid ${STATUS_ACCENT[comment.status]}`}}
+    >
       <Stack space={3}>
         <Stack space={2}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
-            <Flex align="center" gap={2} wrap="wrap">
+          <Flex align="flex-start" justify="space-between" gap={2} wrap="wrap">
+            <Flex align="center" gap={2} style={{minWidth: 0}}>
               {comment.parentComment && (
                 <Text size={1} muted>
                   ↳
                 </Text>
               )}
-              <Text size={1} weight="medium">
-                {comment.name}
-              </Text>
-              {isNew && (
-                <Badge tone="primary" fontSize={0}>
-                  New
-                </Badge>
-              )}
+              <CommentAvatar name={comment.name} isAuthorReply={comment.isAuthorReply} />
+              <Stack space={1} style={{minWidth: 0}}>
+                <Flex align="center" gap={2} wrap="wrap">
+                  <Text size={1} weight="medium">
+                    {comment.name}
+                  </Text>
+                  {isNew && (
+                    <Badge tone="primary" fontSize={0}>
+                      New
+                    </Badge>
+                  )}
+                </Flex>
+                <Text size={0} muted title={new Date(comment.createdAt).toLocaleString()}>
+                  {relativeTime(comment.createdAt)}
+                  {metaLine ? ` · ${metaLine}` : ''}
+                </Text>
+              </Stack>
             </Flex>
             <Badge tone={STATUS_TONE[comment.status]} fontSize={0}>
               {comment.status}
             </Badge>
           </Flex>
-          <Text size={0} muted>
-            {metaLine}
-          </Text>
         </Stack>
         {parentStatus && parentStatus !== 'approved' && (
           <Text size={0} muted>
@@ -1829,27 +1935,60 @@ function CommentCard({
               </Flex>
             </Card>
           ) : (
-            <Flex gap={2} wrap="wrap">
-              {comment.status !== 'approved' && (
-                <Button text="Approve" tone="positive" fontSize={1} disabled={busy} onClick={onApprove} />
-              )}
-              {comment.status !== 'rejected' && (
-                <Button text="Reject" tone="critical" mode="ghost" fontSize={1} disabled={busy} onClick={onReject} />
-              )}
-              {comment.status !== 'spam' && comment.status !== 'approved' && (
-                <Button
-                  text="Mark as Spam"
-                  tone="critical"
-                  mode="ghost"
-                  fontSize={1}
-                  disabled={busy}
-                  onClick={onSpam}
-                />
-              )}
-              {onReplyClick && <Button text="Reply" mode="ghost" fontSize={1} onClick={onReplyClick} />}
-              <Button text="Edit" mode="ghost" fontSize={1} disabled={busy} onClick={onEditClick} />
+            // Approve stays the one solid/filled button -- it's the action
+            // that actually matters most often, and used to carry exactly
+            // the same visual weight as five other buttons next to it, all
+            // plain-text and same size, which is a lot of the "which one am
+            // I even looking at" feeling this whole redesign is about.
+            // Reject/Spam keep icons at ghost weight (still clearly
+            // available, clearly secondary); Reply/Edit drop to bleed (the
+            // lightest weight -- routine, not decisions). Trash moves into
+            // its own group on the right, separated by justify:space-between
+            // rather than sitting shoulder-to-shoulder with Approve at equal
+            // weight -- the one properly destructive action here shouldn't
+            // read as just another item in the same row.
+            <Flex align="center" justify="space-between" gap={2} wrap="wrap">
+              <Flex gap={2} wrap="wrap">
+                {comment.status !== 'approved' && (
+                  <Button
+                    text="Approve"
+                    icon={CheckmarkCircleIcon}
+                    tone="positive"
+                    fontSize={1}
+                    disabled={busy}
+                    onClick={onApprove}
+                  />
+                )}
+                {comment.status !== 'rejected' && (
+                  <Button
+                    text="Reject"
+                    icon={CloseCircleIcon}
+                    tone="critical"
+                    mode="ghost"
+                    fontSize={1}
+                    disabled={busy}
+                    onClick={onReject}
+                  />
+                )}
+                {comment.status !== 'spam' && comment.status !== 'approved' && (
+                  <Button
+                    text="Spam"
+                    icon={ErrorOutlineIcon}
+                    tone="critical"
+                    mode="ghost"
+                    fontSize={1}
+                    disabled={busy}
+                    onClick={onSpam}
+                  />
+                )}
+                {onReplyClick && (
+                  <Button text="Reply" icon={CommentIcon} mode="bleed" fontSize={1} onClick={onReplyClick} />
+                )}
+                <Button text="Edit" icon={EditIcon} mode="bleed" fontSize={1} disabled={busy} onClick={onEditClick} />
+              </Flex>
               <Button
                 text="Trash"
+                icon={TrashIcon}
                 tone="critical"
                 mode="bleed"
                 fontSize={1}
@@ -1880,18 +2019,24 @@ function TrashedCommentCard({
     : null
 
   return (
-    <Card padding={3} radius={2} border>
+    // Same left-accent language as the live cards (STATUS_ACCENT), except
+    // trashed content isn't pending/approved/rejected anymore -- it's just
+    // gone, so a plain muted grey rather than any of those tones, matching
+    // this card's own subdued, "this is on its way out" feel.
+    <Card padding={3} radius={2} border style={{borderLeft: '3px solid var(--card-muted-fg-color)'}}>
       <Stack space={3}>
-        <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
-          <Flex align="center" gap={2} wrap="wrap">
-            <Text size={1} weight="medium">
-              {comment.name}
-            </Text>
-            {comment.email && (
-              <Text size={0} muted>
-                {comment.email}
+        <Flex align="flex-start" justify="space-between" wrap="wrap" gap={2}>
+          <Flex align="center" gap={2} style={{minWidth: 0}}>
+            <CommentAvatar name={comment.name} isAuthorReply={comment.isAuthorReply} />
+            <Stack space={1}>
+              <Text size={1} weight="medium">
+                {comment.name}
               </Text>
-            )}
+              <Text size={0} muted title={comment.trashedAt ? new Date(comment.trashedAt).toLocaleString() : undefined}>
+                {comment.trashedAt ? `Trashed ${relativeTime(comment.trashedAt)}` : null}
+                {comment.email ? `${comment.trashedAt ? ' · ' : ''}${comment.email}` : ''}
+              </Text>
+            </Stack>
           </Flex>
           <Text size={0} muted>
             On &ldquo;
@@ -1944,9 +2089,10 @@ function TrashedCommentCard({
           </Card>
         ) : (
           <Flex gap={2} wrap="wrap">
-            <Button text="Restore" tone="positive" fontSize={1} disabled={busy} onClick={onRestore} />
+            <Button text="Restore" icon={UndoIcon} tone="positive" fontSize={1} disabled={busy} onClick={onRestore} />
             <Button
               text="Delete Forever"
+              icon={TrashIcon}
               tone="critical"
               mode="ghost"
               fontSize={1}
