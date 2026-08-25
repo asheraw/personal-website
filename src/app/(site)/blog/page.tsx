@@ -56,7 +56,7 @@ export default async function BlogPage() {
   // further down the regular feed.
   const [featuredPost, categories, settings] = await Promise.all([
     client.fetch<PostSummary | null>(FEATURED_POST_QUERY),
-    client.fetch<{ title: string; slug: string }[]>(BLOG_CATEGORIES_WITH_POSTS_QUERY),
+    client.fetch<{ title: string; slug: string; count: number }[]>(BLOG_CATEGORIES_WITH_POSTS_QUERY),
     client.fetch<{ blogHeading?: string; blogTagline?: string } | null>(
       `*[_type == "siteSettings"][0]{blogHeading, blogTagline}`
     ),
@@ -95,16 +95,21 @@ export default async function BlogPage() {
         <BlogSearch posts={searchIndex} />
 
         {categories.length > 0 && (
-          <div className="mt-8 flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <Link
-                key={category.slug}
-                href={`/blog/category/${category.slug}`}
-                className="rounded-full border border-amber-faint px-3.5 py-1.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/80 transition-colors hover:border-spotlight/50 hover:text-spotlight"
-              >
-                {category.title}
-              </Link>
-            ))}
+          <div className="mt-8">
+            <p className="font-mono-stage text-[10px] uppercase tracking-[0.24em] text-stone/60">
+              Browse by topic
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <Link
+                  key={category.slug}
+                  href={`/blog/category/${category.slug}`}
+                  className="rounded-full border border-amber-faint px-3.5 py-1.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/80 transition-colors hover:border-spotlight/50 hover:text-spotlight"
+                >
+                  {category.title} <span className="text-stone/50">{category.count}</span>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
 

@@ -249,7 +249,7 @@ export const ALL_CATEGORIES_QUERY = `
 // still wants every category, empty or not).
 export const BLOG_CATEGORIES_WITH_POSTS_QUERY = `
   *[_type == "category" && count(*[_type == "post" && references(^._id)]) > 0] | order(title asc) {
-    title, "slug": slug.current
+    title, "slug": slug.current, "count": count(*[_type == "post" && references(^._id)])
   }
 `;
 

@@ -1326,6 +1326,14 @@ already uses — checked real data first (11 categories total, only 8 actually h
 the 3 empty ones, since a category pill leading to a blank page is a dead end, not a feature. `ALL_CATEGORIES_QUERY`
 itself is untouched; sitemap.ts still wants every category, empty or not.
 
+**Same-day follow-up: the strip read as ambiguous on its own.** It reused the identical visual style as the
+small metadata tags already inside each post card (date · reading time · category), so nothing distinguished
+"this describes something" from "this is clickable." Fixed with a small "Browse by topic" label above the
+strip and a real post count on each pill — `BLOG_CATEGORIES_WITH_POSTS_QUERY` now also returns `count`
+(`count(*[_type == "post" && references(^._id)])`, same pattern the filter itself already used). The count
+does most of the actual work here: a bare word next to nothing reads as a label, a number next to a word
+reads as "a browsable collection of N things" almost automatically.
+
 **Featured post** — `siteSettings.featuredPost` (optional reference to any post), rendered by the new
 `FeaturedPostCard.tsx` in its own bordered/tinted card above the regular feed when set. Gives Asher a
 deliberate "this is what a first-time visitor sees first" choice instead of it always being whatever's

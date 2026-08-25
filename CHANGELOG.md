@@ -41,6 +41,14 @@ more" page) so it never appears twice. Left empty by default; the page renders e
 sets one. Deliberately not built: a "series" grouping feature — checked, and the existing tag system (family
 update, recovery update, etc.) already does most of that job through Related Reading.
 
+**Follow-up the same day**: Asher looked at the shipped category strip and flagged it as feeling "orphaned"
+— it reused the exact same visual style as the small metadata tags already sitting inside every post card,
+with nothing distinguishing "here's a description" from "here's something to click." Added a small "Browse
+by topic" label above the strip and a real post count on each pill (`BLOG_CATEGORIES_WITH_POSTS_QUERY` now
+returns `count` too) — the count does double duty, since a number next to a word reads unambiguously as "a
+filterable collection of N things" even without the label. Verified the counts against real data (Theatre 9,
+Authenticity 33, etc. — matches exactly) before shipping.
+
 ## 2026-08-21 — Fixed: check-links was failing on a permissions-limited token on Netlify
 
 Testing the new GitHub Actions cron replacement turned up a second, separate bug: `check-links` returned a
