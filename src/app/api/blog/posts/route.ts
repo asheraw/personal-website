@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
     const requestedLimit = parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT;
     const limit = Math.min(Math.max(requestedLimit, 1), MAX_LIMIT);
     const end = start + limit;
+    const excludeId = searchParams.get("excludeId") ?? "";
 
-    const posts = await client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start, end });
+    const posts = await client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start, end, excludeId });
 
     return NextResponse.json({ posts });
   } catch (error) {

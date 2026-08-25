@@ -16,7 +16,18 @@ const PAGE_SIZE = 8;
 // button auto-triggers a load once it scrolls near the viewport -- so
 // mouse/touch scrolling feels seamless without losing the accessible
 // fallback.
-export function BlogPostList({ initialPosts, totalCount }: { initialPosts: PostSummary[]; totalCount: number }) {
+export function BlogPostList({
+  initialPosts,
+  totalCount,
+  excludeId = "",
+}: {
+  initialPosts: PostSummary[];
+  totalCount: number;
+  // The Featured post's id (if one's set in Site Settings) -- kept out of
+  // every "Load more" page too, matching the server-rendered first page,
+  // so it never shows up a second time further down the feed.
+  excludeId?: string;
+}) {
   const [posts, setPosts] = useState(initialPosts);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -37,7 +48,9 @@ export function BlogPostList({ initialPosts, totalCount }: { initialPosts: PostS
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch(`/api/blog/posts?start=${postsLenRef.current}&limit=${PAGE_SIZE}`);
+      const res = await fetch(
+        `/api/blog/posts?start=${postsLenRef.current}&limit=${PAGE_SIZE}&excludeId=${encodeURIComponent(excludeId)}`
+      );
       if (!res.ok) throw new Error("request failed");
       const data: { posts?: PostSummary[] } = await res.json();
       setPosts((prev) => [...prev, ...(data.posts ?? [])]);
@@ -47,7 +60,7 @@ export function BlogPostList({ initialPosts, totalCount }: { initialPosts: PostS
       loadingRef.current = false;
       setLoading(false);
     }
-  }, []);
+  }, [excludeId]);
 
   useEffect(() => {
     if (!hasMore) return;

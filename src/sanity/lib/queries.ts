@@ -48,11 +48,24 @@ export const ALL_POSTS_QUERY = `
 // summaries (image, comment count, etc.) as are actually about to be
 // shown. RSS/sitemap/category/author/tag pages all still want every post
 // at once, so they keep using the queries above unchanged.
+//
+// $excludeId keeps the Featured post (Site Settings) from also showing up
+// a second time further down the regular feed -- callers with no featured
+// post pass an empty string, which never matches a real _id, so the filter
+// is a safe no-op rather than needing a separate unfiltered query variant.
 export const PAGINATED_POSTS_QUERY = `
-  *[_type == "post" && defined(slug.current)] | order(publishedAt desc) [$start...$end] ${POST_SUMMARY_PROJECTION}
+  *[_type == "post" && defined(slug.current) && _id != $excludeId] | order(publishedAt desc) [$start...$end] ${POST_SUMMARY_PROJECTION}
 `;
 
-export const POSTS_COUNT_QUERY = `count(*[_type == "post" && defined(slug.current)])`;
+export const POSTS_COUNT_QUERY = `count(*[_type == "post" && defined(slug.current) && _id != $excludeId])`;
+
+// The Site Settings singleton's Featured post reference, dereferenced to
+// the same summary shape every other post card already uses -- shown in
+// its own larger spot at the top of /blog, above the regular paginated
+// feed (see FeaturedPostCard.tsx).
+export const FEATURED_POST_QUERY = `
+  *[_type == "siteSettings"][0].featuredPost-> ${POST_SUMMARY_PROJECTION}
+`;
 
 // Link-in-bio page (/link) -- reads the linkPage singleton (linkPageType.ts),
 // a hand-curated array of cards rather than "every post with a flag set."
@@ -228,6 +241,16 @@ export const RELATED_POSTS_QUERY = `
 
 export const ALL_CATEGORIES_QUERY = `
   *[_type == "category"] | order(title asc) {title, "slug": slug.current}
+`;
+
+// Same category list, but only ones with at least one post -- for the
+// browsing strip at the top of /blog, where an empty category would just
+// be a dead-end click. ALL_CATEGORIES_QUERY above stays as-is (sitemap.ts
+// still wants every category, empty or not).
+export const BLOG_CATEGORIES_WITH_POSTS_QUERY = `
+  *[_type == "category" && count(*[_type == "post" && references(^._id)]) > 0] | order(title asc) {
+    title, "slug": slug.current
+  }
 `;
 
 export const CATEGORY_BY_SLUG_QUERY = `

@@ -27,8 +27,8 @@ export const siteSettingsType = defineType({
     },
     {
       name: 'blog',
-      title: 'Blog page header',
-      description: 'The heading and tagline shown at the top of /blog, above the post list.',
+      title: 'Blog page',
+      description: 'The heading, tagline, and featured post shown at the top of /blog.',
       options: {collapsible: false},
     },
     {
@@ -87,6 +87,15 @@ export const siteSettingsType = defineType({
       description: 'The short line under the heading, above the search box.',
       initialValue: "Welcome to my blog, I'm currently going through a revamp so there's many things that are still a Work-In-Progress.",
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'featuredPost',
+      title: 'Featured post',
+      type: 'reference',
+      to: {type: 'post'},
+      fieldset: 'blog',
+      description:
+        'Shown in a larger spot at the top of the blog list, above the regular feed -- gives you a deliberate first thing a visitor sees instead of always whatever\'s chronologically newest. Leave empty to skip it and just show posts in normal order.',
     }),
     defineField({
       name: 'defaultAuthor',

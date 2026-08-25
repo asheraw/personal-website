@@ -1269,13 +1269,15 @@ SEO fields, grouped into two labeled sections in the form:
   browser tab title, search-result snippet, and link-preview card for the homepage and any other `(site)`
   page that doesn't set its own (blog posts always use their own title/excerpt/main image instead — this is
   specifically the site-wide fallback). Previously hardcoded consts in `src/app/(site)/layout.tsx`.
-- **Blog page header** (added 2026-08-16) — Blog heading, Blog tagline: the big "Dig The Mind of Asher"
-  heading and the line under it at the top of `/blog`, above the search box. Asher asked for these directly
-  after noticing they were hardcoded in `src/app/(site)/blog/page.tsx` and wanting to change the temporary
-  "still a Work-In-Progress" tagline without a code change. Same fallback-constant pattern as the identity
-  fields above (`FALLBACK_BLOG_HEADING`/`FALLBACK_BLOG_TAGLINE` in `blog/page.tsx`), and the live singleton
-  was backfilled with the exact existing text at the time this shipped so nothing changed visually until
-  Asher actually edits it.
+- **Blog page** (added 2026-08-16, renamed from "Blog page header" and extended 2026-08-21) — Blog heading,
+  Blog tagline: the big "Dig The Mind of Asher" heading and the line under it at the top of `/blog`, above
+  the search box. Asher asked for these directly after noticing they were hardcoded in
+  `src/app/(site)/blog/page.tsx` and wanting to change the temporary "still a Work-In-Progress" tagline
+  without a code change. Same fallback-constant pattern as the identity fields above
+  (`FALLBACK_BLOG_HEADING`/`FALLBACK_BLOG_TAGLINE` in `blog/page.tsx`), and the live singleton was backfilled
+  with the exact existing text at the time this shipped so nothing changed visually until Asher actually
+  edits it. Also holds **Featured post** (added 2026-08-26) — an optional reference to any post, shown in
+  its own larger card at the top of `/blog` when set. See the Blog listing entry below for the mechanics.
 - **Publishing** — Default author, as before.
 
 **Not an error, by design (clarified 2026-07-31):** Site Settings only ever controls *metadata* (tab title,
@@ -1309,6 +1311,72 @@ singleton document itself exists — query `*[_type == "siteSettings"][0]` in th
 `null`, the document was deleted or never created and needs recreating (any document with `_id: "siteSettings"`
 and the required fields works, Studio's own "create new" won't offer it since it's a fixed-ID singleton, not
 a listed type).
+
+---
+
+## Blog listing: category browsing strip, and Featured post (2026-08-26)
+
+Asher asked for a UI/UX read on the Dashboard and the blog listing; the concrete gap found on the blog side
+(checked directly, not assumed): `/blog/category/x` and `/blog/tag/x` pages already existed, but nothing on
+`/blog` itself linked to any of them. Two additions to `src/app/(site)/blog/page.tsx`:
+
+**Category strip** — a row of pill links right under the search box, one per category, using
+`BLOG_CATEGORIES_WITH_POSTS_QUERY` (`queries.ts`) rather than the existing `ALL_CATEGORIES_QUERY` sitemap.ts
+already uses — checked real data first (11 categories total, only 8 actually have a post) and filtered out
+the 3 empty ones, since a category pill leading to a blank page is a dead end, not a feature. `ALL_CATEGORIES_QUERY`
+itself is untouched; sitemap.ts still wants every category, empty or not.
+
+**Featured post** — `siteSettings.featuredPost` (optional reference to any post), rendered by the new
+`FeaturedPostCard.tsx` in its own bordered/tinted card above the regular feed when set. Gives Asher a
+deliberate "this is what a first-time visitor sees first" choice instead of it always being whatever's
+chronologically newest — left empty by default, and the page renders identically to before until one is set.
+
+**Keeping it from appearing twice was the real implementation detail.** The featured post has to be excluded
+from the regular paginated feed *and* from every subsequent "Load more" page, not just the first server-
+rendered batch — `PAGINATED_POSTS_QUERY`/`POSTS_COUNT_QUERY` both gained an `$excludeId` param (`_id !=
+$excludeId`, with callers that have no featured post passing `""`, which never matches a real `_id` — a
+plain no-op rather than needing a separate unfiltered query variant), and `BlogPostList.tsx` now takes an
+`excludeId` prop it forwards on every `/api/blog/posts` fetch, not just the initial page. `SEARCH_INDEX_QUERY`
+was deliberately left unfiltered — search should still be able to find the featured post directly if someone
+searches for it by name, it just won't also appear a second time in the passive scroll feed.
+
+Verified against real data before shipping: temporarily set a real published post as Featured, confirmed via
+Playwright that its title renders exactly once on the page (not duplicated further down), then reverted
+Site Settings back to no featured post.
+
+**Deliberately not built**: a "series"/collection feature to group an ongoing narrative (e.g. the brother's
+health-journey posts) — checked first, and the existing tag system (`family update`, `recovery update`,
+`stroke recovery`, etc.) already surfaces those to each other through Related Reading. A dedicated series
+concept would mostly duplicate a job tags already do.
+
+## Studio Dashboard: motion pass (2026-08-26)
+
+Same UI/UX read as above, this half about `DashboardTool.tsx`. Asher's exact framing: "functional, correct,
+but stiff and old" — traced to two concrete things, not a vague complaint: zero motion anywhere (no entrance
+animation, no hover feedback on the stat cards -- confirmed against the `ui-ux-pro-max` design skill's own
+data, which flags missing hover feedback on clickable elements as a real medium-severity issue, not a
+stylistic nitpick), and every stat card carrying identical visual weight regardless of what it's actually
+telling you.
+
+Three changes, all scoped to this one file, no new dependency (`framer-motion` was already installed and
+used elsewhere on the public site, just never in a Studio component before):
+
+- **Entrance stagger** — every `StatCard` (plus the one bespoke Cookie-consent card) fades/rises in on
+  mount via a shared `staggerContainer`/`staggerItem` variant pair wrapping the whole page content, ~300ms,
+  no bounce. Specifically *not* the bouncier `back.out` easing the design skill also offers for this exact
+  "stagger list" pattern — its own guidance calls that out as reading "sloppy on dense, informational UI,"
+  which a stat grid is exactly.
+- **Hover/tap feedback** — every card lifts slightly on hover and compresses slightly on tap-down (`whileHover`/
+  `whileTap`), closing the flagged gap directly.
+- **One card visually promoted** — "Pending comments" (the item this file's own header comment already puts
+  first in Asher's stated priority order) gets a new `emphasis` prop on `StatCard`: bigger icon, bigger
+  number, bolder label, more padding/shadow. Deliberately used on exactly one card — animating/emphasizing
+  everything at once would just recreate the "no hierarchy" problem in a different form.
+
+**Deliberately not built**: trend/sparkline context under each number (e.g. "↑ from 12 yesterday"). Flagged
+in the original proposal as the one item worth real hesitation — it needs historical count data that doesn't
+exist anywhere in this project yet (every count here is a live snapshot query, not a stored time series), so
+it's a genuinely separate, bigger undertaking, not a styling change like the three above.
 
 ---
 

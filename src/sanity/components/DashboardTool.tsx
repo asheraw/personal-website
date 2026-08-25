@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react'
+import {motion} from 'framer-motion'
 import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {AddDocumentIcon} from '@sanity/icons/AddDocument'
@@ -176,40 +177,79 @@ function useDashboardCounts(): Omit<DashboardData, 'auditIssues' | 'socialNeeded
   return data
 }
 
+// Wraps a whole section's Grid so its StatCards fade/rise in together, each
+// slightly after the last -- framer-motion propagates stagger timing down
+// to any descendant sharing these variant keys, so nothing here needs its
+// own per-card delay math. Kept to a small y-offset and no scale/bounce --
+// the design skill's own motion data specifically warns that a bouncier
+// easing (back.out) "reads as sloppy" on dense, informational UI like a
+// stat grid; this is the "Subtle" tier instead.
+const staggerContainer = {
+  hidden: {},
+  show: {transition: {staggerChildren: 0.04}},
+}
+const staggerItem = {
+  hidden: {opacity: 0, y: 8},
+  show: {opacity: 1, y: 0, transition: {duration: 0.3, ease: [0.22, 1, 0.36, 1] as const}},
+}
+
 function StatCard({
   icon: Icon,
   label,
   value,
   tone,
   href,
+  emphasis,
 }: {
   icon: React.ComponentType
   label: string
   value: number | string | null
   tone?: 'caution' | 'critical' | 'positive' | 'default'
   href: string
+  // Reserved for the single card Asher's own stated priority order (see
+  // this file's header comment) puts first -- pending comments -- so the
+  // page has one deliberate focal point instead of every number carrying
+  // identical visual weight. Not meant to be used on more than one card
+  // per screen at a time.
+  emphasis?: boolean
 }) {
   const badgeTone = value === 0 ? 'positive' : (tone ?? 'caution')
   return (
-    <Card as="a" href={href} radius={3} shadow={1} padding={4} tone={value && value !== 0 ? tone : undefined}>
-      <Flex align="center" justify="space-between" gap={3}>
-        <Flex align="center" gap={3}>
-          <Box>
-            <Icon />
-          </Box>
-          <Text size={1} muted>
-            {label}
-          </Text>
+    <motion.div
+      variants={staggerItem}
+      whileHover={{y: -3}}
+      whileTap={{scale: 0.98}}
+      transition={{duration: 0.15}}
+      style={{height: '100%'}}
+    >
+      <Card
+        as="a"
+        href={href}
+        radius={3}
+        shadow={emphasis ? 2 : 1}
+        padding={emphasis ? 5 : 4}
+        tone={value && value !== 0 ? tone : undefined}
+        style={{height: '100%'}}
+      >
+        <Flex align="center" justify="space-between" gap={3}>
+          <Flex align="center" gap={emphasis ? 4 : 3}>
+            <Box style={emphasis ? {fontSize: '1.4em'} : undefined}>
+              <Icon />
+            </Box>
+            <Text size={emphasis ? 2 : 1} muted={!emphasis} weight={emphasis ? 'semibold' : undefined}>
+              {label}
+            </Text>
+          </Flex>
+          {value === null ? (
+            <Spinner muted />
+          ) : (
+            <Badge tone={badgeTone} fontSize={emphasis ? 3 : 1} padding={emphasis ? 3 : 2}>
+              {value}
+            </Badge>
+          )}
         </Flex>
-        {value === null ? (
-          <Spinner muted />
-        ) : (
-          <Badge tone={badgeTone} fontSize={1} padding={2}>
-            {value}
-          </Badge>
-        )}
-      </Flex>
-    </Card>
+      </Card>
+    </motion.div>
   )
 }
 
@@ -236,6 +276,7 @@ export function DashboardTool() {
 
   return (
     <Box padding={4} style={{maxWidth: 960, margin: '0 auto'}}>
+      <motion.div variants={staggerContainer} initial="hidden" animate="show">
       <Stack space={5}>
         <Stack space={2}>
           <Heading size={3}>Dashboard</Heading>
@@ -264,7 +305,13 @@ export function DashboardTool() {
         <Stack space={3}>
           <SectionHeading>Comments &amp; contact</SectionHeading>
           <Grid columns={[1, 2]} gap={3}>
-            <StatCard icon={CommentIcon} label="Pending comments" value={pendingComments} href={LINKS.comments} />
+            <StatCard
+              icon={CommentIcon}
+              label="Pending comments"
+              value={pendingComments}
+              href={LINKS.comments}
+              emphasis
+            />
             <StatCard
               icon={EnvelopeIcon}
               label="Unread contact submissions"
@@ -315,21 +362,23 @@ export function DashboardTool() {
         <Stack space={3}>
           <SectionHeading>Stats</SectionHeading>
           <Grid columns={[1, 2, 3]} gap={3}>
-            <Card radius={3} shadow={1} padding={4} as="a" href={LINKS.cookies}>
-              <Flex align="center" gap={3}>
-                <ComponentIcon />
-                <Stack space={2}>
-                  <Text size={1} muted>
-                    Cookie consent &amp; feedback
-                  </Text>
-                  <Text size={2}>
-                    {counts?.consent
-                      ? `${counts.consent.acceptedCount ?? 0} accepted · ${counts.consent.declinedCount ?? 0} declined · ${counts?.feedbackCount ?? 0} taste-test${counts?.feedbackCount === 1 ? '' : 's'}`
-                      : '—'}
-                  </Text>
-                </Stack>
-              </Flex>
-            </Card>
+            <motion.div variants={staggerItem} whileHover={{y: -3}} whileTap={{scale: 0.98}} transition={{duration: 0.15}}>
+              <Card radius={3} shadow={1} padding={4} as="a" href={LINKS.cookies}>
+                <Flex align="center" gap={3}>
+                  <ComponentIcon />
+                  <Stack space={2}>
+                    <Text size={1} muted>
+                      Cookie consent &amp; feedback
+                    </Text>
+                    <Text size={2}>
+                      {counts?.consent
+                        ? `${counts.consent.acceptedCount ?? 0} accepted · ${counts.consent.declinedCount ?? 0} declined · ${counts?.feedbackCount ?? 0} taste-test${counts?.feedbackCount === 1 ? '' : 's'}`
+                        : '—'}
+                    </Text>
+                  </Stack>
+                </Flex>
+              </Card>
+            </motion.div>
             <StatCard
               icon={SearchIcon}
               label="Search queries needing a look"
@@ -340,6 +389,7 @@ export function DashboardTool() {
           </Grid>
         </Stack>
       </Stack>
+      </motion.div>
     </Box>
   )
 }

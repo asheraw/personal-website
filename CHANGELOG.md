@@ -11,6 +11,36 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Dashboard motion pass, blog topic browsing, and a Featured post
+
+Asher asked for a UI/UX proposal on two things he'd been sitting with: the Studio Dashboard "feels stiff and
+old" despite working correctly, and whether the blog's endless-scroll listing needed more ways to encourage
+reading. Analyzed both directly (read the actual components, checked the design skill's own guidance) before
+proposing anything, then built exactly what was approved — no redesign, no speculative extras.
+
+**Dashboard** (`DashboardTool.tsx`): the "stiff" feeling traced to two concrete, verifiable things, not a
+vague aesthetic complaint — zero motion anywhere (no entrance animation, no hover feedback on the stat cards,
+which the design skill's own data flags as a real medium-severity issue) and every card carrying identical
+visual weight regardless of what it's telling you. Added a subtle stagger fade/rise-in on load (framer-motion,
+~300ms, no bounce/overshoot — the design skill's own motion data specifically warns a bouncier easing "reads
+as sloppy" on dense informational UI like this), real hover lift + tap feedback on every card, and gave
+"Pending comments" — the single item Asher's own priority-order comment in this file already puts first —
+a visually bigger, bolder treatment so the page has one deliberate focal point instead of a uniform grid.
+Deliberately left out: trend/sparkline context on each stat, which would need new historical-count
+infrastructure that doesn't exist yet — flagged as a bigger, separate undertaking, not folded in here.
+
+**Blog** (`blog/page.tsx` + new `FeaturedPostCard.tsx`): checked what already existed before proposing
+anything new (reading-progress bar, Related Reading, on-site search, comments were all already shipped) —
+the real, verified gap was that the blog listing had category and tag pages (`/blog/category/x`,
+`/blog/tag/x`) with literally no link to any of them anywhere on `/blog` itself. Added a category browsing
+strip near the top (only the 8 of 11 categories that actually have posts — the other 3 would've been dead-end
+clicks, checked against real data before deciding) and a "Featured post" reference field on Site Settings,
+letting Asher deliberately choose what a first-time visitor sees first instead of it always being whatever's
+newest — shown in its own distinct card treatment, excluded from the regular feed (including every "Load
+more" page) so it never appears twice. Left empty by default; the page renders exactly as before until Asher
+sets one. Deliberately not built: a "series" grouping feature — checked, and the existing tag system (family
+update, recovery update, etc.) already does most of that job through Related Reading.
+
 ## 2026-08-21 — Fixed: check-links was failing on a permissions-limited token on Netlify
 
 Testing the new GitHub Actions cron replacement turned up a second, separate bug: `check-links` returned a

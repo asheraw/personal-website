@@ -1,9 +1,18 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { client } from "@/sanity/lib/client";
-import { PAGINATED_POSTS_QUERY, POSTS_COUNT_QUERY, SEARCH_INDEX_QUERY, type PostSummary } from "@/sanity/lib/queries";
+import {
+  PAGINATED_POSTS_QUERY,
+  POSTS_COUNT_QUERY,
+  SEARCH_INDEX_QUERY,
+  FEATURED_POST_QUERY,
+  BLOG_CATEGORIES_WITH_POSTS_QUERY,
+  type PostSummary,
+} from "@/sanity/lib/queries";
 import { BlogPostList } from "@/components/asher/blog/BlogPostList";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { BlogSearch, type SearchablePost } from "@/components/asher/blog/BlogSearch";
+import { FeaturedPostCard } from "@/components/asher/blog/FeaturedPostCard";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
@@ -41,16 +50,26 @@ export default async function BlogPage() {
   // separate, deliberately unpaginated, much lighter query (see
   // SEARCH_INDEX_QUERY) so search can still find a post that hasn't been
   // scrolled into view yet.
-  const [initialPosts, totalCount, searchIndex, settings] = await Promise.all([
-    client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start: 0, end: FIRST_PAGE_SIZE }),
-    client.fetch<number>(POSTS_COUNT_QUERY),
-    client.fetch<SearchablePost[]>(SEARCH_INDEX_QUERY),
+  // Featured post and categories don't depend on pagination, so they're
+  // fetched first -- the featured post's own _id then feeds into the
+  // exclude filter below, so it doesn't also show up a second time
+  // further down the regular feed.
+  const [featuredPost, categories, settings] = await Promise.all([
+    client.fetch<PostSummary | null>(FEATURED_POST_QUERY),
+    client.fetch<{ title: string; slug: string }[]>(BLOG_CATEGORIES_WITH_POSTS_QUERY),
     client.fetch<{ blogHeading?: string; blogTagline?: string } | null>(
       `*[_type == "siteSettings"][0]{blogHeading, blogTagline}`
     ),
   ]);
   const blogHeading = settings?.blogHeading || FALLBACK_BLOG_HEADING;
   const blogTagline = settings?.blogTagline || FALLBACK_BLOG_TAGLINE;
+  const excludeId = featuredPost?._id ?? "";
+
+  const [initialPosts, totalCount, searchIndex] = await Promise.all([
+    client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start: 0, end: FIRST_PAGE_SIZE, excludeId }),
+    client.fetch<number>(POSTS_COUNT_QUERY, { excludeId }),
+    client.fetch<SearchablePost[]>(SEARCH_INDEX_QUERY),
+  ]);
 
   const breadcrumbSchema = buildBreadcrumbSchema([
     { name: "Home", url: SITE_URL },
@@ -75,10 +94,32 @@ export default async function BlogPage() {
 
         <BlogSearch posts={searchIndex} />
 
+        {categories.length > 0 && (
+          <div className="mt-8 flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <Link
+                key={category.slug}
+                href={`/blog/category/${category.slug}`}
+                className="rounded-full border border-amber-faint px-3.5 py-1.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/80 transition-colors hover:border-spotlight/50 hover:text-spotlight"
+              >
+                {category.title}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {featuredPost && (
+          <div className="mt-10">
+            <FeaturedPostCard post={featuredPost} />
+          </div>
+        )}
+
         {totalCount === 0 ? (
-          <p className="mt-16 text-stone/70">Nothing published yet — check back soon.</p>
+          featuredPost ? null : (
+            <p className="mt-16 text-stone/70">Nothing published yet — check back soon.</p>
+          )
         ) : (
-          <BlogPostList initialPosts={initialPosts} totalCount={totalCount} />
+          <BlogPostList initialPosts={initialPosts} totalCount={totalCount} excludeId={excludeId} />
         )}
       </div>
     </BlogChrome>
