@@ -10,29 +10,6 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
-## Comment social proof on /blog
-
-**What:** a quiet signal on the blog listing that real conversation happens here — playing off the
-e-commerce "John from Australia just bought X" pattern, but adapted honestly rather than copied directly.
-Two pieces, combined ("why not both"): a simple aggregate stat (something like "1,800+ comments across the
-blog") plus a rotating real testimonial pulled from an actual comment — real name, real quote, a real date
-shown as a date (not "2 min ago," since a lot of the comment base is legacy-imported with genuinely old
-timestamps and faking recency would just be dishonest). Asher's own replies should count, maybe even be the
-more prominent claim ("Asher replies to nearly every comment") rather than diluting the number — for a
-personal blog specifically, the author personally responding is itself the social proof, not something to
-hide.
-
-**Why not now:** raised late in a session (2026-08-26, ~12:30am Asher's time) as a "just a concept, thinking
-out loud" — deliberately not built same-night. The testimonial-rotation half also needs a real "worth
-surfacing" filter (not just grabbing a random "nice post!" comment), which is more design work than a quick
-add.
-
-**Worth revisiting when:** Asher's ready to actually pick which real comments would make good testimonials,
-and to decide the exact wording for the "Asher replies to..." claim (needs to stay true as reply habits/
-backlog size change over time, not become a stale, technically-false claim sitting on the page).
-
----
-
 ## AI spam-check for comments
 
 **What:** when a new comment comes in (`POST /api/comments`), ask an AI model whether it actually reads as
