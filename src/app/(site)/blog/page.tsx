@@ -125,7 +125,9 @@ export default async function BlogPage() {
           </div>
         )}
 
-        <CommentSocialProof stats={commentStats} testimonial={testimonial} />
+        <div className="relative">
+          <CommentSocialProof stats={commentStats} testimonial={testimonial} />
+        </div>
 
         {featuredPost && (
           <div className="mt-10">

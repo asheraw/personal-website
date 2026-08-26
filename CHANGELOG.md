@@ -31,6 +31,19 @@ separate full-width row below with its buttons following a long sentence on the 
 Trash button in place with the confirm/cancel pair, in the exact same right-aligned spot — zero travel
 distance now, no separate row.
 
+**Follow-up (same day):** Asher flagged, with a live screenshot, that the first fold felt cluttered with the
+social-proof section sitting full-width right under the category strip — and separately, that a longer
+featured testimonial could shift page content down unpredictably as different comments get randomly picked.
+Rather than just moving the section lower (my first suggestion), Asher had a better idea: put it in the
+unused side margin on wide desktop screens, and skip it entirely on mobile/tablet where there's no spare
+margin to put it in anyway. Rebuilt `CommentSocialProof` as a narrow (16rem) card, absolutely positioned to
+sit just right of the main reading column, shown only from the `2xl` breakpoint (1536px) up — below that it
+renders nothing at all, so the first fold on every laptop/tablet/phone size is back to just the category
+strip and Featured post. Because it's taken out of the normal document flow, it can no longer push page
+content down regardless of message length — the testimonial message itself is also now truncated to 160
+characters (matching the same `truncateText` pattern already used for post blurbs) so the sidebar card's own
+height stays consistent from one randomly-picked testimonial to the next.
+
 ## 2026-08-26 — Dashboard motion pass, blog topic browsing, and a Featured post
 
 Asher asked for a UI/UX proposal on two things he'd been sitting with: the Studio Dashboard "feels stiff and

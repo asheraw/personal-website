@@ -1388,6 +1388,27 @@ immediately) but the same `revalidate: 60` dev-mode caching already documented e
 Verified for real afterward: featured a genuine comment, confirmed via Playwright it rendered with the
 correct name/quote/post link, then reverted it back to unfeatured before shipping.
 
+**Follow-up (same day): moved into the desktop side margin, hidden on mobile.** The original layout put
+`CommentSocialProof` full-width, right under the category strip — Asher flagged (with a live screenshot)
+that this made the first fold feel cluttered, and separately that a longer testimonial could shift the
+Featured post/feed down unpredictably depending on which comment got randomly picked. Asher's own fix idea
+was better than the "just move it lower" one first suggested: use the open space in the left/right margins
+on wide desktop screens instead, and skip it entirely on mobile/tablet ("too busy" otherwise). Rebuilt as
+`<aside className="absolute left-full top-0 ml-10 hidden w-64 2xl:block">`, anchored via a zero-height
+`relative` wrapper div left in the exact same spot in `blog/page.tsx`'s JSX (right after the category strip)
+so it's vertically anchored to that point in the reading flow without needing any hand-computed viewport
+math. `left-full` positions it flush against the right edge of the `max-w-3xl` content column, since the
+anchor div itself (an unconstrained block) stretches to that column's width. Gated at `2xl` (1536px)
+specifically, not a lower breakpoint — deliberately conservative so it only ever appears where there's
+genuinely comfortable margin, not squeezed onto a mid-size laptop screen. Being `absolute` (out of normal
+document flow) also solves the page-movement concern for free: it can no longer push the Featured post/feed
+down regardless of message length. The message length itself is additionally capped at 160 characters via
+the existing `truncateText` helper (`@/lib/text`, same pattern as `PostCard.tsx`/`FeaturedPostCard.tsx`),
+so the sidebar card's own height stays consistent from one randomly-picked testimonial to the next. Verified
+with a real temporary comment (a message well over the 160-char cap) at 2560px (visible, truncated with an
+ellipsis, no overlap with the header), 1280px (hidden), and 390px mobile (hidden) via Playwright, then
+deleted the test comment.
+
 ## Comments tool: Trash confirmation was landing far from the click (fixed 2026-08-26)
 
 Asher's own screenshot made the problem obvious: clicking "Trash" (pinned to the right of the row via
