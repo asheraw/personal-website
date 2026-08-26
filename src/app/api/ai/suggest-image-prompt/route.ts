@@ -29,7 +29,15 @@ import {
 // fixed template below, substituted in verbatim server-side -- Gemini
 // never touches that wording, so it can't drift from post to post.
 function imagePromptTaskInstructions(mode1: string, mode2: string): string {
-  return `You are helping a blogger come up with THREE distinct visual concepts for their post's featured/social image, each to be rendered by an AI image generator in a fixed illustration style the blogger has already established (you don't need to describe the art style yourself -- that's handled separately). Based on the title and content given to you, for each of the 3 ideas provide:
+  return `You are helping a blogger come up with THREE distinct visual concepts for their post's featured/social image, each to be rendered by an AI image generator in a fixed illustration style the blogger has already established (you don't need to describe the art style yourself -- that's handled separately).
+
+Before choosing a subject, think through the post like a visual director would:
+- The central message of the piece
+- The emotional response the image should create in a reader
+- The strongest visual metaphor or human situation that captures that message -- not just a literal illustration of an event described in the post
+- What would feel generic, misleading, or too on-the-nose, so you can avoid it
+
+Based on the title and content given to you, and that thinking, for each of the 3 ideas provide:
 
 1. A concrete, specific SUBJECT (not the full prompt, not the style description -- just what the image depicts): a single symbolic object/scene/moment drawn from the post's actual mood and themes. Never invent specific facts/people/events from the post as literal photographic subjects -- work from the post's mood and themes, not its literal claims. Write it as a noun phrase that flows directly into a longer sentence when followed by a comma -- e.g. "a solitary figure standing on a cliff edge at sunrise", NOT "A solitary figure stands on a cliff edge at sunrise." (no capital letter to start, no trailing period).
 2. Which composition MODE (1 or 2) that subject fits better:
