@@ -1409,6 +1409,50 @@ with a real temporary comment (a message well over the 160-char cap) at 2560px (
 ellipsis, no overlap with the header), 1280px (hidden), and 390px mobile (hidden) via Playwright, then
 deleted the test comment.
 
+**Second follow-up (same day): rebuilt as a speech bubble, with a real progress ring.** The sidebar card
+still had two live problems once Asher checked it: the box's height could still shift a little between
+testimonials (name length varies even with the message capped), and it read as disconnected from the rest
+of the page -- "floating in the middle of nowhere." Rebuilt with an actual comic-style speech-bubble tail
+(`::before`-style pseudo-element trick: a small rotated square positioned at the card's edge, matching
+background/border so it blends seamlessly) pointing back at a small stat pill that now sits inline next to
+the search box (`CommentStatsBadge`, always visible, every screen size) instead of its own standalone
+block -- only the quote bubble itself (`CommentTestimonialBubble`) stays desktop-only (2xl+).
+
+Auto-rotates through every featured testimonial on a 7s timer (`setInterval`, sequential not random --
+never repeats back-to-back the way a random pick occasionally would), with a thin ring animating around the
+bubble's own border via an SVG `<motion.path>` (framer-motion's `pathLength: 0 -> 1`) as the "moving to the
+next one soon" signal Asher asked for, replacing an earlier row-of-dots attempt that would have overflowed
+the card once more than a handful of comments got featured. Two real bugs surfaced building this, both from
+Asher's own screenshots:
+
+- **The ring's start/end point needs to be the tail, not an arbitrary corner.** A `<rect>` always starts its
+  implicit path at the top-left corner with no way to change that -- switched to a hand-built `<path>` `d`
+  string starting and ending exactly at the tail's own attachment point (`M 0,{tailY} L ... L 0,{tailY}`),
+  traced clockwise around the full rounded-rect perimeter. Requires the card's real pixel width/height (SVG
+  path `d` strings don't accept percentages the way `<rect>` attributes do), measured live via
+  `ResizeObserver` since the box's height genuinely varies between testimonials.
+- **That live measurement itself was wrong at first** -- `ResizeObserver`'s own `entry.contentRect` excludes
+  padding, but the ring's `<svg>` spans `inset-0` (the *padding* box, content + padding). Using
+  `contentRect` drew a ring consistently ~40px narrower and ~32px shorter than the real card, which on a
+  taller testimonial cut a visible line straight through the text instead of tracing the border. Fixed by
+  reading `el.clientWidth`/`el.clientHeight` directly inside the observer callback instead of trusting the
+  entry's own measurement -- `clientWidth`/`clientHeight` are the padding box by spec, which is exactly what
+  `inset-0` fills. Confirmed by comparing the path's own max coordinates against a real
+  `getBoundingClientRect()` afterward: 254x153 (path) vs 256x155.25 (border box) -- the ~2px gap is exactly
+  the 1px border on each side, i.e. correct.
+
+Also added a `prefers-reduced-motion` guard (via framer-motion's `useReducedMotion()`) on both the rotation
+crossfade and the ring -- flagged by the `ui-ux-pro-max` design skill's own guidance when consulted about
+the ring redesign, not something Asher asked for directly, but a real, High-severity accessibility gap in
+what had shipped: someone with that OS/browser setting on was getting a forced continuous sweeping
+animation with no way to turn it off. With it on, testimonials still rotate (the content itself still
+matters) but swap instantly with no animated ring.
+
+Other changes from the same round: the "on Post Title" link is now "Join the conversation ->", linking to
+`/blog/{slug}#comments` (the post page's `CommentSection.tsx` already has `id="comments"` -- no new anchor
+needed). Both numbers in the stat pill are `text-spotlight` now (both matter equally, not just the reply
+count), and the copy reads "replies by Asher" instead of "replied to by Asher," per direct feedback.
+
 ## Comments tool: Trash confirmation was landing far from the click (fixed 2026-08-26)
 
 Asher's own screenshot made the problem obvious: clicking "Trash" (pinned to the right of the row via
@@ -1420,6 +1464,63 @@ travel distance from click to confirm now. Checked the Trash *view's* own "Delet
 the same issue (`TrashedCommentCard`) and left it alone on purpose — it never used `space-between`, so
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
+
+## Two console errors surfaced by local review (fixed 2026-08-26)
+
+New working agreement (see IDEAS.md / CHANGELOG.md for context: Netlify's deploy budget is limited, 15
+credits per push-to-main deploy out of 300 total) means changes get checked on Asher's own local dev server
+before a push now, not just verified server-side and shipped. That surfaced two real, pre-existing bugs
+neither of which were caused by the change being reviewed at the time:
+
+- **CSP blocking React's own `eval()` in dev mode.** `next.config.ts`'s `PUBLIC_SITE_CSP` (`script-src`)
+  intentionally has no `unsafe-eval` -- correct and unchanged for production, since React never calls
+  `eval()` there. But the header applies unconditionally, including to `next dev`, and React's dev-mode
+  debugging (stack-trace reconstruction, Fast Refresh) does call `eval()` internally -- meaning every local
+  page load was silently tripping a real CSP violation. Fixed with `` `script-src ...${IS_DEV ?
+  " 'unsafe-eval'" : ""} ...` `` gated on `process.env.NODE_ENV !== "production"` -- the deployed site's
+  CSP is byte-for-byte the same as before.
+- **Post dates hydration-mismatching.** `new Date(post.publishedAt).toLocaleDateString(undefined, {...})`
+  in four places (`PostCard.tsx`, `FeaturedPostCard.tsx`, `blog/[slug]/page.tsx`, and a bare
+  `.toLocaleDateString()` x2 in `CommentSection.tsx`) resolves `undefined` locale differently server-side
+  (Node's own default, "August 10, 2026") than client-side (the browser's locale, "10 August 2026") --
+  classic Next.js SSR/hydration trap. Real console evidence: React logged a full hydration-mismatch error
+  and regenerated that part of the tree client-side on every single page load. Pinned to `"en-GB"`
+  explicitly everywhere a date renders (matches what was already showing client-side, so no visible format
+  change, just a fixed, agreed-upon locale instead of an ambient one that differs by environment).
+
+## Studio Comments tool: post list rebuilt as a tile grid (2026-08-26)
+
+Two rounds of direct feedback on the same underlying issue: a wide Studio panel with a single-column,
+full-width list wastes most of its own width. First attempt just capped the row's `max-width` at 48rem --
+Asher's exact pushback: "that's the best you can do? ... it's just a squished in version of the same
+thing," rightly pointing out this only moved the dead space from *between* the title and the Lock/Show
+buttons to the *right* of the whole capped row, still on a still-full-width container. The actual fix,
+reusing the same `auto-fill` grid pattern that had already been confirmed working for the Featured
+management card (see above): each post becomes a compact `Card` tile (title, badges, Lock/Unlock + Show/Hide
+buttons, all stacked vertically so it works at any tile width) inside
+`gridTemplateColumns: 'repeat(auto-fill, minmax(18rem, 1fr))'` -- several tiles per row on a wide panel
+instead of one. Clicking "Show" sets that one tile's own wrapping `<div>` to `gridColumn: '1 / -1'`,
+spanning the full row so its thread (still capped at 48rem internally for readability) gets real room,
+while every other tile keeps flowing in the compact grid below/around it -- native CSS Grid auto-placement
+handles a full-span item mid-grid correctly on its own, no manual row-tracking needed.
+
+Removed as part of this, now genuinely unused rather than left orphaned: the `GROUP_HEADER_COLUMNS`
+constant and the fixed 4-column `<Grid>` it fed, plus the `.asheraw-group-header-grid` mobile-only CSS
+override that existed specifically to reflow that old 4-column layout on narrow phones -- the new tile
+layout is mobile-friendly by construction (a normal vertical stack with wrapping badges), so that override
+had nothing left to override.
+
+Also flagged directly during this: **there really has to be a better way to check Studio UI changes than
+Asher screenshotting every time.** Tried building a reusable authenticated Playwright session (see
+[[studio_playwright_auth_blocked]] in memory) -- Google blocks Playwright-driven browser logins outright,
+tried both the bundled Chromium and `channel: "chrome"` (real installed Chrome), both hit
+"Couldn't sign you in... this browser or app may not be secure." Confirmed this is a deliberate Google
+security measure (automation fingerprints persist regardless of which binary drives the browser), not
+something to keep trying to route around. No file was left behind from the attempt. The one real path
+forward, if this comes up again: Sanity Studio's own email/password login (a third option on its sign-in
+screen, alongside Google/GitHub) is a plain form submission, not an OAuth redirect, so it never hits
+Google's bot-detection at all -- Asher hasn't set one up and didn't want to right then, so Studio UI checks
+are back to Asher screenshotting for now, same as before this was tried.
 
 ## Studio Dashboard: motion pass (2026-08-26)
 

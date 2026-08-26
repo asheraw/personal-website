@@ -11,6 +11,46 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Comment speech bubble redesign, and a Studio Comments tool overhaul
+
+**Comment social proof, rebuilt again.** The side-margin card from earlier today still had two real
+problems once Asher checked it live: a longer featured testimonial could still shift the card's own height
+unpredictably, and the section read as "floating in the middle of nowhere" with no visual connection to
+anything else on the page. Rebuilt as an actual speech bubble (tail and all) anchored to a small stat pill
+that now sits right next to the search box instead of its own standalone block — the pill shows on every
+screen size, the bubble itself stays desktop-only (2xl+). It auto-rotates through every featured comment on
+a 7s timer with a thin ring animating around its own border as a "moving to the next one soon" signal —
+the ring's start/end point is anchored to the bubble's own tail, not an arbitrary corner, and it measures
+the card's real rendered size on every rotation (via `clientWidth`/`clientHeight`, not `ResizeObserver`'s
+`contentRect`, which excludes padding and was drawing the ring inside the actual text). The "on Post Title"
+link is now a clearer "Join the conversation →" that jumps straight to that post's `#comments` anchor. Both
+numbers in the stat pill are the same amber accent color now (both matter equally), and the copy reads
+"replies by Asher" instead of "replied to by Asher." The rotation and ring both respect
+`prefers-reduced-motion` — flagged by the `ui-ux-pro-max` design skill as a real gap, not something Asher
+asked for directly, but a legitimate accessibility fix while already touching this component.
+
+**Two console errors fixed along the way**, surfaced by checking the change on Asher's own local dev server
+before it went anywhere near a push (new working agreement — see below): the site's CSP was blocking
+React's own `eval()` usage in dev mode specifically (production's CSP is untouched, `unsafe-eval` is now
+dev-only); and post dates were hydration-mismatching (`August 10, 2026` server-side vs `10 August 2026`
+client-side) because `toLocaleDateString(undefined, ...)` resolves to a different locale on the server than
+in the browser — pinned to `en-GB` everywhere a post date renders.
+
+**Studio's Comments tool overhaul.** Two more rounds of Asher's own feedback, both addressed: (1) a
+"Featured" management card at the top of the tool lists every comment currently in the /blog rotation with
+an Unfeature button on each — first version was an unreadable, ever-growing single column; rebuilt as a
+collapsed-by-default accordion (same Show/Hide pattern already used per post group) opening into a
+responsive tile grid, so 20+ featured comments stays a fixed height instead of taking over the screen. (2)
+The per-post list below it was rebuilt the same way — tiles in a grid instead of one full-width row per
+post, which on a wide Studio panel left most of each row empty. Clicking "Show" on a tile expands just that
+one to span the full row width so its thread has real room, while the rest stay compact. The old
+fixed-column group-header grid and its mobile-only CSS override are gone, both now genuinely unused rather
+than orphaned.
+
+**New working agreement:** Netlify's deploy budget is limited (300 credits, 15 per push-to-main deploy), so
+changes now get verified on Asher's own local dev server first, with an explicit go-ahead before pushing,
+rather than the push-immediately-after-verifying pattern used earlier this session.
+
 ## 2026-08-26 — Comment social proof on /blog, and a Trash-confirmation fix
 
 **Comment social proof.** Followed up on a late-night idea from the previous session ("why not both") —
