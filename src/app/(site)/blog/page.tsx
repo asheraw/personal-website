@@ -7,12 +7,15 @@ import {
   SEARCH_INDEX_QUERY,
   FEATURED_POST_QUERY,
   BLOG_CATEGORIES_WITH_POSTS_QUERY,
+  COMMENT_STATS_QUERY,
+  FEATURED_TESTIMONIALS_QUERY,
   type PostSummary,
 } from "@/sanity/lib/queries";
 import { BlogPostList } from "@/components/asher/blog/BlogPostList";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { BlogSearch, type SearchablePost } from "@/components/asher/blog/BlogSearch";
 import { FeaturedPostCard } from "@/components/asher/blog/FeaturedPostCard";
+import { CommentSocialProof, type CommentStats, type Testimonial } from "@/components/asher/blog/CommentSocialProof";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
@@ -54,16 +57,25 @@ export default async function BlogPage() {
   // fetched first -- the featured post's own _id then feeds into the
   // exclude filter below, so it doesn't also show up a second time
   // further down the regular feed.
-  const [featuredPost, categories, settings] = await Promise.all([
+  const [featuredPost, categories, settings, commentStats, testimonials] = await Promise.all([
     client.fetch<PostSummary | null>(FEATURED_POST_QUERY),
     client.fetch<{ title: string; slug: string; count: number }[]>(BLOG_CATEGORIES_WITH_POSTS_QUERY),
     client.fetch<{ blogHeading?: string; blogTagline?: string } | null>(
       `*[_type == "siteSettings"][0]{blogHeading, blogTagline}`
     ),
+    client.fetch<CommentStats>(COMMENT_STATS_QUERY),
+    client.fetch<Testimonial[]>(FEATURED_TESTIMONIALS_QUERY),
   ]);
   const blogHeading = settings?.blogHeading || FALLBACK_BLOG_HEADING;
   const blogTagline = settings?.blogTagline || FALLBACK_BLOG_TAGLINE;
   const excludeId = featuredPost?._id ?? "";
+  // Picked server-side rather than with any client-side carousel/rotation
+  // machinery -- simplest possible "rotation," and re-rolls itself every
+  // ~60s along with the rest of this page (see `revalidate` above), rather
+  // than on literally every single request. null when Asher hasn't
+  // featured any comment yet -- the component just shows the stat line
+  // alone then.
+  const testimonial = testimonials.length > 0 ? testimonials[Math.floor(Math.random() * testimonials.length)] : null;
 
   const [initialPosts, totalCount, searchIndex] = await Promise.all([
     client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start: 0, end: FIRST_PAGE_SIZE, excludeId }),
@@ -112,6 +124,8 @@ export default async function BlogPage() {
             </div>
           </div>
         )}
+
+        <CommentSocialProof stats={commentStats} testimonial={testimonial} />
 
         {featuredPost && (
           <div className="mt-10">

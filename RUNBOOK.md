@@ -1357,6 +1357,49 @@ health-journey posts) — checked first, and the existing tag system (`family up
 `stroke recovery`, etc.) already surfaces those to each other through Related Reading. A dedicated series
 concept would mostly duplicate a job tags already do.
 
+## Comment social proof on /blog (2026-08-26)
+
+Idea from a late-night chat, logged in IDEAS.md the same session, built the next day once Asher confirmed
+"why not both" (aggregate stat + rotating testimonial, combined rather than picking one). New section on
+`/blog`, `CommentSocialProof.tsx`, sitting between the category strip and the Featured post.
+
+**The two counts (`COMMENT_STATS_QUERY` in `queries.ts`) are both scoped to comments on published posts
+only** (`defined(post->slug.current)`) — a comment sitting on a still-draft post isn't something a visitor
+could ever see or verify, so counting it would be a real, if small, exaggeration. Confirmed with a direct
+query before writing any code: 1,559 comments on published posts at the time, 665 of them Asher's own
+replies — both numbers render live, not hardcoded.
+
+**The testimonial half needed real curation, not a heuristic.** Randomly picking "the longest comment" or
+"the most recent one" risked surfacing something out of context, or worse, something critical/sarcastic
+being showcased as if it were a compliment. Went with the same pattern Featured Post already established:
+manual, deliberate selection. `commentType.ts` gained a `featuredTestimonial` boolean, settable only via a
+new "Feature" button in `CommentsTool.tsx` (uses `StarIcon`/`StarFilledIcon`, shown only on approved,
+non-author-reply comments — a testimonial has to be a genuine visitor's words, never one of Asher's own
+replies, which the button's own visibility condition enforces rather than trusting anyone to remember not to
+click it on the wrong row). `FEATURED_TESTIMONIALS_QUERY` returns the whole curated set; `blog/page.tsx`
+picks one with `Math.random()` server-side rather than any client-side carousel machinery — simplest
+possible "rotation," and it naturally re-rolls itself every ~60s along with the rest of the page's own
+`revalidate` window rather than on literally every request.
+
+**Real gotcha hit while verifying**: right after marking a test comment as featured, the page kept showing
+the old "no testimonial" state for a bit — not a bug in the query (checked directly, the query found it
+immediately) but the same `revalidate: 60` dev-mode caching already documented elsewhere in this file
+("stale `.next` build cache can outlive a content change") biting again. A dev server restart cleared it.
+Verified for real afterward: featured a genuine comment, confirmed via Playwright it rendered with the
+correct name/quote/post link, then reverted it back to unfeatured before shipping.
+
+## Comments tool: Trash confirmation was landing far from the click (fixed 2026-08-26)
+
+Asher's own screenshot made the problem obvious: clicking "Trash" (pinned to the right of the row via
+`justify: space-between`, deliberately separated from the other action buttons) opened a confirmation card
+as a *new row below*, with "Yes, trash it" sitting to the right of a long sentence — meaning the confirm
+button ended up nowhere near where the eye/cursor already was. Fixed by replacing the Trash button in place
+with the confirm/cancel pair, in that same right-aligned slot, rather than opening a separate row — zero
+travel distance from click to confirm now. Checked the Trash *view's* own "Delete Forever" confirmation for
+the same issue (`TrashedCommentCard`) and left it alone on purpose — it never used `space-between`, so
+"Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
+been touching code that wasn't actually broken.
+
 ## Studio Dashboard: motion pass (2026-08-26)
 
 Same UI/UX read as above, this half about `DashboardTool.tsx`. Asher's exact framing: "functional, correct,

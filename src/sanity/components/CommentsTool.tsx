@@ -6,6 +6,8 @@ import {CloseCircleIcon} from '@sanity/icons/CloseCircle'
 import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
 import {CommentIcon} from '@sanity/icons/Comment'
 import {EditIcon} from '@sanity/icons/Edit'
+import {StarIcon} from '@sanity/icons/Star'
+import {StarFilledIcon} from '@sanity/icons/StarFilled'
 import {TrashIcon} from '@sanity/icons/Trash'
 import {UndoIcon} from '@sanity/icons/Undo'
 
@@ -87,6 +89,7 @@ type CommentRow = {
   postCommentsLocked: boolean
   parentComment: string | null
   isAuthorReply: boolean
+  featuredTestimonial: boolean
 }
 
 // `post->title` (and `post->slug`) only resolve once a real document
@@ -310,6 +313,7 @@ export function CommentsTool() {
       .fetch<CommentRow[]>(
         `*[_type == "comment"] | order(createdAt desc){
           _id, name, email, ip, message, gifUrl, status, createdAt, "addedAt": _createdAt, editedAt, trashedAt, isAuthorReply,
+          "featuredTestimonial": featuredTestimonial == true,
           "postId": post._ref, "postTitle": post->title, "postSlug": post->slug.current,
           "postCommentsLocked": post->commentsLocked,
           "parentComment": parentComment._ref
@@ -401,6 +405,21 @@ export function CommentsTool() {
       // manual expand, the moment it's touched.
       const groupKey = approvedComment?.postId ?? 'unknown'
       setExpandOverrides((prev) => ({...prev, [groupKey]: true}))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  // Marks/unmarks this comment as one of the small rotating set /blog's
+  // comment social-proof section can pick from (see FEATURED_TESTIMONIALS_QUERY
+  // in queries.ts) -- a real visitor comment shown with their real name and
+  // the real date, never one of Asher's own replies (the button is only
+  // ever rendered for a non-author-reply comment to begin with, see below).
+  async function toggleFeatured(id: string, next: boolean) {
+    setBusyId(id)
+    try {
+      await client.patch(id).set({featuredTestimonial: next}).commit()
+      setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, featuredTestimonial: next} : c)) : prev))
     } finally {
       setBusyId(null)
     }
@@ -577,6 +596,7 @@ export function CommentsTool() {
                 postCommentsLocked: parent.postCommentsLocked,
                 parentComment: parentRef,
                 isAuthorReply: true,
+                featuredTestimonial: false,
               },
               ...prev,
             ]
@@ -1290,6 +1310,7 @@ export function CommentsTool() {
                             onReject={() => setStatus(comment._id, 'rejected')}
                             onSpam={() => setStatus(comment._id, 'spam')}
                             onTrash={() => trashComment(comment._id)}
+                            onToggleFeatured={() => toggleFeatured(comment._id, !comment.featuredTestimonial)}
                             onEditClick={() => startEdit(comment)}
                             onSaveEdit={() => saveEdit(comment._id)}
                             onCancelEdit={() => setEditingId(null)}
@@ -1341,6 +1362,7 @@ export function CommentsTool() {
                                     onReject={() => setStatus(reply._id, 'rejected')}
                                     onSpam={() => setStatus(reply._id, 'spam')}
                                     onTrash={() => trashComment(reply._id)}
+                                    onToggleFeatured={() => toggleFeatured(reply._id, !reply.featuredTestimonial)}
                                     onEditClick={() => startEdit(reply)}
                                     onSaveEdit={() => saveEdit(reply._id)}
                                     onCancelEdit={() => setEditingId(null)}
@@ -1390,6 +1412,7 @@ export function CommentsTool() {
                                           onReject={() => setStatus(reply3._id, 'rejected')}
                                           onSpam={() => setStatus(reply3._id, 'spam')}
                                           onTrash={() => trashComment(reply3._id)}
+                                          onToggleFeatured={() => toggleFeatured(reply3._id, !reply3.featuredTestimonial)}
                                           onEditClick={() => startEdit(reply3)}
                                           onSaveEdit={() => saveEdit(reply3._id)}
                                           onCancelEdit={() => setEditingId(null)}
@@ -1761,6 +1784,7 @@ function CommentCard({
   onSaveEdit,
   onCancelEdit,
   onReplyClick,
+  onToggleFeatured,
   parentStatus,
 }: {
   comment: CommentRow
@@ -1783,6 +1807,7 @@ function CommentCard({
   onSaveEdit: () => void
   onCancelEdit: () => void
   onReplyClick?: () => void
+  onToggleFeatured: () => void
   parentStatus?: CommentRow['status']
 }) {
   // Local to this card, not lifted to CommentsTool -- purely a UI
@@ -1916,25 +1941,7 @@ function CommentCard({
           </>
         )}
 
-        {!editing &&
-          (confirmingTrash ? (
-            <Card padding={2} radius={2} tone="critical" border>
-              <Flex align="center" gap={2} wrap="wrap">
-                <Text size={1}>
-                  Move to trash{hasReplies ? ' — its replies will stay but be hidden' : ''}? Recoverable from
-                  Trash for {TRASH_RETENTION_DAYS} days.
-                </Text>
-                <Button text="Yes, trash it" tone="critical" fontSize={1} disabled={busy} onClick={onTrash} />
-                <Button
-                  text="Cancel"
-                  mode="ghost"
-                  fontSize={1}
-                  disabled={busy}
-                  onClick={() => setConfirmingTrash(false)}
-                />
-              </Flex>
-            </Card>
-          ) : (
+        {!editing && (
             // Approve stays the one solid/filled button -- it's the action
             // that actually matters most often, and used to carry exactly
             // the same visual weight as five other buttons next to it, all
@@ -1985,18 +1992,51 @@ function CommentCard({
                   <Button text="Reply" icon={CommentIcon} mode="bleed" fontSize={1} onClick={onReplyClick} />
                 )}
                 <Button text="Edit" icon={EditIcon} mode="bleed" fontSize={1} disabled={busy} onClick={onEditClick} />
+                {!comment.isAuthorReply && comment.status === 'approved' && (
+                  <Button
+                    text={comment.featuredTestimonial ? 'Featured' : 'Feature'}
+                    icon={comment.featuredTestimonial ? StarFilledIcon : StarIcon}
+                    tone={comment.featuredTestimonial ? 'positive' : undefined}
+                    mode="bleed"
+                    fontSize={1}
+                    disabled={busy}
+                    onClick={onToggleFeatured}
+                  />
+                )}
               </Flex>
-              <Button
-                text="Trash"
-                icon={TrashIcon}
-                tone="critical"
-                mode="bleed"
-                fontSize={1}
-                disabled={busy}
-                onClick={() => setConfirmingTrash(true)}
-              />
+              {/* Replaces the Trash button in place (same right-aligned slot,
+                  same justify:space-between position) rather than opening a
+                  separate confirmation row below -- Asher flagged the
+                  original version making "Yes, trash it" land far from the
+                  "Trash" click that triggered it. Now there's zero travel:
+                  the confirm/cancel pair appears exactly where Trash was. */}
+              {confirmingTrash ? (
+                <Flex align="center" gap={2} wrap="wrap">
+                  <Text size={0} muted>
+                    Trash{hasReplies ? ' (replies stay, hidden)' : ''}? Recoverable {TRASH_RETENTION_DAYS}d.
+                  </Text>
+                  <Button text="Yes" tone="critical" fontSize={1} disabled={busy} onClick={onTrash} />
+                  <Button
+                    text="Cancel"
+                    mode="ghost"
+                    fontSize={1}
+                    disabled={busy}
+                    onClick={() => setConfirmingTrash(false)}
+                  />
+                </Flex>
+              ) : (
+                <Button
+                  text="Trash"
+                  icon={TrashIcon}
+                  tone="critical"
+                  mode="bleed"
+                  fontSize={1}
+                  disabled={busy}
+                  onClick={() => setConfirmingTrash(true)}
+                />
+              )}
             </Flex>
-          ))}
+          )}
       </Stack>
     </Card>
   )

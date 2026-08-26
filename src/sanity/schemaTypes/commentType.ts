@@ -122,6 +122,14 @@ export const commentType = defineType({
       readOnly: true,
     }),
     defineField({
+      name: 'featuredTestimonial',
+      title: 'Featured testimonial',
+      type: 'boolean',
+      description:
+        'Set from the "Feature" button in Studio -> Comments. Shown, one at a time (picked at random per page load), in the small comment social-proof section on /blog -- real name, real quote, real date. Only ever a genuine visitor comment, never one of Asher\'s own replies (see isAuthorReply above) -- this is proof other people are reading and engaging, not a self-quote.',
+      initialValue: false,
+    }),
+    defineField({
       name: 'notifyOnReply',
       title: 'Notify on reply',
       type: 'boolean',
@@ -176,9 +184,10 @@ export const commentType = defineType({
       postTitle: 'post.title',
       parentComment: 'parentComment._ref',
       trashedAt: 'trashedAt',
+      featuredTestimonial: 'featuredTestimonial',
     },
-    prepare: ({name, message, gifUrl, status, postTitle, parentComment, trashedAt}) => ({
-      title: `${parentComment ? '↳ ' : ''}${name}: ${message?.slice(0, 60) ?? (gifUrl ? '[GIF]' : '')}`,
+    prepare: ({name, message, gifUrl, status, postTitle, parentComment, trashedAt, featuredTestimonial}) => ({
+      title: `${parentComment ? '↳ ' : ''}${featuredTestimonial ? '★ ' : ''}${name}: ${message?.slice(0, 60) ?? (gifUrl ? '[GIF]' : '')}`,
       subtitle: `${trashedAt ? 'trashed · ' : ''}${status} · on "${postTitle ?? 'unknown post'}"`,
     }),
   },

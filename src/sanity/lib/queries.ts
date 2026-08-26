@@ -67,6 +67,27 @@ export const FEATURED_POST_QUERY = `
   *[_type == "siteSettings"][0].featuredPost-> ${POST_SUMMARY_PROJECTION}
 `;
 
+// Comment social-proof section on /blog -- two honest counts, both scoped
+// to comments on *published* posts only (a comment sitting on a still-draft
+// post isn't something a visitor could ever actually see or verify, so
+// counting it here would be a real, if small, exaggeration).
+export const COMMENT_STATS_QUERY = `{
+  "totalComments": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && defined(post->slug.current)]),
+  "authorReplies": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && isAuthorReply == true && defined(post->slug.current)])
+}`;
+
+// Every comment Asher has hand-picked as a testimonial (Studio -> Comments
+// -> "Feature" button, see commentType.ts's featuredTestimonial field) --
+// the page picks one at random per request, so this returns the whole set
+// rather than already narrowing to one server-side; also scoped to
+// published posts for the same reason as COMMENT_STATS_QUERY above.
+export const FEATURED_TESTIMONIALS_QUERY = `
+  *[_type == "comment" && featuredTestimonial == true && status == "approved" && !defined(trashedAt) && defined(post->slug.current)]{
+    _id, name, message, createdAt,
+    "postTitle": post->title, "postSlug": post->slug.current
+  }
+`;
+
 // Link-in-bio page (/link) -- reads the linkPage singleton (linkPageType.ts),
 // a hand-curated array of cards rather than "every post with a flag set."
 // Each card is just an image + where it goes -- no manual title/caption;

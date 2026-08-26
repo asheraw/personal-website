@@ -11,6 +11,26 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Comment social proof on /blog, and a Trash-confirmation fix
+
+**Comment social proof.** Followed up on a late-night idea from the previous session ("why not both") —
+built the combined aggregate-stat + rotating-testimonial concept logged in IDEAS.md. A new section on `/blog`
+(between the category strip and the Featured post) shows two honest, live counts — total comments and how
+many of those Asher personally replied to, both scoped to comments on *published* posts only, since a comment
+sitting on a still-draft post isn't something a visitor could ever actually see or verify. Alongside it, a
+real testimonial: Studio's Comments tool gained a "Feature" button (only on genuine visitor comments, never
+one of Asher's own replies) that marks a comment as one of a small curated set `/blog` can pick from — picked
+at random server-side, real name, real quote, real date shown as a date (deliberately not "2 min ago," since
+a lot of the comment base is legacy-imported with genuinely old timestamps). Nothing shows until Asher
+actually features at least one comment; the stat line renders on its own until then.
+
+**Trash confirmation fix.** Asher flagged that clicking "Trash" on a comment opened a confirmation ("Yes,
+trash it") in a new row that landed far from the click that triggered it, thanks to the Trash button sitting
+alone on the right side of the row (`justify: space-between`) while the confirmation card appeared as a
+separate full-width row below with its buttons following a long sentence on the left. Fixed by replacing the
+Trash button in place with the confirm/cancel pair, in the exact same right-aligned spot — zero travel
+distance now, no separate row.
+
 ## 2026-08-26 — Dashboard motion pass, blog topic browsing, and a Featured post
 
 Asher asked for a UI/UX proposal on two things he'd been sitting with: the Studio Dashboard "feels stiff and
