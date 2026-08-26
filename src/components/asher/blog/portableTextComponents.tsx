@@ -196,21 +196,33 @@ export const postBodyComponents: PortableTextComponents = {
     // alongside them, rendered by ImageCarousel instead. A block with no
     // additionalImages renders exactly as a plain image always has.
     image: ({ value }) => {
-      if (!value?.asset) return null;
+      const additional = (value.additionalImages ?? []) as GalleryImage[];
+      const hasPrimary = !!value?.asset;
+      // The bulk "Add multiple from Media Library" picker on additionalImages
+      // lets someone add every photo there without ever touching the separate
+      // primary-image slot above it -- previously that meant `value.asset`
+      // stayed empty and this whole block bailed out with `return null`
+      // before even looking at additionalImages, silently dropping a real,
+      // fully-populated gallery. Anything with at least one usable photo
+      // (primary or additional) now renders.
+      if (!hasPrimary && additional.length === 0) return null;
       const size: DisplaySize =
         value.displaySize === "small" || value.displaySize === "medium" || value.displaySize === "wide"
           ? value.displaySize
           : "original";
-      const additional = (value.additionalImages ?? []) as GalleryImage[];
       if (additional.length > 0) {
-        const images: GalleryImage[] = [
-          { _key: `${value._key ?? "primary"}-main`, asset: value.asset, alt: value.alt, caption: value.caption },
-          ...additional,
-        ];
+        const images: GalleryImage[] = hasPrimary
+          ? [
+              { _key: `${value._key ?? "primary"}-main`, asset: value.asset, alt: value.alt, caption: value.caption },
+              ...additional,
+            ]
+          : additional;
+        // Matches the schema's own initialValue -- an automatic display
+        // style, not one that needs the reader to click through.
         const mode: DisplayStyle =
-          value.displayStyle === "carousel" || value.displayStyle === "scroll-strip" || value.displayStyle === "masonry"
+          value.displayStyle === "carousel" || value.displayStyle === "slideshow" || value.displayStyle === "masonry"
             ? value.displayStyle
-            : "slideshow";
+            : "scroll-strip";
         return <ImageCarousel images={images} mode={mode} size={size} />;
       }
       return (

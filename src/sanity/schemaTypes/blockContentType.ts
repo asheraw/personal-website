@@ -255,6 +255,13 @@ export const blockContentType = defineType({
           title: 'More photos (optional -- turns this into a carousel)',
           type: 'array',
           components: {input: BulkImagePickerInput},
+          // Sanity's own default array-of-images rendering is one full-width
+          // row per photo (drag handle, thumbnail, filename, a "..." menu) --
+          // fine for two or three, genuinely chunky for the ten-plus photo
+          // batches BulkImagePickerInput's own "Add multiple" button is built
+          // for. `layout: 'grid'` is Sanity Studio's own built-in alternative
+          // for exactly this: small square tiles instead of full rows.
+          options: {layout: 'grid'},
           of: [
             defineArrayMember({
               type: 'image',
@@ -291,7 +298,10 @@ export const blockContentType = defineType({
               {title: 'Masonry grid (many photos at once, Pinterest-style)', value: 'masonry'},
             ],
           },
-          initialValue: 'slideshow',
+          // Scrolling strip, not Slideshow -- Asher's own call: he doesn't
+          // want a display style that needs the reader to click through
+          // manually, and prefers photos just showing automatically.
+          initialValue: 'scroll-strip',
         }),
         defineField({
           name: 'displaySize',
