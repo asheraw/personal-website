@@ -11,6 +11,19 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Gallery images silently disappearing with no primary photo set
+
+Found while Asher was actively writing a new post: a multi-photo gallery block rendered as nothing at all
+on the page whenever the primary image slot at the top of the block was left empty and photos were only
+added through "More photos" / the bulk Media Library picker — a real, live bug, not a display-style
+setting issue as first suspected. Root cause: `portableTextComponents.tsx`'s image handler checked for a
+primary image and `return null`-ed immediately if there wasn't one, before it ever looked at whether
+`additionalImages` had anything in it. Now it builds the gallery from whichever photos actually exist,
+primary or bulk-added. Also: the "More photos" field now shows as compact grid tiles instead of one
+full-width row per photo (Sanity's own built-in `layout: 'grid'` option), and the default display style
+for a new multi-photo gallery is now "Scrolling strip" instead of "Slideshow" — Asher's own call, since he
+doesn't want a style that requires the reader to click through manually.
+
 ## 2026-08-26 — Comment speech bubble redesign, and a Studio Comments tool overhaul
 
 **Comment social proof, rebuilt again.** The side-margin card from earlier today still had two real

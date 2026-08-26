@@ -1465,6 +1465,57 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## Gallery images silently disappearing with no primary photo set (fixed 2026-08-26)
+
+Asher reported the images he'd picked for a post -- and their display style/size settings -- weren't
+showing up on Presentation's preview at all. Took real investigation to actually find: my own API queries
+against the post kept coming back completely empty at first (zero drafts found at all, project/dataset/
+token all independently confirmed correct) -- a red herring caused by `client.fetch()` defaulting to the
+`published` perspective; explicitly passing `perspective: "drafts"` (or `"raw"`) is what actually surfaces
+draft content, even with a full-access "Editor" role token. Once that was sorted, the real bug was obvious
+from the post's own data: one image block had `asset` empty (no primary photo set) but `additionalImages`
+populated with 9 photos, added entirely through the "More photos" bulk picker without ever touching the
+separate primary-image slot above it.
+
+**Root cause**, `portableTextComponents.tsx`'s `image` handler:
+```ts
+image: ({ value }) => {
+  if (!value?.asset) return null;   // bailed out here, additionalImages never even checked
+  ...
+```
+Fixed by checking whether there's *any* usable photo (primary or additional) before bailing, and building
+the `images` array passed to `ImageCarousel` from whichever set is actually populated:
+```ts
+const additional = (value.additionalImages ?? []) as GalleryImage[];
+const hasPrimary = !!value?.asset;
+if (!hasPrimary && additional.length === 0) return null;
+...
+const images: GalleryImage[] = hasPrimary
+  ? [{ _key: ..., asset: value.asset, ... }, ...additional]
+  : additional;
+```
+`ImageCarousel.tsx` itself was already fine -- every renderer inside it (`SlideCarousel`/`ScrollStrip`/
+`MasonryGrid`) already guards each individual photo with `img.asset ? ... : null`, so the bug was purely
+this one early bail-out upstream, not anything inside the carousel components themselves.
+
+**Two smaller fixes from the same conversation:** the `additionalImages` array field now sets
+`options: {layout: 'grid'}` -- Sanity Studio's own built-in compact-tile layout for an array of images,
+replacing the default one-full-width-row-per-photo rendering, which Asher flagged as "operationally
+chunky" for a 10-photo batch. And the default `displayStyle` for a new multi-photo gallery changed from
+`'slideshow'` to `'scroll-strip'` (schema `initialValue`, and the frontend's own fallback for an unset
+value, kept in sync) -- Asher's own framing: he doesn't want a display style that needs the reader to
+click through manually ("Carousel"), and doesn't plan to use it; "Scrolling strip" auto-plays the way he
+actually wants a gallery to behave by default.
+
+**Verification note:** could not get a full visual render of this fix -- draft-mode preview needs
+`SANITY_API_READ_TOKEN`, which isn't set in this local `.env.local` (Presentation itself also doesn't
+connect on localhost at all for Asher, a separate pre-existing limitation -- "Unable to connect to visual
+editing"). Verified instead by fetching the real post's actual block data (`perspective: "drafts"`) and
+confirming it matches the exact bug shape being fixed, then tracing the fixed logic by hand against that
+real data. This is real production content Asher was actively editing (started life as a Facebook-import
+row, `facebook-i-quit-my-job-twice-because-of-one-girl`, now being rewritten as original content), not a
+synthetic test case.
+
 ## Two console errors surfaced by local review (fixed 2026-08-26)
 
 New working agreement (see IDEAS.md / CHANGELOG.md for context: Netlify's deploy budget is limited, 15
