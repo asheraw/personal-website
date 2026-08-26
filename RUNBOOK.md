@@ -1465,6 +1465,44 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## AI image-prompt settings were empty in Studio (fixed 2026-08-26)
+
+`aiPromptSettingsType.ts` gained `imagePromptTemplate`, `compositionMode1`, `compositionMode2` on
+2026-08-13 (see that commit) with `initialValue` set on each -- but the `aiPromptSettings` singleton
+document already existed by then (it was created earlier, when only `voiceGuidance`/`promptInstructions`
+existed on the schema). Sanity's `initialValue` only ever populates a field the first time a *new* value is
+created for it -- it does not retroactively backfill an already-existing document when new fields are added
+to its schema later. Confirmed directly: `client.fetch('*[_id == "aiPromptSettings"][0]')` showed
+`voiceGuidance`/`promptInstructions` populated (from earlier edits) but the three image-prompt fields
+genuinely `undefined`, even though `suggest-image-prompt/route.ts` was working correctly the whole time by
+falling back to `DEFAULT_IMAGE_PROMPT_TEMPLATE`/`DEFAULT_COMPOSITION_MODE_1`/`DEFAULT_COMPOSITION_MODE_2`
+(`src/lib/aiPromptDefaults.ts`) whenever the stored field is empty. So this was never a broken feature --
+purely Studio showing blank fields where Asher expected to see (and edit) the real values.
+
+Fixed with a one-time `client.patch('aiPromptSettings').setIfMissing({...the three defaults...}).commit()`
+-- `setIfMissing` specifically so nothing already customized on that document got overwritten, only the
+genuinely-empty fields got filled. This is a live content write, not a code change -- no git commit, no
+Netlify deploy, took effect immediately. Worth remembering if a schema field ever gets `initialValue` added
+to it later: any document created *before* that field existed needs the same kind of one-time backfill,
+since Studio alone won't do it.
+
+**Related, same conversation: upgraded what Gemini reasons through before picking a subject.** Asher found
+an elaborate "senior visual director" prompt template (12-section output: concept, why it fits, subject,
+setting, composition, lighting, mood, style, headline placement, production-ready prompt, negative prompt,
+aspect ratio) and wanted to merge it in. Rebuilding the whole feature around that output shape would have
+undone the actual point of the 2026-08-13 rebuild (see that entry's own comment in
+`suggest-image-prompt/route.ts`): a fixed style template assembled server-side, byte-for-byte, so images
+stay visually consistent across posts instead of Gemini re-describing the art style differently each time.
+Instead, `imagePromptTaskInstructions()` gained a short reasoning preamble before its existing subject/mode
+ask -- central message, intended emotional response, strongest visual metaphor or human situation, and what
+to avoid (generic, misleading, too literal) -- borrowing the *thinking process* half of the pasted prompt
+without touching the *output shape* half, which the existing architecture already handles better (fixed,
+consistent style vs. asking an LLM to redecide lighting/palette/mood per post). Verified with a real call
+against Asher's actual in-progress post ("I Quit My Job Twice Because of One Girl") before shipping --
+results were noticeably more metaphor-driven (a cracked glass heart, a figure walking from a glowing
+doorway into fog) rather than literal illustrations of events described in the post, with composition mode
+correctly varying across the 3 ideas.
+
 ## Gallery images silently disappearing with no primary photo set (fixed 2026-08-26)
 
 Asher reported the images he'd picked for a post -- and their display style/size settings -- weren't

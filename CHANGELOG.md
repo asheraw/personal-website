@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — AI image-prompt settings were invisible in Studio, and a subject-selection upgrade
+
+Two related fixes in the same conversation. First: Asher went looking for the image-prompt/composition-mode
+templates in Studio's "AI Workspace" and found them blank — the fields exist and the feature was working
+correctly the whole time (falling back to the built-in defaults in code), but the actual Sanity document
+was created before those three fields existed in the schema, and Sanity doesn't retroactively backfill
+`initialValue` into an already-existing document. Patched the document directly (`setIfMissing`, so nothing
+already customized got touched) so Studio now shows the real, editable values instead of empty boxes.
+
+Second: Asher found a "senior visual director" prompt template elsewhere and wanted to merge its thinking
+into the site's own image-prompt suggester. Rather than restructuring the whole feature around that
+prompt's 12-section output (which would fight the existing, deliberate design — a fixed style template
+applied server-side so every image stays visually consistent), the merge landed on enriching the reasoning
+Gemini does *before* picking a subject: central message, intended emotional response, strongest visual
+metaphor, and what to avoid (generic, misleading, too literal). Tested against Asher's actual in-progress
+post before shipping — genuinely more metaphor-driven results (a cracked glass heart, a figure walking from
+a glowing doorway) instead of literal illustrations of events in the post.
+
 ## 2026-08-26 — Gallery images silently disappearing with no primary photo set
 
 Found while Asher was actively writing a new post: a multi-photo gallery block rendered as nothing at all
