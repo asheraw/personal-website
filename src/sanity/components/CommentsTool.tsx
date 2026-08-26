@@ -150,15 +150,6 @@ type PostGroup = {
 
 const SITE_HOST = 'asheraw.com'
 
-// Fixed widths for every column after the title, same idea as
-// ContactSubmissionsTool's own COLUMNS constant -- each group header is its
-// own separate Grid instance (one per post), so only fixed fr/rem values,
-// never `auto`, keep the count/lock/show columns lined up row to row
-// regardless of how long any one post's title or Lock/Unlock label is.
-// The title column absorbs whatever's left and truncates with an ellipsis
-// instead of pushing the others out of alignment.
-const GROUP_HEADER_COLUMNS = 'minmax(0, 1fr) 6rem 8.5rem 4rem'
-
 const STATUS_TONE: Record<CommentRow['status'], 'caution' | 'positive' | 'critical'> = {
   pending: 'caution',
   approved: 'positive',
@@ -279,6 +270,7 @@ export function CommentsTool() {
   const [editGif, setEditGif] = useState<SelectedGif | null>(null)
   const [editBusy, setEditBusy] = useState(false)
   const [viewingTrash, setViewingTrash] = useState(false)
+  const [featuredExpanded, setFeaturedExpanded] = useState(false)
   const [search, setSearch] = useState('')
   const [stuckPosts, setStuckPosts] = useState<StuckPost[]>([])
   const [fixingStuckId, setFixingStuckId] = useState<string | null>(null)
@@ -617,6 +609,12 @@ export function CommentsTool() {
     [comments],
   )
   const pending = useMemo(() => live.filter((c) => c.status === 'pending'), [live])
+  // Every comment currently in the featured-testimonial rotation on /blog,
+  // newest-featured-looking-first isn't tracked (there's no "featuredAt"
+  // timestamp), so this just follows the same createdAt-desc order `live`
+  // is already sorted in -- good enough for a management list Asher scans
+  // to unfeature something, not something that needs its own ordering.
+  const featured = useMemo(() => live.filter((c) => c.featuredTestimonial), [live])
   // `comment` documents are never meant to sit in draft state -- moderation
   // is the `status` field, not Sanity's draft/publish mechanism (see this
   // file's own header comment) -- so any comment whose _id is still
@@ -963,40 +961,6 @@ export function CommentsTool() {
 
   return (
     <Box padding={4}>
-      {/* Group header's own gridTemplateColumns is fixed rem widths (see
-          GROUP_HEADER_COLUMNS) so the count/lock/show columns stay aligned
-          row to row regardless of title length -- correct on desktop, but
-          on a narrow phone those three fixed columns (~18.5rem combined)
-          crowd the title column down to nothing, exactly what happened
-          when Asher used this on mobile: every row read as a bare
-          "2 comments / Lock comments / Show" with no way to tell which
-          post it was. First fix (stacking all 4 into one column) solved
-          that but traded it for the opposite problem: title, count, lock,
-          and show each got their own full-width row, so the one thing
-          that's actually variable-length (the title) sat buried among
-          three short rows that easily fit side by side on any phone.
-          Now: title spans its own row (it's the only piece that needs
-          one), count/lock/show share a 3-column row underneath as a
-          compact toolbar -- 2 rows instead of 4, title reads first and
-          largest. A stylesheet !important is what actually beats the
-          inline style's own specificity here -- the Grid needs its
-          literal gridTemplateColumns overridden below a real device
-          width, not just deprioritized. */}
-      <style>{`
-        @media (max-width: 640px) {
-          .asheraw-group-header-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-            row-gap: 8px !important;
-          }
-          .asheraw-group-header-grid > .asheraw-group-header-title {
-            grid-column: 1 / -1 !important;
-          }
-          .asheraw-group-header-grid button span {
-            white-space: normal !important;
-            text-align: center;
-          }
-        }
-      `}</style>
       <Stack space={4}>
         <Flex align="flex-start" justify="space-between" gap={3} wrap="wrap">
           <Stack space={2}>
@@ -1015,6 +979,93 @@ export function CommentsTool() {
             onClick={() => setViewingTrash((v) => !v)}
           />
         </Flex>
+
+        {/* Collapsed by default -- an accordion, same "Show"/"Hide" pattern
+            already used per-post-group below, so the count is always
+            visible at a glance without the detail list taking up space
+            until Asher actually wants to manage it. When open: a
+            responsive grid, not a single full-width column -- this card's
+            actual available width is wide (nearly the whole Studio content
+            pane), so one comment per row left most of it empty while
+            forcing more vertical rows than the content needs. auto-fill
+            packs as many ~17rem cells per row as fit, so 20 featured
+            comments is a handful of rows instead of 20, and the max-height
+            + scroll is only a fallback for a count large enough to still
+            overflow even at 3-4 columns. `minmax(min(17rem, 100%), 1fr)`,
+            not a bare `minmax(17rem, 1fr)` -- the bare form can't shrink a
+            column below 17rem at all, so a Studio window/panel narrower
+            than that forced the grid to overflow horizontally instead of
+            dropping to a single, narrower column. Each cell uses Text's
+            own `muted` + `textOverflow="ellipsis"` (the same combination
+            the group header above already truncates post titles with)
+            rather than hand-rolled opacity/overflow styling -- that first
+            attempt turned out to render close to unreadable. */}
+        {!viewingTrash && featured.length > 0 && (
+          <Card padding={3} radius={3} tone="primary" border>
+            <Stack space={3}>
+              <Flex align="center" justify="space-between" gap={2} paddingX={1} paddingTop={1}>
+                <Flex align="center" gap={2}>
+                  <Badge tone="primary" fontSize={1}>
+                    {featured.length}
+                  </Badge>
+                  <Text size={1} weight="semibold">
+                    featured on /blog
+                  </Text>
+                </Flex>
+                <Button
+                  text={featuredExpanded ? 'Hide' : 'Show'}
+                  mode="ghost"
+                  fontSize={0}
+                  padding={2}
+                  onClick={() => setFeaturedExpanded((v) => !v)}
+                />
+              </Flex>
+              {featuredExpanded && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(17rem, 100%), 1fr))',
+                  gap: '0.75rem',
+                  maxHeight: 340,
+                  overflowY: 'auto',
+                  padding: '0.125rem',
+                }}
+              >
+                {featured.map((c) => (
+                  <Card key={c._id} padding={3} radius={2} tone="default" border style={{minWidth: 0}}>
+                    <Flex align="center" gap={3}>
+                      <Stack space={2} style={{minWidth: 0, flex: 1}}>
+                        <Text size={1} weight="semibold" textOverflow="ellipsis">
+                          {c.name}
+                        </Text>
+                        <Text size={1} muted textOverflow="ellipsis">
+                          {c.message
+                            ? c.message.length > 60
+                              ? `${c.message.slice(0, 60)}…`
+                              : c.message
+                            : '(no message)'}
+                          {' — '}
+                          {c.postTitle ?? fallbackPostLabel(c.postId)}
+                        </Text>
+                      </Stack>
+                      <Button
+                        icon={StarFilledIcon}
+                        aria-label={`Unfeature ${c.name}`}
+                        tone="positive"
+                        mode="bleed"
+                        fontSize={1}
+                        padding={2}
+                        disabled={busyId === c._id}
+                        onClick={() => toggleFeatured(c._id, false)}
+                      />
+                    </Flex>
+                  </Card>
+                ))}
+              </div>
+              )}
+            </Stack>
+          </Card>
+        )}
 
         {stuckPosts.map((stuck) => {
           const knownBlockers = stuck.blockers.filter((b) => b.fieldName)
@@ -1207,6 +1258,24 @@ export function CommentsTool() {
               </Text>
             )}
 
+            {/* A tile grid, not one full-width row per post -- the old
+                4-column row (title, count, lock, show) left most of a wide
+                Studio panel empty once the title was capped, which just
+                moved the "wasted middle" complaint to wasted space on the
+                right instead of fixing it. auto-fill packs several compact
+                post-tiles per row like the Featured grid above (the same
+                pattern Asher confirmed actually looks right); clicking
+                "Show" makes that one tile span the full row (gridColumn:
+                '1 / -1') so its thread gets real room to read, rather than
+                being crammed into a narrow column. */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(18rem, 1fr))',
+                gap: '0.75rem',
+                alignItems: 'start',
+              }}
+            >
             {visibleGroups.map(({group, topLevel}) => {
               const key = group.postId ?? 'unknown'
               const groupPending = group.comments.some((c) => c.status === 'pending')
@@ -1223,15 +1292,10 @@ export function CommentsTool() {
               const totalCount = group.comments.length
 
               return (
-                <Stack key={key} space={3}>
-                  <Grid
-                    columns={4}
-                    gap={2}
-                    className="asheraw-group-header-grid"
-                    style={{gridTemplateColumns: GROUP_HEADER_COLUMNS, alignItems: 'center'}}
-                  >
-                    <Flex align="center" gap={2} className="asheraw-group-header-title" style={{minWidth: 0}}>
-                      <Text size={1} weight="semibold" textOverflow="ellipsis" style={{minWidth: 0}}>
+                <div key={key} style={{gridColumn: isExpanded ? '1 / -1' : undefined, minWidth: 0}}>
+                  <Card padding={3} radius={2} tone={groupPending ? 'caution' : 'default'} border>
+                    <Stack space={3}>
+                      <Text size={1} weight="semibold" textOverflow="ellipsis">
                         On &ldquo;
                         {group.postSlug ? (
                           <a
@@ -1247,47 +1311,50 @@ export function CommentsTool() {
                         )}
                         &rdquo;
                       </Text>
-                      {groupPending && (
-                        <Badge tone="caution" fontSize={0}>
-                          needs review
-                        </Badge>
-                      )}
-                      {group.commentsLocked && (
+                      <Flex align="center" gap={2} wrap="wrap">
+                        {groupPending && (
+                          <Badge tone="caution" fontSize={0}>
+                            needs review
+                          </Badge>
+                        )}
+                        {group.commentsLocked && (
+                          <Badge tone="default" fontSize={0}>
+                            locked
+                          </Badge>
+                        )}
                         <Badge tone="default" fontSize={0}>
-                          locked
+                          {totalCount} {totalCount === 1 ? 'comment' : 'comments'}
                         </Badge>
-                      )}
-                    </Flex>
-                    <Badge tone="default" fontSize={0}>
-                      {totalCount} {totalCount === 1 ? 'comment' : 'comments'}
-                    </Badge>
-                    {group.postId ? (
-                      <Button
-                        text={group.commentsLocked ? 'Unlock comments' : 'Lock comments'}
-                        mode="ghost"
-                        fontSize={0}
-                        padding={2}
-                        disabled={busyId === group.postId}
-                        onClick={() => toggleCommentsLocked(group.postId!, !group.commentsLocked)}
-                      />
-                    ) : (
-                      <span />
-                    )}
-                    {!searchTerm ? (
-                      <Button
-                        text={isExpanded ? 'Hide' : 'Show'}
-                        mode="ghost"
-                        fontSize={0}
-                        padding={2}
-                        onClick={() => setExpandOverrides((prev) => ({...prev, [key]: !isExpanded}))}
-                      />
-                    ) : (
-                      <span />
-                    )}
-                  </Grid>
+                      </Flex>
+                      <Flex align="center" gap={2} wrap="wrap">
+                        {group.postId && (
+                          <Button
+                            text={group.commentsLocked ? 'Unlock comments' : 'Lock comments'}
+                            mode="ghost"
+                            fontSize={0}
+                            padding={2}
+                            disabled={busyId === group.postId}
+                            onClick={() => toggleCommentsLocked(group.postId!, !group.commentsLocked)}
+                          />
+                        )}
+                        {!searchTerm && (
+                          <Button
+                            text={isExpanded ? 'Hide' : 'Show'}
+                            mode="ghost"
+                            fontSize={0}
+                            padding={2}
+                            onClick={() => setExpandOverrides((prev) => ({...prev, [key]: !isExpanded}))}
+                          />
+                        )}
+                      </Flex>
+                    </Stack>
+                  </Card>
 
                   {isExpanded && (
-                  <Stack space={4}>
+                  // Capped at a readable width even though the tile above
+                  // now spans the full row -- a comment thread still reads
+                  // better at ~48rem than stretched edge to edge.
+                  <Stack space={4} marginTop={3} style={{maxWidth: '48rem'}}>
                     {topLevel.map((comment) => {
                       const replies = repliesByParentId.get(comment._id) ?? []
 
@@ -1448,9 +1515,10 @@ export function CommentsTool() {
                     })}
                   </Stack>
                   )}
-                </Stack>
+                </div>
               )
             })}
+            </div>
           </>
         )}
       </Stack>
