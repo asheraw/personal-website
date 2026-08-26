@@ -105,7 +105,7 @@ export function BlogSearch({ posts }: { posts: SearchablePost[] }) {
   const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(`site:asheraw.com ${trimmed}`)}`;
 
   return (
-    <div ref={containerRef} className="relative mt-8 max-w-sm print:hidden">
+    <div ref={containerRef} className="relative max-w-sm grow print:hidden">
       <div className="flex items-center gap-2 rounded-full border border-amber-faint bg-stage/40 px-4 py-2.5 transition-colors focus-within:border-spotlight/50">
         <Search size={14} className="shrink-0 text-stone/50" aria-hidden="true" />
         <input

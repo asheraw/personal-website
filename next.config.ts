@@ -21,13 +21,21 @@ import type { NextConfig } from "next";
 // below): Sanity Studio is a complex authenticated SPA that needs much
 // broader permissions than this list to function, and getting that wrong
 // risks breaking the one tool Asher relies on daily.
+// React's dev-mode debugging (stack-trace reconstruction, Fast Refresh)
+// calls eval() internally -- never in production, per React's own error
+// message. Without this, `next dev` gets the exact same strict CSP as the
+// live site and every dev-mode page trips a CSP violation on load. Adding
+// 'unsafe-eval' only when NODE_ENV isn't "production" keeps the deployed
+// site's script-src exactly as strict as before.
+const IS_DEV = process.env.NODE_ENV !== "production";
+
 const PUBLIC_SITE_CSP = [
   "default-src 'self'",
   // static.cloudflareinsights.com -- not from this codebase or any of its
   // dependencies either; caught only by testing the real deployed site,
   // where Vercel's own hosting infrastructure injects this beacon script
   // automatically on every page, outside anything this repo controls.
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.instagram.com https://connect.facebook.net https://www.clarity.ms https://static.cloudflareinsights.com",
+  `script-src 'self' 'unsafe-inline'${IS_DEV ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.instagram.com https://connect.facebook.net https://www.clarity.ms https://static.cloudflareinsights.com`,
   "style-src 'self' 'unsafe-inline'",
   // https://*.giphy.com -- comment GIFs render as a plain hotlinked <img>
   // straight from Giphy's own CDN (see CommentSection.tsx's CommentGif and

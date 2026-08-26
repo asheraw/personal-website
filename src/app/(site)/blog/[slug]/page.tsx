@@ -255,7 +255,7 @@ export default async function PostPage({ params }: PageProps) {
               <div className="mt-5 flex flex-wrap items-center gap-x-3 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
                 {post.publishedAt && (
                   <time dateTime={post.publishedAt}>
-                    {new Date(post.publishedAt).toLocaleDateString(undefined, {
+                    {new Date(post.publishedAt).toLocaleDateString("en-GB", {
                       year: "numeric",
                       month: "long",
                       day: "numeric",

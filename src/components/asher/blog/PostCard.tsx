@@ -58,7 +58,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
         {post.publishedAt && (
           <time dateTime={post.publishedAt}>
-            {new Date(post.publishedAt).toLocaleDateString(undefined, {
+            {new Date(post.publishedAt).toLocaleDateString("en-GB", {
               year: "numeric",
               month: "long",
               day: "numeric",

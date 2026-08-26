@@ -15,7 +15,7 @@ import { BlogPostList } from "@/components/asher/blog/BlogPostList";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { BlogSearch, type SearchablePost } from "@/components/asher/blog/BlogSearch";
 import { FeaturedPostCard } from "@/components/asher/blog/FeaturedPostCard";
-import { CommentSocialProof, type CommentStats, type Testimonial } from "@/components/asher/blog/CommentSocialProof";
+import { CommentStatsBadge, CommentTestimonialBubble, type CommentStats, type Testimonial } from "@/components/asher/blog/CommentSocialProof";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
@@ -69,13 +69,6 @@ export default async function BlogPage() {
   const blogHeading = settings?.blogHeading || FALLBACK_BLOG_HEADING;
   const blogTagline = settings?.blogTagline || FALLBACK_BLOG_TAGLINE;
   const excludeId = featuredPost?._id ?? "";
-  // Picked server-side rather than with any client-side carousel/rotation
-  // machinery -- simplest possible "rotation," and re-rolls itself every
-  // ~60s along with the rest of this page (see `revalidate` above), rather
-  // than on literally every single request. null when Asher hasn't
-  // featured any comment yet -- the component just shows the stat line
-  // alone then.
-  const testimonial = testimonials.length > 0 ? testimonials[Math.floor(Math.random() * testimonials.length)] : null;
 
   const [initialPosts, totalCount, searchIndex] = await Promise.all([
     client.fetch<PostSummary[]>(PAGINATED_POSTS_QUERY, { start: 0, end: FIRST_PAGE_SIZE, excludeId }),
@@ -96,15 +89,16 @@ export default async function BlogPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
-        <p className="font-mono-stage text-[10px] uppercase tracking-[0.3em] text-spotlight/70">
-          Asher Aw
-        </p>
-        <h1 className="mt-3 font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
+        <h1 className="font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
           {blogHeading}
         </h1>
         <p className="mt-4 max-w-xl whitespace-pre-wrap leading-relaxed text-stone/80">{blogTagline}</p>
 
-        <BlogSearch posts={searchIndex} />
+        <div className="relative mt-8 flex flex-wrap items-center gap-3">
+          <BlogSearch posts={searchIndex} />
+          <CommentStatsBadge stats={commentStats} />
+          {testimonials.length > 0 && <CommentTestimonialBubble testimonials={testimonials} />}
+        </div>
 
         {categories.length > 0 && (
           <div className="mt-8">
@@ -124,10 +118,6 @@ export default async function BlogPage() {
             </div>
           </div>
         )}
-
-        <div className="relative">
-          <CommentSocialProof stats={commentStats} testimonial={testimonial} />
-        </div>
 
         {featuredPost && (
           <div className="mt-10">

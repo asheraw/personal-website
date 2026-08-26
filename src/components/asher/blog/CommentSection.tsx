@@ -186,7 +186,7 @@ function CommentCard({ comment }: { comment: Comment }) {
             </span>
           </p>
           <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/50">
-            {new Date(comment.createdAt).toLocaleDateString()}
+            {new Date(comment.createdAt).toLocaleDateString("en-GB")}
           </p>
         </div>
         {comment.message && (
@@ -202,7 +202,7 @@ function CommentCard({ comment }: { comment: Comment }) {
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-ivory">{comment.name}</p>
         <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/50">
-          {new Date(comment.createdAt).toLocaleDateString()}
+          {new Date(comment.createdAt).toLocaleDateString("en-GB")}
         </p>
       </div>
       {comment.message && (
