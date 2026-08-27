@@ -20,19 +20,37 @@ const MESSAGE_MAX_LENGTH = 160;
 const MOBILE_MESSAGE_MAX_LENGTH = 80;
 const ROTATE_MS = 7000;
 const CARD_RADIUS = 16;
+// A tail is a 16px square (`h-4 w-4`) rotated 45deg, which turns it into a
+// diamond whose point sits this far out from its own center along either
+// axis -- (half the square's side) * sqrt(2). Tracing a ring straight
+// across the box edge at the tail's center cuts right through this
+// diamond's widest cross-section, which is exactly the "cuts through the
+// tail" look reported from a live screenshot -- see ringPath/ringPathTop
+// below, which detour the ring out around the tail's actual V-shaped
+// outline (its two visible border edges) instead of through its middle.
+const TAIL_DIAGONAL = 8 * Math.SQRT2;
+// The desktop tail's own span is `-left-[9px] h-4 w-4`, so its center sits
+// 1px inside the box edge (-9 + 8), not exactly on it.
+const DESKTOP_TAIL_REACH = 1 + TAIL_DIAGONAL;
+// The mobile tail's own span is `-top-2 h-4 w-4` (-8px + 8 = 0), so its
+// center sits exactly on the box edge -- no extra offset needed.
+const MOBILE_TAIL_REACH = TAIL_DIAGONAL;
 // Matches the mobile tail's own `left-6` position (24px) plus half its own
-// width (8px), so the ring's start/end point lines up with the tail.
+// width (8px), so the ring's notch lines up with the tail.
 const MOBILE_TAIL_ANCHOR_X = 32;
 
-// Full rounded-rect perimeter as one path, starting/ending partway down the
-// left edge. Used by the desktop bubble, whose tail attaches to the left
-// edge -- `startY` is that attachment point, so the ring visibly grows out
-// of the tail and sweeps back to it instead of an arbitrary corner.
-function ringPath(width: number, height: number, startY: number): string {
+// Full rounded-rect perimeter as one path, detouring out around the tail
+// instead of cutting straight across it. Used by the desktop bubble, whose
+// tail attaches partway down the left edge -- `anchorY` is the tail's own
+// vertical center, `reach` how far its point sits outside the box. The
+// path starts and ends at that point, so the ring visibly grows out of the
+// tail and sweeps back to it.
+function ringPath(width: number, height: number, anchorY: number, reach: number): string {
   const r = CARD_RADIUS;
-  const y = startY;
+  const half = TAIL_DIAGONAL;
   return [
-    `M 0,${y}`,
+    `M ${-reach},${anchorY}`,
+    `L 0,${anchorY - half}`,
     `L 0,${r}`,
     `A ${r},${r} 0 0 1 ${r},0`,
     `L ${width - r},0`,
@@ -41,18 +59,22 @@ function ringPath(width: number, height: number, startY: number): string {
     `A ${r},${r} 0 0 1 ${width - r},${height}`,
     `L ${r},${height}`,
     `A ${r},${r} 0 0 1 0,${height - r}`,
-    `L 0,${y}`,
+    `L 0,${anchorY + half}`,
+    `L ${-reach},${anchorY}`,
   ].join(" ");
 }
 
-// Same perimeter, but starting/ending partway along the top edge instead --
+// Same idea, but detouring out around a tail on the top edge instead --
 // used by the mobile card, whose tail points up at the comment-count pill
-// sitting directly above it rather than out to the side.
-function ringPathTop(width: number, height: number, startX: number): string {
+// sitting directly above it rather than out to the side. `anchorX` is the
+// tail's own horizontal center, `reach` how far its point sits above the
+// box.
+function ringPathTop(width: number, height: number, anchorX: number, reach: number): string {
   const r = CARD_RADIUS;
-  const x = startX;
+  const half = TAIL_DIAGONAL;
   return [
-    `M ${x},0`,
+    `M ${anchorX},${-reach}`,
+    `L ${anchorX + half},0`,
     `L ${width - r},0`,
     `A ${r},${r} 0 0 1 ${width},${r}`,
     `L ${width},${height - r}`,
@@ -61,7 +83,8 @@ function ringPathTop(width: number, height: number, startX: number): string {
     `A ${r},${r} 0 0 1 0,${height - r}`,
     `L 0,${r}`,
     `A ${r},${r} 0 0 1 ${r},0`,
-    `L ${x},0`,
+    `L ${anchorX - half},0`,
+    `L ${anchorX},${-reach}`,
   ].join(" ");
 }
 
@@ -165,7 +188,7 @@ export function MobileTestimonialCard({ testimonials }: { testimonials: Testimon
           <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
             <motion.path
               key={testimonial._id}
-              d={ringPathTop(size.width, size.height, MOBILE_TAIL_ANCHOR_X)}
+              d={ringPathTop(size.width, size.height, MOBILE_TAIL_ANCHOR_X, MOBILE_TAIL_REACH)}
               fill="none"
               className="stroke-spotlight/50"
               strokeWidth={1.5}
@@ -236,7 +259,7 @@ export function CommentTestimonialBubble({ testimonials }: { testimonials: Testi
           <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
             <motion.path
               key={testimonial._id}
-              d={ringPath(size.width, size.height, tailAnchorY)}
+              d={ringPath(size.width, size.height, tailAnchorY, DESKTOP_TAIL_REACH)}
               fill="none"
               className="stroke-spotlight/50"
               strokeWidth={1.5}
