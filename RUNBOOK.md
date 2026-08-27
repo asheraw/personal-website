@@ -1465,6 +1465,60 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## Mobile: rotating testimonial card, category browsing accordion (2026-08-26)
+
+**Shared rotation/ring logic extracted into `useRotatingTestimonial()`** (`CommentSocialProof.tsx`) --
+both the desktop bubble and the new `MobileTestimonialCard` need the same timer-driven index, the same
+live-measured card size (for the ring path), and the same `useReducedMotion()` check; only the JSX/styling
+around that state actually differs (narrow tailed aside vs. full-width tail-less block). `ringPath()` gained
+an optional `startY` parameter (defaults to 0, the desktop bubble passes its tail's own Y position) instead
+of hardcoding `TAIL_ANCHOR_Y` -- the mobile card's ring just traces the plain rounded-rect outline since
+there's no tail to anchor to.
+
+**The real design problem, and how it was actually solved:** an initial version picked one testimonial
+server-side per page load with no client-side rotation at all, specifically to dodge a page-reflow concern
+-- reasonable, but it gave up the rotation and the ring entirely, and Asher pushed back wanting both kept.
+The desktop bubble can rotate safely because it's `position: absolute` (floats free of the page's own
+layout; its own height changing doesn't move anything else). The mobile card sits in normal document flow
+by necessity (nowhere to float it to on a phone), so a rotating version *would* reflow every full-width
+comment/paragraph below it each time a different-length testimonial swapped in. Fixed with two things
+together, not either alone: `MOBILE_MESSAGE_MAX_LENGTH = 80` (vs. desktop's 160, tuned for a phone's
+narrower text column) reliably keeps the message to 2 lines, and `min-h-[3.5rem]` on the message `<p>`
+gives the card a genuinely fixed footprint regardless of which testimonial is showing -- a shorter message
+just leaves a little empty space rather than the box changing size. Verified for real against production
+data, not assumed: screenshotted the card across 4 rotations cycling through testimonials ranging from 30 to
+1,179 raw characters (all truncated to fit) and measured the *exact same* 143px card height every single
+time.
+
+**Comment-count pill drops its second clause below `sm`** -- `<span className="hidden sm:inline">` around
+the "Β· N replies by Asher" part, rather than two separate copies of the text. The pill is `rounded-full`,
+a shape built for one line; letting that clause wrap onto a second line inside it read as broken rather
+than a deliberate two-line design, so on a narrow phone it's dropped instead of wrapped.
+
+**Category browsing on mobile: `CategoryPostListMobile`**, a collapsed-by-default accordion (`useState`
+`open` boolean) rendered near the top of the category page, `2xl:hidden` (opposite of the desktop
+`CategoryPostList`'s `hidden ... 2xl:block`). Deliberately no `IntersectionObserver`/scrollspy here -- would
+need real extra logic to stay correct against a list that's collapsed by default (what does "highlight the
+active post" even mean before the reader has opened the list?), for a lot less value than on desktop, where
+the sidebar is visible the whole time a reader is scrolling. Caught and fixed a real bug before this ever
+got verified: the component was imported into `category/[slug]/page.tsx` but never actually rendered --
+Playwright's own `locator("button", has_text="Browse")` came back with zero matches, which is what caught
+it; a build/typecheck pass alone wouldn't have (an unused import isn't a type error).
+
+**Desktop sidebar, two more fixes on top of today's earlier work:** `max-h-[calc(100vh-8rem)]` (stretches
+to fill the full viewport) changed to a fixed `max-h-[42rem]` (672px) -- Asher's own call, wanting it to
+read as a compact panel regardless of screen height, not fill however tall the browser window happens to
+be. And a real bug fix: the scrollspy highlight was landing on the correct `<li>` the whole time, but once
+a reader scrolled the main content far enough that the active post's entry was outside the sidebar's own
+(now-shorter) visible window, nothing visibly changed from the reader's side -- Asher described this
+precisely: "I think it still highlights but it's not visible." Fixed with a second `useEffect` keyed on
+`activeId` that calls `scrollIntoView({block: "nearest", behavior: "smooth"})` on the matching `<li>`
+(given an `id="sidebar-post-{id}"` for this purpose) -- `"nearest"` only scrolls the minimum needed to bring
+it into view, so it does nothing when the entry is already visible rather than re-centering it on every
+single scroll-spy update. Verified for real: scrolled the main content 6000px down a 40-post category and
+confirmed via Playwright that the newly-active sidebar entry (`I'm Uncertain About the Future`) was both
+correctly highlighted *and* `is_visible()` within the sidebar's own capped viewport.
+
 ## Post dates: one shared, hand-built formatter (2026-08-26)
 
 `src/lib/formatDate.ts`, `formatPostDate()`. First version used

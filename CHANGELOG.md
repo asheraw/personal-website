@@ -11,6 +11,34 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Mobile catches up: rotating testimonial card, category browsing accordion
+
+Asher asked whether any of today's desktop-only features could reasonably adapt to mobile, and flagged one
+real problem with the obvious approach: a rotating testimonial card sitting in the normal page flow (unlike
+the desktop bubble, which floats free of the layout) would reflow the whole page under it every few seconds
+as different-length testimonials swapped in. Fixed by pairing a tighter character cap with a fixed
+minimum height on the message area, so the card's own footprint never changes regardless of which
+testimonial is showing — confirmed by screenshotting it across 4 real rotations (a 30-character testimonial
+and a 1,179-character one both truncated) and measuring the exact same 143px card height every time. It
+gets the same progress ring as desktop too, just without a tail (nothing nearby for it to visually "speak
+from" this far down the page). Placed below the Featured Post specifically, not in the first fold, which
+was already tight before any of this.
+
+The comment-count pill (next to search, shown on every size) drops the "· N replies by Asher" clause on
+narrow phones — it's a `rounded-full` pill shape built for one line, and wrapping that clause onto a second
+line looked broken rather than intentional. Full two-part version stays everywhere there's room.
+
+Category pages get a collapsed-by-default "Browse N posts" accordion near the top on mobile — a persistent
+sidebar has no real mobile equivalent without a margin to put it in. No scrollspy highlighting there, on
+purpose: meaningfully more complex to keep correct against a list that's collapsed by default, and much
+lower value when a reader isn't simultaneously scrolling past it.
+
+Two more direct fixes to the desktop sidebar itself: it now stays a fixed, compact 42rem tall instead of
+stretching to fill the entire viewport height, and it auto-scrolls itself to keep the currently-highlighted
+post actually visible as a reader scrolls deep into a long category — previously the highlight was applied
+correctly but could land on an entry scrolled out of the sidebar's own (shorter) view, with nothing visibly
+changing from the reader's side.
+
 ## 2026-08-26 — Fixed "Sept" showing up in dates, sidebar drops the click-to-expand step
 
 Asher spotted that September rendered as "Sept" while every other month abbreviated to exactly 3 letters
