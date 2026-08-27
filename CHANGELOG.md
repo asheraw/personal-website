@@ -11,6 +11,14 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Category page content was sitting right of center
+
+Asher noticed category pages felt shifted compared to /blog. Real bug: the sidebar reserved space on the
+left of the content column with nothing balancing it on the right, so the whole row stayed centered on the
+page while the content column itself sat off-center within it. Added a matching invisible spacer on the
+right side, same width as the sidebar — content now renders at the exact same position and width as it
+does on /blog, confirmed directly rather than assumed.
+
 ## 2026-08-26 — Mobile catches up: rotating testimonial card, category browsing accordion
 
 Asher asked whether any of today's desktop-only features could reasonably adapt to mobile, and flagged one

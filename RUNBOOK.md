@@ -1465,6 +1465,20 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## Category page content was off-center (fixed 2026-08-26)
+
+`blog/category/[slug]/page.tsx`'s flex row was `[CategoryPostList (w-64)][content (flex-1, capped
+2xl:max-w-3xl)]` inside a `2xl:max-w-[70rem] mx-auto` container. With only two children and nothing
+balancing the sidebar on the right, the *row* stayed centered (via the container's own `mx-auto`) but the
+content column itself sat well right of true center -- worked out by hand: content's own midpoint landed
+~8rem right of the container's midpoint, matching what Asher noticed as "shifted to the right." Fixed with
+a third flex child, an invisible spacer matching the sidebar's exact width (`hidden w-64 shrink-0 2xl:block`,
+`aria-hidden="true"`) after the content column, and widened the container to `2xl:max-w-[86rem]` (16rem
+sidebar + 3rem gap + 48rem content + 3rem gap + 16rem spacer) to fit all three without changing the content
+column's own width. Verified by comparing the rendered `<h1>` element's bounding box on `/blog` (no sidebar)
+against a category page (with sidebar) -- identical `x` and `width` on both, confirming the content column
+now sits at the exact same position regardless of whether the sidebar is present.
+
 ## Mobile: rotating testimonial card, category browsing accordion (2026-08-26)
 
 **Shared rotation/ring logic extracted into `useRotatingTestimonial()`** (`CommentSocialProof.tsx`) --
