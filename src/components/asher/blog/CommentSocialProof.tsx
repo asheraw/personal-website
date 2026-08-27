@@ -158,9 +158,28 @@ function useRotatingTestimonial(testimonials: Testimonial[]) {
     if (!el) return;
     const measure = () => setSize({ width: el.clientWidth, height: el.clientHeight });
     measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(el);
+    // A testimonial swap changes the box's *content*, but doesn't always
+    // change its *size* -- two different messages can truncate to the same
+    // length and wrap to the same number of lines. ResizeObserver only
+    // fires on an actual size change, so relying on it alone left rotation
+    // permanently stuck the first time a swap happened to land on an
+    // identical height: `size` stayed null forever (nulled above on every
+    // index change), the ring could never remount, and its own
+    // onAnimationComplete -- the sole thing that advances rotation -- never
+    // fired again. Confirmed against real data: on mobile, Jeryl Chandler's
+    // testimonial (208 characters) and the next one, Joycelynnnnn's (98),
+    // both truncate to exactly MOBILE_MESSAGE_MAX_LENGTH and wrap to the
+    // same number of lines -- exactly the hang Asher reported. A
+    // MutationObserver re-measures on every real content change instead,
+    // regardless of whether the resulting size actually moved.
+    const mutationObserver = new MutationObserver(measure);
+    mutationObserver.observe(el, { childList: true, subtree: true, characterData: true });
+    return () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
   }, []);
 
   const testimonial = withMessage.length > 0 ? withMessage[index % withMessage.length] : null;

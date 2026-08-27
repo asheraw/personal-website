@@ -52,6 +52,19 @@ itself started, cutting every single lap short by that same beat. Rotation is no
 watching three consecutive cycles run ~7.1s each, and a screenshot catching the ring mid-final-frame as a
 complete, unbroken loop.
 
+<b>Fourth follow-up (same day):</b> Asher reported rotation actually hanging outright, always at the same
+testimonial (Jeryl Chandler's). Real cause, confirmed against the real data: a swap changes the box's
+*content* but doesn't always change its *size* -- Jeryl Chandler's message (208 characters) and the next
+one, Joycelynnnnn's (98), both truncate to exactly `MOBILE_MESSAGE_MAX_LENGTH` on mobile and wrap to the
+same number of lines. `ResizeObserver` only fires on an actual size change, so the very first time a swap
+happened to land on a same-height pair, `size` (nulled on every swap by the earlier blip fix) never got
+restored -- the ring could never remount, and its `onAnimationComplete` (the only thing that now advances
+rotation) never fired again, freezing there for good. Added a `MutationObserver` alongside the
+`ResizeObserver`, re-measuring on every real content change regardless of whether the resulting size
+actually moved. Verified against the real data end to end: polled the live page through a full rotation,
+watching it sail straight through Jeryl Chandler -> Joycelynnnnn (the exact pair that used to hang) and
+wrap cleanly back to the first testimonial into a second lap.
+
 ## 2026-08-27 — Cleaned up empty categories, Netlify usage shortcut on the Dashboard
 
 Deleted three categories with zero posts and zero references anywhere (Experience, Storytelling, Life) --
