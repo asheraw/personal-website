@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-27 — Cleaned up empty categories, Netlify usage shortcut on the Dashboard
+
+Deleted three categories with zero posts and zero references anywhere (Experience, Storytelling, Life) --
+Studio's own delete guard should let an empty category through without a fight, so whatever was blocking it
+for Asher looked like something else going on client-side; deleted directly instead of chasing that down.
+
+Asher asked whether Netlify's usage/credits could show up inside Studio's own Dashboard, since checking
+netlify.com separately felt like an extra step for something this important to watch. Checked directly
+against Netlify's own API docs: there's no endpoint for credit balance or usage at all, only account/
+payment-method management -- a live number isn't achievable without reverse-engineering Netlify's own
+undocumented internal dashboard API, which isn't something worth building on (unsupported, could break
+without warning). Added a one-click external shortcut to the real billing page in Studio's "Quick actions"
+row instead -- not a live number, just one less step to get to the real one.
+
 ## 2026-08-26 — "Join the conversation" clicks now tracked in GA
 
 Asher asked whether that link was tracked separately from everything else — it wasn't, it was a plain

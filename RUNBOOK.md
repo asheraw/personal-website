@@ -1465,6 +1465,27 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## Empty categories deleted, Netlify usage shortcut added (2026-08-27)
+
+Checked every category for real references before deleting anything -- `count(*[_type == "post" && ...
+references($id)])` scoped to published posts alone isn't enough (see the perspective-defaults-to-published
+gotcha documented earlier), so also ran `*[references($id)]` with `perspective: "raw"` to catch drafts and
+any non-post document type. Three categories (Experience, Storytelling, Life) came back with zero
+references under either check -- deleted both the published document and any draft sitting on it in one
+transaction, confirmed after with a fresh `*[_type == "category"]` count (12 -> 9). Asher's own theory on
+why Studio's delete guard (`categoryDeleteGuard.tsx`) was blocking these for him: something client-side,
+not the guard's own logic, which already lets a zero-reference category through immediately (see its
+`if (posts.length === 0)` branch) -- not independently confirmed, deleted directly instead of chasing it
+further since Asher had already given the go-ahead.
+
+`DashboardTool.tsx` gained a "Netlify usage & credits" button in the Quick actions row --
+`NETLIFY_BILLING_URL`, a plain external link (`target="_blank"`), not a live number. Confirmed directly
+against Netlify's own API docs (both a WebSearch and a WebFetch of https://open-api.netlify.com/) that
+there's no endpoint for credit balance/usage on their public API -- only account and payment-method
+management. A live version would require calling whatever undocumented internal API powers Netlify's own
+dashboard UI, which isn't something to build a real feature on (unsupported, can break without notice) --
+so this is honestly just a shortcut, not a sync.
+
 ## "Join the conversation" clicks tracked in GA (2026-08-26)
 
 `CommentSocialProof.tsx`'s two "Join the conversation" links (mobile card, desktop bubble) gained
