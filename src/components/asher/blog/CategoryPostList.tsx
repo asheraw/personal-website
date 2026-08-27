@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { PostSummary } from "@/sanity/lib/queries";
 
-// Only the most recent N get a sidebar entry -- browsing utility, not a
-// duplicate index of the whole category (that's what the post list below
-// already is). Keeps the sidebar's own height predictable and scroll-free
-// regardless of how large a category grows; a category past this size
-// already needs scrolling through the post list itself to see everything,
-// same as before this sidebar existed.
+// Collapsed to the most recent N by default -- keeps the sidebar's own
+// height predictable and scroll-free on a large category, rather than a
+// list that keeps growing forever. "+N more" expands the rest in place
+// (see `expanded` below) rather than being a dead-end label -- Asher's own
+// pushback on the first version: capping it is fine, but readers need an
+// actual way to reach the rest, not just a count of what's hidden.
 const MAX_LISTED = 15;
 
 // A persistent "jump to another post in this category" list, shown in the
@@ -25,14 +25,16 @@ const MAX_LISTED = 15;
 // after the first version felt "congested."
 //
 // Highlights whichever post is currently in view, scrollspy-style --
-// watches the post-card wrapper elements in the DOM directly (`#post-{id}`,
+// watches every post-card wrapper element in the DOM directly (`#post-{id}`,
 // added in the page itself) via IntersectionObserver, rather than the main
-// content needing to be a client component too.
+// content needing to be a client component too. Watches all of them from
+// mount regardless of the collapsed/expanded state below, so the highlight
+// is still correct the moment the list expands.
 export function CategoryPostList({ posts }: { posts: PostSummary[] }) {
-  const listed = posts.slice(0, MAX_LISTED);
-  const remaining = posts.length - listed.length;
   const [activeId, setActiveId] = useState<string | null>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const listed = expanded ? posts : posts.slice(0, MAX_LISTED);
+  const remaining = posts.length - MAX_LISTED;
 
   useEffect(() => {
     const visible = new Map<string, number>();
@@ -54,15 +56,14 @@ export function CategoryPostList({ posts }: { posts: PostSummary[] }) {
       // area, not merely anywhere on screen.
       { rootMargin: "-112px 0px -75% 0px", threshold: 0 }
     );
-    observerRef.current = observer;
 
-    for (const post of listed) {
+    for (const post of posts) {
       const el = document.getElementById(`post-${post._id}`);
       if (el) observer.observe(el);
     }
 
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `listed` is derived from `posts`, which doesn't change after mount on this page
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `posts` is stable for the lifetime of this page
   }, []);
 
   return (
@@ -88,9 +89,13 @@ export function CategoryPostList({ posts }: { posts: PostSummary[] }) {
         })}
       </ul>
       {remaining > 0 && (
-        <p className="mt-3 px-2 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/50">
-          +{remaining} more below
-        </p>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-3 block px-2 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/50 transition-colors hover:text-spotlight"
+        >
+          {expanded ? "Show fewer" : `+${remaining} more →`}
+        </button>
       )}
     </aside>
   );

@@ -18,6 +18,7 @@ import { RelatedPosts } from "@/components/asher/blog/RelatedPosts";
 import { ShareBar } from "@/components/asher/blog/ShareBar";
 import { AffiliateDisclosure } from "@/components/asher/blog/AffiliateDisclosure";
 import { bodyHasAffiliateLinks, estimateReadingTimeMinutes, extractH2Checkpoints } from "@/lib/portableText";
+import { formatPostDate } from "@/lib/formatDate";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 // No time-based revalidate here anymore -- sanityFetch() (via Sanity's
@@ -254,13 +255,7 @@ export default async function PostPage({ params }: PageProps) {
             {(post.publishedAt || readingTime) && (
               <div className="mt-5 flex flex-wrap items-center gap-x-3 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
                 {post.publishedAt && (
-                  <time dateTime={post.publishedAt}>
-                    {new Date(post.publishedAt).toLocaleDateString("en-GB", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </time>
+                  <time dateTime={post.publishedAt}>{formatPostDate(post.publishedAt)}</time>
                 )}
                 {post.publishedAt && <span aria-hidden="true">·</span>}
                 <span>{readingTime} min read</span>

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
+import { formatPostDate } from "@/lib/formatDate";
 import { portableTextToPlainText, estimateReadingTimeFromText } from "@/lib/portableText";
 
 const BLURB_LENGTH = 200;
@@ -56,13 +57,7 @@ export function FeaturedPostCard({ post }: { post: PostSummary }) {
 
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">
           {post.publishedAt && (
-            <time dateTime={post.publishedAt}>
-              {new Date(post.publishedAt).toLocaleDateString("en-GB", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </time>
+            <time dateTime={post.publishedAt}>{formatPostDate(post.publishedAt)}</time>
           )}
           {post.publishedAt && readingTime && <span aria-hidden="true">·</span>}
           {readingTime && <span>{readingTime} min read</span>}
