@@ -42,6 +42,16 @@ painted) and only letting it reappear once the new size is actually measured -- 
 ring now disappears the moment the swap happens and only redraws once the box's real new height lands,
 both changes landing together rather than one trailing the other.
 
+<b>Third follow-up (same day):</b> that fix introduced a new regression Asher caught immediately -- the
+ring stopped ever completing a full lap before the next rotation cut it off. Real cause: rotation was
+still driven by a plain `setInterval` ticking on its own fixed 7s schedule, independent of when the ring
+actually started drawing -- and since the ring now only starts once its post-swap size lands (a beat after
+the swap, by design per the fix above), the interval was firing 7s after the *swap*, not 7s after the ring
+itself started, cutting every single lap short by that same beat. Rotation is now driven by the ring's own
+`onAnimationComplete` instead of a fixed timer, so it always gets its full stated duration -- confirmed by
+watching three consecutive cycles run ~7.1s each, and a screenshot catching the ring mid-final-frame as a
+complete, unbroken loop.
+
 ## 2026-08-27 — Cleaned up empty categories, Netlify usage shortcut on the Dashboard
 
 Deleted three categories with zero posts and zero references anywhere (Experience, Storytelling, Life) --

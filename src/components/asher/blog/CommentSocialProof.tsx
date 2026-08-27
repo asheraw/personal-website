@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { truncateText } from "@/lib/text";
 import { track } from "@/lib/analytics";
 
@@ -97,6 +97,7 @@ function ringPathTop(width: number, height: number, anchorX: number, reach: numb
 // full-width, tail-less block sitting in normal document flow.
 function useRotatingTestimonial(testimonials: Testimonial[]) {
   const withMessage = testimonials.filter((t): t is Testimonial & { message: string } => !!t.message);
+  const rotates = withMessage.length > 1;
   const [index, setIndex] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
@@ -120,13 +121,28 @@ function useRotatingTestimonial(testimonials: Testimonial[]) {
     setSize(null);
   }
 
-  useEffect(() => {
-    if (withMessage.length < 2) return;
-    const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % withMessage.length);
-    }, ROTATE_MS);
-    return () => clearInterval(timer);
+  const advance = useCallback(() => {
+    setIndex((i) => (i + 1) % withMessage.length);
   }, [withMessage.length]);
+
+  // Rotation is driven by the ring itself finishing its lap (see
+  // `onAnimationComplete={advance}` on the <motion.path> in each caller
+  // below), not a fixed interval -- a plain `setInterval(advance,
+  // ROTATE_MS)` used to fire on its own fixed schedule, independent of
+  // when the ring actually started drawing. Since the ring only starts
+  // once its post-swap size remeasurement lands (a beat after the swap
+  // itself, see above), that fixed interval was cutting the ring off
+  // partway through its own animation every single rotation, instead of
+  // ever letting it complete a full lap -- exactly the "restarts before
+  // finishing" Asher reported. Letting the ring's own completion trigger
+  // the next rotation guarantees every lap finishes, every time; only a
+  // reduced-motion visitor (who never sees a ring at all) needs this
+  // fallback timer instead.
+  useEffect(() => {
+    if (!rotates || !reduceMotion) return;
+    const timer = setInterval(advance, ROTATE_MS);
+    return () => clearInterval(timer);
+  }, [rotates, reduceMotion, advance]);
 
   // Re-measures on mount and whenever the card's own rendered size changes
   // -- the ring path is only ever as accurate as this measurement. Reads
@@ -148,7 +164,7 @@ function useRotatingTestimonial(testimonials: Testimonial[]) {
   }, []);
 
   const testimonial = withMessage.length > 0 ? withMessage[index % withMessage.length] : null;
-  return { testimonial, rotates: withMessage.length > 1, cardRef, size, reduceMotion };
+  return { testimonial, rotates, cardRef, size, reduceMotion, advance };
 }
 
 // The plain-number half of the comment social-proof concept -- sits inline
@@ -192,7 +208,7 @@ export function CommentStatsBadge({ stats }: { stats: CommentStats }) {
 // showing; a shorter message just leaves a little empty space rather than
 // the card ever changing size.
 export function MobileTestimonialCard({ testimonials }: { testimonials: Testimonial[] }) {
-  const { testimonial, rotates, cardRef, size, reduceMotion } = useRotatingTestimonial(testimonials);
+  const { testimonial, rotates, cardRef, size, reduceMotion, advance } = useRotatingTestimonial(testimonials);
   if (!testimonial) return null;
 
   return (
@@ -213,6 +229,7 @@ export function MobileTestimonialCard({ testimonials }: { testimonials: Testimon
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
               transition={{ duration: ROTATE_MS / 1000, ease: "linear" }}
+              onAnimationComplete={advance}
             />
           </svg>
         )}
@@ -256,7 +273,7 @@ export function MobileTestimonialCard({ testimonials }: { testimonials: Testimon
 // indicator regardless of how many comments end up featured, unlike a row
 // of dots which would eventually overflow the card.
 export function CommentTestimonialBubble({ testimonials }: { testimonials: Testimonial[] }) {
-  const { testimonial, rotates, cardRef, size, reduceMotion } = useRotatingTestimonial(testimonials);
+  const { testimonial, rotates, cardRef, size, reduceMotion, advance } = useRotatingTestimonial(testimonials);
   // The tail sits at the bubble's own vertical center (see the tail span's
   // `top-1/2` below) rather than a fixed offset, so it stays lined up with
   // the ring regardless of how tall the current testimonial's text makes
@@ -284,6 +301,7 @@ export function CommentTestimonialBubble({ testimonials }: { testimonials: Testi
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
               transition={{ duration: ROTATE_MS / 1000, ease: "linear" }}
+              onAnimationComplete={advance}
             />
           </svg>
         )}
