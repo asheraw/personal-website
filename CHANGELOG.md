@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-28 — Display Size gets a tooltip, and a real fix for the gallery-only thumbnail bug
+
+Follow-up to the Gallery mode work below. Asher asked for the Display Size field's long description (all
+4 options plus a mobile caveat) to move into a hover tooltip instead of always taking up its own paragraph
+-- built `TooltipDescriptionField.tsx`, a `components.field` wrapper that renders a small "What do these
+options mean?" hint with an info icon, suppressing Sanity's own always-visible description in favour of
+showing the exact same text on hover. The field's title still renders through Sanity's own default chrome,
+unchanged -- only the description paragraph was replaced.
+
+Also: Asher flagged a bug he thought he'd raised before -- a gallery built entirely through "More photos,"
+with no primary photo ever added to the slot at the top, not displaying. Checked the actual code rather
+than assuming: the *live blog page* was already fixed correctly (from an earlier session, confirmed still
+in place). The bug that's actually still real was in Studio's own block-list preview thumbnail -- its
+`prepare()` function built the thumbnail from `asset` directly with no fallback, so a fully-populated
+gallery with an empty primary slot showed as a blank/broken thumbnail in the post editor, even though the
+real page rendered it fine. Fixed the same way the live page already was: fall back to the first
+additional photo's asset when the primary slot is empty.
+
 ## 2026-08-28 — Image block: a real "Gallery mode" instead of one flat list of fields
 
 Asked for a UX pass on the Image block's editing panel using the ui-ux-pro-max skill. First look (just the

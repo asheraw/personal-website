@@ -11,6 +11,7 @@ import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
 import {SavedStatusInput} from '../components/SavedStatusInput'
 import {ImageGalleryStatusInput} from '../components/ImageGalleryStatusInput'
+import {TooltipDescriptionField} from '../components/TooltipDescriptionField'
 import {BulkImagePickerInput} from '../components/BulkImagePickerInput'
 
 /**
@@ -326,6 +327,7 @@ export const blockContentType = defineType({
           name: 'displaySize',
           title: 'Display size',
           type: 'string',
+          components: {field: TooltipDescriptionField},
           description:
             'How wide this shows in the post. "Original" fills the post column, same as always -- pick Small or Medium for a photo that doesn\'t need to dominate the page, or "Wide" to break out past the column on desktop (useful for a gallery with a lot of photos in it -- more fit per row instead of one long scroll). Readers can still tap/click through to the full-size original either way. "Wide" looks the same as "Original" on a phone -- there isn\'t extra screen width to break out into there.',
           options: {
@@ -342,9 +344,16 @@ export const blockContentType = defineType({
       preview: {
         select: {alt: 'alt', asset: 'asset', additionalImages: 'additionalImages', displayStyle: 'displayStyle'},
         prepare: ({alt, asset, additionalImages, displayStyle}) => {
-          const extra = (additionalImages as unknown[] | undefined)?.length ?? 0;
+          const items = (additionalImages as {asset?: unknown}[] | undefined) ?? [];
+          const extra = items.length;
+          // Same gap as the live blog page had (see portableTextComponents.tsx):
+          // the bulk picker lets someone build a whole gallery through
+          // "More photos" alone, leaving the primary `asset` slot empty. The
+          // live page already falls back to additionalImages in that case;
+          // this thumbnail didn't, so a real, fully-populated gallery block
+          // showed as a blank/broken preview in the post's block list.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Studio resolves an image-asset preview from this shape at runtime, but PreviewValue['media'] is only typed for React nodes.
-          const media = {_type: 'image', asset} as any;
+          const media = {_type: 'image', asset: asset ?? items[0]?.asset} as any;
           if (!extra) return {title: alt || 'Image', media};
           const label =
             displayStyle === 'slideshow'
