@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-28 — Second attempt at the single-image collapse -- root cause found this time
+
+Asher confirmed the first attempt (forcing `open: false` when calling Sanity's own `renderDefault`) had no
+visible effect -- still full-size in the writing flow. Real cause, found by reading `BlockProps` more
+carefully: `open` is state Sanity itself tracks and hands TO this component; overriding it in the object
+passed back to `renderDefault` doesn't change what Sanity's own implementation actually reads for that
+decision -- only specific documented override points (like `renderPreview`, used elsewhere in Sanity's own
+docs for the reverse case) are genuinely honoured that way.
+
+Rebuilt `CollapsedImageBlock.tsx` to stop trying to talk Sanity's own renderer into a different choice and
+make the decision directly instead: reads the real `props.open`, and only falls through to Sanity's full
+editing view when it's genuinely true (the block just clicked into). Otherwise it renders `BlockPreview`
+(Sanity's own compact-card component, the same layout galleries already use) with a click handler wired
+straight to `props.onOpen()` -- the same function Sanity's own UI calls -- so clicking the compact card
+still opens real editing.
+
+Same honesty note as before: typechecks, schema-validates, and Studio loads clean, but the actual visual
+and click-to-edit behaviour can't be confirmed from here (Studio login is blocked for automation). This
+time there are two specific things worth checking, not just one: does it render compact while unfocused,
+*and* does clicking it still open the real edit form (alt text/caption/hotspot/gallery settings)?
+
 ## 2026-08-28 — Single-image blocks now collapse in the editor too, matching galleries
 
 Follow-up to the two fixes above. Asher confirmed the gallery-only thumbnail fix works well (a small
