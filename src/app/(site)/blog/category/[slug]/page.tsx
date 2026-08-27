@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { client } from "@/sanity/lib/client";
 import { CATEGORY_BY_SLUG_QUERY, POSTS_BY_CATEGORY_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { PostCard } from "@/components/asher/blog/PostCard";
-import { CategoryPostList } from "@/components/asher/blog/CategoryPostList";
+import { CategoryPostList, CategoryPostListMobile } from "@/components/asher/blog/CategoryPostList";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
@@ -76,6 +76,8 @@ export default async function CategoryPage({ params }: PageProps) {
           {category.description && (
             <p className="mt-4 max-w-xl leading-relaxed text-stone/80">{category.description}</p>
           )}
+
+          {posts.length > 0 && <CategoryPostListMobile posts={posts} />}
 
           {posts.length === 0 ? (
             <p className="mt-16 text-stone/70">No posts in this category yet.</p>

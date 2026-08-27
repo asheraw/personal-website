@@ -15,7 +15,13 @@ import { BlogPostList } from "@/components/asher/blog/BlogPostList";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { BlogSearch, type SearchablePost } from "@/components/asher/blog/BlogSearch";
 import { FeaturedPostCard } from "@/components/asher/blog/FeaturedPostCard";
-import { CommentStatsBadge, CommentTestimonialBubble, type CommentStats, type Testimonial } from "@/components/asher/blog/CommentSocialProof";
+import {
+  CommentStatsBadge,
+  CommentTestimonialBubble,
+  MobileTestimonialCard,
+  type CommentStats,
+  type Testimonial,
+} from "@/components/asher/blog/CommentSocialProof";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
@@ -124,6 +130,8 @@ export default async function BlogPage() {
             <FeaturedPostCard post={featuredPost} />
           </div>
         )}
+
+        <MobileTestimonialCard testimonials={testimonials} />
 
         {totalCount === 0 ? (
           featuredPost ? null : (
