@@ -82,7 +82,9 @@ export default async function CategoryPage({ params }: PageProps) {
           ) : (
             <div className="mt-16 space-y-16">
               {posts.map((post, index) => (
-                <PostCard key={post._id} post={post} priority={index === 0} />
+                <div key={post._id} id={`post-${post._id}`}>
+                  <PostCard post={post} priority={index === 0} />
+                </div>
               ))}
             </div>
           )}
