@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-28 — Single-image blocks now collapse in the editor too, matching galleries
+
+Follow-up to the two fixes above. Asher confirmed the gallery-only thumbnail fix works well (a small
+thumbnail + "Image Scrolling strip (12 photos)" row), then flagged that a *single* image (no gallery) still
+renders at full size inline in the writing flow -- and confirmed directly, not just from one screenshot,
+that it stays full size regardless of whether it's the block currently being worked on. His ask: the photo
+should only need to show large in an actual preview, not while writing elsewhere in the post.
+
+Traced this to a real, documented Sanity API: `BlockProps` (the props Portable Text passes to an array
+member's inline rendering) has an `open` field -- literally "whether the block is currently opened for
+editing" -- controlling collapsed-preview vs full-size-inline rendering. Added `CollapsedImageBlock.tsx`,
+a `components.block` override that forces `open: false` unconditionally, so the inline flow always shows
+the compact preview (reusing the same `preview.prepare()` output already proven correct by the gallery
+fix) regardless of Sanity's own focus tracking.
+
+**Flagging honestly rather than presenting this as fully verified:** this is built on real, current Sanity
+documentation and type definitions (confirmed via the installed `sanity` package's own `.d.ts` files, not
+guessed), and typechecks/schema-validates cleanly -- but the actual Studio editor can't be checked visually
+from here (Google blocks automated login to Studio, same limitation noted elsewhere in this log). Worth
+confirming directly: the block should now always render compact in the writing flow, and clicking into a
+photo to edit its alt text/caption/hotspot/gallery settings should still work exactly as before -- this
+change only touches the read-only inline rendering, not the separate edit dialog.
+
 ## 2026-08-28 — Display Size gets a tooltip, and a real fix for the gallery-only thumbnail bug
 
 Follow-up to the Gallery mode work below. Asher asked for the Display Size field's long description (all

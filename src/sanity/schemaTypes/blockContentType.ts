@@ -11,6 +11,7 @@ import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
 import {SavedStatusInput} from '../components/SavedStatusInput'
 import {ImageGalleryStatusInput} from '../components/ImageGalleryStatusInput'
+import {CollapsedImageBlock} from '../components/CollapsedImageBlock'
 import {TooltipDescriptionField} from '../components/TooltipDescriptionField'
 import {BulkImagePickerInput} from '../components/BulkImagePickerInput'
 
@@ -238,7 +239,7 @@ export const blockContentType = defineType({
       type: 'image',
       icon: ImageIcon,
       options: {hotspot: true},
-      components: {input: ImageGalleryStatusInput},
+      components: {input: ImageGalleryStatusInput, block: CollapsedImageBlock},
       // Groups the gallery-only fields (More photos, Display style) into
       // their own visually distinct box instead of blending into the same
       // flat list as Alt text/Caption/Display size -- those describe THIS
@@ -302,7 +303,7 @@ export const blockContentType = defineType({
             }),
           ],
           description:
-            'Add one or more extra photos here and the image above becomes the first photo in a carousel, alongside these.',
+            'Add one or more extra photos here and the image above becomes the first photo in a gallery, alongside these.',
         }),
         defineField({
           name: 'displayStyle',
