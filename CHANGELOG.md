@@ -11,6 +11,18 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-27 — Rebuilt "Stop Saying AI Won't Replace People"'s comment thread from screenshots
+
+Asher sent 5 screenshots of the real Facebook thread. The version already on the site only had 8 bare
+top-level comments with no threading and none of Asher's own replies; the real thread was much bigger and
+missing an entire ninth thread (Yang Mu Ming's) outright. Rebuilt from scratch: 29 comments total,
+matching Facebook's own comment badge exactly. Threaded properly, including flattening a couple of
+exchanges that ran deeper than this site's 3-level cap -- per the site's own documented rule, a reply to an
+already-3rd-level comment attaches to that comment's parent instead of inventing a 4th level, same as a
+real visitor's reply would behave live. Deleted the old incomplete stub comments rather than leaving them
+alongside the real ones. Verified against the live page afterward: renders as "29 Comments", matching the
+Facebook screenshot's own count.
+
 ## 2026-08-27 — Comment bubble's tail now actually points at the pill it belongs to
 
 Two real layout bugs Asher caught from screenshots. Desktop: the speech bubble's `absolute left-full`
