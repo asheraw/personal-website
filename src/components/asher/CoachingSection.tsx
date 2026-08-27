@@ -99,8 +99,7 @@ export function CoachingSection() {
           {/* Text */}
           <Reveal delay={0.1} className="order-1 lg:order-2">
             <h2 className="mt-6 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
-              Helping people become more confident communicators — without
-              becoming someone else.
+              Helping People Communicate Confidently &amp; Authentically
             </h2>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-stone/85 sm:text-lg">
               {COACHING_INTRO}

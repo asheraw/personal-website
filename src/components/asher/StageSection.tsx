@@ -15,7 +15,7 @@ export function StageSection() {
         <Reveal><Eyebrow index="01" label="The Stage · Theatre" /></Reveal>
         <div className="mt-6 grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-12">
           <Reveal delay={0.05}>
-            <h2 className="font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">The stage has been one of the defining parts of Asher&rsquo;s life.</h2>
+            <h2 className="font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">The Stage Helped To Shape Asher</h2>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-foreground/85 sm:text-lg">Ten years performing in Christian theatre productions. Roles that combine emotional depth, storytelling, and meaningful themes — the kind of work that asks something of you, not just the audience.</p>
           </Reveal>
           <Reveal delay={0.1}>

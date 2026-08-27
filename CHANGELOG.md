@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-27 — Tightened four homepage headlines, gave "At a Glance" a cycling word too
+
+Asher asked for a pass over every headline on the homepage -- several ran long for display-size type
+(11-13 words reading as full sentences rather than headlines). Three shortened directly on his own
+wording: Stage section now "The Stage Helped To Shape Asher" (was a 13-word sentence), Coaching section
+now "Helping People Communicate Confidently & Authentically" (trimmed from an 11-word line built around an
+em-dash pause), and the final CTA now just "Let's Chat" (was a 13-word line explaining what the form
+below it already explains).
+
+The fourth, "At a Glance," got more than a trim -- the old line ("Built to be used like a craft --
+practised, lived, shared") was pure marketing abstraction sitting directly above four hard stat tiles
+(15+ years in marketing, 20+ years on stage, 10+ years as Jesus, 100+ workshops) without referencing any
+of them. Replaced with a cycling headline in the same style as the "story/voice" and "Actor/Coach/
+Marketer/Storyteller" cyclers elsewhere on the page: "Years [on Stage / in Marketing / as Jesus]." --
+the first two phrases are lifted verbatim from two of the real stat labels, so the headline is now a live
+pointer at the actual numbers instead of a standalone abstract line. Reused the same shared
+`CyclingWordSlot`/`useCyclingIndex` primitives already built for this rather than a one-off animation.
+
 ## 2026-08-27 — Rebuilt "Stop Saying AI Won't Replace People"'s comment thread from screenshots
 
 Asher sent 5 screenshots of the real Facebook thread. The version already on the site only had 8 bare

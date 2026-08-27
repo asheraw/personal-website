@@ -2,9 +2,21 @@
 
 import { motion } from "framer-motion";
 import { Reveal, Eyebrow, StatValue } from "./primitives";
+import { CyclingWordSlot, useCyclingIndex } from "./CyclingCallingWord";
 import { GLANCE_STATS, BRANDS } from "./data";
 
+// Matches the real stat tiles below it verbatim -- "on Stage" and "in
+// Marketing" are the exact labels on two of the four GLANCE_STATS entries
+// (see data.ts), and "as Jesus" pulls the third. Deliberately excludes the
+// fourth stat ("100+ Workshops Facilitated") since it doesn't fit this
+// "Years ___" sentence shape. Same cycling pattern as ThreePillars/
+// TwoCallings rather than a new one-off, so the headline is a live
+// pointer at the actual numbers instead of a vague standalone line.
+const GLANCE_YEARS_WORDS = ["on Stage", "in Marketing", "as Jesus"];
+const GLANCE_INTERVAL_MS = 1800;
+
 export function AtAGlance() {
+  const {index, reduceMotion} = useCyclingIndex(GLANCE_YEARS_WORDS.length, GLANCE_INTERVAL_MS);
   return (
     <section
       id="glance"
@@ -21,7 +33,14 @@ export function AtAGlance() {
           <Reveal>
             <Eyebrow index="04" label="At a Glance" />
             <h2 className="mt-6 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
-              Built to be used like a craft — practised, lived, shared.
+              Years{" "}
+              <CyclingWordSlot
+                words={GLANCE_YEARS_WORDS}
+                index={index}
+                reduceMotion={reduceMotion}
+                wordClassName="italic text-spotlight-gradient"
+              />
+              .
             </h2>
 
             {/* Brands */}

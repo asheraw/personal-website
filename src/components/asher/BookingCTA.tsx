@@ -22,7 +22,7 @@ export function BookingCTA() {
         <Reveal><Eyebrow index="07" label="Work With Asher" /></Reveal>
         <div className="mt-8 grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-16">
           <Reveal>
-            <h2 className="font-display text-5xl font-semibold leading-[0.98] tracking-[-0.02em] text-ivory sm:text-6xl lg:text-7xl">Let&rsquo;s find{" "}<span className="italic text-spotlight-gradient">your voice</span> — the one the room actually wants to hear.</h2>
+            <h2 className="font-display text-5xl font-semibold leading-[0.98] tracking-[-0.02em] text-ivory sm:text-6xl lg:text-7xl">Let&rsquo;s Chat</h2>
             <p className="mt-8 max-w-xl text-base leading-relaxed text-foreground/85 sm:text-lg">Whether you&rsquo;re preparing for a keynote, building a personal brand, learning to use AI without losing your voice, or putting together a production that has to mean something — drop Asher a message below.</p>
             <div className="mt-8 space-y-3">
               <a href={CONTACT_INFO.whatsappUrl} target="_blank" rel="noreferrer" onClick={() => track({ action: "whatsapp_click", category: "contact", label: "contact_section" })} className="group flex items-center gap-4 rounded-2xl border border-spotlight/40 bg-spotlight/10 p-4 transition-all hover:border-spotlight hover:bg-spotlight/20">
