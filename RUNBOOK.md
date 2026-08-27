@@ -1465,6 +1465,29 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## Post dates: one shared formatter (2026-08-26)
+
+`src/lib/formatDate.ts`, `formatPostDate()` -- `new Date(iso).toLocaleDateString("en-GB", {day: "2-digit",
+month: "short", year: "numeric"})`, giving a fixed "10 Aug 2026" everywhere. Replaces three separate inline
+`toLocaleDateString("en-GB", {year: "numeric", month: "long", day: "numeric"})` calls (`PostCard.tsx`,
+`FeaturedPostCard.tsx`, `blog/[slug]/page.tsx`) that were only pinned to a fixed locale/format as of the
+earlier hydration-mismatch fix the same day (see "Two console errors surfaced by local review" above) --
+Asher asked for a shorter, constant format on top of that fix, so this consolidates all three into one
+function rather than three copies of the same options object. `CommentSection.tsx`'s own date formatting
+(comment timestamps, a different, shorter numeric format) was intentionally left alone -- Asher's request
+was specifically about "the dates displayed on the blog under the titles," i.e. post dates, not comments.
+
+## Category sidebar: "+N more" turned into a real expand toggle (2026-08-26)
+
+Follow-up to the sidebar work above -- Asher's own framing: capping the list is fine, but a reader needs an
+actual way to reach the rest, not just a static count of what's hidden. `CategoryPostList.tsx` gained an
+`expanded` boolean state; `+N more` is now a `<button>` toggling it, and the rendered `<li>` list is
+`posts.slice(0, expanded ? posts.length : MAX_LISTED)`. The `IntersectionObserver` itself already watched
+every post in `posts` (not just the visible 15) from the start, so no change was needed there -- expanding
+just reveals `<li>`s for ids the observer was already tracking, meaning the active-post highlight stays
+correct immediately on expand with no re-subscription logic. Verified via Playwright: 15 items -> click ->
+40 items + button text flips to "Show fewer" -> click again -> back to 15.
+
 ## Category pages: sticky post-browsing sidebar (2026-08-26)
 
 `CategoryPostList.tsx`, wired into `blog/category/[slug]/page.tsx`. Same wide-screen-only philosophy as the

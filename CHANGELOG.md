@@ -11,6 +11,17 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Constant date format, and the category sidebar's "+N more" now actually expands
+
+Two quick follow-ups. Post dates everywhere on the blog now read "10 Aug 2026" instead of "10 August
+2026" — one shared `formatPostDate()` helper (`src/lib/formatDate.ts`) used by every post-date display,
+so there's one place to keep them consistent instead of three separate copies of the same formatting
+options drifting apart over time.
+
+And the category sidebar's "+N more" note — added earlier today — turned out to be a dead end: it told you
+how many posts weren't shown, with no way to actually see them. It's a real toggle now: click to expand the
+full list in place, click again to collapse back to the compact default.
+
 ## 2026-08-26 — A browsable post list on category pages
 
 Asher sketched an idea over a screenshot: on a category page, use the open margin beside the post list to
