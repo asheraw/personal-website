@@ -1484,6 +1484,41 @@ assumed from the CSS): screenshotted before and after a 1500px scroll on a 40-po
 confirmed the sidebar's own bounding box stayed at the same `y` position while the main content advanced to
 the second post underneath it.
 
+**Follow-up (same day): shifted left, capped, and scrollspy added.** Asher's live check surfaced three real
+issues. (1) "Congested" -- the sidebar sat right up against the reading column with genuinely unused space
+further out into the margin. Fixed with `2xl:-translate-x-20` on the `<aside>` itself, not by restructuring
+the flex/grid layout -- a CSS `transform` is a paint-time-only effect, computed *after* layout and the
+sticky-position math, so it can visually relocate the element without touching either. This matters because
+the earlier, more "correct-looking" fix (an absolute-positioned breakout, matching the comment bubble's own
+technique) doesn't work here: `position: sticky` needs a normal-flow parent *taller than the sticky element
+itself* to have any room to "stick" through as you scroll -- an absolutely-positioned wrapper collapses to
+fit only its own content (the short sidebar), leaving zero travel room, which would have silently turned
+"sticky" into "does nothing." The content and sidebar have to stay flex siblings inside one shared, tall
+container for sticky to function at all; `transform` is the one positioning tool that can reposition
+visually without breaking that requirement.
+
+(2) The sidebar showing all of a category's posts meant real internal scrolling once a category got large
+(40 posts at the time), and would only get worse as more get added. Capped to `MAX_LISTED = 15` (most
+recent), with a plain "+N more below" note for the rest -- this is a browsing aid, not a duplicate index of
+the whole category (the post list underneath already is that), so it doesn't need to be exhaustive, and
+capping it means the sidebar's own height stays predictable and scroll-free regardless of how large any
+category grows.
+
+(3) Asher asked whether the sidebar could highlight whichever post is actually in view while scrolling --
+confirmed this is a well-known, named pattern ("scrollspy," the same behavior a documentation site's table
+of contents typically has) and built it with a plain `IntersectionObserver`, no new dependency. Implementation
+note: the observer lives inside `CategoryPostList` (now `"use client"`), which watches DOM elements it
+doesn't render itself -- `#post-{id}` wrapper divs added around each `<PostCard>` in the *server-rendered*
+page content, found via `document.getElementById` after mount. This keeps the (much heavier) post list
+100% server-rendered; only the sidebar itself needed to become a client component. Active-post detection:
+track every currently-intersecting card's `boundingClientRect.top` in a `Map`, keyed by post id, updated on
+every observer callback; the "active" one is whichever intersecting card has the smallest (topmost) `top`
+value. `rootMargin: "-112px 0px -75% 0px"` defines a thin band starting just below the fixed header --
+without it, a card lower in the viewport but still technically visible could outrank the one actually being
+read. Verified for real, not just by reading the code: scrolled 2600px and confirmed the highlighted
+sidebar entry changed from the 1st post to the 4th, matching which post was actually at the top of the
+viewport at that scroll position.
+
 ## AI image-prompt settings were empty in Studio (fixed 2026-08-26)
 
 `aiPromptSettingsType.ts` gained `imagePromptTemplate`, `compositionMode1`, `compositionMode2` on

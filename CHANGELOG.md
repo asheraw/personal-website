@@ -22,6 +22,16 @@ Deliberately scoped to category pages only, not individual posts: `RelatedPosts.
 cross-post discovery there, at the end of each article, and a second browsing widget in a different shape
 would compete with it rather than add anything. No change at all below the 2xl breakpoint.
 
+**Follow-up (same day):** Asher checked it live and had three notes. First, it felt "congested," sitting
+too close to the reading column with unused space further out — shifted left with a CSS transform, which
+turned out to be the right tool since it doesn't disturb the sticky-scroll math at all (transforms are a
+paint-time-only effect). Second, scrolling through all 40 titles inside the sidebar itself felt like a lot
+of scrolling, and would only get worse as the category grows — capped the list to the 15 most recent, with
+a quiet "+25 more below" note rather than trying to fit everything. Third, Asher asked whether the sidebar
+could highlight whichever post is actually in view as you scroll — a real, well-known pattern (usually
+called "scrollspy," the same thing a docs site's table of contents does) — built with an
+`IntersectionObserver` watching the post cards directly, no new libraries.
+
 ## 2026-08-26 — AI image-prompt settings were invisible in Studio, and a subject-selection upgrade
 
 Two related fixes in the same conversation. First: Asher went looking for the image-prompt/composition-mode
