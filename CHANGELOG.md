@@ -11,6 +11,22 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-28 — Two real bugs found from Asher's direct testing of the collapsed image block
+
+Follow-up to the collapse fix below, tested live within minutes. Two real issues, both fixed.
+
+The compact preview was rendering as a blank box, no thumbnail -- gallery and single alike. Cause:
+`BlockPreview` used standalone (not through Sanity's schema-driven preview pipeline that normally resolves
+a raw `{_type: 'image', asset}` shape into a thumbnail wherever `preview.prepare()`'s own output shows up
+elsewhere, e.g. Comments tool cards) doesn't auto-resolve an asset reference on its own. Built the real
+image URL with the project's existing `urlFor` helper and handed it a genuine `<img>` instead.
+
+Clicking to open was flaky -- opened inconsistently, and sometimes closed again immediately after opening.
+The click was bubbling past this component to some other "click outside the open block closes it" handler
+almost certainly living in Sanity's own editor chrome, which read the same click (nothing was open yet at
+the moment it actually fired) as a reason to close what React had just opened, within the same event.
+`event.stopPropagation()` on the click fixes it.
+
 ## 2026-08-28 — Second attempt at the single-image collapse -- root cause found this time
 
 Asher confirmed the first attempt (forcing `open: false` when calling Sanity's own `renderDefault`) had no
