@@ -4,6 +4,7 @@ import {Badge, Box, Button, Card, Flex, Grid, Heading, Spinner, Stack, Text} fro
 import {useClient} from 'sanity'
 import {AddDocumentIcon} from '@sanity/icons/AddDocument'
 import {CalendarIcon} from '@sanity/icons/Calendar'
+import {LaunchIcon} from '@sanity/icons/Launch'
 import {CommentIcon} from '@sanity/icons/Comment'
 import {EnvelopeIcon} from '@sanity/icons/Envelope'
 import {ShareIcon} from '@sanity/icons/Share'
@@ -73,6 +74,14 @@ const LINKS = {
   searchQueries: '/studio/structure/siteAdmin;searchQueries',
   cookies: '/studio/structure/siteAdmin;cookies',
 }
+
+// A plain external shortcut, not a live number -- checked directly against
+// Netlify's own API docs (2026-08-27): there's no endpoint for credit
+// balance/usage, only account/payment-method management. Pulling this in
+// live would mean reverse-engineering Netlify's own undocumented internal
+// dashboard API, unsupported and liable to break without notice, so this
+// is just a one-click shortcut to the real page instead.
+const NETLIFY_BILLING_URL = 'https://app.netlify.com/teams/asheraw/billing/general'
 
 // Deliberately doesn't also fetch posts/aiOutputLog -- usePostIssueCounts
 // below covers those (audit issues + social-copy-needed both derive from
@@ -299,6 +308,15 @@ export function DashboardTool() {
               onClick={() => openDocumentInStudio('post', crypto.randomUUID())}
             />
             <Button as="a" href={LINKS.calendar} text="Schedule a post" icon={CalendarIcon} mode="ghost" />
+            <Button
+              as="a"
+              href={NETLIFY_BILLING_URL}
+              target="_blank"
+              rel="noreferrer"
+              text="Netlify usage & credits"
+              icon={LaunchIcon}
+              mode="ghost"
+            />
           </Flex>
         </Stack>
 
