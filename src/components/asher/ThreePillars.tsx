@@ -57,7 +57,7 @@ export function ThreePillars() {
             <p className="font-mono-stage text-xs uppercase tracking-[0.32em] text-spotlight/80">
               Finding Your Voice
             </p>
-            <h2 className="mt-4 font-display text-5xl font-semibold leading-[0.98] tracking-[-0.02em] text-ivory sm:text-6xl lg:text-7xl">
+            <h2 className="mt-4 font-display text-5xl font-semibold leading-[1.15] tracking-[-0.02em] text-ivory sm:text-6xl lg:text-7xl">
               You have a{" "}
               <CyclingWordSlot
                 words={SUBJECT_WORDS}

@@ -12,8 +12,12 @@ import { GLANCE_STATS, BRANDS } from "./data";
 // "Years ___" sentence shape. Same cycling pattern as ThreePillars/
 // TwoCallings rather than a new one-off, so the headline is a live
 // pointer at the actual numbers instead of a vague standalone line.
-const GLANCE_YEARS_WORDS = ["on Stage", "in Marketing", "as Jesus"];
-const GLANCE_INTERVAL_MS = 1800;
+// Exported so Play mode's own "At a Glance" zone (PlaySections.tsx) can
+// drive an identical cycling headline from this exact array, rather than
+// hand-copying it -- the same drift this codebase has already been bitten
+// by once before with duplicated section copy.
+export const GLANCE_YEARS_WORDS = ["on Stage", "in Marketing", "as Jesus"];
+export const GLANCE_INTERVAL_MS = 1800;
 
 export function AtAGlance() {
   const {index, reduceMotion} = useCyclingIndex(GLANCE_YEARS_WORDS.length, GLANCE_INTERVAL_MS);
@@ -32,7 +36,7 @@ export function AtAGlance() {
           {/* Left — heading + brands */}
           <Reveal>
             <Eyebrow index="04" label="At a Glance" />
-            <h2 className="mt-6 font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
+            <h2 className="mt-6 font-display text-4xl font-semibold leading-[1.15] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-6xl">
               Years{" "}
               <CyclingWordSlot
                 words={GLANCE_YEARS_WORDS}

@@ -10,7 +10,8 @@ import {
   FAITH_VALUES, PRINCIPLES, PERSONALITY, COACHING_PHILOSOPHY_QUOTE,
   CONTACT_INFO, SOCIALS, STAGE_PILLARS, PHILOSOPHY_CLOSING_NOTE, COACHING_INTRO,
 } from "../data";
-import { CyclingCallingWord } from "../CyclingCallingWord";
+import { CyclingCallingWord, CyclingWordSlot, useCyclingIndex } from "../CyclingCallingWord";
+import { GLANCE_YEARS_WORDS, GLANCE_INTERVAL_MS } from "../AtAGlance";
 
 type IconType = React.ComponentType<{ size?: number; className?: string }>;
 const ICONS: Record<string, IconType> = {
@@ -35,6 +36,7 @@ function Section({ id, eyebrow, title, iconKey, children }: { id: string; eyebro
 }
 
 export function PlaySections() {
+  const glanceCycle = useCyclingIndex(GLANCE_YEARS_WORDS.length, GLANCE_INTERVAL_MS);
   return (
     <div className="divide-y divide-amber-faint">
       <Section id="hero" eyebrow="00 · Welcome" title="An actor who teaches. A teacher who acts." iconKey="sparkles">
@@ -53,7 +55,7 @@ export function PlaySections() {
         <p className="mt-4 text-base leading-relaxed text-stone/70">Asher believes effective communication comes from authenticity, not volume. That introverts can become outstanding communicators without pretending to be extroverts. That every individual has experiences that can positively impact others.</p>
       </Section>
 
-      <Section id="stage" eyebrow="01 · The Stage" title="The stage has been one of the defining parts of Asher's life." iconKey="drama">
+      <Section id="stage" eyebrow="01 · The Stage" title="The Stage Helped To Shape Asher" iconKey="drama">
         <p className="text-base leading-relaxed text-stone/85">Ten years performing in Christian theatre productions. Roles that combine emotional depth, storytelling, and meaningful themes — the kind of work that asks something of you, not just the audience.</p>
         <div className="mt-5 grid grid-cols-2 gap-3">{STAGE_STATS.map((s) => (<div key={s.label} className="rounded-xl border border-amber-faint bg-stage/40 p-3 text-center"><p className="font-display text-3xl font-semibold text-spotlight-gradient">{s.value}</p><p className="mt-1 font-mono-stage text-xs uppercase tracking-[0.18em] text-stone/60">{s.label}</p></div>))}</div>
         <div className="mt-6"><p className="mb-3 font-mono-stage text-xs uppercase tracking-[0.22em] text-stone/60">/ selected_credits</p>
@@ -62,7 +64,7 @@ export function PlaySections() {
         <div className="mt-6 space-y-3">{STAGE_PILLARS.map((p, i) => (<div key={i} className="rounded-lg border border-amber-faint/40 p-3"><p className="font-display text-base font-semibold text-ivory">{p.title}</p><p className="mt-1 text-base text-stone/70">{p.body}</p></div>))}</div>
       </Section>
 
-      <Section id="coaching" eyebrow="02 · The Studio" title="Helping people become more confident communicators." iconKey="graduation">
+      <Section id="coaching" eyebrow="02 · The Studio" title="Helping People Communicate Confidently & Authentically" iconKey="graduation">
         <p className="text-base leading-relaxed text-stone/85">{COACHING_INTRO}</p>
         <div className="mt-5 grid grid-cols-2 gap-2">{COACHING_TOPICS.map((t) => (<div key={t.title} className="rounded-lg border border-amber-faint/40 px-3 py-2"><p className="text-base font-semibold text-ivory">{t.title}</p><p className="mt-0.5 text-sm text-stone/60 leading-snug">{t.body}</p></div>))}</div>
         <div className="mt-5 grid grid-cols-2 gap-2">{COACHING_CREDENTIALS.map((c) => (<div key={c.label} className="rounded-lg border border-amber-faint bg-stage/40 p-3"><p className="font-mono-stage text-xs uppercase tracking-[0.2em] text-stone/60">{c.label}</p><p className="mt-1 text-base font-medium text-ivory">{c.value}</p></div>))}</div>
@@ -76,7 +78,12 @@ export function PlaySections() {
         <p className="mt-6 text-base leading-relaxed text-stone/60">They&rsquo;re the everyday principles that shape how Asher performs, teaches, writes, and interacts with others — on stage, in workshops, and in the in-between moments where most of life actually happens.</p>
       </Section>
 
-      <Section id="glance" eyebrow="04 · At a Glance" title="Built to be used like a craft — practised, lived, shared." iconKey="chart">
+      <Section
+        id="glance"
+        eyebrow="04 · At a Glance"
+        title={<>Years <CyclingWordSlot words={GLANCE_YEARS_WORDS} index={glanceCycle.index} reduceMotion={glanceCycle.reduceMotion} wordClassName="italic text-spotlight-gradient" />.</>}
+        iconKey="chart"
+      >
         <div className="grid grid-cols-2 gap-2">{GLANCE_STATS.map((s) => (<div key={s.label} className="rounded-xl border border-amber-faint bg-stage/40 p-4"><p className="font-display text-4xl font-semibold text-spotlight-gradient">{s.value}</p><p className="mt-1 font-mono-stage text-xs uppercase tracking-[0.18em] text-stone/60">{s.label}</p></div>))}</div>
         <div className="mt-5"><p className="font-mono-stage text-xs uppercase tracking-[0.25em] text-stone/60">Brands worked with</p><div className="mt-2 flex flex-wrap gap-2">{BRANDS.map((b) => (<span key={b} className="rounded-full border border-amber-faint px-3 py-1.5 font-mono-stage text-xs uppercase tracking-[0.16em] text-ivory/90">{b}</span>))}</div></div>
         <p className="mt-6 text-base leading-relaxed text-stone/70">Marketing and theatre, running in parallel for more than a decade and a half — both pointing at the same instinct: communicate ideas that move people. A quick snapshot of the work so far.</p>
@@ -105,7 +112,7 @@ export function PlaySections() {
         <p className="mt-6 text-base leading-relaxed text-stone/60">{PHILOSOPHY_CLOSING_NOTE}</p>
       </Section>
 
-      <Section id="contact" eyebrow="07 · Work With Asher" title="Let's find your voice." iconKey="pen">
+      <Section id="contact" eyebrow="07 · Work With Asher" title="Let's Chat" iconKey="pen">
         <p className="text-base leading-relaxed text-stone/85">Whether you&rsquo;re preparing for a keynote, building a personal brand, or putting together a production that has to mean something — Asher would love to hear from you. WhatsApp is the fastest way to reach him.</p>
         <div className="mt-5 space-y-2">
           <a href={CONTACT_INFO.whatsappUrl} target="_blank" rel="noreferrer" className="group flex items-center gap-3 rounded-xl border border-spotlight/40 bg-spotlight/10 p-3 transition-colors hover:bg-spotlight/20"><div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-spotlight/40 bg-spotlight/10 text-spotlight"><MessageCircle size={16} /></div><div className="flex-1"><p className="font-mono-stage text-xs uppercase tracking-[0.2em] text-spotlight/80">WhatsApp · Fastest Reply</p><p className="text-base font-medium text-ivory group-hover:text-spotlight">{CONTACT_INFO.whatsapp}</p></div><ChevronRight size={16} className="text-stone/40 group-hover:text-spotlight" /></a>

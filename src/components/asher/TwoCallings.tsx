@@ -32,7 +32,7 @@ export function TwoCallings() {
         <Reveal>
           <div className="flex flex-col gap-6 border-b border-amber-faint pb-12">
             <Eyebrow index="05" label="Two Callings, One Story" />
-            <h2 className="max-w-5xl font-display text-4xl font-semibold leading-[1.02] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-7xl">
+            <h2 className="max-w-5xl font-display text-4xl font-semibold leading-[1.15] tracking-[-0.02em] text-ivory sm:text-5xl lg:text-7xl">
               {/* Forced break on mobile only: without it, "Asher is a
               Storyteller" wraps to two lines while shorter words like
               "Asher is an Actor" fit on one -- the headline's own height

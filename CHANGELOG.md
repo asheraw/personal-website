@@ -11,6 +11,23 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-27 — Fixed the same descender clip on 2 more cycling headlines, and a Play-mode content drift
+
+Follow-up to the headline pass below: the ThreePillars line-height fix (0.98 -> 1.15) only touched that
+one heading. Asher caught the same clipping on the two other headings using the identical cycling-word
+component -- "At a Glance"'s new cycling line and Two Callings' "Asher is a/an ___" -- since both still had
+their own tight leading (1.05 and 1.02) untouched. Loosened both to 1.15 to match.
+
+Separately, Asher asked directly why Story mode and Play mode's content don't always update together --
+real answer: some content (bios, stats, contact info) already lives in one shared `data.ts` both modes
+read from, but section *headlines* are hand-typed separately per mode, not centralized. Today's four
+headline edits (Stage, Coaching, At a Glance, Contact) were only made in Story mode, silently leaving Play
+mode's own copies -- including the *old* "Built to be used like a craft" line just replaced in Story mode
+-- stale. Fixed by updating Play mode's matching titles directly, and for "At a Glance" specifically,
+exported the new cycling word list from AtAGlance.tsx so Play mode's version reuses the exact same array
+and timer instead of a hand-copied one -- the same drift this project has already been bitten by once
+before with duplicated section copy.
+
 ## 2026-08-27 — Tightened four homepage headlines, gave "At a Glance" a cycling word too
 
 Asher asked for a pass over every headline on the homepage -- several ran long for display-size type
