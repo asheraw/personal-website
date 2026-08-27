@@ -11,6 +11,17 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — A browsable post list on category pages
+
+Asher sketched an idea over a screenshot: on a category page, use the open margin beside the post list to
+show every other post in that category, so a reader can jump around instead of scrolling back to the top
+each time. Built as `CategoryPostList.tsx`, a sticky sidebar (2xl+ only, same wide-screen-only pattern as
+the comment social-proof bubble) that stays in view while scrolling through the category's posts, with its
+own internal scroll so it never outgrows the viewport — "Authenticity" alone already has 40 posts.
+Deliberately scoped to category pages only, not individual posts: `RelatedPosts.tsx` already handles
+cross-post discovery there, at the end of each article, and a second browsing widget in a different shape
+would compete with it rather than add anything. No change at all below the 2xl breakpoint.
+
 ## 2026-08-26 — AI image-prompt settings were invisible in Studio, and a subject-selection upgrade
 
 Two related fixes in the same conversation. First: Asher went looking for the image-prompt/composition-mode

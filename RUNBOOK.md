@@ -1465,6 +1465,25 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## Category pages: sticky post-browsing sidebar (2026-08-26)
+
+`CategoryPostList.tsx`, wired into `blog/category/[slug]/page.tsx`. Same wide-screen-only philosophy as the
+comment social-proof bubble (`CommentSocialProof.tsx`) -- `hidden ... 2xl:block`, nothing at all below that
+breakpoint -- but a different CSS technique on purpose: the bubble uses `position: absolute` off a
+zero-height anchor div (it needs to float free of the main column's own height); this sidebar uses
+`position: sticky` inside an actual `2xl:flex` layout, because the whole point here is following the
+reader's scroll position, which `position: absolute` can't do (it's pinned to one spot in the document, not
+the viewport). The outer container widens from `max-w-3xl` to `2xl:max-w-[70rem]` only at that same
+breakpoint, specifically to fit the 16rem sidebar + 3rem gap + the same 3xl-equivalent content column side
+by side without changing the content column's own width at all -- confirmed via Playwright bounding-box
+checks at 1280px that the layout is byte-for-byte identical to before this change below 2xl.
+
+`posts` (all of them, unpaginated) was already being fetched by the page for the post-card list below --
+the sidebar reuses that exact same array, no new query needed. Verified sticky behavior for real (not just
+assumed from the CSS): screenshotted before and after a 1500px scroll on a 40-post category page and
+confirmed the sidebar's own bounding box stayed at the same `y` position while the main content advanced to
+the second post underneath it.
+
 ## AI image-prompt settings were empty in Studio (fixed 2026-08-26)
 
 `aiPromptSettingsType.ts` gained `imagePromptTemplate`, `compositionMode1`, `compositionMode2` on
