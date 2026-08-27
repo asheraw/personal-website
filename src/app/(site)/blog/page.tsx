@@ -100,11 +100,15 @@ export default async function BlogPage() {
         </h1>
         <p className="mt-4 max-w-xl whitespace-pre-wrap leading-relaxed text-stone/80">{blogTagline}</p>
 
-        <div className="relative mt-8 flex flex-wrap items-center gap-3">
+        <div className="mt-8 flex flex-wrap items-center gap-3">
           <BlogSearch posts={searchIndex} />
-          <CommentStatsBadge stats={commentStats} />
-          {testimonials.length > 0 && <CommentTestimonialBubble testimonials={testimonials} />}
+          <div className="relative inline-flex">
+            <CommentStatsBadge stats={commentStats} />
+            {testimonials.length > 0 && <CommentTestimonialBubble testimonials={testimonials} />}
+          </div>
         </div>
+
+        <MobileTestimonialCard testimonials={testimonials} />
 
         {categories.length > 0 && (
           <div className="mt-8">
@@ -130,8 +134,6 @@ export default async function BlogPage() {
             <FeaturedPostCard post={featuredPost} />
           </div>
         )}
-
-        <MobileTestimonialCard testimonials={testimonials} />
 
         {totalCount === 0 ? (
           featuredPost ? null : (

@@ -11,6 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-27 — Comment bubble's tail now actually points at the pill it belongs to
+
+Two real layout bugs Asher caught from screenshots. Desktop: the speech bubble's `absolute left-full`
+positioning was anchored to the whole search row (full column width), not the comment-count pill next to
+it -- so the bubble floated off in empty space with a big gap before it, and the progress ring's tail
+anchor (a fixed `top-7`) didn't line up with where the tail visually sat, so the ring cut across it instead
+of tracing from its tip. Fixed by wrapping the pill and bubble in their own tightly-fitted container (so
+`left-full` resolves against the pill's real width) and centering both the tail and the ring's start point
+on the bubble's own measured height, so they always line up regardless of message length.
+
+Mobile: the card sat below "Browse by topic" with no visual link to the pill above it, and its progress
+ring started from an arbitrary top-left corner. Moved it to sit directly under the pill, ahead of the topic
+tags, and gave it its own upward-pointing tail with a matching top-anchored ring path (`ringPathTop`,
+mirroring the desktop version's left-anchored `ringPath`) so the ring now starts and ends at the tail too.
+
 ## 2026-08-27 — Cleaned up empty categories, Netlify usage shortcut on the Dashboard
 
 Deleted three categories with zero posts and zero references anywhere (Experience, Storytelling, Life) --

@@ -20,13 +20,15 @@ const MESSAGE_MAX_LENGTH = 160;
 const MOBILE_MESSAGE_MAX_LENGTH = 80;
 const ROTATE_MS = 7000;
 const CARD_RADIUS = 16;
+// Matches the mobile tail's own `left-6` position (24px) plus half its own
+// width (8px), so the ring's start/end point lines up with the tail.
+const MOBILE_TAIL_ANCHOR_X = 32;
 
-// Full rounded-rect perimeter as one path. `startY` is where the path
-// begins and ends -- the desktop bubble anchors this to its tail's own
-// attachment point (see TAIL_ANCHOR_Y below) so the ring visibly grows out
-// of the tail and sweeps back to it; the mobile card has no tail to anchor
-// to, so it defaults to the top-left corner, same as a plain <rect>.
-function ringPath(width: number, height: number, startY = 0): string {
+// Full rounded-rect perimeter as one path, starting/ending partway down the
+// left edge. Used by the desktop bubble, whose tail attaches to the left
+// edge -- `startY` is that attachment point, so the ring visibly grows out
+// of the tail and sweeps back to it instead of an arbitrary corner.
+function ringPath(width: number, height: number, startY: number): string {
   const r = CARD_RADIUS;
   const y = startY;
   return [
@@ -40,6 +42,26 @@ function ringPath(width: number, height: number, startY = 0): string {
     `L ${r},${height}`,
     `A ${r},${r} 0 0 1 0,${height - r}`,
     `L 0,${y}`,
+  ].join(" ");
+}
+
+// Same perimeter, but starting/ending partway along the top edge instead --
+// used by the mobile card, whose tail points up at the comment-count pill
+// sitting directly above it rather than out to the side.
+function ringPathTop(width: number, height: number, startX: number): string {
+  const r = CARD_RADIUS;
+  const x = startX;
+  return [
+    `M ${x},0`,
+    `L ${width - r},0`,
+    `A ${r},${r} 0 0 1 ${width},${r}`,
+    `L ${width},${height - r}`,
+    `A ${r},${r} 0 0 1 ${width - r},${height}`,
+    `L ${r},${height}`,
+    `A ${r},${r} 0 0 1 0,${height - r}`,
+    `L 0,${r}`,
+    `A ${r},${r} 0 0 1 ${r},0`,
+    `L ${x},0`,
   ].join(" ");
 }
 
@@ -114,19 +136,18 @@ export function CommentStatsBadge({ stats }: { stats: CommentStats }) {
   );
 }
 
-// The mobile equivalent of the speech bubble below -- shown beneath the
-// Featured Post (not in the first fold, avoiding the exact clutter concern
-// the bubble was hidden on mobile for in the first place), as a plain
-// full-width card rather than a floating side-margin one, with no tail
-// (nothing adjacent for it to visually "speak from" way down here). Rotates
-// and shows the same progress ring as the desktop bubble -- Asher's own
-// call, after an earlier static-per-load version gave up the rotation
-// entirely to dodge a real concern (a taller/shorter testimonial reflowing
-// the page under it every 7s, since this card sits in normal document
-// flow, unlike the bubble). Fixed instead: a tighter message cap
-// (MOBILE_MESSAGE_MAX_LENGTH) that reliably fits 2 lines, plus a fixed
-// `min-h-[7.5rem]` on the message area -- the box's own footprint stays
-// constant across every rotation regardless of which testimonial is
+// The mobile equivalent of the speech bubble below -- shown directly under
+// the comment-count pill (rather than beside it, since there's no open
+// margin on a phone), with its own tail pointing straight up at that pill
+// so the two visibly belong together, same idea as the desktop bubble's
+// sideways tail. Rotates and shows the same progress ring as the desktop
+// bubble -- Asher's own call, after an earlier static-per-load version gave
+// up the rotation entirely to dodge a real concern (a taller/shorter
+// testimonial reflowing the page under it every 7s, since this card sits in
+// normal document flow, unlike the bubble). Fixed instead: a tighter
+// message cap (MOBILE_MESSAGE_MAX_LENGTH) that reliably fits 2 lines, plus
+// a fixed `min-h-[7.5rem]` on the message area -- the box's own footprint
+// stays constant across every rotation regardless of which testimonial is
 // showing; a shorter message just leaves a little empty space rather than
 // the card ever changing size.
 export function MobileTestimonialCard({ testimonials }: { testimonials: Testimonial[] }) {
@@ -134,13 +155,17 @@ export function MobileTestimonialCard({ testimonials }: { testimonials: Testimon
   if (!testimonial) return null;
 
   return (
-    <div className="mt-10 2xl:hidden">
+    <div className="relative mt-6 2xl:hidden">
+      <span
+        aria-hidden="true"
+        className="absolute -top-2 left-6 h-4 w-4 rotate-45 border-l border-t border-amber-faint bg-card"
+      />
       <div ref={cardRef} className="relative rounded-2xl border border-amber-faint bg-card px-5 py-4">
         {rotates && size && !reduceMotion && (
           <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
             <motion.path
               key={testimonial._id}
-              d={ringPath(size.width, size.height)}
+              d={ringPathTop(size.width, size.height, MOBILE_TAIL_ANCHOR_X)}
               fill="none"
               className="stroke-spotlight/50"
               strokeWidth={1.5}
@@ -191,24 +216,27 @@ export function MobileTestimonialCard({ testimonials }: { testimonials: Testimon
 // of dots which would eventually overflow the card.
 export function CommentTestimonialBubble({ testimonials }: { testimonials: Testimonial[] }) {
   const { testimonial, rotates, cardRef, size, reduceMotion } = useRotatingTestimonial(testimonials);
-  // Matches the tail's own `top-7` position (1.75rem, assuming the default
-  // 16px root) so the ring's start/end point lines up with the tail.
-  const TAIL_ANCHOR_Y = 28;
+  // The tail sits at the bubble's own vertical center (see the tail span's
+  // `top-1/2` below) rather than a fixed offset, so it stays lined up with
+  // the ring regardless of how tall the current testimonial's text makes
+  // the bubble. `size` isn't measured yet on the very first render; the
+  // ring itself is gated on `size` below, so this fallback is never drawn.
+  const tailAnchorY = size ? size.height / 2 : 0;
   if (!testimonial) return null;
 
   return (
-    <aside className="absolute left-full top-0 ml-12 hidden w-64 2xl:block">
+    <aside className="absolute left-full top-1/2 ml-8 hidden w-64 -translate-y-1/2 2xl:block">
       <div ref={cardRef} className="relative rounded-2xl border border-amber-faint bg-card px-5 py-4">
         <span
           aria-hidden="true"
-          className="absolute -left-[9px] top-7 h-4 w-4 rotate-45 border-b border-l border-amber-faint bg-card"
+          className="absolute -left-[9px] top-1/2 h-4 w-4 -translate-y-1/2 rotate-45 border-b border-l border-amber-faint bg-card"
         />
 
         {rotates && size && !reduceMotion && (
           <svg className="pointer-events-none absolute inset-0 h-full w-full overflow-visible" aria-hidden="true">
             <motion.path
               key={testimonial._id}
-              d={ringPath(size.width, size.height, TAIL_ANCHOR_Y)}
+              d={ringPath(size.width, size.height, tailAnchorY)}
               fill="none"
               className="stroke-spotlight/50"
               strokeWidth={1.5}
