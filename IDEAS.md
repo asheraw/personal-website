@@ -10,6 +10,23 @@ Newest first. Each entry: what it is, why it's not built, and what would make it
 
 ---
 
+## Studio light/dark mode toggle
+
+**What:** Asher wants the option to switch Sanity Studio itself (the admin/editor interface, not the public
+site) into light mode someday — not because dark mode is wrong, just as a future option. Dark should stay
+the default either way.
+
+**Why not now:** raised right at the end of a long session (1:21am) specifically to log and pick up later,
+not a design or cost reason like the other items on this list.
+
+**Worth checking first, next time this is picked up:** Sanity Studio has shipped a built-in appearance/
+color-scheme picker (System/Light/Dark) in its own user menu since Studio v3 — worth confirming whether
+that's already present and just needs surfacing/pointing out to Asher, versus something that needs real
+custom work (a `theme`/`scheme` option in `sanity.config.ts`), before assuming this needs to be built from
+scratch.
+
+---
+
 ## AI spam-check for comments
 
 **What:** when a new comment comes in (`POST /api/comments`), ask an AI model whether it actually reads as
