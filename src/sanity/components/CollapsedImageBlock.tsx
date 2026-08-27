@@ -1,10 +1,12 @@
 import {BlockPreview} from 'sanity'
 import type {BlockProps} from 'sanity'
+import {urlFor} from '../lib/image'
 
+type ImageAsset = {_ref?: string; _type?: string}
 type GalleryValue = {
   alt?: string
-  asset?: {_ref?: string; _type?: string}
-  additionalImages?: {asset?: {_ref?: string; _type?: string}}[]
+  asset?: ImageAsset
+  additionalImages?: {asset?: ImageAsset}[]
   displayStyle?: string
 }
 
@@ -57,16 +59,41 @@ export function CollapsedImageBlock(props: BlockProps) {
   const value = (props.value ?? {}) as GalleryValue
   const items = value.additionalImages ?? []
   const extra = items.length
-  const media = {_type: 'image', asset: value.asset ?? items[0]?.asset}
+  const assetRef = value.asset ?? items[0]?.asset
+
+  // `BlockPreview` used standalone like this doesn't go through Sanity's
+  // own async preview-resolution pipeline (the thing that normally turns a
+  // raw `{_type: 'image', asset}` shape into an actual thumbnail wherever
+  // the schema's `preview.prepare()` output shows up elsewhere, e.g. the
+  // Comments tool or a reference list) -- passing that same raw shape here
+  // rendered as a blank box, confirmed directly. Building the real URL with
+  // the project's own `urlFor` and handing it a genuine `<img>` sidesteps
+  // that missing resolution step entirely.
+  const media = assetRef?._ref ? (
+    <img
+      src={urlFor(assetRef).width(64).height(64).fit('crop').url()}
+      alt=""
+      style={{width: '100%', height: '100%', objectFit: 'cover'}}
+    />
+  ) : undefined
 
   return (
-    <div onClick={() => props.onOpen()} style={{cursor: 'pointer'}}>
-      <BlockPreview
-        title={titleFor(value, extra)}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same runtime-only image-asset shape used in blockContentType.ts's own preview.prepare()
-        media={media as any}
-        schemaType={props.schemaType}
-      />
+    <div
+      onClick={(event) => {
+        // Confirmed flaky without this: opening sometimes worked, sometimes
+        // closed again immediately after. Sanity's own editor almost
+        // certainly has a document-level "click outside the open block
+        // closes it" listener -- without stopping propagation here, the
+        // SAME click that calls onOpen() also keeps bubbling up to that
+        // listener, which (since nothing was open yet at the moment this
+        // click actually fired) reads it as an outside click and closes
+        // the block React just opened, all within the same event.
+        event.stopPropagation()
+        props.onOpen()
+      }}
+      style={{cursor: 'pointer'}}
+    >
+      <BlockPreview title={titleFor(value, extra)} media={media} schemaType={props.schemaType} />
     </div>
   )
 }
