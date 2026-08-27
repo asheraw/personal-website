@@ -41,11 +41,17 @@ export function useCyclingIndex(length: number, intervalMs: number): {index: num
 //
 // This version still masks the slide with `overflow-hidden` (needed for
 // the scrolling-reel look, not a plain cross-fade), but gives the box
-// `pb-[0.28em]` genuine extra room below the text for descenders, then
-// cancels that same amount with `-mb-[0.28em]` so the box's OUTER edge --
+// `pb-[0.45em]` genuine extra room below the text for descenders, then
+// cancels that same amount with `-mb-[0.45em]` so the box's OUTER edge --
 // what the surrounding line actually aligns against -- lands exactly where
 // it would with no padding at all. The descender gets real, unclipped
 // room; the alignment with sibling text (e.g. "Asher is") is unaffected.
+// (Bumped from an earlier 0.28em after Asher still saw real clipping on
+// "story"/"voice"/"telling"/"hearing" in ThreePillars.tsx -- 0.28em checked
+// out fine against measurements taken here, so this is a deliberately
+// generous margin to cover whatever real-world rendering condition
+// (zoom level, DPI, font hinting) actually tipped it over, rather than a
+// value chased down to an exact number.)
 // `layout="size"` on the wrapper animates the width smoothly as shorter/
 // longer words swap in. Inspired by a cycling-word hero effect Asher found
 // on 21st.dev, adapted to this site's actual visual language rather than
@@ -72,7 +78,7 @@ export function CyclingWordSlot({
   return (
     <motion.span
       layout="size"
-      className="relative inline-block align-bottom overflow-hidden pb-[0.28em] -mb-[0.28em]"
+      className="relative inline-block align-bottom overflow-hidden pb-[0.45em] -mb-[0.45em]"
     >
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
