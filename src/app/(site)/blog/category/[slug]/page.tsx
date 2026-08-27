@@ -58,7 +58,7 @@ export default async function CategoryPage({ params }: PageProps) {
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
-      <div className="mx-auto max-w-3xl px-5 sm:px-8 2xl:flex 2xl:max-w-[70rem] 2xl:items-start 2xl:gap-12">
+      <div className="mx-auto max-w-3xl px-5 sm:px-8 2xl:flex 2xl:max-w-[86rem] 2xl:items-start 2xl:gap-12">
         {posts.length > 0 && <CategoryPostList posts={posts} />}
 
         <div className="min-w-0 2xl:max-w-3xl 2xl:flex-1">
@@ -91,6 +91,15 @@ export default async function CategoryPage({ params }: PageProps) {
             </div>
           )}
         </div>
+
+        {/* Invisible, matches the sidebar's own w-64 exactly -- without
+            this, the flex row is [sidebar][content] with nothing to
+            balance it on the right, so the centered outer container's own
+            centering keeps the *row* centered while the content column
+            itself sits noticeably right of true page-center. This reserves
+            the same space on the other side so content stays centered
+            regardless of whether the sidebar is there. */}
+        <div className="hidden w-64 shrink-0 2xl:block" aria-hidden="true" />
       </div>
     </BlogChrome>
   );
