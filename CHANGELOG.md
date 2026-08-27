@@ -11,6 +11,32 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-28 — Image block: a real "Gallery mode" instead of one flat list of fields
+
+Asked for a UX pass on the Image block's editing panel using the ui-ux-pro-max skill. First look (just the
+screenshot) suggested minor polish -- shorten one long description, group a couple of fields. Asked to look
+deeper at what the panel actually does before proposing anything, which surfaced the real picture: this one
+block hides four distinct ways to add a photo (drag/paste, plain upload, "Upload (compressed)", and GIF
+search via Giphy -- the last two invisible behind an unlabeled "Upload" dropdown chevron), a whole second
+bulk multi-select system for building a gallery, and a display-style/display-size system with 8 combined
+options between them -- none of that visible from the screenshot alone.
+
+Picked the deepest of three proposed fixes: the block silently turns from "one photo" into "gallery" the
+moment a second photo gets added via "More photos," but nothing on screen ever announced that shift.
+Fixed two ways. First, a small badge now sits above the whole panel reading "Single image" or "Gallery — N
+photos," computed live from the actual field values (`ImageGalleryStatusInput.tsx`, composed alongside the
+existing save-status badge rather than merged into it, since that badge is shared with unrelated blocks
+like Accordion and Code that have no gallery concept at all). Second, "More photos" and "Display style" --
+the two fields that only matter once you're actually building a gallery -- are now grouped into their own
+visually distinct "Gallery" box (a Sanity `fieldset`, schema-only, no extra UI code) instead of blending
+into the same flat list as Alt text/Caption/Display size, which describe the image regardless of mode.
+
+Also added one clarifying line to the bulk-photo-picker: it sits directly above Sanity's own default
+one-at-a-time add UI with no explanation, reading as two competing ways to do the same thing rather than
+two tools for two different situations (bulk-select a batch vs. add/upload one, including the still-hidden
+GIF search option). Left the four-hidden-upload-paths discoverability problem and the Display Size
+description length as open items, not part of this pass, if Asher wants either addressed later.
+
 ## 2026-08-27 — Fixed the same descender clip on 2 more cycling headlines, and a Play-mode content drift
 
 Follow-up to the headline pass below: the ThreePillars line-height fix (0.98 -> 1.15) only touched that

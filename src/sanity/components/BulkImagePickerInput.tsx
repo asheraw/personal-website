@@ -148,6 +148,15 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
         mode="ghost"
         onClick={() => setDialogOpen(true)}
       />
+      {/* The list/upload UI directly below is Sanity's own default array
+          input -- kept, not replaced, since it's still the right tool for
+          adding (or uploading) one photo at a time. This line exists
+          because the two sitting stacked with no explanation read as two
+          competing ways to do the same thing, when they're actually for
+          two different situations. */}
+      <Text size={0} muted>
+        Or add one at a time below — upload a new photo, search a GIF, or pick a single one from the library.
+      </Text>
       {renderDefault(props)}
       {dialogOpen && (
         <Dialog id="bulk-image-picker" header="Add photos from Media Library" onClose={() => setDialogOpen(false)} width={2}>

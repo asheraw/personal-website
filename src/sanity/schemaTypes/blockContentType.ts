@@ -10,6 +10,7 @@ import {TagIcon} from '@sanity/icons/Tag'
 import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
 import {SavedStatusInput} from '../components/SavedStatusInput'
+import {ImageGalleryStatusInput} from '../components/ImageGalleryStatusInput'
 import {BulkImagePickerInput} from '../components/BulkImagePickerInput'
 
 /**
@@ -236,7 +237,23 @@ export const blockContentType = defineType({
       type: 'image',
       icon: ImageIcon,
       options: {hotspot: true},
-      components: {input: SavedStatusInput},
+      components: {input: ImageGalleryStatusInput},
+      // Groups the gallery-only fields (More photos, Display style) into
+      // their own visually distinct box instead of blending into the same
+      // flat list as Alt text/Caption/Display size -- those describe THIS
+      // image regardless of mode, gallery fields only matter once you've
+      // actually started building one. "More photos" itself has to stay
+      // outside the `hidden` gate everything else in the group respects
+      // (see displayStyle below) since it's the field that STARTS gallery
+      // mode -- can't hide the on-ramp.
+      fieldsets: [
+        {
+          name: 'gallery',
+          title: 'Gallery',
+          description: 'Add more photos here to turn this into a gallery.',
+          options: {collapsible: false},
+        },
+      ],
       fields: [
         defineField({
           name: 'alt',
@@ -252,8 +269,9 @@ export const blockContentType = defineType({
         }),
         defineField({
           name: 'additionalImages',
-          title: 'More photos (optional -- turns this into a carousel)',
+          title: 'More photos',
           type: 'array',
+          fieldset: 'gallery',
           components: {input: BulkImagePickerInput},
           // Sanity's own default array-of-images rendering is one full-width
           // row per photo (drag handle, thumbnail, filename, a "..." menu) --
@@ -289,6 +307,7 @@ export const blockContentType = defineType({
           name: 'displayStyle',
           title: 'Display style',
           type: 'string',
+          fieldset: 'gallery',
           hidden: ({parent}) => !((parent as {additionalImages?: unknown[]})?.additionalImages?.length),
           options: {
             list: [
