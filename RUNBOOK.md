@@ -1465,28 +1465,54 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
-## Post dates: one shared formatter (2026-08-26)
+## Post dates: one shared, hand-built formatter (2026-08-26)
 
-`src/lib/formatDate.ts`, `formatPostDate()` -- `new Date(iso).toLocaleDateString("en-GB", {day: "2-digit",
-month: "short", year: "numeric"})`, giving a fixed "10 Aug 2026" everywhere. Replaces three separate inline
-`toLocaleDateString("en-GB", {year: "numeric", month: "long", day: "numeric"})` calls (`PostCard.tsx`,
-`FeaturedPostCard.tsx`, `blog/[slug]/page.tsx`) that were only pinned to a fixed locale/format as of the
-earlier hydration-mismatch fix the same day (see "Two console errors surfaced by local review" above) --
-Asher asked for a shorter, constant format on top of that fix, so this consolidates all three into one
-function rather than three copies of the same options object. `CommentSection.tsx`'s own date formatting
-(comment timestamps, a different, shorter numeric format) was intentionally left alone -- Asher's request
-was specifically about "the dates displayed on the blog under the titles," i.e. post dates, not comments.
+`src/lib/formatDate.ts`, `formatPostDate()`. First version used
+`toLocaleDateString("en-GB", {day: "2-digit", month: "short", year: "numeric"})`, consolidating three
+separate inline calls (`PostCard.tsx`, `FeaturedPostCard.tsx`, `blog/[slug]/page.tsx`) into one function --
+those three were only pinned to a fixed locale/format as of the earlier hydration-mismatch fix the same day
+(see "Two console errors surfaced by local review" above), and Asher asked for a shorter, constant format
+on top of that.
 
-## Category sidebar: "+N more" turned into a real expand toggle (2026-08-26)
+That `en-GB` version had a real quirk of its own, which Asher spotted directly: September rendered as
+"Sept" while every other month abbreviated to exactly 3 letters. Confirmed with a direct test
+(`toLocaleDateString('en-GB', {month:'short'})` for every month of the year) -- this is genuine `en-GB`
+CLDR/ICU locale data, not a bug (`en-US` gives "Sep" for every month including September, but flips the
+day-month-year ordering the format depends on). Rebuilt to construct the string entirely by hand from a
+fixed `SHORT_MONTHS` array instead of trusting any locale's own abbreviation table:
+```ts
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export function formatPostDate(iso: string): string {
+  const date = new Date(iso);
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = SHORT_MONTHS[date.getUTCMonth()];
+  const year = date.getUTCFullYear();
+  return `${day} ${month} ${year}`;
+}
+```
+Switched to the UTC getters (`getUTCDate`/`getUTCMonth`/`getUTCFullYear`), not the local-time ones, while
+already in there -- `getDate()`/`getMonth()` would have reintroduced the same *class* of bug as the
+hydration-mismatch fix this replaced: a post published right around midnight could render a different date
+server-side (Node's timezone) than client-side (the reader's own), if `toLocaleDateString`'s implicit
+system-timezone behavior ever differed between the two. `CommentSection.tsx`'s own date formatting (comment
+timestamps, a shorter numeric format) was left alone throughout -- Asher's request was specifically about
+"the dates displayed on the blog under the titles," i.e. post dates, not comments.
 
-Follow-up to the sidebar work above -- Asher's own framing: capping the list is fine, but a reader needs an
-actual way to reach the rest, not just a static count of what's hidden. `CategoryPostList.tsx` gained an
-`expanded` boolean state; `+N more` is now a `<button>` toggling it, and the rendered `<li>` list is
-`posts.slice(0, expanded ? posts.length : MAX_LISTED)`. The `IntersectionObserver` itself already watched
-every post in `posts` (not just the visible 15) from the start, so no change was needed there -- expanding
-just reveals `<li>`s for ids the observer was already tracking, meaning the active-post highlight stays
-correct immediately on expand with no re-subscription logic. Verified via Playwright: 15 items -> click ->
-40 items + button text flips to "Show fewer" -> click again -> back to 15.
+## Category sidebar: tried a click-to-expand toggle, then removed it (2026-08-26)
+
+Worth recording the back-and-forth, since the end state looks like the simplest possible version but wasn't
+the first thing tried. Original capped list (`MAX_LISTED = 15`) had a static "+N more below" label with no
+way to reach the rest -- Asher's pushback: capping is fine, but readers need an actual way to see more, not
+just a count of what's hidden. First fix added an `expanded` boolean state and turned "+N more" into a
+`<button>` toggling `posts.slice(0, expanded ? posts.length : MAX_LISTED)`, verified working via Playwright
+(15 items -> click -> 40 items, button text flips to "Show fewer" -> click again -> back to 15). Asher then
+tried it live and decided the *capped height* itself already looked fine -- the click-to-expand step was
+just unnecessary friction on top of a fix that wasn't needed. Removed `MAX_LISTED`/`expanded` entirely;
+`CategoryPostList` now always renders the full `posts` array, relying on the `<aside>`'s own
+`max-h-[calc(100vh-8rem)] overflow-y-auto` (present since the sidebar's first version) to make it scrollable
+in place with zero clicks. Net effect: simpler code than either previous version, and no dead click-to-open
+step. The `IntersectionObserver` scrollspy logic was never affected by any of this -- it always watched
+every post in `posts`, not just whatever the sidebar happened to be showing.
 
 ## Category pages: sticky post-browsing sidebar (2026-08-26)
 

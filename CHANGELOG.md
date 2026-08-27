@@ -11,6 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — Fixed "Sept" showing up in dates, sidebar drops the click-to-expand step
+
+Asher spotted that September rendered as "Sept" while every other month abbreviated to exactly 3 letters
+("Jan", "Aug", "Oct"...) — a real, genuine quirk of the `en-GB` locale's own short-month data (`en-US`
+gives "Sep", but flips the day/month order the format depends on). Rebuilt `formatPostDate()` to construct
+the string from a fixed month array instead of trusting any locale's abbreviation table at all, so this
+can't happen again regardless of what a browser's ICU data does. Also switched to UTC date getters instead
+of local-time ones while already in there — a latent bug where a post published right around midnight
+could theoretically show a different date on the server than in a reader's browser, depending on which
+timezone each one runs in.
+
+Also reworked the category sidebar's "+N more" from earlier today — Asher decided the capped height looked
+fine as-is, so the click-to-expand step was just friction. It now shows the full list from the start,
+scrollable in place, same as before the toggle was ever added.
+
 ## 2026-08-26 — Constant date format, and the category sidebar's "+N more" now actually expands
 
 Two quick follow-ups. Post dates everywhere on the blog now read "10 Aug 2026" instead of "10 August
