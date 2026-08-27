@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { truncateText } from "@/lib/text";
+import { track } from "@/lib/analytics";
 
 export type CommentStats = { totalComments: number; authorReplies: number };
 export type Testimonial = { _id: string; name: string; message: string | null; createdAt: string; postTitle: string; postSlug: string };
@@ -166,6 +167,7 @@ export function MobileTestimonialCard({ testimonials }: { testimonials: Testimon
             </p>
             <Link
               href={`/blog/${testimonial.postSlug}#comments`}
+              onClick={() => track({ action: "testimonial_join_conversation", category: "engagement", label: "mobile_card" })}
               className="mt-3 inline-flex items-center gap-1 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-spotlight transition-colors hover:text-spotlight/80"
             >
               Join the conversation →
@@ -233,6 +235,7 @@ export function CommentTestimonialBubble({ testimonials }: { testimonials: Testi
             </p>
             <Link
               href={`/blog/${testimonial.postSlug}#comments`}
+              onClick={() => track({ action: "testimonial_join_conversation", category: "engagement", label: "desktop_bubble" })}
               className="mt-3 inline-flex items-center gap-1 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-spotlight transition-colors hover:text-spotlight/80"
             >
               Join the conversation →
