@@ -32,6 +32,16 @@ paths (`ringPath`, `ringPathTop`) to detour out around that V -- from one tip, o
 back to the other tip -- using the tail's own rotated-45deg geometry (`(half its 16px side) * sqrt(2)`) so
 the ring now hugs the tail's real outline instead of cutting through it. Verified at 4x zoom on both.
 
+<b>Second follow-up (same day):</b> Asher also noticed a tiny visual "blip" -- the ring's outline briefly
+breaking right when a testimonial rotates and the bubble resizes to fit the new one. Real cause: the ring's
+shape is only as accurate as its last size measurement, which arrives a beat after the new testimonial's
+text (and the box's real new height) actually lands -- so for one frame the ring was drawn using the
+outgoing testimonial's stale dimensions before snapping to the correct ones. Fixed by hiding the ring the
+instant a testimonial swaps (adjusted during render, not in an effect, so the mismatched frame is never
+painted) and only letting it reappear once the new size is actually measured -- confirmed directly: the
+ring now disappears the moment the swap happens and only redraws once the box's real new height lands,
+both changes landing together rather than one trailing the other.
+
 ## 2026-08-27 — Cleaned up empty categories, Netlify usage shortcut on the Dashboard
 
 Deleted three categories with zero posts and zero references anywhere (Experience, Storytelling, Life) --

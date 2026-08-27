@@ -102,6 +102,24 @@ function useRotatingTestimonial(testimonials: Testimonial[]) {
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
   const reduceMotion = useReducedMotion();
 
+  // Hides the ring the instant a new testimonial rotates in, rather than
+  // briefly drawing it at the outgoing testimonial's now-stale dimensions
+  // while the incoming one's real height is still being measured -- that
+  // one-frame mismatch was the visible "blip" where the ring's outline
+  // snapped mid-draw once the ResizeObserver below caught up. Adjusted
+  // during render (not in an effect) so the mismatched frame is never
+  // actually painted -- a standard React pattern for resetting state when
+  // a value changes between renders. `size` clears back to a real
+  // measurement once the new testimonial's box settles (see the
+  // ResizeObserver effect below), which also restarts the ring's own
+  // draw-in animation from a fresh, correctly-sized shape instead of
+  // jumping mid-draw.
+  const [measuredForIndex, setMeasuredForIndex] = useState(index);
+  if (measuredForIndex !== index) {
+    setMeasuredForIndex(index);
+    setSize(null);
+  }
+
   useEffect(() => {
     if (withMessage.length < 2) return;
     const timer = setInterval(() => {
