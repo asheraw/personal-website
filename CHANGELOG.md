@@ -11,6 +11,14 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-26 — "Join the conversation" clicks now tracked in GA
+
+Asher asked whether that link was tracked separately from everything else — it wasn't, it was a plain
+internal link, so GA only ever saw a normal pageview on the destination with no way to attribute it to this
+widget specifically. Wired into the site's existing `track()` convention (same one already used for
+share/WhatsApp clicks), with separate labels for the desktop bubble and mobile card, so it's possible to
+actually see whether either gets used rather than just assuming it's a nice-to-have.
+
 ## 2026-08-26 — Category page content was sitting right of center
 
 Asher noticed category pages felt shifted compared to /blog. Real bug: the sidebar reserved space on the

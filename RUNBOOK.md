@@ -1465,6 +1465,21 @@ the same issue (`TrashedCommentCard`) and left it alone on purpose — it never 
 "Delete Forever" and its own confirmation already sit right next to each other; fixing it too would have
 been touching code that wasn't actually broken.
 
+## "Join the conversation" clicks tracked in GA (2026-08-26)
+
+`CommentSocialProof.tsx`'s two "Join the conversation" links (mobile card, desktop bubble) gained
+`onClick={() => track({ action: "testimonial_join_conversation", category: "engagement", label: ... })}`,
+using the existing `src/lib/analytics.ts` `track()` helper already wired to real GA elsewhere (share
+clicks, WhatsApp clicks, etc.) -- `label` distinguishes `"mobile_card"` from `"desktop_bubble"` so it's
+possible to see later whether either version actually gets clicked. Verified with real Playwright clicks
+against each (not just reading the code) -- both fire the expected `[analytics]` event with the correct
+label. One real gotcha hit verifying the mobile one: a naive `page.locator("a", has_text="Join the
+conversation").first` matched the *desktop* bubble's own link first, even at a 390px mobile viewport --
+it's still in the DOM (just `display:none` via `hidden 2xl:block`), and DOM order (not CSS-visible order)
+is what `.first` resolves against. Needed `a:visible` in the selector to target the actually-rendered
+mobile instance -- worth remembering for any future test against this component, since both links share
+the exact same visible text.
+
 ## Category page content was off-center (fixed 2026-08-26)
 
 `blog/category/[slug]/page.tsx`'s flex row was `[CategoryPostList (w-64)][content (flex-1, capped
