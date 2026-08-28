@@ -231,28 +231,46 @@ function StatCard({
       transition={{duration: 0.15}}
       style={{height: '100%'}}
     >
+      {/* Non-emphasis padding/badge/text bumped up a step on mobile -- a
+          thumb tapping this on a phone needs a bigger target and a bigger
+          number than a mouse pointer reading it on a desktop monitor does.
+          minWidth: 0 on the label side lets its Text actually truncate with
+          "..." instead of squeezing the badge off the right edge when both
+          the icon and a long label have to share a narrow phone-width row.
+          The emphasis card (pending comments, Asher's one deliberate focal
+          point) keeps its own fixed, already-larger sizing untouched. */}
       <Card
         as="a"
         href={href}
         radius={3}
         shadow={emphasis ? 2 : 1}
-        padding={emphasis ? 5 : 4}
+        padding={emphasis ? 5 : [4, 4, 3]}
         tone={value && value !== 0 ? tone : undefined}
         style={{height: '100%'}}
       >
         <Flex align="center" justify="space-between" gap={3}>
-          <Flex align="center" gap={emphasis ? 4 : 3}>
-            <Box style={emphasis ? {fontSize: '1.4em'} : undefined}>
+          <Flex align="center" gap={emphasis ? 4 : 3} style={{minWidth: 0}}>
+            <Box flex="none" style={emphasis ? {fontSize: '1.4em'} : undefined}>
               <Icon />
             </Box>
-            <Text size={emphasis ? 2 : 1} muted={!emphasis} weight={emphasis ? 'semibold' : undefined}>
+            <Text
+              size={emphasis ? 2 : [2, 2, 1]}
+              muted={!emphasis}
+              weight={emphasis ? 'semibold' : undefined}
+              textOverflow="ellipsis"
+            >
               {label}
             </Text>
           </Flex>
           {value === null ? (
             <Spinner muted />
           ) : (
-            <Badge tone={badgeTone} fontSize={emphasis ? 3 : 1} padding={emphasis ? 3 : 2}>
+            <Badge
+              tone={badgeTone}
+              fontSize={emphasis ? 3 : [2, 2, 1]}
+              padding={emphasis ? 3 : [3, 3, 2]}
+              style={{flexShrink: 0}}
+            >
               {value}
             </Badge>
           )}
@@ -300,14 +318,32 @@ export function DashboardTool() {
 
         <Stack space={3}>
           <SectionHeading>Quick actions</SectionHeading>
-          <Flex gap={3} wrap="wrap">
+          {/* Stacked full-width and taller on mobile (fontSize/padding bumped
+              below sm) -- Asher's own ask: this is the button he reaches for
+              one-handed, mid-commute, not just at a desk. Side-by-side +
+              default button size is fine once there's a mouse and a wide
+              screen, but on a phone two ghost/primary buttons crammed into
+              one wrapped row are easy to mis-tap or skip past. */}
+          <Flex direction={['column', 'row']} gap={3}>
             <Button
               text="New post"
               icon={AddDocumentIcon}
               tone="primary"
+              fontSize={[2, 1]}
+              padding={[4, 3]}
+              style={{justifyContent: 'center'}}
               onClick={() => openDocumentInStudio('post', crypto.randomUUID())}
             />
-            <Button as="a" href={LINKS.calendar} text="Schedule a post" icon={CalendarIcon} mode="ghost" />
+            <Button
+              as="a"
+              href={LINKS.calendar}
+              text="Schedule a post"
+              icon={CalendarIcon}
+              mode="ghost"
+              fontSize={[2, 1]}
+              padding={[4, 3]}
+              style={{justifyContent: 'center'}}
+            />
             <Button
               as="a"
               href={NETLIFY_BILLING_URL}
@@ -316,6 +352,9 @@ export function DashboardTool() {
               text="Netlify usage & credits"
               icon={LaunchIcon}
               mode="ghost"
+              fontSize={[2, 1]}
+              padding={[4, 3]}
+              style={{justifyContent: 'center'}}
             />
           </Flex>
         </Stack>

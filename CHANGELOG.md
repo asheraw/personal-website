@@ -463,6 +463,21 @@ returns `count` too) — the count does double duty, since a number next to a wo
 filterable collection of N things" even without the label. Verified the counts against real data (Theatre 9,
 Authenticity 33, etc. — matches exactly) before shipping.
 
+## 2026-08-28 — Fixed: Studio's GIF picker squished again once results scrolled
+
+Asher hit this live, replying to a comment from Studio: search results rendered as tall, unusable strips
+instead of squares. The 2026-08-21 squish fix was real but only ever verified against a results grid that
+fit without scrolling — turns out that's exactly the condition the remaining bug needed. Reproduced in an
+isolated test page (same `@sanity/ui` `Grid` + `aspectRatio: '1'` markup, a real generated animated GIF, not
+a placeholder): a 6-result grid (2 rows, no scrollbar) rendered clean squares every time; the same markup at
+24 results (8 rows, needs its own scrollbar) rendered every cell as a tall strip, no exceptions — a genuine
+CSS Grid + `aspect-ratio` + `overflow: auto` interaction, not a markup mistake. Fixed by dropping
+`aspect-ratio` for the older padding-bottom-percentage technique (a square derived from the wrapper's own
+width, never from the grid's row-track sizing), confirmed against the same isolated repro before porting
+into `CommentsTool.tsx`. Also added `loading="lazy"` to the thumbnail, matching the public comment form's
+picker and cutting down on 24+ GIFs all decoding/animating at once. Full root-cause writeup in
+`RUNBOOK.md`.
+
 ## 2026-08-21 — Fixed: check-links was failing on a permissions-limited token on Netlify
 
 Testing the new GitHub Actions cron replacement turned up a second, separate bug: `check-links` returned a

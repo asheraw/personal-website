@@ -1704,35 +1704,50 @@ function GifPickerButton({onSelect}: {onSelect: (gif: SelectedGif) => void}) {
                 </Text>
               )}
               {gifs?.map((gif) => (
-                <button
-                  key={gif.id}
-                  type="button"
-                  onClick={() => {
-                    onSelect({url: gif.url, title: gif.title})
-                    setOpen(false)
-                  }}
-                  // width: 100% is load-bearing, not decorative -- without
-                  // it this button (a plain <button>, not a flex/grid item
-                  // Sanity's own Grid stretches the way a native CSS grid
-                  // would) sizes itself from its content instead of its
-                  // grid column, so aspectRatio: 1 computed a square from
-                  // the *thumbnail's own* width/height rather than the
-                  // grid cell -- every non-square Giphy thumbnail (most of
-                  // them) rendered visibly squished as a result.
-                  style={{
-                    width: '100%',
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    padding: 0,
-                    aspectRatio: '1',
-                    overflow: 'hidden',
-                    borderRadius: 4,
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF thumbnail, not a Next page */}
-                  <img src={gif.thumbUrl} alt={gif.title} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-                </button>
+                // Square cell via the padding-bottom-percent trick, not the
+                // `aspect-ratio` CSS property -- confirmed by reproducing it
+                // in isolation (same @sanity/ui Grid, same real animated GIF)
+                // that `aspect-ratio` on the button collapses into tall
+                // vertical strips the moment the result grid has enough rows
+                // to actually need its own scrollbar (this popover's results
+                // box does, past the first ~6 results): a real CSS Grid +
+                // `aspect-ratio` + `overflow:auto` interaction bug, not
+                // something this codebase's own markup got wrong. A 6-result
+                // grid that never scrolls -- like the public comment form's
+                // own picker -- never hits it, which is why only the Studio
+                // picker (paginated to 24+ results) ever showed it. Padding
+                // relative to the wrapper's own width sidesteps the whole
+                // row-track/aspect-ratio negotiation the bug lives in: the
+                // square comes from the wrapper's width alone, regardless of
+                // how many rows are above or below it or whether the grid is
+                // scrolling.
+                <div key={gif.id} style={{position: 'relative', width: '100%', paddingBottom: '100%'}}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelect({url: gif.url, title: gif.title})
+                      setOpen(false)
+                    }}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      padding: 0,
+                      overflow: 'hidden',
+                      borderRadius: 4,
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- animated GIF thumbnail, not a Next page */}
+                    <img
+                      src={gif.thumbUrl}
+                      alt={gif.title}
+                      loading="lazy"
+                      style={{position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover'}}
+                    />
+                  </button>
+                </div>
               ))}
               {hasMore && <div ref={sentinelRef} style={{gridColumn: 'span 3', height: 1}} />}
               {loadingMore && (
