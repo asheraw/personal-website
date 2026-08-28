@@ -11,6 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-29 — Error Log gets a "Resolution note" field
+
+Checked the Error Log with Asher and found 3 pending entries, all from 2026-08-26 -- two (a ChunkLoadError
+and 124 identical "Server Action not found" hits) traced to the same ordinary cause: a visitor had the page
+open across a deploy boundary, so their browser's old JS chunk/Server Action references stopped resolving
+once the new build replaced them. Asher raised a real gap before agreeing to mark anything Ignored: the
+schema only ever stored the status, not *why* -- if one of these resurfaces later, there'd be nothing
+recording the reasoning anywhere Studio itself, only in a chat transcript that won't be around for a future
+session (human or AI) to read.
+
+Added a `resolutionNote` field to `errorLogType.ts` -- plain text, shown once status is Ignored or Actioned,
+so the actual reasoning lives next to the entry it explains. Scoped to Error Log only for now, not the other
+tools sharing the same Pending/Ignored/Actioned pattern (404 Hits, Content Audit) -- Asher's own call, can
+extend later if it proves useful here first.
+
 ## 2026-08-28 — Two real bugs found from Asher's direct testing of the collapsed image block
 
 Follow-up to the collapse fix below, tested live within minutes. Two real issues, both fixed.

@@ -98,6 +98,14 @@ export const errorLogType = defineType({
       initialValue: 'pending',
       description: 'Pending = not looked at yet. Ignored = you looked and decided it’s not worth fixing (e.g. caused by a browser extension, not this site). Actioned = you fixed it. Just for your own tracking.',
     }),
+    defineField({
+      name: 'resolutionNote',
+      title: 'Resolution note',
+      type: 'text',
+      rows: 3,
+      hidden: ({document}) => document?.status !== 'ignored' && document?.status !== 'actioned',
+      description: 'Why this was ignored or how it was fixed. The whole point: if this error resurfaces later, whoever looks at it next (including a future AI session with no memory of this conversation) can see the actual reasoning here instead of it only ever having existed in a chat that\'s since scrolled away.',
+    }),
   ],
   orderings: [
     {
