@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-29 — Error Log's resolution note was invisible in the actual tool, plus the status dropdown's arrow wasn't clickable
+
+Follow-up to the entry below, same day. The `resolutionNote` field existed in the schema and was being
+written correctly on the 3 patched entries, but Asher couldn't see it anywhere in the live Error Log --
+because `ErrorLogTool.tsx` is a fully hand-built React tool with its own GROQ query and JSX, not Sanity's
+generic document form. Adding a field to the schema alone doesn't make it appear there; the tool has to be
+told to fetch it and render it separately. Asher also flagged that the little arrow beside the Ignore/Fix
+dropdown wasn't clickable.
+
+Fixed both: the GROQ query now fetches `resolutionNote`, and each entry shows it as an editable text box
+once its status is Ignored or Fixed (saves on blur). The status dropdown was replaced entirely with three
+always-visible buttons (Pending / Ignored / Fixed) -- rather than debug why the native `<select>`'s arrow
+had a dead hit-area, this removes the arrow/dropdown interaction altogether.
+
 ## 2026-08-29 — Error Log gets a "Resolution note" field
 
 Checked the Error Log with Asher and found 3 pending entries, all from 2026-08-26 -- two (a ChunkLoadError

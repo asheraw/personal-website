@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useState} from 'react'
-import {Badge, Box, Card, Flex, Select, Spinner, Stack, Text} from '@sanity/ui'
+import {Badge, Box, Button, Card, Flex, Spinner, Stack, Text, TextArea} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
 import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
@@ -16,8 +16,15 @@ type ErrorRow = {
   firstSeenAt: string
   lastSeenAt: string
   status?: Status
+  resolutionNote?: string
   occurrences: Occurrence[]
 }
+
+const STATUS_OPTIONS: {value: Status; label: string}[] = [
+  {value: 'pending', label: 'Pending'},
+  {value: 'ignored', label: 'Ignored'},
+  {value: 'actioned', label: 'Fixed'},
+]
 
 const SOURCE_LABELS: Record<Source, string> = {
   error: 'Uncaught script error',
@@ -43,6 +50,7 @@ function ErrorRowCard({
   onToggleExpanded,
   busy,
   onSetStatus,
+  onSaveNote,
   tone,
 }: {
   row: ErrorRow
@@ -50,8 +58,16 @@ function ErrorRowCard({
   onToggleExpanded: () => void
   busy: boolean
   onSetStatus: (status: Status) => void
+  onSaveNote: (note: string) => void
   tone: 'caution' | 'transparent' | 'positive'
 }) {
+  // Local draft, not written back on every keystroke -- saved once when the
+  // textarea loses focus, same "edit freely, commit on blur" pattern as
+  // other Studio tools here rather than a separate Edit/Save toggle for
+  // what's usually a couple of sentences.
+  const [noteDraft, setNoteDraft] = useState(row.resolutionNote ?? '')
+  const status = row.status ?? 'pending'
+
   return (
     <Card padding={3} radius={2} border tone={tone}>
       <Stack space={3}>
@@ -59,31 +75,55 @@ function ErrorRowCard({
           <Text size={1} weight="medium" style={{fontFamily: 'monospace'}}>
             {row.message}
           </Text>
-          <Flex align="center" gap={3}>
+          <Flex align="center" gap={3} wrap="wrap">
             <Badge tone={row.occurrenceCount > 5 ? 'critical' : 'default'} fontSize={0}>
               {row.occurrenceCount}×
             </Badge>
             <Badge tone="default" fontSize={0}>
               {row.source ? SOURCE_LABELS[row.source] : 'unknown source'}
             </Badge>
-            <Select
-              value={row.status ?? 'pending'}
-              disabled={busy}
-              fontSize={1}
-              padding={2}
-              onChange={(event) => onSetStatus(event.currentTarget.value as Status)}
-              style={{width: 130}}
-            >
-              <option value="pending">Pending</option>
-              <option value="ignored">Ignored</option>
-              <option value="actioned">Fixed</option>
-            </Select>
+            {/* Three plain buttons instead of a <select> -- Asher reported the
+                dropdown's own arrow wasn't clickable. Rather than chase down
+                exactly why a native select's hit-area was misbehaving, this
+                sidesteps it: every option is its own real button, always
+                visible, nothing hidden behind an arrow to begin with. */}
+            <Flex gap={1}>
+              {STATUS_OPTIONS.map((opt) => (
+                <Button
+                  key={opt.value}
+                  text={opt.label}
+                  fontSize={1}
+                  padding={2}
+                  mode={status === opt.value ? 'default' : 'ghost'}
+                  tone={status === opt.value ? 'primary' : 'default'}
+                  disabled={busy}
+                  onClick={() => onSetStatus(opt.value)}
+                />
+              ))}
+            </Flex>
           </Flex>
         </Flex>
         <Text size={0} muted>
           First seen {new Date(row.firstSeenAt).toLocaleString()} · Last seen{' '}
           {new Date(row.lastSeenAt).toLocaleString()}
         </Text>
+        {status !== 'pending' && (
+          <Stack space={2}>
+            <Text size={0} weight="medium" muted>
+              Resolution note -- why this was {status === 'ignored' ? 'ignored' : 'marked fixed'}
+            </Text>
+            <TextArea
+              fontSize={1}
+              rows={2}
+              value={noteDraft}
+              placeholder="Explain the reasoning here so it's not lost once this chat is gone..."
+              onChange={(event) => setNoteDraft(event.currentTarget.value)}
+              onBlur={() => {
+                if (noteDraft !== (row.resolutionNote ?? '')) onSaveNote(noteDraft)
+              }}
+            />
+          </Stack>
+        )}
         {(row.stack || row.occurrences?.length > 0) && (
           <Text size={0} style={{cursor: 'pointer', textDecoration: 'underline'}} onClick={onToggleExpanded}>
             {isExpanded ? 'Hide' : 'Show'} stack trace & occurrence log ({row.occurrences?.length ?? 0}
@@ -123,8 +163,11 @@ function ErrorRowCard({
 // distinct error message (see errorLogType.ts), grouped into
 // Pending/Ignored/Fixed sections, most-seen-first within each. Populated by
 // ErrorMonitor.tsx (uncaught errors + unhandled promise rejections, every
-// page) and (site)/error.tsx (React render errors) via /api/track-error --
-// nothing here writes anything, this is purely a browsable record.
+// page) and (site)/error.tsx (React render errors) via /api/track-error.
+// This IS where the writing happens, despite the name -- status changes and
+// resolution notes both patch straight from here, since this hand-built
+// tool (not Sanity's generic document form) is the only place either field
+// is ever actually shown or edited.
 export function ErrorLogTool() {
   const client = useClient({apiVersion: '2026-07-22'})
   const [rows, setRows] = useState<ErrorRow[] | null>(null)
@@ -136,7 +179,7 @@ export function ErrorLogTool() {
     client
       .fetch<ErrorRow[]>(
         `*[_type == "errorLog"] | order(occurrenceCount desc){
-          _id, message, source, stack, occurrenceCount, firstSeenAt, lastSeenAt, status, occurrences
+          _id, message, source, stack, occurrenceCount, firstSeenAt, lastSeenAt, status, resolutionNote, occurrences
         }`,
       )
       .then(setRows)
@@ -154,6 +197,11 @@ export function ErrorLogTool() {
     } finally {
       setBusyId(null)
     }
+  }
+
+  async function setRowNote(id: string, resolutionNote: string) {
+    await client.patch(id).set({resolutionNote}).commit()
+    setRows((prev) => (prev ? prev.map((r) => (r._id === id ? {...r, resolutionNote} : r)) : prev))
   }
 
   function toggleExpanded(id: string) {
@@ -243,6 +291,7 @@ export function ErrorLogTool() {
                       onToggleExpanded={() => toggleExpanded(row._id)}
                       busy={busyId === row._id}
                       onSetStatus={(next) => setRowStatus(row._id, next)}
+                      onSaveNote={(note) => setRowNote(row._id, note)}
                     />
                   ))}
                 </Stack>
