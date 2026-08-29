@@ -5,6 +5,8 @@ import {CategoryCheckboxInput} from '../components/CategoryCheckboxInput'
 import {PrimaryCategoryInput} from '../components/PrimaryCategoryInput'
 import {TagsAutocompleteInput} from '../components/TagsAutocompleteInput'
 import {DistractionFreeWritingPanel} from '../components/DistractionFreeWritingPanel'
+import {TitleInputWithSeoSuggest} from '../components/TitleInputWithSeoSuggest'
+import {MainImageInputWithSuggestPrompt} from '../components/MainImageInputWithSuggestPrompt'
 
 export const postType = defineType({
   name: 'post',
@@ -46,6 +48,7 @@ export const postType = defineType({
     defineField({
       name: 'title',
       type: 'string',
+      components: {input: TitleInputWithSeoSuggest},
     }),
     defineField({
       name: 'slug',
@@ -66,7 +69,8 @@ export const postType = defineType({
           type: 'string',
           title: 'Alternative text',
         })
-      ]
+      ],
+      components: {input: MainImageInputWithSuggestPrompt},
     }),
     defineField({
       name: 'categories',

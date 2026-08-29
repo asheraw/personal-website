@@ -11,6 +11,46 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-29 — Image blocks in the post body lost their selection outline, single-click opened them instead of selecting
+
+`CollapsedImageBlock.tsx` (the compact-preview override for image blocks in the body editor) intercepted
+every single click and immediately opened the block for editing -- Asher's report: he used to be able to
+single-click an image block to select it (for backspace-delete or drag-to-reposition), with a visible
+selection outline, and only double-click actually opened it. That interaction, plus the outline itself,
+got lost when this override was first built to fix the "single image renders full-size" bug (see the
+2026-08-28 entries below).
+
+Fixed in two parts. The click handler moved from `onClick` to `onDoubleClick`, so a single click now falls
+through untouched to Sanity's own block-selection handling instead of being intercepted. And the outline
+itself needed to be drawn by hand: Sanity's own default image preview reads `props.selected` internally to
+show its ring, but this component replaces that default preview entirely, so nothing was reading it. Now
+wraps the compact preview in a `Card` with `tone={props.selected ? 'primary' : 'transparent'}` -- same
+tone-for-state pattern already used for status colouring in `ErrorLogTool.tsx`.
+
+## 2026-08-29 — "Suggest SEO & Excerpt" and "Suggest Image Prompt" moved into the writing flow
+
+Asher's ask, after noticing the Publish button's overflow menu had grown to 9 items: two of the AI-assist
+actions there matter enough to reach for constantly, and shouldn't need three clicks (Publish -> ... ->
+find it) every time. Rather than a generic "make everything a toolbar button" pass, asked which ones
+actually felt like part of the flow -- his answer was specifically these two, placed specifically next to
+the fields they're about: "Suggest SEO & Excerpt" right under the Title field, "Suggest Image Prompt"
+right under the Featured Image field. Draft Social Copy and Generate Featured Image stay in the overflow
+menu, on his own call.
+
+Neither action existed as a reusable button before this -- "Suggest SEO & Excerpt" did (`SuggestSeoButton.tsx`,
+already used on the SEO Preview tab), so the Title field just gained a second entry point into the same
+dialog. "Suggest Image Prompt" didn't, so it got the same split `suggestSeo.tsx`/`SuggestSeoShared.tsx`
+already went through: fetch/state/dialog-body logic moved out of the document action into
+`SuggestImagePromptShared.tsx`, the document action slimmed down to thin glue over it (unchanged
+behavior), and a new `SuggestImagePromptButton.tsx` added as the second entry point.
+
+Both new inline buttons live in field-level `components.input` overrides (`TitleInputWithSeoSuggest.tsx`,
+`MainImageInputWithSuggestPrompt.tsx`) that render the field's normal input plus the button underneath --
+same `props.renderDefault(props)` pattern already used by `CollapsedImageBlock.tsx`. Since a field-level
+input only gets its own value via props, sourcing the sibling fields these actions actually need (body,
+tags, slug, document id) goes through `useFormValue`, the same hook `PrimaryCategoryInput.tsx` already
+uses for the identical reason.
+
 ## 2026-08-29 — Error Log's resolution note was invisible in the actual tool, plus the status dropdown's arrow wasn't clickable
 
 Follow-up to the entry below, same day. The `resolutionNote` field existed in the schema and was being

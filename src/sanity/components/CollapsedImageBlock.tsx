@@ -1,5 +1,6 @@
 import {BlockPreview} from 'sanity'
 import type {BlockProps} from 'sanity'
+import {Card} from '@sanity/ui'
 import {urlFor} from '../lib/image'
 
 type ImageAsset = {_ref?: string; _type?: string}
@@ -77,23 +78,31 @@ export function CollapsedImageBlock(props: BlockProps) {
     />
   ) : undefined
 
+  // Sanity's own default preview draws a selection outline by reading
+  // `props.selected` itself -- since this component replaces that default
+  // preview entirely, that outline has to be drawn here too, or selecting
+  // the block (which Sanity still tracks correctly, e.g. for backspace-to-
+  // delete) is invisible. `border` + tone is the same pattern already used
+  // for status colouring in ErrorLogTool.tsx's cards.
   return (
-    <div
-      onClick={(event) => {
-        // Confirmed flaky without this: opening sometimes worked, sometimes
-        // closed again immediately after. Sanity's own editor almost
-        // certainly has a document-level "click outside the open block
-        // closes it" listener -- without stopping propagation here, the
-        // SAME click that calls onOpen() also keeps bubbling up to that
-        // listener, which (since nothing was open yet at the moment this
-        // click actually fired) reads it as an outside click and closes
-        // the block React just opened, all within the same event.
+    <Card
+      radius={2}
+      border
+      tone={props.selected ? 'primary' : 'transparent'}
+      onDoubleClick={(event) => {
+        // Same stopPropagation reasoning as before (see git history), just
+        // moved from onClick to onDoubleClick: a single click now falls
+        // through untouched to Sanity's own block wrapper, which is what
+        // actually handles selecting the block (backspace-to-delete,
+        // drag-to-reposition) -- Asher's own ask, confirmed directly: he
+        // wants single-click to select like it used to, double-click to
+        // open for editing.
         event.stopPropagation()
         props.onOpen()
       }}
       style={{cursor: 'pointer'}}
     >
       <BlockPreview title={titleFor(value, extra)} media={media} schemaType={props.schemaType} />
-    </div>
+    </Card>
   )
 }
