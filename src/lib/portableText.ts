@@ -8,7 +8,7 @@
 export type PortableTextBlock = {
   _type?: string;
   children?: { text?: string }[];
-  text?: string;
+  text?: string | PortableTextBlock[];
   content?: string | PortableTextBlock[];
   entries?: { name?: string; quote?: string }[];
   items?: { title?: string; content?: string | PortableTextBlock[] }[];
@@ -33,7 +33,14 @@ export function portableTextToPlainText(blocks: unknown): string {
       if (block._type === "block") return blockText(block);
       // Callouts and accordions carry real prose too -- worth counting
       // toward reading time even though they're not "block" type.
-      if (block._type === "callout") return block.text || "";
+      if (block._type === "callout") {
+        // `text` used to be a plain string; now it's an array of simple-
+        // rich-text blocks (see blockContentType.ts) -- handling both here
+        // the same way accordion's `content` already does below, rather
+        // than assuming every already-published post has been migrated to
+        // the new shape by the time this runs.
+        return Array.isArray(block.text) ? block.text.map(blockText).join(" ") : block.text || "";
+      }
       if (block._type === "accordion") {
         // `content` used to be a plain string; now it's an array of
         // simple-rich-text blocks (see blockContentType.ts) -- handling

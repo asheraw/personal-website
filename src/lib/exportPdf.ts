@@ -112,6 +112,21 @@ function renderSpans(
 
 const CALLOUT_LABELS: Record<string, string> = { note: "Note", tip: "Tip", warning: "Warning" };
 
+// `text` used to be a plain string; it's now an array of simple-rich-text
+// blocks (see blockContentType.ts). Unlike Markdown/HTML/the accordion
+// case below, the callout box's background rect needs its full height
+// known before anything is drawn (see the "callout" case), which isn't
+// compatible with recursively rendering rich blocks one at a time -- so
+// this deliberately flattens to plain text (no bold/italic) inside the
+// PDF export specifically, rather than the fully-formatted rendering
+// Markdown/HTML get. A documented scope cut, not an oversight.
+function flattenCalloutText(text: string | unknown[] | undefined): string {
+  if (!Array.isArray(text)) return String(text ?? "");
+  return (text as Block[])
+    .map((block) => (block.children ?? []).map((c) => c.text ?? "").join(""))
+    .join("\n\n");
+}
+
 async function drawImage(doc: PDFKit.PDFDocument, img: GalleryImage) {
   const url = pdfImageUrl(img);
   if (!url) return;
@@ -214,8 +229,8 @@ async function renderNode(doc: PDFKit.PDFDocument, node: Block) {
     }
     case "callout": {
       const style = String(node.style ?? "note");
-      const label = CALLOUT_LABELS[style] ?? "Note";
-      const text = String(node.text ?? "");
+      const label = String(node.label ?? "") || CALLOUT_LABELS[style] || "Note";
+      const text = flattenCalloutText(node.text as string | unknown[] | undefined);
       const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
       doc.font("Helvetica").fontSize(11);
       const height = doc.heightOfString(`${label}: ${text}`, { width: width - 24 }) + 20;

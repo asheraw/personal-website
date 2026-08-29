@@ -1,55 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { PortableText, type PortableTextComponents } from "@portabletext/react";
+import { PortableText } from "@portabletext/react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// An accordion's content field (blockContentType.ts) is its own
-// deliberately restricted block config -- paragraphs, bold/italic/
-// underline, lists, and a plain link, nothing else (no headings, no
-// custom internalLink/affiliateLink/textColor annotations, no nested
-// embeds) -- so this only ever needs to handle that exact subset, not the
-// full postBodyComponents set the main post body uses. Kept local to this
-// file rather than imported from portableTextComponents.tsx, which
-// already imports Accordion itself -- a two-way import between the two
-// would be a circular dependency for no real benefit, since this config
-// isn't reused anywhere else.
-const accordionBodyComponents: PortableTextComponents = {
-  block: {
-    normal: ({ children }) => <p className="leading-relaxed">{children}</p>,
-  },
-  list: {
-    bullet: ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>,
-    number: ({ children }) => <ol className="list-decimal space-y-1 pl-5">{children}</ol>,
-  },
-  listItem: {
-    bullet: ({ children }) => <li>{children}</li>,
-    number: ({ children }) => <li>{children}</li>,
-  },
-  marks: {
-    strong: ({ children }) => <strong className="font-semibold text-ivory">{children}</strong>,
-    em: ({ children }) => <em className="italic">{children}</em>,
-    underline: ({ children }) => <span className="underline underline-offset-2">{children}</span>,
-    link: ({ value, children }) => {
-      const href = (value?.href as string) ?? "#";
-      const isExternal = /^https?:\/\//.test(href) && !href.includes("asheraw.com");
-      const openInNewTab = isExternal && !value?.openInSameTab;
-      return (
-        <Link
-          href={href}
-          className="text-spotlight underline decoration-spotlight/40 underline-offset-2 transition-colors hover:decoration-spotlight"
-          target={openInNewTab ? "_blank" : undefined}
-          rel={openInNewTab ? "noreferrer" : undefined}
-        >
-          {children}
-        </Link>
-      );
-    },
-  },
-};
+import { restrictedRichTextComponents } from "./restrictedRichTextComponents";
 
 export function Accordion({ title, content }: { title?: string; content?: unknown[] }) {
   const [open, setOpen] = useState(false);
@@ -77,7 +33,7 @@ export function Accordion({ title, content }: { title?: string; content?: unknow
             className="overflow-hidden"
           >
             <div className="space-y-3 border-t border-amber-faint px-5 py-4 text-stone/85">
-              <PortableText value={content as never} components={accordionBodyComponents} />
+              <PortableText value={content as never} components={restrictedRichTextComponents} />
             </div>
           </motion.div>
         )}

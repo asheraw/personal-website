@@ -55,9 +55,24 @@ const affiliateLinkRenderer: PortableTextMarkRenderer<{ _type: string; href?: st
 
 const dividerRenderer: PortableTextTypeRenderer = () => "---";
 
-const calloutRenderer: PortableTextTypeRenderer<{ _type: string; style?: string; text?: string }> = ({ value }) => {
-  const label = CALLOUT_LABELS[value.style ?? "note"] ?? "Note";
-  return `> **${label}:** ${value.text ?? ""}`;
+// `text` used to be a plain string; it's now an array of simple-rich-text
+// blocks (see blockContentType.ts) -- rendered through the same
+// portableTextToMarkdown/markdownOptions used for the post body, same
+// upgrade accordionRenderer below already went through. The plain string
+// case is kept as a fallback for any post whose callouts haven't been
+// migrated to the new shape yet. `label` overrides the style's own name
+// when set.
+const calloutRenderer: PortableTextTypeRenderer<{
+  _type: string;
+  style?: string;
+  label?: string;
+  text?: string | unknown[];
+}> = ({ value }) => {
+  const label = value.label || CALLOUT_LABELS[value.style ?? "note"] || "Note";
+  const inner = Array.isArray(value.text)
+    ? portableTextToMarkdown(value.text as never, markdownOptions)
+    : String(value.text ?? "");
+  return `> **${label}:** ${inner}`;
 };
 
 // `content` used to be a plain string; it's now an array of simple-

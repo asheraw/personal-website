@@ -11,6 +11,38 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-29 — Divider block auto-opened an empty edit panel; Callout gets a custom label and rich text
+
+Two more Studio editor reports, same session. Divider's only field (`style`) is `hidden: true` -- there's
+genuinely nothing to configure -- but Sanity's default behaviour still auto-opened a full edit panel the
+instant one was inserted, an empty black box with nothing in it but an X to close. `DividerBlockPreview.tsx`
+now ignores `props.open` entirely and always shows the compact preview, same `Card` + tone-on-selected
+treatment `CollapsedImageBlock.tsx` uses for Image -- Divider and Image now share one consistent look
+instead of Divider falling back to Sanity's plain unstyled default.
+
+Callout's "Style" field (Note/Tip/Warning) used to control both the colour *and* the displayed label --
+picking "Tip" always showed the word "Tip" on the live post, no way to change it. A new optional `label`
+field now overrides that word when set, leaving Style to just pick the colour (blank label = today's
+behaviour, unchanged). And Callout's Text field was plain string -- no bold, links, or lists -- upgraded to
+the same restricted rich text Accordion already has (bold/italic/underline/lists/a plain link), via a
+generalized `restrictedRichTextField()` factory (was accordion-only, now shared) and a new
+`restrictedRichTextComponents.tsx` extracted from `Accordion.tsx` so both blocks render identically instead
+of two copies of the same renderer.
+
+Every place that reads callout text got the same defensive-both-shapes treatment Accordion's own migration
+already established: `portableText.ts` (reading time), `exportHtml.ts`/`exportMarkdown.ts` (full rich
+rendering via the same toHTML/portableTextToMarkdown pipeline the post body uses), and `exportPdf.ts`
+(flattened to plain text for the PDF specifically -- its callout box needs its height known before drawing,
+which doesn't fit recursive block rendering; a documented scope cut, not an oversight). `bulkOperations.ts`
+already explicitly excluded callout text from search & replace, so nothing needed changing there.
+
+**`scripts/migrate-callout-text.mjs`** (new, same `--dry-run`-first / patch-by-`_key` pattern as
+`migrate-accordion-content.mjs`) converts existing plain-string callout text into the new block-array shape.
+Dry run found 12 callout blocks needing migration across 8 already-published posts, all single-paragraph
+(no internal blank lines to split on) -- spot-checked two of the real strings directly to confirm the split
+logic wouldn't mangle anything, same diligence as the accordion migration, before asking Asher to confirm
+running it for real against production content.
+
 ## 2026-08-29 — Image blocks in the post body lost their selection outline, single-click opened them instead of selecting
 
 `CollapsedImageBlock.tsx` (the compact-preview override for image blocks in the body editor) intercepted

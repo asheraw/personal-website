@@ -12,6 +12,7 @@ import {TEXT_COLORS} from '../../lib/textColors'
 import {SavedStatusInput} from '../components/SavedStatusInput'
 import {ImageGalleryStatusInput} from '../components/ImageGalleryStatusInput'
 import {CollapsedImageBlock} from '../components/CollapsedImageBlock'
+import {DividerBlockPreview} from '../components/DividerBlockPreview'
 import {TooltipDescriptionField} from '../components/TooltipDescriptionField'
 import {BulkImagePickerInput} from '../components/BulkImagePickerInput'
 
@@ -38,16 +39,18 @@ const CODE_LANGUAGES = [
   {title: 'Markdown', value: 'markdown'},
 ]
 
-// Shared by the single Accordion block and each item inside an Accordion
-// Group -- both need the exact same deliberately restricted rich text
-// (bold/italic/underline/lists/a plain URL link, no headings/blockquotes/
-// custom annotations), and a factory function is what keeps that in sync
-// between the two rather than two hand-copied definitions drifting apart
-// the way Story/Play's own duplicated prose once did (see RUNBOOK.md).
-function accordionContentField() {
+// Shared by the single Accordion block, each item inside an Accordion
+// Group, and Callout's Text field -- all three need the exact same
+// deliberately restricted rich text (bold/italic/underline/lists/a plain
+// URL link, no headings/blockquotes/custom annotations), and a factory
+// function is what keeps that in sync between them rather than hand-copied
+// definitions drifting apart the way Story/Play's own duplicated prose
+// once did (see RUNBOOK.md). Originally accordion-only (`accordionContentField`);
+// generalized to take a name/title when Callout needed the identical shape.
+function restrictedRichTextField(name: string, title: string) {
   return defineField({
-    name: 'content',
-    title: 'Content (hidden until clicked)',
+    name,
+    title,
     type: 'array',
     of: [
       defineArrayMember({
@@ -375,6 +378,7 @@ export const blockContentType = defineType({
       icon: UlistIcon,
       fields: [defineField({name: 'style', type: 'string', hidden: true, initialValue: 'divider'})],
       preview: {prepare: () => ({title: '— Divider —'})},
+      components: {block: DividerBlockPreview},
     }),
     // A named-quote alternative to a plain bulleted list -- built for
     // laying out several people's names/photos/comments together (e.g. a
@@ -528,6 +532,7 @@ export const blockContentType = defineType({
           name: 'style',
           title: 'Style',
           type: 'string',
+          description: 'Picks the colour only. The word shown above the text (e.g. "Note") comes from Style’s name unless Label below overrides it.',
           options: {
             list: [
               {title: 'Note', value: 'note'},
@@ -538,15 +543,33 @@ export const blockContentType = defineType({
           initialValue: 'note',
         }),
         defineField({
-          name: 'text',
-          title: 'Text',
-          type: 'text',
-          rows: 3,
+          name: 'label',
+          title: 'Label (optional)',
+          type: 'string',
+          description: 'Overrides the word shown above the text on the live post (normally "Note"/"Tip"/"Warning", matching Style above). Leave blank to just use Style’s own name.',
         }),
+        // Was a plain `type: 'text'` string field (Asher's ask, 2026-08-29:
+        // "can callouts have rich text?") -- same restricted shape as
+        // Accordion's content, via restrictedRichTextField() above.
+        // Existing callouts were migrated to this array shape (one 'normal'
+        // block per paragraph) rather than left to break -- see RUNBOOK.md's
+        // Callout section for the migration script. Every place that reads
+        // this field (portableTextComponents.tsx, portableText.ts,
+        // exportHtml/exportMarkdown/exportPdf.ts) handles both the old
+        // string shape and the new array shape defensively, the same
+        // precaution Accordion's own migration used.
+        restrictedRichTextField('text', 'Text'),
       ],
       preview: {
-        select: {text: 'text', style: 'style'},
-        prepare: ({text, style}) => ({title: text || 'Callout', subtitle: style}),
+        select: {text: 'text', style: 'style', label: 'label'},
+        prepare: ({text, style, label}) => {
+          const flatText = Array.isArray(text)
+            ? (text as {children?: {text?: string}[]}[])
+                .map((block) => (block.children ?? []).map((c) => c.text ?? '').join(''))
+                .join(' ')
+            : text || ''
+          return {title: flatText || 'Callout', subtitle: label || style}
+        },
       },
     }),
     defineArrayMember({
@@ -564,7 +587,7 @@ export const blockContentType = defineType({
         // existing accordions were migrated to this array shape (one
         // 'normal' block per paragraph) rather than left to break -- see
         // RUNBOOK.md's Accordion section for the migration script.
-        accordionContentField(),
+        restrictedRichTextField('content', 'Content (hidden until clicked)'),
       ],
       preview: {
         select: {title: 'title'},
@@ -576,7 +599,7 @@ export const blockContentType = defineType({
     // Accordion blocks stay exactly as they are, no migration needed, and
     // Asher picks per-use whether a spot needs one lone disclosure or a
     // stacked FAQ-style group. Each item shares the exact same restricted
-    // rich text as the single Accordion via `accordionContentField()`.
+    // rich text as the single Accordion via `restrictedRichTextField()`.
     defineArrayMember({
       type: 'object',
       name: 'accordionGroup',
@@ -595,7 +618,7 @@ export const blockContentType = defineType({
               components: {input: SavedStatusInput},
               fields: [
                 defineField({name: 'title', title: 'Heading (always visible)', type: 'string'}),
-                accordionContentField(),
+                restrictedRichTextField('content', 'Content (hidden until clicked)'),
               ],
               preview: {
                 select: {title: 'title'},

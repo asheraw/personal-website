@@ -10,6 +10,7 @@ import { SizedImage, type DisplaySize } from "@/components/asher/blog/SizedImage
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { QuoteGrid, type QuoteEntry, type QuoteGridLayout, type QuoteGridWeight, type QuoteGridSize } from "@/components/asher/blog/QuoteGrid";
 import { isTextColorValue } from "@/lib/textColors";
+import { restrictedRichTextComponents } from "@/components/asher/blog/restrictedRichTextComponents";
 
 function getYouTubeId(url: string): string | null {
   const match = url.match(
@@ -250,10 +251,27 @@ export const postBodyComponents: PortableTextComponents = {
     ),
     callout: ({ value }) => {
       const style = CALLOUT_STYLES[value?.style as string] ?? CALLOUT_STYLES.note;
+      // `text` used to be a plain string; it's now an array of simple-
+      // rich-text blocks (see blockContentType.ts's restrictedRichTextField),
+      // same upgrade Accordion's `content` already went through -- rendered
+      // through the same restrictedRichTextComponents so bold/italic/
+      // underline/links inside a callout match the same formatting
+      // anywhere else it's used. The plain string case is kept as a
+      // fallback for any post whose callouts haven't been migrated to the
+      // new shape yet. `label` overrides the style's own name when set
+      // (Asher's ask, 2026-08-29: Style should only pick the colour, not
+      // lock in the displayed word too).
+      const label = (value?.label as string) || style.label;
       return (
         <div className={`my-8 rounded-lg border px-5 py-4 ${style.classes}`}>
-          <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">{style.label}</p>
-          <p className="mt-2 whitespace-pre-wrap leading-relaxed text-ivory/90">{value?.text}</p>
+          <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">{label}</p>
+          <div className="mt-2 space-y-3 leading-relaxed text-ivory/90">
+            {Array.isArray(value?.text) ? (
+              <PortableText value={value.text} components={restrictedRichTextComponents} />
+            ) : (
+              <p className="whitespace-pre-wrap">{value?.text}</p>
+            )}
+          </div>
         </div>
       );
     },

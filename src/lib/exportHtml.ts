@@ -77,9 +77,23 @@ const codeBlockType: PortableTextTypeComponent<{ _type: string; language?: strin
   value,
 }) => `<pre><code class="language-${escapeHTML(value.language ?? "text")}">${escapeHTML(value.code ?? "")}</code></pre>`;
 
-const calloutType: PortableTextTypeComponent<{ _type: string; style?: string; text?: string }> = ({ value }) => {
-  const label = CALLOUT_LABELS[value.style ?? "note"] ?? "Note";
-  return `<div class="callout callout-${escapeHTML(value.style ?? "note")}"><strong>${label}:</strong> ${escapeHTML(value.text ?? "")}</div>`;
+// `text` used to be a plain string; it's now an array of simple-rich-text
+// blocks (see blockContentType.ts) -- rendered through the same
+// toHTML/htmlComponents used for the post body, same upgrade accordionType
+// below already went through. The plain string case is kept as a fallback
+// for any post whose callouts haven't been migrated to the new shape yet.
+// `label` overrides the style's own name when set.
+const calloutType: PortableTextTypeComponent<{
+  _type: string;
+  style?: string;
+  label?: string;
+  text?: string | unknown[];
+}> = ({ value }) => {
+  const label = escapeHTML(value.label || CALLOUT_LABELS[value.style ?? "note"] || "Note");
+  const inner = Array.isArray(value.text)
+    ? toHTML(value.text as never, { components: htmlComponents })
+    : `<p>${escapeHTML(value.text ?? "")}</p>`;
+  return `<div class="callout callout-${escapeHTML(value.style ?? "note")}"><strong>${label}:</strong> ${inner}</div>`;
 };
 
 // `content` used to be a plain string; it's now an array of simple-
