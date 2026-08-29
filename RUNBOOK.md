@@ -1081,12 +1081,48 @@ defensively** (an old string *or* the new block array), same precaution as Accor
 
 **`scripts/migrate-callout-text.mjs`** (new, adapted directly from `migrate-accordion-content.mjs` -- same
 `--dry-run`-first / patch-by-`_key` / safe-to-rerun pattern) converts an old plain-string `text` into the
-new block-array shape, identical paragraph-splitting logic. **Dry run 2026-08-29**: found 12 callout blocks
-across 8 already-published posts, every one a single paragraph (no blank-line splits triggered) -- spot-
-checked two of the real strings directly (a 5x-repeated "original screenshot lost" warning on the Easter
-2016 post, and a 394-character note with an emoji and hashtag on the fasting post) before trusting the
-script against production data. Not yet run for real as of this entry -- see the dated log entry above for
-when it actually runs.
+new block-array shape, identical paragraph-splitting logic. **Run for real 2026-08-29**: dry run found 12
+callout blocks across 8 already-published posts, every one a single paragraph (no blank-line splits
+triggered) -- spot-checked two of the real strings directly (a 5x-repeated "original screenshot lost"
+warning on the Easter 2016 post, and a 394-character note with an emoji and hashtag on the fasting post)
+before trusting the script against production data. The real run's own built-in re-check confirmed zero
+callout blocks still had string-shaped text afterward; manually re-fetched the fasting post's migrated data
+directly afterward to confirm the text (emoji and hashtag included) came through unchanged. Safe to re-run
+anytime -- a no-op once nothing is left in the old shape.
+
+## Divider block: fixing the empty auto-open popup without losing its own default chrome (shipped 2026-08-29)
+
+Divider's only field (`style`) is `hidden: true` -- genuinely nothing to configure -- but Sanity's default
+behaviour auto-opens a new object block for editing the instant it's inserted, regardless of whether it has
+anything to fill in. For Divider that meant an empty black panel with nothing in it but an X to close.
+
+**First attempt**, a hand-built `components.block` (`DividerBlockPreview.tsx`) ignoring `props.open`
+entirely and rendering its own `Card` + `BlockPreview` instead of ever calling `renderDefault`: fixed the
+empty popup, but lost Sanity's own default per-block chrome in the process -- the "..." menu (Remove/
+Duplicate/move up-down) a plain, non-overridden object block gets automatically. Caught by Asher via direct
+screenshot comparison against Divider's own pre-existing look. That chrome is drawn by `renderDefault`
+itself, not by an outer wrapper independent of it -- there's no documented way to keep it while swapping in
+fully custom collapsed content, the same conclusion `CollapsedImageBlock.tsx`'s own comment already reached
+for a different reason (see the 2026-08-28 entry).
+
+**Second attempt, shipped**: always call `props.renderDefault(props)`, passing the real unmodified props
+object -- since `renderDefault` reads the *true* internal open state regardless of what's passed to it
+(confirmed the hard way while building `CollapsedImageBlock.tsx` -- overriding `open` in the object handed
+to `renderDefault` has no effect), calling it unconditionally reproduces Sanity's exact real behaviour,
+chrome included, in both the open and closed states. The only actual intervention: a `useLayoutEffect`
+watches `props.open` and calls `props.onClose()` the instant it becomes `true` -- synchronously, before the
+browser paints that frame, so the open panel never has a chance to actually appear. Every other interaction
+(select, hover, the "..." menu, drag) is Sanity's own real default, completely unmodified.
+
+**Why this same fix can't just be copied onto Image.** Divider's problem was specifically the *open* state
+-- bouncing straight back out of it the instant it's entered solves it completely, since there's nothing
+worth ever showing there. Image's problem (why `CollapsedImageBlock.tsx` exists at all) is different in
+kind: Sanity's real default *collapsed* preview for a single image is already full-size, permanently, not
+just transiently right after insertion -- the bounce-back trick only intervenes on the open transition, so
+it does nothing for a preview that's oversized while genuinely closed. Getting Image's native "..." menu
+back isn't solvable the same way; it would mean either living with the full-size default again, or hand-
+building a replica action menu inside the custom compact card. Neither attempted as of this entry -- raised
+to Asher rather than guessed at a second time.
 
 ---
 

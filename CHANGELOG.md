@@ -11,14 +11,32 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
-## 2026-08-29 — Divider block auto-opened an empty edit panel; Callout gets a custom label and rich text
+## 2026-08-29 — Divider's popup fixed properly (round 2); Callout gets a custom label and rich text (migrated for real)
 
 Two more Studio editor reports, same session. Divider's only field (`style`) is `hidden: true` -- there's
 genuinely nothing to configure -- but Sanity's default behaviour still auto-opened a full edit panel the
-instant one was inserted, an empty black box with nothing in it but an X to close. `DividerBlockPreview.tsx`
-now ignores `props.open` entirely and always shows the compact preview, same `Card` + tone-on-selected
-treatment `CollapsedImageBlock.tsx` uses for Image -- Divider and Image now share one consistent look
-instead of Divider falling back to Sanity's plain unstyled default.
+instant one was inserted, an empty black box with nothing in it but an X to close.
+
+**First attempt** (`DividerBlockPreview.tsx` ignoring `props.open` entirely, rendering a hand-built `Card` +
+`BlockPreview` instead) fixed the empty popup but, as Asher caught by screenshot comparison, also lost
+Sanity's own default block chrome -- the "..." menu (Remove/Duplicate/move up-down) that a plain,
+non-overridden object block gets for free. That chrome turns out to be part of what `renderDefault` itself
+draws; there's no way to keep it while swapping in fully custom collapsed content.
+
+**Second attempt, shipped**: always call `renderDefault(props)` with the real, unmodified props -- so it
+faithfully mirrors Sanity's true open/closed state and draws the exact same chrome (dots included) a plain
+divider would. The only intervention: a `useLayoutEffect` calls `onClose()` the instant `open` becomes true
+(which happens automatically on insert, since there's nothing to fill in) -- before the browser paints the
+open frame, so there's nothing to see. Every other click/select interaction is Sanity's real default,
+unmodified.
+
+**Image doesn't get the same fix, and can't via the same mechanism** -- flagged here rather than silently
+left half-done. Divider's problem was specifically the *open* state (fixed by bouncing straight back out of
+it). Image's problem is different: Sanity's real default *collapsed* preview for a single image is already
+full-size, permanently, not just right after insert -- that's the original reason `CollapsedImageBlock.tsx`
+exists at all. Bouncing out of `open` doesn't touch that. Getting Image's native "..." menu back would mean
+either accepting the full-size default again, or hand-building a replica menu -- neither attempted yet,
+pending Asher's steer on which he'd rather have.
 
 Callout's "Style" field (Note/Tip/Warning) used to control both the colour *and* the displayed label --
 picking "Tip" always showed the word "Tip" on the live post, no way to change it. A new optional `label`
@@ -38,10 +56,11 @@ already explicitly excluded callout text from search & replace, so nothing neede
 
 **`scripts/migrate-callout-text.mjs`** (new, same `--dry-run`-first / patch-by-`_key` pattern as
 `migrate-accordion-content.mjs`) converts existing plain-string callout text into the new block-array shape.
-Dry run found 12 callout blocks needing migration across 8 already-published posts, all single-paragraph
-(no internal blank lines to split on) -- spot-checked two of the real strings directly to confirm the split
-logic wouldn't mangle anything, same diligence as the accordion migration, before asking Asher to confirm
-running it for real against production content.
+**Run for real 2026-08-29** after a dry run + spot-checking two of the real strings (same diligence as the
+accordion migration): migrated 12 callout blocks across 8 already-published posts, all single-paragraph, and
+the script's own built-in re-check confirmed zero blocks still had the old string shape afterward. Manually
+re-fetched one migrated post's data directly to confirm the text (including an emoji and hashtag) came
+through byte-for-byte, not just typechecked.
 
 ## 2026-08-29 — Image blocks in the post body lost their selection outline, single-click opened them instead of selecting
 
