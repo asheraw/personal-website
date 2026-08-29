@@ -11,6 +11,19 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-30 — "Schedule for later" now confirms it actually registered
+
+Asher's follow-up to the previous entry: even with the confusing native "Schedule publish" action gone, the
+"Schedule for later" field itself gave no feedback that a chosen date had actually taken -- the only way to
+check was leaving the post entirely for Studio -> Calendar. Reasonable to want confirmation right where the
+date was just set.
+
+`ScheduledPublishInput.tsx`, wired onto `scheduledPublishAt` in `postType.ts`, wraps the default datetime
+picker with a plain-language status card underneath: a future date shows "Scheduled — will publish
+automatically sometime on [date]" (positive tone); a date that's already passed shows a caution note that
+the daily check either hasn't run yet today or something's blocking it, worth checking Calendar if it's
+still unpublished tomorrow. No banner at all when the field is empty -- nothing to confirm.
+
 ## 2026-08-29 — Removed Sanity's built-in "Schedule publish" menu item -- paywalled, and this site already has a free alternative
 
 Asher clicked "Schedule publish" in the "..." menu (right there next to Duplicate/Discard/Delete) expecting
