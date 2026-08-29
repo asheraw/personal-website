@@ -1123,14 +1123,23 @@ it does nothing for a preview that's oversized while genuinely closed. Getting I
 back isn't solvable the same way; it would mean either living with the full-size default again, or hand-
 building a replica action menu inside the custom compact card.
 
-**Raised to Asher rather than guessed at a second time -- his call**: drop the real photo thumbnail
-(`urlFor(...)` building an actual `<img>`) entirely, and let `BlockPreview` fall back to the array member's
-own `icon: ImageIcon` the same way Divider's row already falls back to its own `icon: UlistIcon` when no
-`media` is passed. `CollapsedImageBlock.tsx` no longer imports `urlFor` at all -- the collapsed row is now
-just an icon and a title, same visual weight as every other block type's collapsed row. Still no "..." menu
-(that part of the original ask stays unsolved, a real limitation of overriding `components.block` at all,
-not something this specific change was meant to fix) -- but Image is no longer the visual odd one out
-against Divider and everything else.
+**Raised to Asher rather than guessed at a second time -- tried, and reverted.** First tried dropping the
+real photo thumbnail (`urlFor(...)` building an actual `<img>`) and letting `BlockPreview` fall back to the
+array member's own `icon: ImageIcon`, on the assumption it'd behave the way Divider's row falls back to its
+own `icon: UlistIcon` with no `media` passed. **Wrong, confirmed by screenshot**: `BlockPreview` used
+standalone (no `renderDefault`, no surrounding Sanity chrome) doesn't fall back to any icon on its own --
+with no `media` prop it just shows bare title text in an otherwise-empty card, which read as *worse* than
+the thumbnail, not more consistent with Divider's row. Reverted immediately; `CollapsedImageBlock.tsx` keeps
+its real thumbnail (`urlFor`import back in place).
+
+**The actual, confirmed-twice-now constraint**: Divider's clean icon+text+"..." row only exists because
+Divider's schema data has no media at all, so Sanity's real default preview naturally collapses to something
+small. Image's schema data always has a real photo attached, and neither Sanity's true default renderer
+(shows the photo full-size, the original 2026-08-28 bug) nor `BlockPreview` used standalone (shows nothing
+but text, just proven above) will substitute a plain icon in its place while media exists. There is no
+prop or override point that gets "Divider's exact look, but for a block that has media" -- getting the
+thumbnail AND the native "..." menu at the same time isn't available in Sanity's component model as it
+exists today, not a case of not having tried hard enough.
 
 ---
 

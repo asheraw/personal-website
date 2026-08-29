@@ -35,10 +35,17 @@ unmodified.
 default *collapsed* preview for a single image is already full-size, permanently, not just right after
 insert -- that's the original reason `CollapsedImageBlock.tsx` exists at all, and bouncing out of `open`
 doesn't touch it. Getting Image's exact native "..." menu back isn't possible without accepting that
-full-size default again. Asher's actual call, once this tradeoff was laid out: drop the real photo thumbnail
-entirely and let `BlockPreview` fall back to the array member's own `icon: ImageIcon`, the same way Divider
-shows `icon: UlistIcon` with no media -- so Image's collapsed row is now a plain icon + title, visually
-consistent with every other block type's row (still no "..." menu, but no longer the odd one out either).
+full-size default again.
+
+Tried dropping the real thumbnail and letting `BlockPreview` fall back to the array member's own
+`icon: ImageIcon`, on the assumption it'd behave like Divider's `icon: UlistIcon` fallback -- wrong,
+confirmed by screenshot: `BlockPreview` used standalone doesn't show any icon without one explicitly passed,
+just bare title text, which looked worse than the thumbnail, not more consistent with it. **Reverted** --
+Image keeps its real photo thumbnail. Net result: Image and Divider now share the same selection/click
+behaviour (single-click selects, double-click opens) and Divider got its native chrome back, but Image's
+collapsed row still doesn't have Divider's "..." menu or its exact plain-row look -- a genuine, confirmed
+constraint of Sanity's own component model (a default preview with real media attached shows that media;
+one without doesn't), not something still open to try a third way on.
 
 Callout's "Style" field (Note/Tip/Warning) used to control both the colour *and* the displayed label --
 picking "Tip" always showed the word "Tip" on the live post, no way to change it. A new optional `label`

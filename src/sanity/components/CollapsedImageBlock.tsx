@@ -1,6 +1,7 @@
 import {BlockPreview} from 'sanity'
 import type {BlockProps} from 'sanity'
 import {Card} from '@sanity/ui'
+import {urlFor} from '../lib/image'
 
 type ImageAsset = {_ref?: string; _type?: string}
 type GalleryValue = {
@@ -59,15 +60,31 @@ export function CollapsedImageBlock(props: BlockProps) {
   const value = (props.value ?? {}) as GalleryValue
   const items = value.additionalImages ?? []
   const extra = items.length
+  const assetRef = value.asset ?? items[0]?.asset
 
-  // Used to render a real photo thumbnail here (via `urlFor`) -- Asher's
-  // own ask (2026-08-29), after comparing this against Divider's plain
-  // icon-and-text row: drop the thumbnail entirely and let `BlockPreview`
-  // fall back to the array member's own `icon: ImageIcon`
-  // (blockContentType.ts), the same way Divider's row shows its own
-  // `icon: UlistIcon` with no media. Now visually consistent with every
-  // other block type's collapsed row -- an icon and a title, nothing
-  // photo-specific about the treatment.
+  // Briefly tried dropping this thumbnail entirely (2026-08-29), on the
+  // assumption `BlockPreview` would fall back to the array member's own
+  // `icon: ImageIcon` the way Divider's default row falls back to
+  // `icon: UlistIcon` with no media -- confirmed wrong, by screenshot:
+  // `BlockPreview` used standalone like this doesn't show any icon at all
+  // without one explicitly passed, just bare title text, which looked
+  // worse, not more consistent. Reverted back to a real thumbnail.
+  //
+  // `BlockPreview` used standalone also doesn't go through Sanity's own
+  // async preview-resolution pipeline (the thing that normally turns a
+  // raw `{_type: 'image', asset}` shape into an actual thumbnail wherever
+  // the schema's `preview.prepare()` output shows up elsewhere, e.g. the
+  // Comments tool or a reference list) -- passing that same raw shape here
+  // rendered as a blank box, confirmed directly. Building the real URL with
+  // the project's own `urlFor` and handing it a genuine `<img>` sidesteps
+  // that missing resolution step entirely.
+  const media = assetRef?._ref ? (
+    <img
+      src={urlFor(assetRef).width(64).height(64).fit('crop').url()}
+      alt=""
+      style={{width: '100%', height: '100%', objectFit: 'cover'}}
+    />
+  ) : undefined
 
   // Sanity's own default preview draws a selection outline by reading
   // `props.selected` itself -- since this component replaces that default
@@ -93,7 +110,7 @@ export function CollapsedImageBlock(props: BlockProps) {
       }}
       style={{cursor: 'pointer'}}
     >
-      <BlockPreview title={titleFor(value, extra)} schemaType={props.schemaType} />
+      <BlockPreview title={titleFor(value, extra)} media={media} schemaType={props.schemaType} />
     </Card>
   )
 }
