@@ -1037,6 +1037,59 @@ with zero errors after the schema change.
 
 ---
 
+## Callout block: custom label + simple rich text (shipped 2026-08-29)
+
+**Two Studio reports at once.** First: Callout's "Style" field (Note/Tip/Warning) controlled both the
+colour *and* the word shown above the text on the live post -- picking "Tip" always showed "Tip", no way to
+change it. Second: Callout's Text field was a plain `type: 'text'` string -- no bold, links, or lists at
+all, the exact same limitation Accordion's `content` field had before its own 2026-08-10 migration (see the
+entry above).
+
+**Label**, `src/sanity/schemaTypes/blockContentType.ts`: a new optional `label` string field on the callout
+array member. Blank (the default, and every existing callout) keeps today's behaviour -- the word shown is
+Style's own name. Filled in, it overrides that word; Style still only picks the colour. Read in every
+renderer as `value.label || STYLE_LABELS[value.style] || 'Note'`.
+
+**Text**, upgraded to a restricted Portable Text array via the same shape Accordion already uses -- styles:
+Normal only, lists: Bullet/Numbered, marks: Strong/Emphasis/Underline, one plain-URL link annotation.
+Rather than copy-paste the schema config a second time, `accordionContentField()` was generalized into
+`restrictedRichTextField(name, title)` (both Accordion's `content` and Callout's `text` now call it with
+their own name/title). Same for the frontend renderer: `Accordion.tsx`'s local `accordionBodyComponents`
+was extracted into `src/components/asher/blog/restrictedRichTextComponents.tsx` so Callout's renderer
+(`portableTextComponents.tsx`) uses the exact same component, not a second hand-copied one -- this is the
+"if a future field ever needs this exact same shape, extract it into its own shared file" the Accordion
+entry above already flagged as the right move once it actually happened.
+
+**Every other place that reads callout `text` needed updating to match, each handling both shapes
+defensively** (an old string *or* the new block array), same precaution as Accordion's own migration:
+- **`src/lib/portableText.ts`** (`portableTextToPlainText`) -- reuses the same `blockText()` helper the
+  accordion case already uses.
+- **`src/lib/exportHtml.ts`** / **`src/lib/exportMarkdown.ts`** -- `calloutType`/`calloutRenderer` now call
+  the same `toHTML(...)` / `portableTextToMarkdown(...)` already used for the post body, same recursive
+  pattern the accordion renderers use.
+- **`src/lib/exportPdf.ts`** -- **deliberately not** upgraded to recursive rich rendering like the other
+  three. The callout box in the PDF export draws a filled background rect whose height has to be known
+  *before* anything is drawn (`doc.heightOfString(...)` up front) -- that's incompatible with rendering
+  rich blocks one at a time via `renderNode()`, the way the accordion case does (which has no background
+  fill to size ahead of time). Instead, `flattenCalloutText()` joins every block's plain text (no bold/
+  italic) for the box, same visual box treatment as before, just without inline formatting in this one
+  export format specifically. A documented scope cut, not an oversight -- Asher never asked for PDF-export
+  fidelity specifically, only whether the Studio editor itself could support rich text.
+- **`src/lib/bulkOperations.ts`** -- already explicitly excluded callout text from search & replace before
+  this shipped (same prior scope decision noted in the Accordion entry above). Confirmed still correct
+  as-is; no change needed.
+
+**`scripts/migrate-callout-text.mjs`** (new, adapted directly from `migrate-accordion-content.mjs` -- same
+`--dry-run`-first / patch-by-`_key` / safe-to-rerun pattern) converts an old plain-string `text` into the
+new block-array shape, identical paragraph-splitting logic. **Dry run 2026-08-29**: found 12 callout blocks
+across 8 already-published posts, every one a single paragraph (no blank-line splits triggered) -- spot-
+checked two of the real strings directly (a 5x-repeated "original screenshot lost" warning on the Easter
+2016 post, and a 394-character note with an emoji and hashtag on the fasting post) before trusting the
+script against production data. Not yet run for real as of this entry -- see the dated log entry above for
+when it actually runs.
+
+---
+
 ## Instagram embed block (shipped 2026-08-04, its own insert-menu button retired 2026-08-06)
 
 **Superseded as an insert-menu option by the merged `embed` type** (see "Embed block" above) — everything
