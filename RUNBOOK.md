@@ -1121,8 +1121,16 @@ kind: Sanity's real default *collapsed* preview for a single image is already fu
 just transiently right after insertion -- the bounce-back trick only intervenes on the open transition, so
 it does nothing for a preview that's oversized while genuinely closed. Getting Image's native "..." menu
 back isn't solvable the same way; it would mean either living with the full-size default again, or hand-
-building a replica action menu inside the custom compact card. Neither attempted as of this entry -- raised
-to Asher rather than guessed at a second time.
+building a replica action menu inside the custom compact card.
+
+**Raised to Asher rather than guessed at a second time -- his call**: drop the real photo thumbnail
+(`urlFor(...)` building an actual `<img>`) entirely, and let `BlockPreview` fall back to the array member's
+own `icon: ImageIcon` the same way Divider's row already falls back to its own `icon: UlistIcon` when no
+`media` is passed. `CollapsedImageBlock.tsx` no longer imports `urlFor` at all -- the collapsed row is now
+just an icon and a title, same visual weight as every other block type's collapsed row. Still no "..." menu
+(that part of the original ask stays unsolved, a real limitation of overriding `components.block` at all,
+not something this specific change was meant to fix) -- but Image is no longer the visual odd one out
+against Divider and everything else.
 
 ---
 

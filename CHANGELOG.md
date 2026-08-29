@@ -30,13 +30,15 @@ divider would. The only intervention: a `useLayoutEffect` calls `onClose()` the 
 open frame, so there's nothing to see. Every other click/select interaction is Sanity's real default,
 unmodified.
 
-**Image doesn't get the same fix, and can't via the same mechanism** -- flagged here rather than silently
-left half-done. Divider's problem was specifically the *open* state (fixed by bouncing straight back out of
-it). Image's problem is different: Sanity's real default *collapsed* preview for a single image is already
-full-size, permanently, not just right after insert -- that's the original reason `CollapsedImageBlock.tsx`
-exists at all. Bouncing out of `open` doesn't touch that. Getting Image's native "..." menu back would mean
-either accepting the full-size default again, or hand-building a replica menu -- neither attempted yet,
-pending Asher's steer on which he'd rather have.
+**Image doesn't get the same fix, and can't via the same mechanism.** Divider's problem was specifically the
+*open* state (fixed by bouncing straight back out of it). Image's problem is different: Sanity's real
+default *collapsed* preview for a single image is already full-size, permanently, not just right after
+insert -- that's the original reason `CollapsedImageBlock.tsx` exists at all, and bouncing out of `open`
+doesn't touch it. Getting Image's exact native "..." menu back isn't possible without accepting that
+full-size default again. Asher's actual call, once this tradeoff was laid out: drop the real photo thumbnail
+entirely and let `BlockPreview` fall back to the array member's own `icon: ImageIcon`, the same way Divider
+shows `icon: UlistIcon` with no media -- so Image's collapsed row is now a plain icon + title, visually
+consistent with every other block type's row (still no "..." menu, but no longer the odd one out either).
 
 Callout's "Style" field (Note/Tip/Warning) used to control both the colour *and* the displayed label --
 picking "Tip" always showed the word "Tip" on the live post, no way to change it. A new optional `label`
