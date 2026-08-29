@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-30 — Error Log: closed out 2 pending entries, fixed a stale description
+
+Asher spotted 2 pending Error Log entries and asked whether they were things already fixed. Checked: yes.
+Both traced to the same root cause -- `ChevronDown` used in `SortableTableHead.tsx` (the new Skill Table
+block, still in progress) without being imported, and a second entry that's fallout from the same crash
+(React's own dev-mode render-logging hitting a null while trying to report the first error, 12 seconds
+later, same page, same browser session). Confirmed fixed by reading the current source -- `ChevronDown` is
+now properly imported from `lucide-react`. Marked both **Fixed**, not Ignored, with a resolution note
+explaining the shared root cause -- this was fixed as part of the Skill Table's own in-progress work, not
+something patched in this review.
+
+Also fixed the tool's own description text, on Asher's request: it claimed to catch errors from "a real
+visitor's browser," but both entries above were from `localhost` -- confirmed via `track-error/route.ts`
+that error tracking has no environment gating at all, so local dev testing lands in the same log as real
+visitors. Reworded to say so plainly. Same line also named Vercel as where server-side errors land --
+stale (Asher confirmed 2026-08-30 he's no longer on Vercel; this project's host is Netlify), fixed to say
+Netlify instead. A broader sweep for other stale Vercel mentions across the codebase (including the public
+Privacy Policy page, which still names Vercel as the host) was flagged to Asher rather than done
+unprompted -- some of those comments describe Vercel-specific platform behavior that needs verifying
+against Netlify's actual behavior, not just a find-and-replace.
+
 ## 2026-08-30 — "Schedule for later" now confirms it actually registered
 
 Asher's follow-up to the previous entry: even with the confusing native "Schedule publish" action gone, the

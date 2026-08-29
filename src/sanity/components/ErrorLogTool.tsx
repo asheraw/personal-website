@@ -247,10 +247,10 @@ export function ErrorLogTool() {
             )}
           </Flex>
           <Text size={1} muted>
-            Every distinct JS error caught on a real visitor's browser -- uncaught script errors, unhandled
-            promise rejections, and React render errors -- most-seen first within each group. Server-side
-            errors (a failed API call, a bad Sanity write) aren't here; those already land in Vercel's own
-            function logs.
+            Every distinct JS error caught in any browser that loaded the site -- real visitors and local dev
+            testing alike, uncaught script errors, unhandled promise rejections, and React render errors --
+            most-seen first within each group. Server-side errors (a failed API call, a bad Sanity write)
+            aren't here; those already land in Netlify's own function logs.
           </Text>
         </Stack>
 
