@@ -78,7 +78,17 @@ export default defineConfig({
         )
       }
       if (context.schemaType !== 'post') return prev
-      const withDateAction = prev.map((action) =>
+      // Sanity's own built-in "Schedule publish" action (id: 'schedule')
+      // requires the paid Scheduled Publishing add-on -- clicking it
+      // without that plan just shows an upsell dialog, not a working
+      // feature. This site has its own free scheduling already (the
+      // "Schedule for later" field on the post itself, checked by a daily
+      // cron -- see publish-scheduled/route.ts), so the built-in one is
+      // pure confusion with no upside: dropped entirely rather than left
+      // in the menu to be clicked by mistake (confirmed 2026-08-29, Asher
+      // hit the paywall trying it).
+      const withoutNativeSchedule = prev.filter((action) => (action as {action?: string}).action !== 'schedule')
+      const withDateAction = withoutNativeSchedule.map((action) =>
         (action as {action?: string}).action === 'publish'
           ? withPrePublishChecklist(withAutoPublishDate(withRevalidateOnPublish(action)))
           : action

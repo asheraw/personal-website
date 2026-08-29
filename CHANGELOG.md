@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-29 — Removed Sanity's built-in "Schedule publish" menu item -- paywalled, and this site already has a free alternative
+
+Asher clicked "Schedule publish" in the "..." menu (right there next to Duplicate/Discard/Delete) expecting
+it to relate to the "Schedule for later" field he'd just set -- hit an upsell dialog instead. Turns out those
+are two completely unrelated things that happen to sound identical: "Schedule for later" is this site's own
+free field + daily cron (see the entry above and `publish-scheduled/route.ts`); "Schedule publish" in the
+menu is Sanity Studio's own built-in action (id `'schedule'`, confirmed by reading Sanity's own bundled
+source), gated behind their paid Scheduled Publishing add-on this project doesn't have.
+
+Since the free alternative already exists and does the same job, the built-in one is pure confusion with no
+upside -- filtered out of the actions list entirely for posts (`sanity.config.ts`, same `.filter()`/`.map()`
+pattern already used there for Publish/Delete customization), rather than left in the menu to be clicked by
+mistake again.
+
 ## 2026-08-29 — Pre-publish checklist now warns about a conflicting schedule
 
 Asher noticed a post with "Schedule for later" set to Sept 5 and asked whether clicking Publish would
