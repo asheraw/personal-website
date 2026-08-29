@@ -11,6 +11,25 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-29 — GIF block follow-up: fixed a real save-corrupting bug, added pagination
+
+Asher tried the new GIF block from the entry below and hit an error, couldn't scroll past the first page of
+results, and asked whether the picker really needed to load a default set of GIFs the moment it opened.
+
+The error was real and worth finding: `pickGif()` called `onChange(set({url, thumbUrl, title}))` with no
+path, which replaces the *entire* stored value of the block being edited. Since `_type` and `_key` weren't
+among the fields in that patch, this silently stripped them off the block on save -- corrupting it. Fixed by
+patching each field at its own explicit path (`set(value, ['fieldName'])`) instead, which only ever touches
+those three fields and leaves `_type`/`_key` alone.
+
+Pagination: `/api/gif-search` already returned `hasMore`/`nextOffset` (needed for the comment-form picker's
+own scroll, which already used them), but `GifPickerInput.tsx` never wired them up -- fixed with a "Load
+more" button that appends results instead of replacing them.
+
+And the picker no longer searches on open with an empty query (which hit Giphy's trending endpoint just to
+avoid a blank first frame, same as the public comment form's picker still does on purpose) -- now shows
+"Search for a GIF above" until there's an actual query, cutting that call entirely, per Asher's own ask.
+
 ## 2026-08-29 — New GIF block hotlinks straight to Giphy instead of copying into Sanity storage
 
 Asher noticed picking a GIF for a post copied it into his own Sanity asset storage -- a real download + a
