@@ -11,6 +11,44 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-29 — New GIF block hotlinks straight to Giphy instead of copying into Sanity storage
+
+Asher noticed picking a GIF for a post copied it into his own Sanity asset storage -- a real download + a
+real upload, every time, even though Giphy's own CDN is already reliable, fast, and free. Asked whether the
+image field could just hotlink to Giphy's URL directly instead, aware of and fine with the trade-off (if a
+GIF is ever pulled from Giphy, it stops showing here too).
+
+Turns out it couldn't, not on that field: Sanity's `image` field type requires a real managed asset --
+that's what the crop/hotspot editor, `urlFor()`'s CDN resizing, and the OG-image pipeline all depend on.
+There's no way to point an `image` field at an arbitrary external URL instead. So this isn't a tweak to the
+existing "Insert GIF" option -- it's a **new, separate block type** for the post body, built the same way
+the existing `youtube`/`instagramEmbed` blocks already work: just a stored URL, rendered directly, nothing
+ever uploaded.
+
+**The old path is gone.** "Insert GIF (Giphy)" removed from every image field's asset-source menu
+(`sanity.config.ts`) -- `GiphyAssetSource.tsx` and `/api/gif-upload/route.ts` (the download-and-reupload
+route it called) both deleted outright, no longer used by anything.
+
+**The new path**: a `GIF (Giphy)` block, `externalGif` in `blockContentType.ts`, sitting right next to Image
+in the insert toolbar (Asher's own ask -- "put it beside image because it's for a gif"). Reuses the existing
+`/api/gif-search` proxy (unchanged, still used by the public comment form too) for the same search-and-pick
+grid, but picking one just patches `url`/`thumbUrl`/`title` straight onto the block -- no upload call at
+all. `GifPickerInput.tsx` replaces the object's whole edit form (search grid until something's picked, then
+a small preview + "Choose a different GIF"); `CollapsedGifBlock.tsx` gives it the same compact-card,
+select-then-double-click-to-open treatment `CollapsedImageBlock.tsx` already established for Image, just
+simpler -- the thumbnail is already a plain external URL, no `urlFor()` resolution needed since there's no
+Sanity asset behind it.
+
+Rendered on the live post as a plain `<img src>` pointed at Giphy's own URL (`portableTextComponents.tsx`) --
+needed no CSP change, `*.giphy.com` was already allowlisted in `img-src` for the public comment thread's own
+hotlinked GIFs. Every export format got a matching renderer: Markdown (`![title](url)`), HTML (a `<figure>`
+around the same `<img>`, inherited automatically by the EPUB export too, same as how a real photo already
+hotlinks to Sanity's CDN there), and PDF (a plain clickable link, not a real embed -- pdfkit's image renderer
+only decodes JPEG/PNG, the same constraint the real "image" case already works around, and there's no
+Sanity-hosted still-frame to convert from for an external GIF). JSON export needed nothing -- it just
+serializes the post as-is. `portableTextToPlainText` (reading time) also needed nothing -- a GIF has no
+prose, so it correctly falls through to the same empty case `image`/`youtube` already do.
+
 ## 2026-08-29 — Divider's popup fixed properly (round 2); Callout gets a custom label and rich text (migrated for real)
 
 Two more Studio editor reports, same session. Divider's only field (`style`) is `hidden: true` -- there's

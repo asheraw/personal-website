@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         url: g.images.fixed_height?.url,
         // Full-resolution source -- comments only ever needed the smaller
         // fixed_height rendition, but inserting one into a post's actual
-        // body (see gif-upload/route.ts) deserves the real quality Giphy
+        // body (see GifPickerInput.tsx) deserves the real quality Giphy
         // has, not the comment-thumbnail size.
         originalUrl: g.images.original?.url ?? g.images.fixed_height?.url,
       }))

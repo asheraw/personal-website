@@ -23,7 +23,6 @@ import {createExportAction} from './src/sanity/actions/exportPost'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {compressedUploadSource} from './src/sanity/components/CompressedUploadSource'
-import {giphyAssetSource} from './src/sanity/components/GiphyAssetSource'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
 import {CommentsToolIcon} from './src/sanity/components/CommentsToolIcon'
 import {StudioNavbar} from './src/sanity/components/StudioNavbar'
@@ -68,7 +67,7 @@ export default defineConfig({
     // uses daily. This only ever appends; the existing default source and
     // its behavior are completely untouched.
     image: {
-      assetSources: (prev) => [...prev, compressedUploadSource, giphyAssetSource],
+      assetSources: (prev) => [...prev, compressedUploadSource],
     },
   },
   document: {

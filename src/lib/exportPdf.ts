@@ -303,6 +303,18 @@ async function renderNode(doc: PDFKit.PDFDocument, node: Block) {
       doc.moveDown(0.5);
       return;
     }
+    case "externalGif": {
+      // Same link-only treatment as youtube/instagramEmbed above, not a
+      // real embed like the "image" case below -- pdfkit's doc.image()
+      // only decodes JPEG/PNG (see drawImage's own comment), and this is
+      // always an animated GIF hotlinked straight from Giphy, not a real
+      // Sanity asset drawImage's urlFor()-based pipeline could convert.
+      const url = typeof node.url === "string" ? node.url : "";
+      if (url) doc.font("Helvetica-Bold").fillColor("#2563eb").text("View this GIF on Giphy", { link: url, underline: true });
+      doc.fillColor("black");
+      doc.moveDown(0.5);
+      return;
+    }
     case "image": {
       await drawImage(doc, node as GalleryImage);
       const extra = (node.additionalImages as GalleryImage[] | undefined) ?? [];

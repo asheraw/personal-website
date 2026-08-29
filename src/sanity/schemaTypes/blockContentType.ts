@@ -1,5 +1,6 @@
 import {defineType, defineArrayMember, defineField} from 'sanity'
 import {ImageIcon} from '@sanity/icons/Image'
+import {ImagesIcon} from '@sanity/icons/Images'
 import {CodeBlockIcon} from '@sanity/icons/CodeBlock'
 import {UlistIcon} from '@sanity/icons/Ulist'
 import {PlayIcon} from '@sanity/icons/Play'
@@ -13,6 +14,8 @@ import {SavedStatusInput} from '../components/SavedStatusInput'
 import {ImageGalleryStatusInput} from '../components/ImageGalleryStatusInput'
 import {CollapsedImageBlock} from '../components/CollapsedImageBlock'
 import {DividerBlockPreview} from '../components/DividerBlockPreview'
+import {GifPickerInput} from '../components/GifPickerInput'
+import {CollapsedGifBlock} from '../components/CollapsedGifBlock'
 import {TooltipDescriptionField} from '../components/TooltipDescriptionField'
 import {BulkImagePickerInput} from '../components/BulkImagePickerInput'
 
@@ -369,6 +372,32 @@ export const blockContentType = defineType({
                   : 'Carousel';
           return {title: `Image ${label} (${extra + 1} photos)`, media};
         },
+      },
+    }),
+    // Hotlinks straight to Giphy's own URL instead of downloading and
+    // re-uploading into Sanity -- Asher's own ask (2026-08-29), after
+    // noticing the old "Insert GIF" option on image fields was copying
+    // every picked GIF into his own asset storage. Sits right next to
+    // Image in the toolbar since that's conceptually the closest existing
+    // block, but is a plain object (not Sanity's `image` type) precisely
+    // so it never needs a real asset -- same reasoning as the youtube/
+    // instagramEmbed blocks above, just for Giphy specifically. Trade-off
+    // Asher explicitly accepted: if Giphy ever takes a GIF down, it stops
+    // showing here too, since nothing's actually stored on this end.
+    defineArrayMember({
+      type: 'object',
+      name: 'externalGif',
+      title: 'GIF (Giphy)',
+      icon: ImagesIcon,
+      fields: [
+        defineField({name: 'url', title: 'GIF URL', type: 'url', hidden: true}),
+        defineField({name: 'thumbUrl', title: 'Thumbnail URL', type: 'url', hidden: true}),
+        defineField({name: 'title', title: 'Description (alt text)', type: 'string', hidden: true}),
+      ],
+      components: {input: GifPickerInput, block: CollapsedGifBlock},
+      preview: {
+        select: {title: 'title'},
+        prepare: ({title}) => ({title: title ? `GIF: ${title}` : 'GIF'}),
       },
     }),
     defineArrayMember({

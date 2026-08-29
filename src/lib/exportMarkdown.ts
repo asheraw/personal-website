@@ -110,6 +110,12 @@ const accordionGroupRenderer: PortableTextTypeRenderer<{
 const youtubeRenderer: PortableTextTypeRenderer<{ _type: string; url?: string }> = ({ value }) =>
   value?.url ? `[▶ Watch on YouTube](${value.url})` : "";
 
+// Hotlinked straight to Giphy -- no Sanity asset, so a plain Markdown image
+// pointed at the raw URL rather than `renderImage`'s urlFor()-based path.
+const externalGifRenderer: PortableTextTypeRenderer<{ _type: string; url?: string; title?: string }> = ({
+  value,
+}) => (value?.url ? `![${value.title ?? "GIF"}](${value.url})` : "");
+
 const instagramEmbedRenderer: PortableTextTypeRenderer<{ _type: string; url?: string }> = ({ value }) =>
   value?.url ? `[View this post on Instagram](${value.url})` : "";
 
@@ -162,6 +168,7 @@ const markdownOptions = {
     accordionGroup: accordionGroupRenderer,
     youtube: youtubeRenderer,
     instagramEmbed: instagramEmbedRenderer,
+    externalGif: externalGifRenderer,
     image: imageRenderer,
     snippetRef: snippetRefRenderer,
   },

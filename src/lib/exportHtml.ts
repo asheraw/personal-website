@@ -140,6 +140,13 @@ const youtubeType: PortableTextTypeComponent<{ _type: string; url?: string }> = 
 const instagramEmbedType: PortableTextTypeComponent<{ _type: string; url?: string }> = ({ value }) =>
   value?.url ? `<p><a href="${escapeHTML(value.url)}">View this post on Instagram</a></p>` : "";
 
+// Hotlinked straight to Giphy -- no Sanity asset, so a plain <img> pointed
+// at the raw URL rather than renderImageFigure's urlFor()-based path.
+const externalGifType: PortableTextTypeComponent<{ _type: string; url?: string; title?: string }> = ({ value }) =>
+  value?.url
+    ? `<figure><img src="${escapeHTML(value.url)}" alt="${escapeHTML(value.title ?? "")}" loading="lazy" /></figure>`
+    : "";
+
 const imageType: PortableTextTypeComponent<
   { _type: string } & GalleryImage & { additionalImages?: GalleryImage[] }
 > = ({ value }) => {
@@ -180,6 +187,7 @@ export const htmlComponents: Partial<PortableTextComponents> = {
     accordionGroup: accordionGroupType,
     youtube: youtubeType,
     instagramEmbed: instagramEmbedType,
+    externalGif: externalGifType,
     image: imageType,
     snippetRef: snippetRefType,
   },

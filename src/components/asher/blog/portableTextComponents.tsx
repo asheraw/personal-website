@@ -237,6 +237,22 @@ export const postBodyComponents: PortableTextComponents = {
       );
     },
     divider: () => <hr className="my-10 border-amber-faint" />,
+    // Hotlinked straight to Giphy -- no Sanity asset behind this at all
+    // (see blockContentType.ts's externalGif member), so a plain <img>
+    // pointed at Giphy's own URL, not urlFor()/SizedImage like a real
+    // uploaded photo. Giphy's own domain is already allowlisted in the
+    // site's CSP img-src (the public comment thread's GIFs already hotlink
+    // the same way), so this needed no CSP change.
+    externalGif: ({ value }) =>
+      value?.url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- external hotlink, next/image can't optimize an arbitrary remote GIF
+        <img
+          src={value.url}
+          alt={value.title || ""}
+          loading="lazy"
+          className="my-8 mx-auto block max-w-full rounded-lg"
+        />
+      ) : null,
     codeBlock: ({ value }) => (
       <div className="my-8 overflow-hidden rounded-lg border border-amber-faint text-sm">
         <SyntaxHighlighter
