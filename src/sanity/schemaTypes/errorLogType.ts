@@ -6,17 +6,18 @@ import {defineArrayMember, defineField, defineType} from 'sanity'
 // src/app/api/track-error/route.ts -- one document per distinct error
 // message, occurrenceCount going up each time the same one recurs, rather
 // than a new document per occurrence. Same shape and reasoning as
-// notFoundHitType.ts: lets Asher browse "what's actually breaking for real
-// visitors" in Studio, the one place he already checks, instead of needing
-// to go dig through Vercel's function logs or a separate error-tracking
-// account he'd have to sign up for and remember to check.
+// notFoundHitType.ts: lets Asher browse "what's actually breaking in any
+// browser that loads the site" in Studio, the one place he already
+// checks, instead of needing to go dig through Netlify's function logs or
+// a separate error-tracking account he'd have to sign up for and remember
+// to check. No environment gating -- local dev testing lands in the same
+// log as real visitors, not filtered out.
 //
 // Deliberately client-side only for now -- server-side errors (a failed
-// Sanity write, an API route throwing) already land in Vercel's own
+// Sanity write, an API route throwing) already land in Netlify's own
 // function logs, and folding those in too would mean routing every
 // existing try/catch through this as well, a separate, bigger change.
-// This covers the gap that had nothing at all: JS errors on a real
-// visitor's own browser.
+// This covers the gap that had nothing at all: JS errors in the browser.
 export const errorLogType = defineType({
   name: 'errorLog',
   title: 'Error Log',

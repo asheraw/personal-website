@@ -237,7 +237,7 @@ export default function PrivacyPage() {
                 beyond the content of that one email.
               </li>
               <li>
-                <strong className="text-ivory">Vercel</strong>{" "}&mdash; hosts the site itself.
+                <strong className="text-ivory">Netlify</strong>{" "}&mdash; hosts the site itself.
               </li>
               <li>
                 <strong className="text-ivory">Google Analytics / Google Tag Manager</strong>{" "}

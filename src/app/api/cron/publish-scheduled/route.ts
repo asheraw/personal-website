@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeClient } from "@/sanity/lib/write-client";
 
-// Runs once daily (see vercel.json's crons entry) -- publishes any
+// Runs once daily (see .github/workflows/cron-publish-scheduled.yml --
+// originally Vercel's built-in Cron feature via vercel.json's crons entry,
+// replaced with a GitHub Actions workflow once asheraw.com's DNS moved to
+// Netlify, which has no equivalent built-in scheduler) -- publishes any
 // unpublished draft post whose scheduledPublishAt (postType.ts) has
 // arrived, without Asher needing to come back and click Publish by hand.
-// Vercel's Hobby plan caps cron frequency at once per day and doesn't
-// guarantee an exact minute within that hour, so "scheduled for March 5"
-// genuinely means "goes live sometime that day," not a precise time --
-// documented on the field itself so this isn't a surprise later.
+// GitHub's own scheduled-workflow triggers aren't guaranteed to fire at
+// the exact minute requested (documented GitHub behaviour -- can run
+// several minutes late under load), so "scheduled for March 5" still
+// means "goes live sometime that day," not a precise time -- documented
+// on the field itself so this isn't a surprise later.
 //
 // Only ever touches documents that are BOTH still a draft AND have
 // scheduledPublishAt in the past -- an already-published post is

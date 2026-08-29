@@ -5285,3 +5285,32 @@ any post URL already shared/tested before the fix may keep showing the old (imag
 force-refreshed via [Facebook's Sharing Debugger](https://developers.facebook.com/tools/debug/) — paste the
 post URL in and click "Scrape Again." New shares of any post should show the image correctly without needing
 this step.
+
+---
+
+## Scheduled tasks: how purge-trash / check-links / publish-scheduled actually run (confirmed working 2026-08-30)
+
+Three routes — `/api/cron/purge-trash`, `/api/cron/check-links`, `/api/cron/publish-scheduled` — need
+something to actually call them on a schedule; none of them do anything on their own. **Not Netlify** — this
+site's host has no built-in cron/scheduled-function feature equivalent to what Vercel had (the original
+`vercel.json` `crons` entry, dead since the DNS moved off Vercel, though the file's still in the repo as a
+record of the original schedule). **Not `netlify.toml` either** — a first attempt at a Netlify Scheduled
+Functions config there was invalid (`functions` needs to be a singular table, not an array the way a
+`vercel.json` cron list is) and broke every deploy until it was removed; that file's own comment documents
+this so the same mistake doesn't get made again.
+
+**The actual mechanism**: three GitHub Actions workflows, `.github/workflows/cron-purge-trash.yml` /
+`cron-check-links.yml` / `cron-publish-scheduled.yml`, each on the exact schedule the original `vercel.json`
+entry used, calling the route over HTTPS with `Authorization: Bearer <CRON_SECRET>` — the same secret value
+the routes themselves already check, just now coming from a **GitHub repository secret** (Settings →
+Secrets and variables → Actions) instead of arriving automatically the way Vercel's own Cron feature sent
+it. Each workflow also has `workflow_dispatch: {}`, so any of the three can be triggered manually from the
+repo's Actions tab without waiting for the schedule — useful for testing a fix without waiting up to 24
+hours to see if it actually ran.
+
+**If a scheduled post doesn't go live, or Trash doesn't empty, or Link Checker doesn't refresh**: check the
+Actions tab first (`github.com/asheraw/personal-website/actions`) rather than assuming Netlify/Vercel — the
+relevant workflow's run history shows every past run's status. A failed run's log will show either a missing
+`CRON_SECRET` (the workflow fails fast and says so explicitly) or a non-200 response from the route itself
+(the actual route logic, unrelated to which platform triggered it). Confirmed 2026-08-30 by checking
+`publish-scheduled`'s own run history directly: 8/8 recent scheduled runs succeeded, no failures.

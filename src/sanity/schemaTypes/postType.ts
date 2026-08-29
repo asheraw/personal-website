@@ -143,7 +143,7 @@ export const postType = defineType({
       options: {dateFormat: 'YYYY-MMM-DD'},
       components: {input: ScheduledPublishInput},
       description:
-        'Set a date on an unpublished draft and it publishes itself automatically -- no need to come back and click Publish by hand. Checked once a day, so treat this as "goes live sometime that day," not an exact time (a Vercel Hobby-plan limit, not a choice). Has no effect on an already-published post -- only unpublished drafts get auto-published.',
+        'Set a date on an unpublished draft and it publishes itself automatically -- no need to come back and click Publish by hand. Checked once a day, so treat this as "goes live sometime that day," not an exact time. Has no effect on an already-published post -- only unpublished drafts get auto-published.',
     }),
     defineField({
       name: 'excerpt',

@@ -76,9 +76,10 @@ function cardTone(row: LinkCheckRow): CardTone {
 // they still good." Every post and reusable snippet's rich text gets
 // scanned (src/lib/linkChecker.ts) for plain and affiliate links; results
 // persist as `linkCheck` documents so this stays a browsable record between
-// runs, not just a one-off report. The weekly cron (vercel.json) is what
-// makes this "monitoring" instead of an on-demand audit -- Check Now here
-// just runs that same check early.
+// runs, not just a one-off report. The daily cron
+// (.github/workflows/cron-check-links.yml) is what makes this "monitoring"
+// instead of an on-demand audit -- Check Now here just runs that same
+// check early.
 //
 // No page-level title/padding of its own -- rendered as one tab inside
 // ContentHealthTool.tsx, alongside ContentAuditTool (merged 2026-08-05,
@@ -217,8 +218,8 @@ export function LinkCheckerTool() {
           check specifically (Instagram does this to almost all non-browser traffic), not that the page is
           actually gone. A link that briefly fails gets one automatic retry before it&rsquo;s ever recorded
           as broken, so a server having one bad second doesn&rsquo;t get flagged. Links to this site&rsquo;s
-          own pages are checked against what&rsquo;s actually in Sanity instead of a live request, so
-          Vercel&rsquo;s own bot protection can&rsquo;t flag them by mistake. Hover any status badge for
+          own pages are checked against what&rsquo;s actually in Sanity instead of a live request, so the
+          hosting platform&rsquo;s own bot protection can&rsquo;t flag them by mistake. Hover any status badge for
           what it means. Removed or changed a link and don&rsquo;t want to wait for tomorrow&rsquo;s
           automatic check? Click Check now to refresh immediately. A broken or possibly-blocked link can be
           marked Ignored or Actioned if it&rsquo;s handled or not actually worth fixing -- it moves into

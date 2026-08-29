@@ -117,7 +117,7 @@ export function EditorialCalendarTool() {
           <Text size={1} muted>
             Solid cards are published (drag to change the date shown on the post). Dashed cards are
             unpublished drafts scheduled to auto-publish — checked once a day, so a post goes live sometime
-            that day, not at an exact minute (a Vercel free-plan limit). Drag either kind to a new day.
+            that day, not at an exact minute. Drag either kind to a new day.
           </Text>
         </Stack>
 

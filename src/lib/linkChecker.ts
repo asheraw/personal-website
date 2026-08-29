@@ -80,14 +80,16 @@ export async function collectLinks(): Promise<LinkEntry[]> {
 // crying wolf on links that are perfectly fine for an actual visitor.
 //
 // 500 joins this set on real, confirmed evidence, not a guess: webmd.com
-// consistently returned 500 to this checker (from Vercel's own serverless
-// IPs, even after the retry above), while the exact same URL came back a
-// clean 200 from a different network every time it was tested directly --
-// a persistent IP-reputation block (common for CDNs/WAFs against
-// datacenter/cloud IP ranges specifically), not a real broken link. A
-// genuinely dead page returning 500 would still get caught -- it just
-// shows under "Possibly Blocked" instead of "Broken," same tradeoff
-// already accepted for 401/403/429.
+// consistently returned 500 to this checker (from this project's own
+// hosting-platform serverless IPs at the time -- originally Vercel, since
+// migrated to Netlify -- even after the retry above), while the exact
+// same URL came back a clean 200 from a different network every time it
+// was tested directly -- a persistent IP-reputation block (common for
+// CDNs/WAFs against datacenter/cloud IP ranges specifically, not tied to
+// one particular host), not a real broken link. A genuinely dead page
+// returning 500 would still get caught -- it just shows under "Possibly
+// Blocked" instead of "Broken," same tradeoff already accepted for
+// 401/403/429.
 const BOT_BLOCK_STATUS_CODES = new Set([401, 403, 429, 500])
 
 type CheckResult = {ok: boolean; statusCode?: number; error?: string; blocked: boolean}
@@ -141,16 +143,21 @@ async function fetchInternalTargets(): Promise<InternalTargets> {
 // Links to this site's own domain don't need a live fetch -- the target
 // either exists in Sanity or it doesn't, and checking that is exactly what
 // a network round trip is a slow, fragile proxy for. Confirmed as the real
-// cause of asheraw.com's own pages showing "possibly blocked": the same
-// URLs return a clean 200 from any other network, but Vercel's own
-// system-level bot/DDoS mitigation flags this checker's serverless
-// function calling back into its own production domain as suspicious
-// traffic (401/403), the same class of false positive already documented
-// above for webmd.com's IP-reputation block on outside domains -- just
-// happening on the site's own infrastructure this time. Returns null for
-// anything not on this domain, or an internal path shape not recognized
-// below, so the caller falls back to a real fetch rather than silently
-// skipping something it doesn't understand.
+// cause of asheraw.com's own pages showing "possibly blocked" while this
+// project was hosted on Vercel: the same URLs returned a clean 200 from
+// any other network, but Vercel's own system-level bot/DDoS mitigation
+// flagged this checker's serverless function calling back into its own
+// production domain as suspicious traffic (401/403) -- the same class of
+// false positive already documented above for webmd.com's IP-reputation
+// block on outside domains, just happening on the site's own
+// infrastructure that time. Not independently re-confirmed against
+// Netlify since the migration -- self-referential outbound calls from a
+// serverless function are a common trigger for WAF/bot heuristics on
+// several platforms, not something unique to Vercel, so this skip-and-
+// verify-against-Sanity-instead approach is kept as a safe default either
+// way. Returns null for anything not on this domain, or an internal path
+// shape not recognized below, so the caller falls back to a real fetch
+// rather than silently skipping something it doesn't understand.
 function checkInternalUrl(url: string, targets: InternalTargets): CheckResult | null {
   if (!url.startsWith(SITE_URL)) return null
   let pathname: string

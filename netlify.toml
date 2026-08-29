@@ -10,22 +10,25 @@
   node_version = "22.12"
 
 # Environment variables are set in Netlify UI (Settings > Build & deploy > Environment)
-# Copy from Vercel: SANITY_DATASET, SANITY_PROJECT_ID, SANITY_API_READ_TOKEN, NEXT_PUBLIC_SANITY_DATASET, etc.
+# -- SANITY_DATASET, SANITY_PROJECT_ID, SANITY_API_READ_TOKEN, NEXT_PUBLIC_SANITY_DATASET, etc.
+# (originally copied over from Vercel's own env var settings during the migration off it)
 
 # Scheduled tasks (purge-trash, check-links, publish-scheduled -- see
 # vercel.json's `crons` for the original Vercel version of this) do NOT
-# have a working replacement here yet. This file's own [[functions]] blocks
-# were invalid Netlify config (confirmed directly via `netlify status`:
-# "Configuration property functions must be an object" -- functions is a
-# singular table, not an array, and Netlify Scheduled Functions only
-# schedule real Netlify Functions by name, not an arbitrary path like a
-# Vercel cron entry does) and broke every deploy since they were added,
-# which is why this comment exists instead of a working config: removed
-# rather than guessed at again. These three routes still exist and still
-# work when called directly -- they're just not being called on a
-# schedule by anything right now. Needs a real decision (a genuine Netlify
-# Function wrapping each route, vs. an external pinger like GitHub
-# Actions) before being reintroduced.
+# run from this file. A first attempt using this file's own [[functions]]
+# blocks was invalid Netlify config (confirmed directly via `netlify
+# status`: "Configuration property functions must be an object" --
+# functions is a singular table, not an array, and Netlify Scheduled
+# Functions only schedule real Netlify Functions by name, not an arbitrary
+# path like a Vercel cron entry does) and broke every deploy since it was
+# added -- removed rather than guessed at again.
+#
+# The actual working replacement: three GitHub Actions workflows
+# (.github/workflows/cron-*.yml), each on the same schedule the original
+# vercel.json entry used, calling the route over HTTPS with the same
+# CRON_SECRET auth the routes already checked. Confirmed running
+# successfully on schedule as of 2026-08-30. Netlify itself still plays no
+# part in triggering these -- it only hosts the routes being called.
 
 # Security headers and CSP are defined in next.config.ts via the headers() function
 # No need to duplicate them here — Next.js will apply them at build time

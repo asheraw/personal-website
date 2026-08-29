@@ -11,6 +11,32 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-30 — Cleaned up 18 stale Vercel mentions across the codebase, confirmed the cron replacement actually works
+
+Asher confirmed the site is no longer on Vercel (host is Netlify) and asked for a full sweep of the stale
+references that turned up while fixing the Error Log's own description text (see the entry below). Fixed
+the public **Privacy Policy page** first -- it named Vercel as the host in its own infrastructure-disclosure
+list, a real accuracy problem on a live legal page, not just a comment.
+
+**A real discovery along the way, not just cosmetic**: `netlify.toml`'s own comment claimed the three
+scheduled tasks (purge-trash, check-links, publish-scheduled) had "no working replacement" since the
+Netlify migration -- alarming, since one of those is exactly what makes "Schedule for later" actually
+auto-publish. Checked, and that comment was itself stale: three GitHub Actions workflows
+(`.github/workflows/cron-*.yml`) already replaced Vercel's built-in Cron feature, on the same schedules,
+authenticated the same way. Confirmed via GitHub's own Actions run history -- 8/8 recent runs of
+`publish-scheduled` succeeded on schedule, no failures. Fixed `netlify.toml`'s comment to say so accurately
+instead of claiming it's broken.
+
+Everything else: swapped stale "Vercel" mentions for the real current explanation in cron route comments,
+`LinkCheckerTool.tsx`/`errorLogType.ts` (which also still claimed to only catch "real visitor" errors --
+fixed to match the earlier entry's correction), `postType.ts`/`EditorialCalendarTool.tsx`'s Studio-visible
+schedule-timing text, and `rateLimit.ts`. **Not blindly find-and-replaced**: `linkChecker.ts`'s bot-
+protection/IP-reputation comments describe specific behavior actually observed while on Vercel -- reworded
+as historical context (what was true then) rather than asserting Netlify behaves identically, since that
+hasn't been independently re-confirmed. `NotFoundContent.tsx`'s `vercel/next.js#61236` is a real upstream
+GitHub issue reference (Next.js's own repo lives at that path regardless of who hosts this site) -- left
+untouched, not a hosting claim at all.
+
 ## 2026-08-30 — Error Log: closed out 2 pending entries, fixed a stale description
 
 Asher spotted 2 pending Error Log entries and asked whether they were things already fixed. Checked: yes.

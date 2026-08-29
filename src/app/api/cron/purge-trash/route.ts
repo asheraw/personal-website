@@ -3,18 +3,22 @@ import { writeClient } from "@/sanity/lib/write-client";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Runs daily (see vercel.json's crons entry) -- permanently deletes any
+// Runs daily (see .github/workflows/cron-purge-trash.yml -- originally
+// Vercel's built-in Cron feature via vercel.json's crons entry, replaced
+// with a GitHub Actions workflow once asheraw.com's DNS moved to Netlify,
+// which has no equivalent built-in scheduler) -- permanently deletes any
 // comment that's been in Studio -> Comments' Trash view for 30+ days
 // (trashedAt set), AND any image asset that's been in Studio -> Media ->
 // Trash for 30+ days (see MediaLibraryTool.tsx / imageAssetTrashType.ts).
 // Both match the same TRASH_RETENTION_DAYS constant shown to Asher in
 // their respective tools before it's actually reached.
 //
-// Fails closed: without CRON_SECRET configured (Settings -> Environment
-// Variables in Vercel), every request is rejected -- a permanent-delete
-// endpoint should never be reachable by a guessed URL. Vercel automatically
-// sends `Authorization: Bearer <CRON_SECRET>` on its own scheduled calls
-// once that variable is set; nothing else needs to know the value.
+// Fails closed: without CRON_SECRET configured (an environment variable on
+// the live site, set in Netlify's own dashboard), every request is
+// rejected -- a permanent-delete endpoint should never be reachable by a
+// guessed URL. The GitHub Actions workflow sends `Authorization: Bearer
+// <CRON_SECRET>` on each scheduled call, reading the same secret value
+// from a GitHub repository secret; nothing else needs to know it.
 export async function GET(request: NextRequest) {
   const expected = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");

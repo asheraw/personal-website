@@ -28,7 +28,7 @@ export async function isRateLimited(
   }: { type: string; ip: string; timestampField: "_createdAt" | "createdAt"; windowMs: number; max: number },
 ): Promise<boolean> {
   // "unknown" means the request had no x-forwarded-for header at all (only
-  // really happens off Vercel, e.g. local dev) -- treating that as a single
+  // really happens off the deployed site, e.g. local dev) -- treating that as a single
   // shared bucket would risk rate-limiting every such visitor together as
   // if they were one, so it's exempted rather than guessed at. Same
   // "$ip != 'unknown'" exemption already used in comments/route.ts's
