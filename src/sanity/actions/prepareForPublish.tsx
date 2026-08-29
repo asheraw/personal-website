@@ -7,6 +7,7 @@ export type PostDraft = {
   categories?: unknown[]
   seoTitle?: string
   title?: string
+  scheduledPublishAt?: string
 }
 
 // Shared by the pre-publish confirmation dialog below and SeoPreviewView
@@ -29,6 +30,23 @@ export function getChecklistIssues(doc: PostDraft | null): string[] {
   const effectiveTitle = doc.seoTitle || doc.title || ''
   if (effectiveTitle.length > 70) {
     issues.push('Title is long enough that it may get cut off in search results')
+  }
+
+  // Publish and the "Schedule for later" field (scheduledPublishAt) are
+  // completely unrelated mechanisms -- the field is just a plain date a
+  // separate daily cron job checks, Publish has no idea it exists. Clicking
+  // Publish always goes live immediately, regardless of what this says --
+  // easy to assume otherwise, since the field looks like it should
+  // determine when this goes live. Only warn while it's still in the
+  // future; a past scheduledPublishAt just means the cron already caught
+  // it, or hasn't run yet today, neither of which Publish overrides.
+  if (doc.scheduledPublishAt && new Date(doc.scheduledPublishAt) > new Date()) {
+    const when = new Date(doc.scheduledPublishAt).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
+    issues.push(`Scheduled for ${when} — publishing now goes live immediately instead, ignoring that schedule`)
   }
 
   return issues

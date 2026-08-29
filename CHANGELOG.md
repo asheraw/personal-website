@@ -11,7 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
-## 2026-08-29 — GIF block follow-up: fixed a real save-corrupting bug, added pagination
+## 2026-08-29 — Pre-publish checklist now warns about a conflicting schedule
+
+Asher noticed a post with "Schedule for later" set to Sept 5 and asked whether clicking Publish would
+somehow respect that, or turn the button into something like "Schedule" instead. Neither -- `scheduledPublishAt`
+and the Publish button are two completely unrelated mechanisms. The field is just a plain date a separate
+daily cron job (`/api/cron/publish-scheduled`) checks; Publish has no idea it exists and always goes live
+immediately regardless of what it says. Easy to assume otherwise, since the field visually sits right there
+suggesting it controls when the post goes live.
+
+Added to the existing "worth a look" pre-publish checklist (`prepareForPublish.tsx` -- already warns about a
+missing featured image, no excerpt, etc., same "warn, never block, editor's call" dialog) rather than
+building a second mechanism: if `scheduledPublishAt` is set and still in the future, Publish now shows
+"Scheduled for September 5, 2026 — publishing now goes live immediately instead, ignoring that schedule"
+before confirming. Nothing changes for a post with no schedule set, or one whose schedule has already
+passed.
 
 Asher tried the new GIF block from the entry below and hit an error, couldn't scroll past the first page of
 results, and asked whether the picker really needed to load a default set of GIFs the moment it opened.
