@@ -8,6 +8,7 @@ import {DistractionFreeWritingPanel} from '../components/DistractionFreeWritingP
 import {TitleInputWithSeoSuggest} from '../components/TitleInputWithSeoSuggest'
 import {MainImageInputWithSuggestPrompt} from '../components/MainImageInputWithSuggestPrompt'
 import {ScheduledPublishInput} from '../components/ScheduledPublishInput'
+import {SlugAutoGenerateInput} from '../components/SlugAutoGenerateInput'
 
 export const postType = defineType({
   name: 'post',
@@ -57,6 +58,7 @@ export const postType = defineType({
       options: {
         source: 'title',
       },
+      components: {input: SlugAutoGenerateInput},
     }),
     defineField({
       name: 'mainImage',

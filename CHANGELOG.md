@@ -11,6 +11,26 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-31 — Slug auto-fills from the title, so Preview no longer silently disappears
+
+Asher noticed the "Preview" button vanishes with no explanation when a post has no slug yet -- traced to
+`openInPresentation.ts`'s own `if (!slug) return null` guard, which is correct (there's genuinely no
+`/blog/<slug>` URL to preview without one) but gave no indication *why* the button was gone. Root cause of
+the missing slug itself: Sanity's slug field doesn't auto-fill from the title on its own -- it needs the
+"Generate" button clicked by hand, easy to miss.
+
+Discussed the actual decision before building: does editing an older post's title ever touch its existing
+slug? No -- confirmed directly, since a slug is a permanent address once a post exists (search engines
+index it, links point to it), only the very first save should ever get to invent one for free.
+
+`SlugAutoGenerateInput.tsx`, wired onto `slug` in `postType.ts`, fills the slug from the title automatically
+the moment there's real text to slugify -- but only while the slug is still genuinely empty. The instant
+it's set, by this auto-fill or by typing one in by hand, it locks in permanently; further title edits never
+touch it again, no matter how many times the title changes after that. Reuses the same `slugify()`
+`portableText.ts` already had for heading anchor ids (now exported) rather than a second implementation --
+verified its output against several real, already-live post slugs and got an exact match, confirming
+nothing about migrating to this changes what any existing post's URL would have been.
+
 ## 2026-08-30 — "Add multiple from Media Library" can now upload brand-new photos too
 
 Follow-up to the fix below, same conversation: Asher asked whether uploading several new files at once was
