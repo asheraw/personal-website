@@ -11,6 +11,27 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-30 — Small photos can now float left/right with text wrapping around them
+
+Asher asked whether Small/Medium images could float like a classic magazine layout, with body text wrapping
+around them, rather than always sitting centered on their own line. Advised first (feasibility, what it'd
+take, the one real risk) before building, per his own "don't execute yet."
+
+New `float` field on the image block (`blockContentType.ts`) -- None (default) / Left / Right -- shown only
+for a single Small or Medium photo, hidden for Wide/Original (nothing left to wrap around) and for a gallery
+(floating several photos at once is a much stranger reading pattern). `SizedImage.tsx` applies the actual
+CSS float, re-checking size independently of Studio's hidden-field gate so a stale `float` value left over
+from switching sizes can never visually apply. Floats only kick in from tablet-width up (`sm:`), same
+breakpoint every other size class already uses -- stacks full-width on mobile like everything else.
+
+The one real risk flagged up front, addressed directly: a floated image can visually bleed into whatever
+comes right after it if there's not enough text to wrap around first. Added `clear-both` to headings,
+blockquotes, dividers, and callouts (not plain paragraphs/lists, where wrapping around the float is the
+whole point) so a floated photo never runs into the next section, without needing a separate manual
+toggle. Exports (Markdown/HTML/PDF/EPUB) untouched -- they already don't reflect `displaySize` at all
+(every exported image renders at one standard size regardless of Small/Medium/Wide/Original), so skipping
+`float` there too is consistent with existing behaviour, not a new gap.
+
 ## 2026-08-30 — Cleaned up 18 stale Vercel mentions across the codebase, confirmed the cron replacement actually works
 
 Asher confirmed the site is no longer on Vercel (host is Netlify) and asked for a full sweep of the stale

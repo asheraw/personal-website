@@ -7,6 +7,7 @@ import { WideBreakout } from "@/components/asher/blog/WideBreakout";
 import { isAnimatedGifUrl } from "@/lib/isAnimatedGif";
 
 export type DisplaySize = "small" | "medium" | "original" | "wide";
+export type FloatDirection = "none" | "left" | "right";
 
 // Percentage of the article column's width, not a fixed pixel cap -- the
 // column itself (max-w-3xl, minus padding) works out to ~704px on desktop,
@@ -36,19 +37,31 @@ export function SizedImage({
   alt,
   caption,
   size = "original",
+  float = "none",
 }: {
   src: string;
   fullSrc: string;
   alt: string;
   caption?: string;
   size?: DisplaySize;
+  float?: FloatDirection;
 }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isGif = isAnimatedGifUrl(src);
   const isWide = size === "wide";
+  // Only Small/Medium float -- Wide/Original already fill or exceed the
+  // column, nothing left to wrap text around. Re-checked here independently
+  // of Studio's own hidden-field gate (blockContentType.ts) so a stale
+  // `float` value left over from switching away from Small/Medium can never
+  // visually apply. `sm:` only -- same breakpoint every other size class
+  // already uses, so a floated photo with wrapping text doesn't show up
+  // cramped on a phone; it just stacks full-width there like anything else.
+  const canFloat = float !== "none" && (size === "small" || size === "medium");
+  const floatClass = canFloat ? (float === "left" ? "sm:float-left sm:mr-6 sm:mb-4" : "sm:float-right sm:ml-6 sm:mb-4") : "";
+  const widthClass = isWide || size === "original" ? "" : WIDTH_CLASSES[size];
 
   const figure = (
-    <figure className={`my-8 w-full ${isWide || size === "original" ? "" : `${WIDTH_CLASSES[size]} sm:mx-auto`}`}>
+    <figure className={`my-8 w-full ${widthClass} ${canFloat ? floatClass : widthClass ? "sm:mx-auto" : ""}`}>
       <button
         type="button"
         onClick={() => setLightboxOpen(true)}

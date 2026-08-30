@@ -6,7 +6,7 @@ import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
 import { AccordionGroup } from "@/components/asher/blog/AccordionGroup";
 import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
-import { SizedImage, type DisplaySize } from "@/components/asher/blog/SizedImage";
+import { SizedImage, type DisplaySize, type FloatDirection } from "@/components/asher/blog/SizedImage";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { QuoteGrid, type QuoteEntry, type QuoteGridLayout, type QuoteGridWeight, type QuoteGridSize } from "@/components/asher/blog/QuoteGrid";
 import { isTextColorValue } from "@/lib/textColors";
@@ -81,13 +81,17 @@ export const postBodyComponents: PortableTextComponents = {
     // shouldn't be able to add more) -- kept rendering here only so any
     // post written before that change still displays exactly as it always
     // has, rather than falling back to Portable Text's unstyled default.
+    // `clear-both` on every one of these -- a floated image (SizedImage's
+    // own float prop, blockContentType.ts) shouldn't visually bleed into
+    // whatever comes after it. Plain paragraphs/lists deliberately don't
+    // get this, since wrapping around the float is the whole point there.
     h1: ({ children }) => (
-      <h2 className="mt-12 font-display text-3xl font-semibold tracking-tight text-ivory sm:text-4xl">
+      <h2 className="clear-both mt-12 font-display text-3xl font-semibold tracking-tight text-ivory sm:text-4xl">
         {children}
       </h2>
     ),
     h2: ({ children }) => (
-      <h2 className="mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl">
+      <h2 className="clear-both mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl">
         {children}
       </h2>
     ),
@@ -97,15 +101,15 @@ export const postBodyComponents: PortableTextComponents = {
     // (e.g. an author bio), so it's never silently missing an id it
     // never had a reading-progress checkpoint to match anyway.
     h3: ({ children }) => (
-      <h3 className="mt-8 font-display text-xl font-semibold tracking-tight text-ivory sm:text-2xl">
+      <h3 className="clear-both mt-8 font-display text-xl font-semibold tracking-tight text-ivory sm:text-2xl">
         {children}
       </h3>
     ),
     h4: ({ children }) => (
-      <h4 className="mt-6 font-display text-lg font-semibold tracking-tight text-ivory">{children}</h4>
+      <h4 className="clear-both mt-6 font-display text-lg font-semibold tracking-tight text-ivory">{children}</h4>
     ),
     blockquote: ({ children }) => (
-      <blockquote className="border-l-2 border-spotlight/60 pl-5 italic text-stone/90">
+      <blockquote className="clear-both border-l-2 border-spotlight/60 pl-5 italic text-stone/90">
         {children}
       </blockquote>
     ),
@@ -226,6 +230,8 @@ export const postBodyComponents: PortableTextComponents = {
             : "scroll-strip";
         return <ImageCarousel images={images} mode={mode} size={size} />;
       }
+      const float: FloatDirection =
+        value.float === "left" || value.float === "right" ? value.float : "none";
       return (
         <SizedImage
           src={urlFor(value).width(1200).url()}
@@ -233,10 +239,11 @@ export const postBodyComponents: PortableTextComponents = {
           alt={value.alt ?? ""}
           caption={value.caption}
           size={size}
+          float={float}
         />
       );
     },
-    divider: () => <hr className="my-10 border-amber-faint" />,
+    divider: () => <hr className="clear-both my-10 border-amber-faint" />,
     // Hotlinked straight to Giphy -- no Sanity asset behind this at all
     // (see blockContentType.ts's externalGif member), so a plain <img>
     // pointed at Giphy's own URL, not urlFor()/SizedImage like a real
@@ -279,7 +286,7 @@ export const postBodyComponents: PortableTextComponents = {
       // lock in the displayed word too).
       const label = (value?.label as string) || style.label;
       return (
-        <div className={`my-8 rounded-lg border px-5 py-4 ${style.classes}`}>
+        <div className={`clear-both my-8 rounded-lg border px-5 py-4 ${style.classes}`}>
           <p className="font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/70">{label}</p>
           <div className="mt-2 space-y-3 leading-relaxed text-ivory/90">
             {Array.isArray(value?.text) ? (
@@ -378,7 +385,7 @@ export function createPostBodyComponents(headingIds: Map<string, string>): Porta
     h2: ({ children, value }) => (
       <h2
         id={headingIds.get((value as { _key?: string })._key ?? "")}
-        className="mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl scroll-mt-24"
+        className="clear-both mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl scroll-mt-24"
       >
         {children}
       </h2>

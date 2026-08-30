@@ -347,6 +347,34 @@ export const blockContentType = defineType({
           },
           initialValue: 'original',
         }),
+        defineField({
+          name: 'float',
+          title: 'Wrap text around it',
+          type: 'string',
+          // Only makes sense for a single small/medium photo, not a gallery
+          // (floating several photos at once is a much stranger reading
+          // pattern) and not Wide/Original (already fills or exceeds the
+          // column, nothing left to wrap text around). Hidden rather than
+          // disabled -- if displaySize changes later and this becomes
+          // hidden again with a stale value still stored, the frontend
+          // (SizedImage.tsx) independently re-checks size before ever
+          // applying a float, so a stale value can't cause a visual bug.
+          hidden: ({parent}) => {
+            const p = parent as {additionalImages?: unknown[]; displaySize?: string}
+            if (p?.additionalImages?.length) return true
+            return p?.displaySize === 'wide' || p?.displaySize === 'original'
+          },
+          options: {
+            list: [
+              {title: 'No (default)', value: 'none'},
+              {title: 'Float left (text wraps on the right)', value: 'left'},
+              {title: 'Float right (text wraps on the left)', value: 'right'},
+            ],
+            layout: 'radio',
+          },
+          initialValue: 'none',
+          description: 'Stacks full-width on mobile either way, same as Small/Medium already do -- floating only kicks in on wider screens where there\'s room for text to actually wrap.',
+        }),
       ],
       preview: {
         select: {alt: 'alt', asset: 'asset', additionalImages: 'additionalImages', displayStyle: 'displayStyle'},
