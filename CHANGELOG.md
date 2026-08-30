@@ -11,6 +11,16 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-30 — Fixed "Add multiple from Media Library" showing stale selections after Cancel
+
+Asher noticed: pick a few photos in the bulk picker, hit Cancel, reopen it later, and the same tiles still
+showed as selected even though nothing had actually been added. Root cause: `BulkImagePickerInput.tsx`
+itself never unmounts (only the Dialog's JSX conditionally renders), so `selectedIds` lives in the parent
+component and survives a close/reopen -- `addSelected()` already reset it after a real add, but Cancel and
+the Dialog's own `onClose` (X / click outside / Escape) both just hid the dialog, leaving the selection
+state untouched. Fixed by routing all three close paths through one shared `closeDialog()` that resets
+`selectedIds` and the search box, so a cancelled session never leaks into the next one.
+
 ## 2026-08-30 — Small photos can now float left/right with text wrapping around them
 
 Asher asked whether Small/Medium images could float like a classic magazine layout, with body text wrapping

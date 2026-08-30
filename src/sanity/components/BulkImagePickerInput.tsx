@@ -135,6 +135,18 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
     for (const id of selectedIds) {
       onItemAppend({_type: 'image', _key: randomKey(), asset: {_type: 'reference', _ref: id}} as never)
     }
+    closeDialog()
+  }
+
+  // Shared by the Dialog's own onClose (X / click outside / Escape) and
+  // the Cancel button -- both used to just hide the dialog via
+  // setDialogOpen(false), leaving `selectedIds` untouched. Since this
+  // component itself never unmounts (only the Dialog's JSX conditionally
+  // renders), that state survived a close/reopen: pick some photos,
+  // Cancel, reopen, and the same tiles showed as already selected even
+  // though nothing had actually been added. Confirmed and fixed
+  // 2026-08-30.
+  function closeDialog() {
     setDialogOpen(false)
     setSelectedIds(new Set())
     setSearchInput('')
@@ -159,7 +171,7 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
       </Text>
       {renderDefault(props)}
       {dialogOpen && (
-        <Dialog id="bulk-image-picker" header="Add photos from Media Library" onClose={() => setDialogOpen(false)} width={2}>
+        <Dialog id="bulk-image-picker" header="Add photos from Media Library" onClose={closeDialog} width={2}>
           <Box padding={4}>
             <Stack space={4}>
               <TextInput
@@ -238,7 +250,7 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
                   {selectedIds.size} selected
                 </Text>
                 <Flex gap={2}>
-                  <Button text="Cancel" mode="ghost" onClick={() => setDialogOpen(false)} />
+                  <Button text="Cancel" mode="ghost" onClick={closeDialog} />
                   <Button
                     text={`Add ${selectedIds.size || ''} photo${selectedIds.size === 1 ? '' : 's'}`.trim()}
                     tone="primary"
