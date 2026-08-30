@@ -1,8 +1,9 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
-import {Badge, Box, Button, Card, Checkbox, Dialog, Flex, Grid, Spinner, Stack, Text, TextInput} from '@sanity/ui'
+import {Badge, Box, Button, Card, Checkbox, Dialog, Flex, Grid, Heading, Spinner, Stack, Text, TextInput} from '@sanity/ui'
 import {useClient} from 'sanity'
 import type {ArrayOfObjectsInputProps} from 'sanity'
 import {ImagesIcon} from '@sanity/icons/Images'
+import {UploadIcon} from '@sanity/icons/Upload'
 
 type LibraryAsset = {_id: string; url: string; originalFilename: string | null}
 
@@ -20,6 +21,12 @@ const SEARCH_DEBOUNCE_MS = 350
  * photos into the Media library, then found there was no way to add more
  * than one at a time into a post's gallery, only the one-at-a-time
  * Upload/Select flow Sanity's default array input already has.
+ *
+ * The dialog this opens covers both ways to add several photos at once:
+ * selecting existing ones already in the library (the original ask), and
+ * uploading several brand-new files directly (Asher's follow-up ask,
+ * 2026-08-30) -- each uploaded file appends to the gallery the moment it
+ * finishes, same as a single default upload already does.
  *
  * `renderDefault(props)` still renders everything Sanity's own input
  * already does (reordering, per-item remove, the existing one-at-a-time
@@ -50,6 +57,19 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const scrollBoxRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  // Uploading brand-new files, not just picking existing ones -- Asher's
+  // own ask (2026-08-30), after asking whether this dialog could also take
+  // new files instead of only ever selecting from what's already in the
+  // library. Each file appends to the gallery the moment it finishes
+  // uploading, same as Sanity's own default one-at-a-time upload already
+  // does -- no separate "confirm" step, since choosing to upload a file
+  // already is the confirmation. One failed file doesn't stop the rest of
+  // the batch; its filename shows in an error list instead.
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{done: number; total: number} | null>(null)
+  const [uploadErrors, setUploadErrors] = useState<string[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const id = setTimeout(() => setSearchTerm(searchInput.trim()), SEARCH_DEBOUNCE_MS)
@@ -131,6 +151,27 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
     })
   }
 
+  async function uploadFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'))
+    if (files.length === 0) return
+    setUploading(true)
+    setUploadErrors([])
+    setUploadProgress({done: 0, total: files.length})
+    const errors: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      try {
+        const uploaded = await client.assets.upload('image', file, {filename: file.name})
+        onItemAppend({_type: 'image', _key: randomKey(), asset: {_type: 'reference', _ref: uploaded._id}} as never)
+      } catch (err) {
+        errors.push(`${file.name}: ${err instanceof Error ? err.message : 'upload failed'}`)
+      }
+      setUploadProgress({done: i + 1, total: files.length})
+    }
+    setUploading(false)
+    setUploadErrors(errors)
+  }
+
   function addSelected() {
     for (const id of selectedIds) {
       onItemAppend({_type: 'image', _key: randomKey(), asset: {_type: 'reference', _ref: id}} as never)
@@ -150,6 +191,8 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
     setDialogOpen(false)
     setSelectedIds(new Set())
     setSearchInput('')
+    setUploadErrors([])
+    setUploadProgress(null)
   }
 
   return (
@@ -174,6 +217,71 @@ export function BulkImagePickerInput(props: ArrayOfObjectsInputProps) {
         <Dialog id="bulk-image-picker" header="Add photos from Media Library" onClose={closeDialog} width={2}>
           <Box padding={4}>
             <Stack space={4}>
+              <Stack space={3}>
+                <Heading size={1}>Upload new photos</Heading>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{display: 'none'}}
+                  onChange={(e) => {
+                    if (e.target.files) uploadFiles(e.target.files)
+                    e.target.value = ''
+                  }}
+                />
+                <Card
+                  padding={4}
+                  radius={2}
+                  border
+                  tone={dragOver ? 'primary' : 'transparent'}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setDragOver(true)
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setDragOver(false)
+                    if (e.dataTransfer.files) uploadFiles(e.dataTransfer.files)
+                  }}
+                >
+                  {uploading ? (
+                    <Flex align="center" justify="center" gap={3}>
+                      <Spinner />
+                      <Text size={1}>
+                        Uploading {uploadProgress?.done ?? 0} of {uploadProgress?.total ?? 0}…
+                      </Text>
+                    </Flex>
+                  ) : (
+                    <Stack space={3}>
+                      <Text size={1} align="center" muted>
+                        Drag photos here, or
+                      </Text>
+                      <Flex justify="center">
+                        <Button
+                          text="Choose photos"
+                          icon={UploadIcon}
+                          tone="primary"
+                          onClick={() => fileInputRef.current?.click()}
+                        />
+                      </Flex>
+                    </Stack>
+                  )}
+                </Card>
+                {uploadErrors.length > 0 && (
+                  <Card padding={3} radius={2} tone="critical" border>
+                    <Stack space={1}>
+                      {uploadErrors.map((err) => (
+                        <Text key={err} size={1}>
+                          {err}
+                        </Text>
+                      ))}
+                    </Stack>
+                  </Card>
+                )}
+              </Stack>
+              <Heading size={1}>Or pick from what&rsquo;s already in the library</Heading>
               <TextInput
                 fontSize={1}
                 placeholder="Search by filename…"

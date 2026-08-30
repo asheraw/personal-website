@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-30 — "Add multiple from Media Library" can now upload brand-new photos too
+
+Follow-up to the fix below, same conversation: Asher asked whether uploading several new files at once was
+also possible from inside a post, having previously said bulk uploads belonged in the Media Library section.
+Advised on the tradeoff first (real convenience vs. a second upload entry point) before building, on request.
+
+`BulkImagePickerInput.tsx`'s dialog now has two sections instead of one: a new "Upload new photos" drag-and-
+drop/file-picker area above the existing "Or pick from what's already in the library" search+grid. Each
+uploaded file appends to the gallery the moment it finishes (`client.assets.upload`, same call
+`CompressedUploadSource.tsx` already uses), not gated behind the "Add N photos" confirm button -- choosing
+to upload a file already is the confirmation, same as Sanity's own default one-at-a-time upload behaves. One
+failed file in a batch doesn't stop the rest; its name shows in an error list instead of silently dropping
+it or aborting everything after it.
+
 ## 2026-08-30 — Fixed "Add multiple from Media Library" showing stale selections after Cancel
 
 Asher noticed: pick a few photos in the bulk picker, hit Cancel, reopen it later, and the same tiles still
