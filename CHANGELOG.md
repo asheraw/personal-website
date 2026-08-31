@@ -11,6 +11,34 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-31 — Video tag on blog cards, and a hand-drawn divider between them
+
+Asher looked at Firecrawl's blog for design ideas and picked two to actually build. Both scoped narrowly —
+he was explicit he didn't want the "too busy" version of either.
+
+**Video tag.** A small "▶ Video" pill on any blog card (listing, Featured) whose post contains a YouTube or
+Instagram embed -- overlaid top-left on the thumbnail, same "small pill, stage background, spotlight border,
+backdrop-blur" treatment PlayMode.tsx's own 2D/3D toggle already uses, reused rather than inventing a second
+overlay style. Needed no query change at all: `POST_SUMMARY_PROJECTION`'s `bodyBlocks` field already selects
+`_type` for every body block (for the reading-time estimate), so a new `hasVideoEmbed()` helper in
+`portableText.ts` just checks for an `embed`-type block in data every card already fetches. Falls back to an
+inline pill in the metadata row for the rare post with a video embed but no main image to overlay onto.
+
+**Sketchy divider.** Firecrawl's grid-line borders read as a technical SaaS product, which isn't this site's
+language -- so rather than skip the idea, adapted it: `SketchyDivider.tsx` draws a hand-drawn-feeling wavy
+line (three fixed SVG path variants, cycled by card index -- not `Math.random()`, which would mismatch
+between server and client render and break hydration) in place of the plain `border-b border-amber-faint`
+that used to separate blog listing cards. Moved from a CSS border on the card itself to an explicit
+`index`/`isLast` prop passed down from each listing page's own `.map()`, since the divider now lives inside
+the card rather than on its edge, where `last:border-none` could rely on being a real `:last-child`.
+
+Verified both against the real components with mock post data in a throwaway test route (Sanity's API is
+still unreachable from this sandbox) -- video tag overlay position, the inline fallback, divider wave-shape
+variety across cards, and the last-card correctly getting no trailing divider, all confirmed via Playwright
+screenshots before the test route was deleted.
+
+---
+
 ## 2026-08-28 — Fixed: Studio's GIF picker squished again once results scrolled
 
 Asher hit this live, replying to a comment from Studio: search results rendered as tall, unusable strips

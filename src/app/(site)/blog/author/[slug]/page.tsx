@@ -108,7 +108,13 @@ export default async function AuthorPage({ params }: PageProps) {
         ) : (
           <div className="mt-16 space-y-16">
             {posts.map((post, index) => (
-              <PostCard key={post._id} post={post} priority={index === 0} />
+              <PostCard
+                key={post._id}
+                post={post}
+                priority={index === 0}
+                index={index}
+                isLast={index === posts.length - 1}
+              />
             ))}
           </div>
         )}

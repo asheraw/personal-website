@@ -6,15 +6,32 @@ import { motion } from "framer-motion";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
-import { portableTextToPlainText, estimateReadingTimeFromText } from "@/lib/portableText";
+import { portableTextToPlainText, estimateReadingTimeFromText, hasVideoEmbed } from "@/lib/portableText";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
+import { VideoTag } from "@/components/asher/blog/VideoTag";
+import { SketchyDivider } from "@/components/asher/blog/SketchyDivider";
 
 // Matches the excerpt field's own 160-character guidance in Studio, so
 // a manually-written excerpt basically never needs trimming here -- this
 // mainly kicks in for the auto-generated fallback pulled from post body.
 const CARD_BLURB_LENGTH = 160;
 
-export function PostCard({ post, priority = false }: { post: PostSummary; priority?: boolean }) {
+export function PostCard({
+  post,
+  priority = false,
+  index = 0,
+  isLast = false,
+}: {
+  post: PostSummary;
+  priority?: boolean;
+  // Which SketchyDivider path variant to draw (cycled, not random -- see
+  // that file's own comment on why) and whether to draw one at all --
+  // explicit props from BlogPostList's own map(), not a CSS :last-child
+  // trick, since the divider now lives inside the article rather than as
+  // a border on its own edge.
+  index?: number;
+  isLast?: boolean;
+}) {
   // Both derived from the same plain-text pass over post.bodyBlocks, so a
   // Quote-Grid-heavy post's blurb and reading time stay consistent with
   // each other and with the post page's own count (see bodyBlocks' comment
@@ -23,6 +40,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
   const blurbSource = post.excerpt || bodyPlainText;
   const blurb = blurbSource ? truncateText(blurbSource, CARD_BLURB_LENGTH) : undefined;
   const readingTime = bodyPlainText ? estimateReadingTimeFromText(bodyPlainText) : undefined;
+  const hasVideo = post.bodyBlocks ? hasVideoEmbed(post.bodyBlocks) : false;
 
   return (
     <motion.article
@@ -30,10 +48,10 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="border-b border-amber-faint pb-12 last:border-none"
     >
       {post.mainImage && (
-        <Link href={`/blog/${post.slug}`} className="block mb-5">
+        <Link href={`/blog/${post.slug}`} className="relative block mb-5">
+          {hasVideo && <VideoTag />}
           <Image
             src={urlFor(post.mainImage).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()}
             alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
@@ -67,6 +85,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
         )}
         {post.publishedAt && readingTime && <span aria-hidden="true">·</span>}
         {readingTime && <span>{readingTime} min read</span>}
+        {hasVideo && !post.mainImage && <VideoTag variant="inline" />}
         {post.categories?.map((category) => (
           <Link
             key={category.slug}
@@ -87,6 +106,8 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
       >
         Read more <span aria-hidden="true">→</span>
       </Link>
+
+      {!isLast && <SketchyDivider index={index} className="mt-12" />}
     </motion.article>
   );
 }

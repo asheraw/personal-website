@@ -213,6 +213,11 @@
   .link-amber:hover::after { transform: scaleX(1); opacity: 1; }
   .border-amber-faint { border-color: rgba(240, 184, 101, 0.18); }
   .light .border-amber-faint { border-color: rgba(184, 132, 46, 0.22); }
+  /* Stroke color for SketchyDivider.tsx's hand-drawn SVG line -- a touch
+     more opaque than border-amber-faint's own 0.18/0.22 since a 1px SVG
+     stroke reads fainter than a solid CSS border at the same opacity. */
+  .text-amber-faint-stroke { color: rgba(240, 184, 101, 0.35); }
+  .light .text-amber-faint-stroke { color: rgba(184, 132, 46, 0.4); }
   .bg-grid-paper {
     background-image: linear-gradient(rgba(245, 239, 228, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(245, 239, 228, 0.025) 1px, transparent 1px);
     background-size: 64px 64px; background-position: -1px -1px;

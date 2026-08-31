@@ -73,6 +73,21 @@ export function estimateReadingTimeMinutes(body: unknown): number {
   return estimateReadingTimeFromText(portableTextToPlainText(body));
 }
 
+// Powers the "Video" tag on blog listing cards -- reuses the same shallow
+// `bodyBlocks` projection every card already fetches (POST_SUMMARY_PROJECTION
+// in queries.ts already selects `_type` for every block, so this needs no
+// query change at all). "Embed" is a single merged block type for both
+// YouTube and Instagram links (see blockContentType.ts) -- deliberately not
+// narrowed to YouTube-only here: an Instagram Reel embed is video too, and
+// telling a Reel apart from a photo post would need the URL itself (not
+// selected in this shallow projection) or a real oEmbed lookup, neither of
+// which is worth the complexity for what's ultimately a glanceable hint, not
+// a guarantee.
+export function hasVideoEmbed(blocks: unknown): boolean {
+  if (!Array.isArray(blocks)) return false;
+  return (blocks as PortableTextBlock[]).some((block) => block?._type === "embed");
+}
+
 type MarkDefsBlock = { markDefs?: { _type?: string }[] };
 
 /** True if any block in the body has an affiliateLink annotation -- drives whether AffiliateDisclosure shows. */

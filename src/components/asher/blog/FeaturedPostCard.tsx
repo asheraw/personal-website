@@ -6,7 +6,8 @@ import { motion } from "framer-motion";
 import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
-import { portableTextToPlainText, estimateReadingTimeFromText } from "@/lib/portableText";
+import { portableTextToPlainText, estimateReadingTimeFromText, hasVideoEmbed } from "@/lib/portableText";
+import { VideoTag } from "@/components/asher/blog/VideoTag";
 
 const BLURB_LENGTH = 200;
 
@@ -22,6 +23,7 @@ export function FeaturedPostCard({ post }: { post: PostSummary }) {
   const blurbSource = post.excerpt || bodyPlainText;
   const blurb = blurbSource ? truncateText(blurbSource, BLURB_LENGTH) : undefined;
   const readingTime = bodyPlainText ? estimateReadingTimeFromText(bodyPlainText) : undefined;
+  const hasVideo = post.bodyBlocks ? hasVideoEmbed(post.bodyBlocks) : false;
 
   return (
     <motion.article
@@ -35,7 +37,8 @@ export function FeaturedPostCard({ post }: { post: PostSummary }) {
       </p>
 
       {post.mainImage && (
-        <Link href={`/blog/${post.slug}`} className="mt-4 block">
+        <Link href={`/blog/${post.slug}`} className="relative mt-4 block">
+          {hasVideo && <VideoTag />}
           <Image
             src={urlFor(post.mainImage).width(1600).height(900).fit("crop").crop("focalpoint").format("jpg").quality(78).url()}
             alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
@@ -66,6 +69,7 @@ export function FeaturedPostCard({ post }: { post: PostSummary }) {
           )}
           {post.publishedAt && readingTime && <span aria-hidden="true">·</span>}
           {readingTime && <span>{readingTime} min read</span>}
+          {hasVideo && !post.mainImage && <VideoTag variant="inline" />}
         </div>
 
         {blurb && <p className="mt-4 max-w-2xl leading-relaxed text-stone/85">{blurb}</p>}
