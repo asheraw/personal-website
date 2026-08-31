@@ -420,7 +420,32 @@ export const blockContentType = defineType({
       fields: [
         defineField({name: 'url', title: 'GIF URL', type: 'url', hidden: true}),
         defineField({name: 'thumbUrl', title: 'Thumbnail URL', type: 'url', hidden: true}),
+        // Giphy's own metadata, not editable -- GifPickerInput sets this
+        // automatically when a GIF is picked and never exposes a field for
+        // it, so there's no way to override it by hand right now.
         defineField({name: 'title', title: 'Description (alt text)', type: 'string', hidden: true}),
+        // Same 4 options as Image's own Display size (SizedImage.tsx),
+        // so a GIF sizes the same way a photo does instead of always
+        // rendering at whatever pixel size Giphy happens to serve --
+        // Asher's ask (2026-08-29), after noticing GIFs from different
+        // searches came out wildly different sizes with no way to control
+        // it. hidden: true since GifPickerInput renders its own control
+        // for this, same as url/thumbUrl/title above.
+        defineField({name: 'displaySize', title: 'Display size', type: 'string', hidden: true, initialValue: 'original'}),
+        // Same float option Image's block already has (blockContentType.ts's
+        // image array member) -- Asher's ask (2026-08-31): a GIF should be
+        // able to wrap text the same way a small photo can. `hidden: true`
+        // like every other field here since GifPickerInput.tsx renders its
+        // own control (it already decides for itself when to show it,
+        // based on displaySize, rather than relying on Sanity's schema-level
+        // hidden callback the way Image's field does -- this form is fully
+        // custom-rendered regardless).
+        defineField({name: 'float', title: 'Wrap text around it', type: 'string', hidden: true, initialValue: 'none'}),
+        // Visible caption under the GIF -- added as the alternative to
+        // editable alt text (Asher's ask, 2026-08-29): since `title`
+        // above stays Giphy-controlled, this is the field he can actually
+        // write in, same role as Image's own `caption`.
+        defineField({name: 'caption', title: 'Caption (optional)', type: 'string', hidden: true}),
       ],
       components: {input: GifPickerInput, block: CollapsedGifBlock},
       preview: {

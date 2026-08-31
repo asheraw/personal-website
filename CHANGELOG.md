@@ -11,6 +11,20 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-08-31 — GIFs get the same float left/right option as Small/Medium photos
+
+Follow-up to the image float feature: Asher asked whether GIFs could wrap text the same way. Same shape as
+Image's own `float` field (blockContentType.ts) -- None/Left/Right, only relevant for a small or medium GIF
+-- but rendered through `GifPickerInput.tsx`'s own custom Select rather than Sanity's default radio control,
+since that form is fully hand-built already (Display size already worked this way). Switching size back to
+Wide/Original now also clears a previously-set float automatically, so a stale value doesn't sit in the
+data waiting to matter again if size gets switched back later.
+
+Live rendering (`portableTextComponents.tsx`'s `externalGif`) mirrors `SizedImage.tsx`'s exact float logic --
+same breakpoint, same margin classes, same independent re-check of size before ever applying a float, so a
+stale value can't visually apply there either. The `clear-both` already added to headings/quotes/dividers/
+callouts for the image feature covers GIFs too, automatically -- no separate change needed there.
+
 ## 2026-08-31 — Slug auto-fills from the title, so Preview no longer silently disappears
 
 Asher noticed the "Preview" button vanishes with no explanation when a post has no slug yet -- traced to

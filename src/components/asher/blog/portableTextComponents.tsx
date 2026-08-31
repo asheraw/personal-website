@@ -7,6 +7,7 @@ import { Accordion } from "@/components/asher/blog/Accordion";
 import { AccordionGroup } from "@/components/asher/blog/AccordionGroup";
 import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
 import { SizedImage, type DisplaySize, type FloatDirection } from "@/components/asher/blog/SizedImage";
+import { WideBreakout } from "@/components/asher/blog/WideBreakout";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { QuoteGrid, type QuoteEntry, type QuoteGridLayout, type QuoteGridWeight, type QuoteGridSize } from "@/components/asher/blog/QuoteGrid";
 import { isTextColorValue } from "@/lib/textColors";
@@ -250,16 +251,44 @@ export const postBodyComponents: PortableTextComponents = {
     // uploaded photo. Giphy's own domain is already allowlisted in the
     // site's CSP img-src (the public comment thread's GIFs already hotlink
     // the same way), so this needed no CSP change.
-    externalGif: ({ value }) =>
-      value?.url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- external hotlink, next/image can't optimize an arbitrary remote GIF
-        <img
-          src={value.url}
-          alt={value.title || ""}
-          loading="lazy"
-          className="my-8 mx-auto block max-w-full rounded-lg"
-        />
-      ) : null,
+    // Same 4-option Display size and visible-caption pattern as
+    // SizedImage.tsx's own Image block (percentage-of-column width
+    // classes, not fixed pixel caps -- see that file's own comment for
+    // why). No lightbox here, unlike a photo -- a Giphy GIF doesn't need
+    // a full-size view the way an uploaded photo does.
+    externalGif: ({ value }) => {
+      if (!value?.url) return null;
+      const size = (value.displaySize as DisplaySize) || "original";
+      const isWide = size === "wide";
+      const widthClass =
+        isWide || size === "original"
+          ? ""
+          : size === "small"
+            ? "sm:w-1/2"
+            : "sm:w-3/4";
+      // Same float logic as SizedImage.tsx's own float prop -- only
+      // Small/Medium float (Wide/Original already fill or exceed the
+      // column), re-checked here independently of Studio's own displaySize-
+      // driven UI (GifPickerInput.tsx) so a stale `float` value left over
+      // from switching sizes can never visually apply.
+      const float = value.float === "left" || value.float === "right" ? value.float : "none";
+      const canFloat = float !== "none" && (size === "small" || size === "medium");
+      const floatClass = canFloat ? (float === "left" ? "sm:float-left sm:mr-6 sm:mb-4" : "sm:float-right sm:ml-6 sm:mb-4") : "";
+      const figure = (
+        <figure
+          className={`my-8 w-full ${widthClass} ${canFloat ? floatClass : widthClass ? "sm:mx-auto" : ""}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- external hotlink, next/image can't optimize an arbitrary remote GIF */}
+          <img src={value.url} alt={value.title || ""} loading="lazy" className="h-auto w-full rounded-lg" />
+          {value.caption && (
+            <figcaption className="mt-2 text-center font-mono-stage text-[10px] uppercase tracking-[0.18em] text-stone/60">
+              {value.caption}
+            </figcaption>
+          )}
+        </figure>
+      );
+      return isWide ? <WideBreakout>{figure}</WideBreakout> : figure;
+    },
     codeBlock: ({ value }) => (
       <div className="my-8 overflow-hidden rounded-lg border border-amber-faint text-sm">
         <SyntaxHighlighter

@@ -1,12 +1,29 @@
 import {useEffect, useState} from 'react'
-import {set} from 'sanity'
+import {set, unset} from 'sanity'
 import type {ObjectInputProps} from 'sanity'
-import {Box, Button, Card, Flex, Grid, Stack, Text, TextInput} from '@sanity/ui'
+import {Box, Button, Card, Flex, Grid, Select, Stack, Text, TextInput} from '@sanity/ui'
 import {ErrorMessage} from './ErrorMessage'
 
 type GifResult = {id: string; title: string; thumbUrl: string; url: string; originalUrl: string}
-type GifValue = {url?: string; thumbUrl?: string; title?: string}
+type GifValue = {url?: string; thumbUrl?: string; title?: string; displaySize?: string; float?: string; caption?: string}
 type SearchResponse = {gifs?: GifResult[]; hasMore?: boolean; nextOffset?: number}
+
+const DISPLAY_SIZES: {value: string; label: string}[] = [
+  {value: 'small', label: 'Small'},
+  {value: 'medium', label: 'Medium'},
+  {value: 'original', label: 'Original (fills the column)'},
+  {value: 'wide', label: 'Wide (breaks out of the column on desktop)'},
+]
+
+// Same three options as Image's own float field (blockContentType.ts),
+// only ever relevant for a small/medium GIF -- Asher's ask (2026-08-31),
+// same reasoning as the photo version: Wide/Original already fill or
+// exceed the column, nothing left to wrap text around.
+const FLOAT_OPTIONS: {value: string; label: string}[] = [
+  {value: 'none', label: 'No (default)'},
+  {value: 'left', label: 'Float left (text wraps on the right)'},
+  {value: 'right', label: 'Float right (text wraps on the left)'},
+]
 
 const SEARCH_DEBOUNCE_MS = 350
 
@@ -97,7 +114,7 @@ export function GifPickerInput(props: ObjectInputProps) {
 
   if (!showPicker) {
     return (
-      <Stack space={3}>
+      <Stack space={4}>
         <Card radius={2} border overflow="hidden" style={{maxWidth: 240}}>
           {/* eslint-disable-next-line @next/next/no-img-element -- external Giphy hotlink, not a Next page */}
           <img
@@ -110,6 +127,67 @@ export function GifPickerInput(props: ObjectInputProps) {
           Hotlinked straight to Giphy -- nothing was uploaded to Sanity. If Giphy ever takes this GIF down,
           it&rsquo;ll stop showing here too.
         </Text>
+        <Stack space={2}>
+          <Text size={1} weight="semibold">
+            Display size
+          </Text>
+          <Select
+            fontSize={1}
+            value={gifValue.displaySize || 'original'}
+            onChange={(e) => {
+              const nextSize = e.currentTarget.value
+              // Wide/Original have nothing left to wrap text around --
+              // clear a previously-set float rather than leaving a stale
+              // value that only matters again if size gets switched back.
+              const patches = [set(nextSize, ['displaySize'])]
+              if ((nextSize === 'wide' || nextSize === 'original') && gifValue.float && gifValue.float !== 'none') {
+                patches.push(set('none', ['float']))
+              }
+              onChange(patches)
+            }}
+          >
+            {DISPLAY_SIZES.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+        </Stack>
+        {(gifValue.displaySize === 'small' || gifValue.displaySize === 'medium') && (
+          <Stack space={2}>
+            <Text size={1} weight="semibold">
+              Wrap text around it
+            </Text>
+            <Select
+              fontSize={1}
+              value={gifValue.float || 'none'}
+              onChange={(e) => onChange(set(e.currentTarget.value, ['float']))}
+            >
+              {FLOAT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+          </Stack>
+        )}
+        <Stack space={2}>
+          <Text size={1} weight="semibold">
+            Caption (optional)
+          </Text>
+          <Text size={1} muted>
+            Shown beneath the GIF. The description Giphy provides is used as alt text automatically and
+            isn&rsquo;t editable here -- this is a separate, visible caption.
+          </Text>
+          <TextInput
+            fontSize={1}
+            value={gifValue.caption || ''}
+            onChange={(e) => {
+              const next = e.currentTarget.value
+              onChange(next ? set(next, ['caption']) : unset(['caption']))
+            }}
+          />
+        </Stack>
         <Flex>
           <Button text="Choose a different GIF" mode="ghost" onClick={() => setChanging(true)} />
         </Flex>
