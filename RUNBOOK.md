@@ -2642,6 +2642,34 @@ Two separate real bugs, both site-wide once traced, not just the one Asher happe
   own scroll-to-load-more. Verified live: scrolling the results grid took the public form from 24 to 48
   thumbnails with zero ID overlap between the two batches.
 
+**The squish came back once results actually scrolled (found and fixed 2026-08-28).** Asher hit this for
+real, replying to a comment from Studio: search results rendered as tall, narrow strips instead of squares,
+"ultra squished and unusable." The 2026-08-21 fix above was real but the Playwright check that verified it
+(98×98px, `getBoundingClientRect()`) never scrolled the results box -- and it turns out that's exactly the
+condition the remaining bug needed. Reproduced in isolation (a throwaway page mounting the exact same
+`@sanity/ui` `Grid` + `aspectRatio: '1'` button markup, with a real generated animated GIF as the thumbnail,
+not a static placeholder): 6 results (2 rows, fits without scrolling) rendered perfect squares every time;
+24 results (8 rows, needs its own scrollbar since the popover's results box is `maxHeight: 256` +
+`overflowY: 'auto'`) rendered every cell as a tall vertical strip instead, no exceptions. Swapping the
+thumbnail source between a static SVG and the real animated GIF made no difference -- only the row count
+(scrolling or not) flipped the result, in both the isolated repro and the real component. That narrows it to
+a genuine CSS Grid + `aspect-ratio` + `overflow: auto` interaction: once the grid's implicit `auto`-sized
+rows have to reconcile against a `max-height` scroll ancestor, `aspect-ratio` stops being enough to keep a
+grid item's block size tied to its own inline size, and the browser instead stretches it toward whatever
+`auto` row height it lands on. The public comment form's own picker (`CommentSection.tsx`) never shows this
+either, for the same underlying reason it dodged the 2026-08-14 squish: it's a real `display: grid`, not
+`@sanity/ui`'s `Grid`, and its own results box only ever fits enough rows to never need scrolling.
+
+Fixed by dropping the `aspect-ratio` property entirely in favor of the older padding-bottom-percentage
+technique: each thumbnail is now a `position: relative` wrapper with `paddingBottom: '100%'` (a square
+derived purely from the wrapper's own resolved width, via padding percentages always being relative to the
+containing block's width -- never from a grid row-track negotiation), with the button and image absolutely
+positioned to fill it. Confirmed the fix in the same isolated repro at 24 results/8 rows/scrolling before
+porting it into `CommentsTool.tsx`'s real `GifPickerButton`. Also added `loading="lazy"` to the thumbnail
+`<img>`, matching what the public form's picker already had and Studio's never did -- unrelated to the
+squish itself, but a real, cheap gap closed while in the area (up to 24+ simultaneously-animating GIFs
+otherwise all decode at once, visible or not, the moment a page of results loads).
+
 ## "Cannot be deleted as there are references to it" publishing an old post (found 2026-08-13)
 
 Asher hit this trying to publish the post whose **slug** is "wrote-these-in-2009": `Document
