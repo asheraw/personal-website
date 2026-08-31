@@ -10,17 +10,7 @@ import { SizedImage, type DisplaySize } from "@/components/asher/blog/SizedImage
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { QuoteGrid, type QuoteEntry, type QuoteGridLayout, type QuoteGridWeight, type QuoteGridSize } from "@/components/asher/blog/QuoteGrid";
 import { isTextColorValue } from "@/lib/textColors";
-
-function getYouTubeId(url: string): string | null {
-  const match = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
-  );
-  return match ? match[1] : null;
-}
-
-function isInstagramUrl(url: string): boolean {
-  return /instagram\.com/i.test(url);
-}
+import { getYouTubeId, isInstagramUrl } from "@/lib/embedUrl";
 
 // Shared by both the new "Embed" block and the legacy "youtube" block, so
 // an already-published post gets these same anti-distraction params for

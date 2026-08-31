@@ -23,7 +23,12 @@ export const POST_SUMMARY_PROJECTION = `{
     "children": children[]{text},
     text,
     content,
-    "entries": entries[]{quote}
+    "entries": entries[]{quote},
+    // Only present on embed blocks -- needed by hasVideoEmbed() (see
+    // portableText.ts) to tell an actual video (YouTube, an Instagram Reel)
+    // apart from an Instagram photo/carousel post, which the "Video" tag on
+    // blog cards must not claim to be one.
+    url
   },
   publishedAt,
   _updatedAt,
