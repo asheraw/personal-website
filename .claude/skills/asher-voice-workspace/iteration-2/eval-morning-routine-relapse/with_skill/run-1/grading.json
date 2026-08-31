@@ -1,0 +1,27 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing", "passed": true, "evidence": "\"Roughly ten times this year, I have woken up early to pray and journal before work. Roughly ten times, by around day four, I have quietly stopped.\""},
+    {"text": "Contains at least one question-style H2 header", "passed": true, "evidence": "\"So What Am I Actually Chasing?\""},
+    {"text": "Uses short paragraphs including at least one single-line/near-single-line beat", "passed": true, "evidence": "\"By day four I still believe this is the one that sticks.\" and \"Nothing dramatic happens in that moment.\""},
+    {"text": "Does not fabricate a tidy resolution", "passed": true, "evidence": "\"I don't have the fix... I don't have a tidy plan for making day five feel like day one.\""},
+    {"text": "Ending is a genuine reflective landing tied to material already in the post", "passed": true, "evidence": "\"I'll let you know if I make it there.\" ties back to \"Maybe it's what gets me past day four an eleventh time\" one paragraph earlier."},
+    {"text": "Does not contain banned buzzwords or importance-puffery phrases", "passed": true, "evidence": "None present."},
+    {"text": "Uses concrete specifics given in the prompt rather than vague paraphrases", "passed": true, "evidence": "'Roughly ten times', 'day four' used directly and repeatedly."},
+    {"text": "NEW: Post is fully developed length (roughly 800-1500 words)", "passed": true, "evidence": "1,028 words per agent report."},
+    {"text": "NEW: Never uses an em dash", "passed": true, "evidence": "No em dash found; sentence breaks and commas used instead."},
+    {"text": "NEW: British/Singapore spelling used throughout", "passed": true, "evidence": "\"I realise on a Sunday\" (not 'realize')."},
+    {"text": "NEW: The realization arrives only after a developed section showing the pattern's real cost, not as an early throwaway line", "passed": true, "evidence": "The 'chasing a feeling, not building a habit' realization appears in the post's second-to-last section, after a fully dramatized scene of the habit breaking, and is immediately hedged ('That's not nothing, working that out. But I don't think it's the fix either') rather than presented as a tidy takeaway -- directly answers the feedback that flagged 'that's the part I keep missing' as an unearned throwaway."}
+  ],
+  "summary": {"passed": 11, "failed": 0, "total": 11, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {"Skill": 2, "Read": 1, "Bash": 6, "Write": 3}, "total_tool_calls": 16, "total_steps": 15, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 272.8},
+  "claims": [
+    {"claim": "The 'morning it breaks' scene is a composite representative morning, not a specific one Asher described", "type": "quality", "verified": true, "evidence": "Executor flagged this itself: the dramatized scene (alarm, reaching for phone, snoozing) was invented as a plausible generic instance since Asher never gave a specific blow-by-blow morning. This is a reasonable interpretation of 'dramatize the pivotal moment' but is worth a second look -- see eval_feedback below."}
+  ],
+  "eval_feedback": {
+    "suggestions": [
+      {"reason": "When the user's material describes a recurring pattern rather than one specific incident, the executor had to invent a composite scene to satisfy 'dramatize the pivotal moment.' That's a reasonable call here (it stays generic, no fabricated names/times/places), but the skill doesn't currently say what to do when no specific scene was given -- worth adding guidance to either ask for one concrete instance or clearly signal a composite is being used, rather than leaving it to per-draft judgment."}
+    ],
+    "overall": "Strong result on all 11 checks. The one thing worth the skill author's attention is the composite-scene judgment call, flagged above."
+  }
+}

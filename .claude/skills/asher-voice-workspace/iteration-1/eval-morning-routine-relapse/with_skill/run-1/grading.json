@@ -1,0 +1,18 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing", "passed": true, "evidence": "\"Ten times this year. That's roughly how many times I've committed to waking up early to pray and journal before work.\""},
+    {"text": "Contains at least one question-style H2 header", "passed": true, "evidence": "All four headers are questions: 'What Actually Kicks It Off?', 'Why Four Days, Specifically?', 'Am I Chasing the Retreat or Building Something Real?', 'So Have I Fixed It?'"},
+    {"text": "Uses short paragraphs including at least one single-line paragraph", "passed": true, "evidence": "\"Then normal life kicks back in. Within a week, it's gone.\" and \"I keep mistaking the moment for the method.\""},
+    {"text": "Does not fabricate a tidy resolution", "passed": true, "evidence": "\"So Have I Fixed It? No. I'd love to end this post with the three-step system that finally made it stick. I don't have one.\""},
+    {"text": "Ending is a genuine reflective landing tied to material already in the post", "passed": true, "evidence": "Closes on 'survive the Tuesday after', reusing the 'normal Tuesday' concept introduced earlier in the post rather than inventing a new metaphor."},
+    {"text": "Does not contain banned buzzwords or importance-puffery phrases", "passed": true, "evidence": "None present."},
+    {"text": "Uses concrete specifics given in the prompt rather than vague paraphrases", "passed": true, "evidence": "'Ten times this year' and 'about four days' used directly and repeatedly, not paraphrased as 'several times'."}
+  ],
+  "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {"Skill": 2, "Read": 1, "Bash": 6, "Write": 3}, "total_tool_calls": 12, "total_steps": 11, "errors_encountered": 1},
+  "timing": {"executor_duration_seconds": 254.7},
+  "claims": [
+    {"claim": "Kept a 'not X, it's Y' binary contrast ('A retreat isn't a sustainable state. It's a moment.') despite it resembling a no-ai-slop-flagged pattern, because voice-examples.md shows Asher using this shape since 2018", "type": "quality", "verified": true, "evidence": "Executor flagged this explicitly in its report for human review -- worth adding to asher-voice's override list since it recurs in his real writing."}
+  ],
+  "eval_feedback": {"overall": "Strong result. One open question worth the skill author's attention: should the binary-contrast override be added explicitly to SKILL.md rather than left to per-draft judgment?"}
+}

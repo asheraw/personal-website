@@ -1,0 +1,12 @@
+{
+  "tool_calls": {
+    "Bash": 3,
+    "Write": 3
+  },
+  "total_tool_calls": 6,
+  "total_steps": 6,
+  "files_created": ["post.md"],
+  "errors_encountered": 0,
+  "output_chars": 3303,
+  "transcript_chars": 3061
+}

@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing scene-setting", "passed": false, "evidence": "\"This year's Christmas drama rehearsals at church started with a small letdown. I auditioned for one of the lead roles, walked in with a version of the character already forming in my head, and then found out I'd been cast as a side character instead.\" -- expository scene-setting rather than a direct admission-first hook."},
+    {"text": "Admits the initial disappointment plainly, without over-apologizing", "passed": true, "evidence": "\"I won't pretend I wasn't a bit disappointed. I was.\" -- admits it, though wrapped in more hedging framing ('I won't pretend...') than Asher's plainer style."},
+    {"text": "Contains at least one H2 header phrased as a question", "passed": false, "evidence": "No H2 headers anywhere -- single title, continuous prose throughout."},
+    {"text": "Includes the improvised-line anecdote with concrete specific detail", "passed": true, "evidence": "\"I had exactly one line. One. And when the moment came, it just wasn't there. Blank.\" -- concrete and specific."},
+    {"text": "Ending is a genuine reflective callback rather than a generic moral-of-the-story wrap-up", "passed": false, "evidence": "\"There's something fitting about that whole arc -- going in wanting the part I didn't get, resenting the smaller role for a beat, and then having the smaller role hand me the best moment...\" -- interpretive metadiscourse narrating the arc's meaning rather than a sharp callback to one planted image."},
+    {"text": "Does not contain banned buzzwords or invented fake-profound kicker phrasing", "passed": true, "evidence": "No literal banned-list words, though the title itself ('The Line I Forgot (And Why the Director Wants Me to Keep Forgetting It)') is an embellished hook not grounded in the given material."},
+    {"text": "Uses short paragraphs and at least one deliberate fragment or ellipsis", "passed": false, "evidence": "Paragraphs run 3-6 sentences each with no section breaks; only two isolated fragments ('One.' 'Blank.') amid otherwise continuous prose."}
+  ],
+  "summary": {"passed": 3, "failed": 4, "total": 7, "pass_rate": 0.429},
+  "execution_metrics": {"tool_calls": {"Bash": 3, "Write": 3}, "total_tool_calls": 6, "total_steps": 6, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 73.7},
+  "claims": [],
+  "eval_feedback": {"overall": "Same pattern as the other two baselines: no section headers, longer uniform paragraphs, and a tendency toward interpretive metadiscourse at the close instead of a sharp callback."}
+}

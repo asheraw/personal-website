@@ -1,0 +1,14 @@
+{
+  "eval_id": 2,
+  "eval_name": "morning-routine-relapse",
+  "prompt": "Help me write a blog post about a pattern I keep repeating: I keep committing to waking up early to pray and journal before work, do it for about 4 days straight, then stop. This has happened roughly 10 times this year. I noticed the pattern always starts right after some spiritually 'high' moment, like right after a church retreat, when I feel really motivated. Then normal life routine kicks back in within a week and the habit fades. I haven't fully figured out the fix yet, but I think part of it is that I'm chasing the feeling of the retreat instead of building something sustainable for normal daily life.",
+  "assertions": [
+    "Opens with a hook rather than throat-clearing",
+    "Contains at least one question-style H2 header",
+    "Uses short paragraphs, including at least one single-line paragraph used for emphasis",
+    "Does not fabricate a tidy resolution or fix the prompt didn't give -- reflects that Asher says he hasn't figured it out yet",
+    "Ending is a genuine reflective landing tied to material already in the post, not a generic motivational wrap-up",
+    "Does not contain banned buzzwords or importance-puffery phrases (marks a pivotal moment, stands as a testament, etc.)",
+    "Uses concrete specifics given in the prompt (e.g. '4 days', 'roughly 10 times this year') rather than vague paraphrases like 'several times'"
+  ]
+}

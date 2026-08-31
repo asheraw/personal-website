@@ -1,0 +1,14 @@
+{
+  "eval_id": 3,
+  "eval_name": "christmas-drama-rehearsal",
+  "prompt": "Write a blog post about this year's Christmas drama rehearsals at my church. I auditioned for a lead role but got cast as a side character instead. I was a bit disappointed at first, but ended up really enjoying building a backstory for the character anyway. One funny moment: during dress rehearsal I completely forgot my one line, panicked for a second, and just improvised something on the spot -- and it actually worked better dramatically than the scripted line. The director laughed about it afterward and said to keep it in.",
+  "assertions": [
+    "Opens with a hook rather than throat-clearing scene-setting",
+    "Admits the initial disappointment about not getting the lead role plainly, without over-apologizing or excessive hedging",
+    "Contains at least one H2 header phrased as a question",
+    "Includes the improvised-line anecdote with concrete specific detail (not vague summary)",
+    "Ending is a genuine reflective callback rather than a generic 'moral of the story' wrap-up",
+    "Does not contain banned buzzwords or fake-profound kicker phrasing invented beyond what's in the material",
+    "Uses short paragraphs and at least one deliberate fragment or ellipsis for emphasis"
+  ]
+}

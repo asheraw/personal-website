@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "claude-subscription-confession",
+  "prompt": "I want to write a blog post for asheraw.com about how I almost didn't buy Claude Pro. Backstory: I went cold turkey on basically every software subscription for years after getting burned by GrooveFunnels (a CMS platform that promised to replace WordPress, turned out buggy, and even messed up an affiliate commission I was owed). Because of that, I default to free tools and I'm very reluctant to pay for anything recurring, even AI tools, even though I actually teach AI classes for a living. I'd been using free AI tools (GLM at z.ai) to build my new website and was waiting for an open-source model called Kimi K3 to release so I wouldn't have to pay. When Kimi didn't open up to consumers, I finally decided to just get Claude Pro. Within the first day of having it, I built a proper CMS, backups, a blog page, and more -- way more progress than I'd made in months on the free tools. Write this up as a post.",
+  "assertions": [
+    "Opens with a hook (admission, quote, or blunt statement) rather than throat-clearing scene-setting",
+    "Contains at least one H2 header phrased as a question",
+    "Uses short paragraphs (multiple paragraphs of 1-3 sentences), not uniform 4-6 sentence blocks",
+    "Ending callbacks to a concrete image or phrase already used earlier in the post, rather than introducing a brand-new closing metaphor",
+    "Does not invent facts, numbers, or details beyond what was given in the prompt",
+    "Does not contain banned buzzwords (leverage, robust, elevate, streamline, game changer, cutting-edge, etc.)",
+    "Does not contain generic AI throat-clearing or wrap-up phrases (in conclusion, ultimately, it's worth noting, at the end of the day)",
+    "Retains sentence fragments or ellipses for emphasis rather than being uniformly grammatically 'clean'"
+  ]
+}

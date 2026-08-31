@@ -1,0 +1,460 @@
+{
+  "metadata": {
+    "skill_name": "asher-voice",
+    "skill_path": "D:/Work/Website/.claude/skills/asher-voice",
+    "executor_model": "claude-sonnet-5",
+    "analyzer_model": "claude-sonnet-5",
+    "timestamp": "2026-08-12T13:52:17Z",
+    "evals_run": [
+      "claude-subscription-confession",
+      "morning-routine-relapse",
+      "christmas-drama-rehearsal"
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 203.0,
+        "tokens": 68079,
+        "tool_calls": 11,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing scene-setting",
+          "passed": true,
+          "evidence": "\"Truth be told, I auditioned for a lead role in this year's Christmas drama. Cast list went up, and I was a side character.\" -- 'Truth be told' matches Asher's confirmed 2016 usage exactly."
+        },
+        {
+          "text": "Admits the initial disappointment plainly, without over-apologizing",
+          "passed": true,
+          "evidence": "\"A bit disappointing, not gonna lie.\" -- stated once, plainly, no repeated hedging."
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": true,
+          "evidence": "\"So What Do You Do With a Side Character?\" and \"What Happens When You Forget Your One Line?\""
+        },
+        {
+          "text": "Includes the improvised-line anecdote with concrete specific detail",
+          "passed": true,
+          "evidence": "\"Dress rehearsal. My one line was gone. Completely gone. I froze for a second... then just said something... It worked. Genuinely worked better than the line that was written.\""
+        },
+        {
+          "text": "Ending is a genuine reflective callback rather than a generic moral-of-the-story wrap-up",
+          "passed": true,
+          "evidence": "\"The role I didn't want ended up giving me the one moment from this whole production I'll actually remember.\" -- directly reuses the lead/side-character tension set up in paragraph 1."
+        },
+        {
+          "text": "Does not contain banned buzzwords or invented fake-profound kicker phrasing",
+          "passed": true,
+          "evidence": "None present; ending stays grounded in the concrete anecdote."
+        },
+        {
+          "text": "Uses short paragraphs and at least one deliberate fragment or ellipsis",
+          "passed": true,
+          "evidence": "\"Dress rehearsal. My one line was gone. Completely gone.\" and consistently short paragraphs throughout."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 208.7,
+        "tokens": 69836,
+        "tool_calls": 13,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"I teach AI for a living. And I almost didn't pay for the AI tool that ended up saving me months.\" -- direct tension stated in sentence one, no wind-up."
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": true,
+          "evidence": "\"Even the AI Tools I Teach People to Use?\" and \"So Was Cold Turkey the Right Call?\""
+        },
+        {
+          "text": "Uses short paragraphs, not uniform blocks",
+          "passed": true,
+          "evidence": "Multiple one-line paragraphs: \"Yeah. Even those.\" / \"Months. One day.\""
+        },
+        {
+          "text": "Ending callbacks to a concrete image already used earlier",
+          "passed": true,
+          "evidence": "Closing paragraph reuses \"cold turkey\" from the opening section: \"Cold turkey kept me safe from GrooveFunnels. It also kept me from Claude Pro for way longer than it should have.\""
+        },
+        {
+          "text": "Does not invent facts beyond what was given",
+          "passed": true,
+          "evidence": "No numbers, prices, or details appear beyond the task's supplied facts."
+        },
+        {
+          "text": "Does not contain banned buzzwords",
+          "passed": true,
+          "evidence": "None of the banned list (leverage, robust, elevate, etc.) present."
+        },
+        {
+          "text": "Does not contain generic AI wrap-up phrases",
+          "passed": true,
+          "evidence": "No 'in conclusion' / 'at the end of the day' constructions found."
+        },
+        {
+          "text": "Retains fragments/ellipses for emphasis",
+          "passed": true,
+          "evidence": "\"Cold turkey. Not a minimalist phase, not a budget thing. Scar tissue.\" and \"Months. One day.\""
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 254.7,
+        "tokens": 73805,
+        "tool_calls": 12,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"Ten times this year. That's roughly how many times I've committed to waking up early to pray and journal before work.\""
+        },
+        {
+          "text": "Contains at least one question-style H2 header",
+          "passed": true,
+          "evidence": "All four headers are questions: 'What Actually Kicks It Off?', 'Why Four Days, Specifically?', 'Am I Chasing the Retreat or Building Something Real?', 'So Have I Fixed It?'"
+        },
+        {
+          "text": "Uses short paragraphs including at least one single-line paragraph",
+          "passed": true,
+          "evidence": "\"Then normal life kicks back in. Within a week, it's gone.\" and \"I keep mistaking the moment for the method.\""
+        },
+        {
+          "text": "Does not fabricate a tidy resolution",
+          "passed": true,
+          "evidence": "\"So Have I Fixed It? No. I'd love to end this post with the three-step system that finally made it stick. I don't have one.\""
+        },
+        {
+          "text": "Ending is a genuine reflective landing tied to material already in the post",
+          "passed": true,
+          "evidence": "Closes on 'survive the Tuesday after', reusing the 'normal Tuesday' concept introduced earlier in the post rather than inventing a new metaphor."
+        },
+        {
+          "text": "Does not contain banned buzzwords or importance-puffery phrases",
+          "passed": true,
+          "evidence": "None present."
+        },
+        {
+          "text": "Uses concrete specifics given in the prompt rather than vague paraphrases",
+          "passed": true,
+          "evidence": "'Ten times this year' and 'about four days' used directly and repeatedly, not paraphrased as 'several times'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 278.6,
+        "tokens": 84726,
+        "tool_calls": 19,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing scene-setting",
+          "passed": true,
+          "evidence": "\"I auditioned for a lead role in this year's church Christmas drama. I did not get it.\""
+        },
+        {
+          "text": "Admits the initial disappointment plainly, without over-apologizing",
+          "passed": true,
+          "evidence": "\"A bit disappointing, if I'm honest.\" -- stated plainly and briefly."
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": true,
+          "evidence": "Three question headers: \"What Do You Do With a Character Who Barely Has Lines?\", \"So What Happens When the One Line You Have Just... Isn't There?\", \"Was the Side Character the Real Lead All Along?\""
+        },
+        {
+          "text": "Includes the improvised-line anecdote with concrete specific detail",
+          "passed": true,
+          "evidence": "Dramatized across six distinct beats: hitting the mark, the cue, the blank, the freeze, the backstory surfacing, the line landing -- not compressed into one summary sentence, directly addressing Asher's feedback."
+        },
+        {
+          "text": "Ending is a genuine reflective callback rather than a generic moral-of-the-story wrap-up",
+          "passed": true,
+          "evidence": "\"Turns out the background had the best line in the show anyway, and it wasn't even the one that was written.\" reuses the 'lead vs background' and 'written line' images from earlier."
+        },
+        {
+          "text": "Does not contain banned buzzwords or invented fake-profound kicker phrasing",
+          "passed": true,
+          "evidence": "None present; ending stays grounded in the concrete anecdote."
+        },
+        {
+          "text": "Uses short paragraphs and at least one deliberate fragment or ellipsis",
+          "passed": true,
+          "evidence": "\"And... nothing.\" \"Blank. Completely blank.\" -- fragments used specifically at the pivotal moment."
+        },
+        {
+          "text": "NEW: Pivotal scene dramatized across multiple beats, not compressed into 1-2 summary sentences",
+          "passed": true,
+          "evidence": "Directly fixes iteration-1's flagged weakness (which had 'Dress rehearsal. My one line was gone. Completely gone... and then just said something.' as the entire scene). This draft stretches the same scene across roughly 8 short paragraphs."
+        },
+        {
+          "text": "NEW: Never uses an em dash",
+          "passed": true,
+          "evidence": "None found."
+        },
+        {
+          "text": "NEW: British/Singapore spelling used throughout",
+          "passed": true,
+          "evidence": "No American '-ize'/'-or' forms present."
+        },
+        {
+          "text": "NEW: No vague scene-transition abstractions like 'something shifted'",
+          "passed": true,
+          "evidence": "Changes are dramatized concretely throughout (e.g. 'the weeks of who-is-this-person, what-do-they-want...were still there' rather than a vague 'something shifted')."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 12,
+        "failed": 0,
+        "total": 12,
+        "time_seconds": 362.3,
+        "tokens": 95542,
+        "tool_calls": 19,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"I teach AI classes for a living. People pay me to explain how these tools work...And for years, I was the one person in that room who wouldn't pay for any of it myself.\""
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": true,
+          "evidence": "\"So Why Was I Still Building On Free Tools?\" and \"Was Cold Turkey Worth It?\""
+        },
+        {
+          "text": "Uses short paragraphs as rhythm inside a developed post, not as the whole post's unit",
+          "passed": true,
+          "evidence": "\"That's not what happened.\" and \"Months. One day.\" land as beats inside otherwise fully developed sections, not as the default paragraph length throughout."
+        },
+        {
+          "text": "Ending callbacks to a concrete image already used earlier",
+          "passed": true,
+          "evidence": "\"I still teach AI for a living. I just also pay for it now\" directly reuses the opening line's framing."
+        },
+        {
+          "text": "Does not invent facts beyond what was given",
+          "passed": true,
+          "evidence": "No price, date, or unstated detail introduced (iteration-1's baseline had invented a '$20/month' price; this draft does not)."
+        },
+        {
+          "text": "Does not contain banned buzzwords",
+          "passed": true,
+          "evidence": "None present."
+        },
+        {
+          "text": "Does not contain generic AI wrap-up phrases",
+          "passed": true,
+          "evidence": "None present; ends on the P.S. rather than a summary paragraph."
+        },
+        {
+          "text": "Retains fragments/ellipses for emphasis",
+          "passed": true,
+          "evidence": "\"That's not what happened.\" / \"Months. One day.\""
+        },
+        {
+          "text": "NEW: Post is fully developed length (roughly 800-1500 words), not a compressed summary",
+          "passed": true,
+          "evidence": "942 words per agent report, matches visual length; the GrooveFunnels backstory, the wait for Kimi K3, and the first-day build are each given real space rather than one sentence apiece."
+        },
+        {
+          "text": "NEW: Never uses an em dash",
+          "passed": true,
+          "evidence": "No em dash character found anywhere in the post; asides use commas or separate sentences instead."
+        },
+        {
+          "text": "NEW: Uses British/Singapore English spelling, not American",
+          "passed": true,
+          "evidence": "\"simple maths\" (not 'math'); no '-ize' forms present."
+        },
+        {
+          "text": "NEW: Does not invent or mischaracterize Asher's internal feelings beyond what was given",
+          "passed": true,
+          "evidence": "Feelings described (reluctant, burned, half-expecting the same story to repeat) stay grounded in what was given; no invented specific emotion like the baseline's fabricated 'quietly proud.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 272.8,
+        "tokens": 77989,
+        "tool_calls": 16,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"Roughly ten times this year, I have woken up early to pray and journal before work. Roughly ten times, by around day four, I have quietly stopped.\""
+        },
+        {
+          "text": "Contains at least one question-style H2 header",
+          "passed": true,
+          "evidence": "\"So What Am I Actually Chasing?\""
+        },
+        {
+          "text": "Uses short paragraphs including at least one single-line/near-single-line beat",
+          "passed": true,
+          "evidence": "\"By day four I still believe this is the one that sticks.\" and \"Nothing dramatic happens in that moment.\""
+        },
+        {
+          "text": "Does not fabricate a tidy resolution",
+          "passed": true,
+          "evidence": "\"I don't have the fix... I don't have a tidy plan for making day five feel like day one.\""
+        },
+        {
+          "text": "Ending is a genuine reflective landing tied to material already in the post",
+          "passed": true,
+          "evidence": "\"I'll let you know if I make it there.\" ties back to \"Maybe it's what gets me past day four an eleventh time\" one paragraph earlier."
+        },
+        {
+          "text": "Does not contain banned buzzwords or importance-puffery phrases",
+          "passed": true,
+          "evidence": "None present."
+        },
+        {
+          "text": "Uses concrete specifics given in the prompt rather than vague paraphrases",
+          "passed": true,
+          "evidence": "'Roughly ten times', 'day four' used directly and repeatedly."
+        },
+        {
+          "text": "NEW: Post is fully developed length (roughly 800-1500 words)",
+          "passed": true,
+          "evidence": "1,028 words per agent report."
+        },
+        {
+          "text": "NEW: Never uses an em dash",
+          "passed": true,
+          "evidence": "No em dash found; sentence breaks and commas used instead."
+        },
+        {
+          "text": "NEW: British/Singapore spelling used throughout",
+          "passed": true,
+          "evidence": "\"I realise on a Sunday\" (not 'realize')."
+        },
+        {
+          "text": "NEW: The realization arrives only after a developed section showing the pattern's real cost, not as an early throwaway line",
+          "passed": true,
+          "evidence": "The 'chasing a feeling, not building a habit' realization appears in the post's second-to-last section, after a fully dramatized scene of the habit breaking, and is immediately hedged ('That's not nothing, working that out. But I don't think it's the fix either') rather than presented as a tidy takeaway -- directly answers the feedback that flagged 'that's the part I keep missing' as an unearned throwaway."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "old_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 222.1333,
+        "stddev": 28.3472,
+        "min": 203.0,
+        "max": 254.7
+      },
+      "tokens": {
+        "mean": 70573.3333,
+        "stddev": 2933.3452,
+        "min": 68079,
+        "max": 73805
+      }
+    },
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 304.5667,
+        "stddev": 50.0826,
+        "min": 272.8,
+        "max": 362.3
+      },
+      "tokens": {
+        "mean": 86085.6667,
+        "stddev": 8855.1382,
+        "min": 77989,
+        "max": 95542
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "-82.4",
+      "tokens": "-15512"
+    }
+  },
+  "notes": [
+    "READ THIS FIRST: the pass-rate delta shows +0.00 (both 100%), which looks like no change but is misleading -- it's an artifact of grading old_skill against its OWN original 7-8 assertions and with_skill against an EXPANDED 11-12 assertion set that adds the checks Asher's direct feedback surfaced (length/depth, em dash, British spelling, earned realization, dramatized scene, no invented feelings). The original assertion set passed 100% in iteration 1 and Asher still called that output 'bad' -- proof the original checks didn't capture what he actually cares about. Pass-rate is not the number to trust for this comparison.",
+    "The real, verifiable delta is word count: iteration-1 with_skill drafts ran 300-450 words each (a summary/pitch length); iteration-2 with_skill drafts run 797-1028 words, all within or close to the 800-1500 target band, with the pivotal scene in each post now dramatized across multiple beats instead of compressed into 1-2 sentences.",
+    "All 3 iteration-2 mechanical fixes (never use an em dash, British/Singapore spelling, no invented internal feelings) verified present in all 3 drafts by direct text inspection, not just self-report.",
+    "Iteration-2 drafts took roughly 4.5-6 minutes each (vs ~3.5 min for iteration-1's with_skill runs) and used more tokens -- mostly the cost of reading two reference files instead of one and drafting substantially more content. Given the quality gap this is closing, that cost looks justified.",
+    "One open judgment call carried over from the eval-2 with_skill run: since Asher described a recurring pattern rather than one specific remembered morning, the executor invented a plausible composite scene (alarm, reaching for the phone, hitting snooze) to satisfy the 'dramatize the pivotal moment' instruction. It stayed generic -- no fabricated names, times, or places -- but the skill doesn't yet say what to do when no specific scene was actually given. Worth a decision: should the skill ask Asher for one concrete instance in that case, or is a clearly-generic composite acceptable?",
+    "Minor stylistic flag for human review: eval-3's line 'that particular flavour of \"oh\" that sits in your chest' uses a similar shape to a phrase Asher explicitly disliked in an earlier baseline draft ('a particular flavour of deflation'). This one is more concrete and grounded, but worth Asher's own read to confirm it doesn't feel too writerly."
+  ]
+}

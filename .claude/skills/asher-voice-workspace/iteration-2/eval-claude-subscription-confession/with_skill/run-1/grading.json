@@ -1,0 +1,23 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing", "passed": true, "evidence": "\"I teach AI classes for a living. People pay me to explain how these tools work...And for years, I was the one person in that room who wouldn't pay for any of it myself.\""},
+    {"text": "Contains at least one H2 header phrased as a question", "passed": true, "evidence": "\"So Why Was I Still Building On Free Tools?\" and \"Was Cold Turkey Worth It?\""},
+    {"text": "Uses short paragraphs as rhythm inside a developed post, not as the whole post's unit", "passed": true, "evidence": "\"That's not what happened.\" and \"Months. One day.\" land as beats inside otherwise fully developed sections, not as the default paragraph length throughout."},
+    {"text": "Ending callbacks to a concrete image already used earlier", "passed": true, "evidence": "\"I still teach AI for a living. I just also pay for it now\" directly reuses the opening line's framing."},
+    {"text": "Does not invent facts beyond what was given", "passed": true, "evidence": "No price, date, or unstated detail introduced (iteration-1's baseline had invented a '$20/month' price; this draft does not)."},
+    {"text": "Does not contain banned buzzwords", "passed": true, "evidence": "None present."},
+    {"text": "Does not contain generic AI wrap-up phrases", "passed": true, "evidence": "None present; ends on the P.S. rather than a summary paragraph."},
+    {"text": "Retains fragments/ellipses for emphasis", "passed": true, "evidence": "\"That's not what happened.\" / \"Months. One day.\""},
+    {"text": "NEW: Post is fully developed length (roughly 800-1500 words), not a compressed summary", "passed": true, "evidence": "942 words per agent report, matches visual length; the GrooveFunnels backstory, the wait for Kimi K3, and the first-day build are each given real space rather than one sentence apiece."},
+    {"text": "NEW: Never uses an em dash", "passed": true, "evidence": "No em dash character found anywhere in the post; asides use commas or separate sentences instead."},
+    {"text": "NEW: Uses British/Singapore English spelling, not American", "passed": true, "evidence": "\"simple maths\" (not 'math'); no '-ize' forms present."},
+    {"text": "NEW: Does not invent or mischaracterize Asher's internal feelings beyond what was given", "passed": true, "evidence": "Feelings described (reluctant, burned, half-expecting the same story to repeat) stay grounded in what was given; no invented specific emotion like the baseline's fabricated 'quietly proud.'"}
+  ],
+  "summary": {"passed": 12, "failed": 0, "total": 12, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {"Skill": 2, "Read": 4, "Write": 3}, "total_tool_calls": 19, "total_steps": 18, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 362.3},
+  "claims": [
+    {"claim": "Chose PAS framework and consulted iteration-1's flagged draft plus its own baseline as a checklist of traps to avoid", "type": "process", "verified": true, "evidence": "Transcript documents reading both prior artifacts before drafting."}
+  ],
+  "eval_feedback": {"overall": "Marked improvement over iteration-1's with_skill run (which passed the old 8 assertions at 100% too, but Asher rated it 'bad' -- proof the original assertion set didn't capture what actually mattered). The 4 new assertions target exactly what his feedback flagged."}
+}

@@ -1,0 +1,402 @@
+{
+  "metadata": {
+    "skill_name": "asher-voice",
+    "skill_path": "D:/Work/Website/.claude/skills/asher-voice",
+    "executor_model": "claude-sonnet-5",
+    "analyzer_model": "claude-sonnet-5",
+    "timestamp": "2026-08-12T12:32:53Z",
+    "evals_run": [
+      1,
+      2,
+      3
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 3,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 203.0,
+        "tokens": 68079,
+        "tool_calls": 11,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing scene-setting",
+          "passed": true,
+          "evidence": "\"Truth be told, I auditioned for a lead role in this year's Christmas drama. Cast list went up, and I was a side character.\" -- 'Truth be told' matches Asher's confirmed 2016 usage exactly."
+        },
+        {
+          "text": "Admits the initial disappointment plainly, without over-apologizing",
+          "passed": true,
+          "evidence": "\"A bit disappointing, not gonna lie.\" -- stated once, plainly, no repeated hedging."
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": true,
+          "evidence": "\"So What Do You Do With a Side Character?\" and \"What Happens When You Forget Your One Line?\""
+        },
+        {
+          "text": "Includes the improvised-line anecdote with concrete specific detail",
+          "passed": true,
+          "evidence": "\"Dress rehearsal. My one line was gone. Completely gone. I froze for a second... then just said something... It worked. Genuinely worked better than the line that was written.\""
+        },
+        {
+          "text": "Ending is a genuine reflective callback rather than a generic moral-of-the-story wrap-up",
+          "passed": true,
+          "evidence": "\"The role I didn't want ended up giving me the one moment from this whole production I'll actually remember.\" -- directly reuses the lead/side-character tension set up in paragraph 1."
+        },
+        {
+          "text": "Does not contain banned buzzwords or invented fake-profound kicker phrasing",
+          "passed": true,
+          "evidence": "None present; ending stays grounded in the concrete anecdote."
+        },
+        {
+          "text": "Uses short paragraphs and at least one deliberate fragment or ellipsis",
+          "passed": true,
+          "evidence": "\"Dress rehearsal. My one line was gone. Completely gone.\" and consistently short paragraphs throughout."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 208.7,
+        "tokens": 69836,
+        "tool_calls": 13,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"I teach AI for a living. And I almost didn't pay for the AI tool that ended up saving me months.\" -- direct tension stated in sentence one, no wind-up."
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": true,
+          "evidence": "\"Even the AI Tools I Teach People to Use?\" and \"So Was Cold Turkey the Right Call?\""
+        },
+        {
+          "text": "Uses short paragraphs, not uniform blocks",
+          "passed": true,
+          "evidence": "Multiple one-line paragraphs: \"Yeah. Even those.\" / \"Months. One day.\""
+        },
+        {
+          "text": "Ending callbacks to a concrete image already used earlier",
+          "passed": true,
+          "evidence": "Closing paragraph reuses \"cold turkey\" from the opening section: \"Cold turkey kept me safe from GrooveFunnels. It also kept me from Claude Pro for way longer than it should have.\""
+        },
+        {
+          "text": "Does not invent facts beyond what was given",
+          "passed": true,
+          "evidence": "No numbers, prices, or details appear beyond the task's supplied facts."
+        },
+        {
+          "text": "Does not contain banned buzzwords",
+          "passed": true,
+          "evidence": "None of the banned list (leverage, robust, elevate, etc.) present."
+        },
+        {
+          "text": "Does not contain generic AI wrap-up phrases",
+          "passed": true,
+          "evidence": "No 'in conclusion' / 'at the end of the day' constructions found."
+        },
+        {
+          "text": "Retains fragments/ellipses for emphasis",
+          "passed": true,
+          "evidence": "\"Cold turkey. Not a minimalist phase, not a budget thing. Scar tissue.\" and \"Months. One day.\""
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 254.7,
+        "tokens": 73805,
+        "tool_calls": 12,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"Ten times this year. That's roughly how many times I've committed to waking up early to pray and journal before work.\""
+        },
+        {
+          "text": "Contains at least one question-style H2 header",
+          "passed": true,
+          "evidence": "All four headers are questions: 'What Actually Kicks It Off?', 'Why Four Days, Specifically?', 'Am I Chasing the Retreat or Building Something Real?', 'So Have I Fixed It?'"
+        },
+        {
+          "text": "Uses short paragraphs including at least one single-line paragraph",
+          "passed": true,
+          "evidence": "\"Then normal life kicks back in. Within a week, it's gone.\" and \"I keep mistaking the moment for the method.\""
+        },
+        {
+          "text": "Does not fabricate a tidy resolution",
+          "passed": true,
+          "evidence": "\"So Have I Fixed It? No. I'd love to end this post with the three-step system that finally made it stick. I don't have one.\""
+        },
+        {
+          "text": "Ending is a genuine reflective landing tied to material already in the post",
+          "passed": true,
+          "evidence": "Closes on 'survive the Tuesday after', reusing the 'normal Tuesday' concept introduced earlier in the post rather than inventing a new metaphor."
+        },
+        {
+          "text": "Does not contain banned buzzwords or importance-puffery phrases",
+          "passed": true,
+          "evidence": "None present."
+        },
+        {
+          "text": "Uses concrete specifics given in the prompt rather than vague paraphrases",
+          "passed": true,
+          "evidence": "'Ten times this year' and 'about four days' used directly and repeatedly, not paraphrased as 'several times'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 3,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.429,
+        "passed": 3,
+        "failed": 4,
+        "total": 7,
+        "time_seconds": 73.7,
+        "tokens": 45103,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing scene-setting",
+          "passed": false,
+          "evidence": "\"This year's Christmas drama rehearsals at church started with a small letdown. I auditioned for one of the lead roles, walked in with a version of the character already forming in my head, and then found out I'd been cast as a side character instead.\" -- expository scene-setting rather than a direct admission-first hook."
+        },
+        {
+          "text": "Admits the initial disappointment plainly, without over-apologizing",
+          "passed": true,
+          "evidence": "\"I won't pretend I wasn't a bit disappointed. I was.\" -- admits it, though wrapped in more hedging framing ('I won't pretend...') than Asher's plainer style."
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": false,
+          "evidence": "No H2 headers anywhere -- single title, continuous prose throughout."
+        },
+        {
+          "text": "Includes the improvised-line anecdote with concrete specific detail",
+          "passed": true,
+          "evidence": "\"I had exactly one line. One. And when the moment came, it just wasn't there. Blank.\" -- concrete and specific."
+        },
+        {
+          "text": "Ending is a genuine reflective callback rather than a generic moral-of-the-story wrap-up",
+          "passed": false,
+          "evidence": "\"There's something fitting about that whole arc -- going in wanting the part I didn't get, resenting the smaller role for a beat, and then having the smaller role hand me the best moment...\" -- interpretive metadiscourse narrating the arc's meaning rather than a sharp callback to one planted image."
+        },
+        {
+          "text": "Does not contain banned buzzwords or invented fake-profound kicker phrasing",
+          "passed": true,
+          "evidence": "No literal banned-list words, though the title itself ('The Line I Forgot (And Why the Director Wants Me to Keep Forgetting It)') is an embellished hook not grounded in the given material."
+        },
+        {
+          "text": "Uses short paragraphs and at least one deliberate fragment or ellipsis",
+          "passed": false,
+          "evidence": "Paragraphs run 3-6 sentences each with no section breaks; only two isolated fragments ('One.' 'Blank.') amid otherwise continuous prose."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.375,
+        "passed": 3,
+        "failed": 5,
+        "total": 8,
+        "time_seconds": 71.3,
+        "tokens": 45039,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"I teach AI classes for a living...And for months, I refused to pay $20 a month for the best one.\" -- direct enough, though followed immediately by a 'Let me explain how that happened' throat-clearing transition."
+        },
+        {
+          "text": "Contains at least one H2 header phrased as a question",
+          "passed": false,
+          "evidence": "All four headers are declarative: 'The GrooveFunnels scar tissue', 'Building a website on free AI, on principle', 'The day I finally paid for Claude Pro', 'What I'm taking from this'."
+        },
+        {
+          "text": "Uses short paragraphs, not uniform blocks",
+          "passed": false,
+          "evidence": "Every paragraph runs 3-6 sentences; no single-line paragraphs anywhere in the post."
+        },
+        {
+          "text": "Ending callbacks to a concrete image already used earlier",
+          "passed": false,
+          "evidence": "Closing line 'Lesson noted. Card on file.' is a new invented kicker phrase, not a reuse of an image planted earlier in the post (weak echo of 'I teach AI for a living' only)."
+        },
+        {
+          "text": "Does not invent facts beyond what was given",
+          "passed": false,
+          "evidence": "States 'refused to pay $20 a month' -- a specific price never given in the task."
+        },
+        {
+          "text": "Does not contain banned buzzwords",
+          "passed": true,
+          "evidence": "None of the banned list present."
+        },
+        {
+          "text": "Does not contain generic AI wrap-up phrases",
+          "passed": false,
+          "evidence": "Final header 'What I'm taking from this' is a summary-recap framing, and the post ends on a generalized lesson rather than the last concrete beat."
+        },
+        {
+          "text": "Retains fragments/ellipses for emphasis",
+          "passed": true,
+          "evidence": "\"Not a slight improvement. Not 'well, this is a bit smoother.'\" -- some fragment use present, though sparse relative to the with-skill version."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.571,
+        "passed": 4,
+        "failed": 3,
+        "total": 7,
+        "time_seconds": 83.3,
+        "tokens": 46013,
+        "tool_calls": 6,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Opens with a hook rather than throat-clearing",
+          "passed": true,
+          "evidence": "\"I've counted it now. Roughly ten times this year, I've committed to waking up early to pray and journal before work.\""
+        },
+        {
+          "text": "Contains at least one question-style H2 header",
+          "passed": false,
+          "evidence": "The post has no H2 headers at all -- a single title followed by continuous prose."
+        },
+        {
+          "text": "Uses short paragraphs including at least one single-line paragraph",
+          "passed": false,
+          "evidence": "Every paragraph runs 5-9 dense sentences; no single-line paragraphs anywhere."
+        },
+        {
+          "text": "Does not fabricate a tidy resolution",
+          "passed": true,
+          "evidence": "\"I don't have this fixed... So this isn't a post about how I solved it.\""
+        },
+        {
+          "text": "Ending is a genuine reflective landing tied to material already in the post, not a generic motivational wrap-up",
+          "passed": false,
+          "evidence": "Ends on a generic 'isn't X, it's Y' binary-contrast construction ('this isn't a post about how I solved it, it's a post about finally seeing the shape') rather than a callback to a specific concrete image."
+        },
+        {
+          "text": "Does not contain banned buzzwords or importance-puffery phrases",
+          "passed": true,
+          "evidence": "None present."
+        },
+        {
+          "text": "Uses concrete specifics given in the prompt rather than vague paraphrases",
+          "passed": true,
+          "evidence": "'Roughly ten times' and 'four days' used directly."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 222.1333,
+        "stddev": 28.3472,
+        "min": 203.0,
+        "max": 254.7
+      },
+      "tokens": {
+        "mean": 70573.3333,
+        "stddev": 2933.3452,
+        "min": 68079,
+        "max": 73805
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.4583,
+        "stddev": 0.1012,
+        "min": 0.375,
+        "max": 0.571
+      },
+      "time_seconds": {
+        "mean": 76.1,
+        "stddev": 6.3498,
+        "min": 71.3,
+        "max": 83.3
+      },
+      "tokens": {
+        "mean": 45385.0,
+        "stddev": 544.8046,
+        "min": 45039,
+        "max": 46013
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.54",
+      "time_seconds": "+146.0",
+      "tokens": "+25188"
+    }
+  },
+  "notes": [
+    "100% pass rate with the skill vs 45.8% baseline, consistent across all 3 topics (tech-confession, personal-development-confession, church-drama) -- not driven by one easy case.",
+    "The single most discriminating assertion across all evals: question-style H2 headers. With-skill hit this in 3/3 runs; baseline hit it in 0/3 -- baseline defaulted to zero section breaks every time, writing continuous single-block essays instead.",
+    "Baseline drifted into an invented fact once (a '$20 a month' Claude Pro price never given in eval 1's prompt) -- a real hallucination risk the skill's 'get the real story first, don't invent facts' step is designed to prevent, and did prevent in all 3 with-skill runs.",
+    "Baseline endings leaned on exactly the constructions no-ai-slop's own pattern list flags as generic AI tells: an 'isn't X, it's Y' binary contrast (eval 2) and interpretive metadiscourse narrating 'there's something fitting about that whole arc' (eval 3) -- the with-skill runs avoided both by using genuine callbacks instead.",
+    "Time and token cost: with-skill runs took ~2.9x longer (222s vs 76s mean) and used ~1.6x the tokens (70.6k vs 45.4k mean), almost entirely the cost of reading voice-examples.md and running the no-ai-slop pass. Worth knowing as a cost/quality tradeoff, though absolute times are still well under 5 minutes.",
+    "Eval 2's with-skill run flagged its own judgment call for review: it kept a 'not X, it's Y' binary-contrast line ('A retreat isn't a sustainable state. It's a moment.') because voice-examples.md shows Asher using that exact shape since 2018 -- this pattern isn't in the skill's current explicit override list and may be worth adding.",
+    "Assertion critique: 'does not contain banned buzzwords' passed 6/6 across both configurations and never discriminated -- neither model reaches for corporate buzzwords unprompted at this task size, so it's a weak assertion here (still worth keeping as a regression guard, just don't read much into it passing).",
+    "Only one grading judgment worth flagging as borderline: eval 1's with-skill ending ('Funny how the discipline and the mistake can look exactly the same from the inside') was scored as a genuine callback since it reuses 'cold turkey' from three paragraphs earlier, but it's also a fairly aphoristic closing line -- a stricter grader might call this closer to a kicker than a callback. Human review of that one line is the most useful single thing to check."
+  ]
+}

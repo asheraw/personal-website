@@ -1,0 +1,19 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing", "passed": true, "evidence": "\"I teach AI classes for a living...And for months, I refused to pay $20 a month for the best one.\" -- direct enough, though followed immediately by a 'Let me explain how that happened' throat-clearing transition."},
+    {"text": "Contains at least one H2 header phrased as a question", "passed": false, "evidence": "All four headers are declarative: 'The GrooveFunnels scar tissue', 'Building a website on free AI, on principle', 'The day I finally paid for Claude Pro', 'What I'm taking from this'."},
+    {"text": "Uses short paragraphs, not uniform blocks", "passed": false, "evidence": "Every paragraph runs 3-6 sentences; no single-line paragraphs anywhere in the post."},
+    {"text": "Ending callbacks to a concrete image already used earlier", "passed": false, "evidence": "Closing line 'Lesson noted. Card on file.' is a new invented kicker phrase, not a reuse of an image planted earlier in the post (weak echo of 'I teach AI for a living' only)."},
+    {"text": "Does not invent facts beyond what was given", "passed": false, "evidence": "States 'refused to pay $20 a month' -- a specific price never given in the task."},
+    {"text": "Does not contain banned buzzwords", "passed": true, "evidence": "None of the banned list present."},
+    {"text": "Does not contain generic AI wrap-up phrases", "passed": false, "evidence": "Final header 'What I'm taking from this' is a summary-recap framing, and the post ends on a generalized lesson rather than the last concrete beat."},
+    {"text": "Retains fragments/ellipses for emphasis", "passed": true, "evidence": "\"Not a slight improvement. Not 'well, this is a bit smoother.'\" -- some fragment use present, though sparse relative to the with-skill version."}
+  ],
+  "summary": {"passed": 3, "failed": 5, "total": 8, "pass_rate": 0.375},
+  "execution_metrics": {"tool_calls": {"Bash": 3, "Write": 3}, "total_tool_calls": 6, "total_steps": 6, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 71.3},
+  "claims": [
+    {"claim": "No skill was invoked", "type": "process", "verified": true, "evidence": "Transcript confirms no Skill tool calls, per explicit baseline instruction."}
+  ],
+  "eval_feedback": {"overall": "The baseline drifted into a fabricated price point and defaulted to essay-style structure with no question headers -- exactly the gap the skill targets."}
+}

@@ -1,0 +1,18 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing", "passed": true, "evidence": "\"I've counted it now. Roughly ten times this year, I've committed to waking up early to pray and journal before work.\""},
+    {"text": "Contains at least one question-style H2 header", "passed": false, "evidence": "The post has no H2 headers at all -- a single title followed by continuous prose."},
+    {"text": "Uses short paragraphs including at least one single-line paragraph", "passed": false, "evidence": "Every paragraph runs 5-9 dense sentences; no single-line paragraphs anywhere."},
+    {"text": "Does not fabricate a tidy resolution", "passed": true, "evidence": "\"I don't have this fixed... So this isn't a post about how I solved it.\""},
+    {"text": "Ending is a genuine reflective landing tied to material already in the post, not a generic motivational wrap-up", "passed": false, "evidence": "Ends on a generic 'isn't X, it's Y' binary-contrast construction ('this isn't a post about how I solved it, it's a post about finally seeing the shape') rather than a callback to a specific concrete image."},
+    {"text": "Does not contain banned buzzwords or importance-puffery phrases", "passed": true, "evidence": "None present."},
+    {"text": "Uses concrete specifics given in the prompt rather than vague paraphrases", "passed": true, "evidence": "'Roughly ten times' and 'four days' used directly."}
+  ],
+  "summary": {"passed": 4, "failed": 3, "total": 7, "pass_rate": 0.571},
+  "execution_metrics": {"tool_calls": {"Bash": 3, "Write": 3}, "total_tool_calls": 6, "total_steps": 6, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 83.3},
+  "claims": [
+    {"claim": "Post uses an extended 'monument' metaphor as its central device", "type": "quality", "verified": true, "evidence": "Paragraph 5 builds an entire metaphor ('a monument to how I felt at the retreat... monuments don't need maintenance the way habits do') that is well-written but is a newly invented metaphor rather than a callback, and reads as more essayistic than Asher's typical shorter, punchier landings."}
+  ],
+  "eval_feedback": {"overall": "Structurally the biggest gap is the complete absence of section breaks -- baseline treats this as a single flowing essay where Asher's real posts consistently chunk into question-headed sections."}
+}

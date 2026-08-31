@@ -1,0 +1,22 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing scene-setting", "passed": true, "evidence": "\"I auditioned for a lead role in this year's church Christmas drama. I did not get it.\""},
+    {"text": "Admits the initial disappointment plainly, without over-apologizing", "passed": true, "evidence": "\"A bit disappointing, if I'm honest.\" -- stated plainly and briefly."},
+    {"text": "Contains at least one H2 header phrased as a question", "passed": true, "evidence": "Three question headers: \"What Do You Do With a Character Who Barely Has Lines?\", \"So What Happens When the One Line You Have Just... Isn't There?\", \"Was the Side Character the Real Lead All Along?\""},
+    {"text": "Includes the improvised-line anecdote with concrete specific detail", "passed": true, "evidence": "Dramatized across six distinct beats: hitting the mark, the cue, the blank, the freeze, the backstory surfacing, the line landing -- not compressed into one summary sentence, directly addressing Asher's feedback."},
+    {"text": "Ending is a genuine reflective callback rather than a generic moral-of-the-story wrap-up", "passed": true, "evidence": "\"Turns out the background had the best line in the show anyway, and it wasn't even the one that was written.\" reuses the 'lead vs background' and 'written line' images from earlier."},
+    {"text": "Does not contain banned buzzwords or invented fake-profound kicker phrasing", "passed": true, "evidence": "None present; ending stays grounded in the concrete anecdote."},
+    {"text": "Uses short paragraphs and at least one deliberate fragment or ellipsis", "passed": true, "evidence": "\"And... nothing.\" \"Blank. Completely blank.\" -- fragments used specifically at the pivotal moment."},
+    {"text": "NEW: Pivotal scene dramatized across multiple beats, not compressed into 1-2 summary sentences", "passed": true, "evidence": "Directly fixes iteration-1's flagged weakness (which had 'Dress rehearsal. My one line was gone. Completely gone... and then just said something.' as the entire scene). This draft stretches the same scene across roughly 8 short paragraphs."},
+    {"text": "NEW: Never uses an em dash", "passed": true, "evidence": "None found."},
+    {"text": "NEW: British/Singapore spelling used throughout", "passed": true, "evidence": "No American '-ize'/'-or' forms present."},
+    {"text": "NEW: No vague scene-transition abstractions like 'something shifted'", "passed": true, "evidence": "Changes are dramatized concretely throughout (e.g. 'the weeks of who-is-this-person, what-do-they-want...were still there' rather than a vague 'something shifted')."}
+  ],
+  "summary": {"passed": 11, "failed": 0, "total": 11, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {"Skill": 2, "Read": 3, "Bash": 5, "Write": 3}, "total_tool_calls": 19, "total_steps": 18, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 278.6},
+  "claims": [
+    {"claim": "Post is 797 words, just under the roughly-800 floor", "type": "factual", "verified": true, "evidence": "Executor reported this explicitly and chose not to pad with invented material to hit the number -- reasonable restraint given this is a single bounded event rather than a longer arc."}
+  ],
+  "eval_feedback": {"overall": "Directly answers the specific dramatization request from feedback. One phrase worth a human glance: 'that particular flavour of \"oh\" that sits in your chest' echoes the shape of a phrase Asher disliked elsewhere ('a particular flavour of deflation') -- different wording and more concrete here, but similar construction, worth checking whether it reads as too writerly to him."}
+}

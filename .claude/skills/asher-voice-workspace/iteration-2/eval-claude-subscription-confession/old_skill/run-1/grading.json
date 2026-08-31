@@ -1,0 +1,19 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing", "passed": true, "evidence": "\"I teach AI for a living. And I almost didn't pay for the AI tool that ended up saving me months.\" -- direct tension stated in sentence one, no wind-up."},
+    {"text": "Contains at least one H2 header phrased as a question", "passed": true, "evidence": "\"Even the AI Tools I Teach People to Use?\" and \"So Was Cold Turkey the Right Call?\""},
+    {"text": "Uses short paragraphs, not uniform blocks", "passed": true, "evidence": "Multiple one-line paragraphs: \"Yeah. Even those.\" / \"Months. One day.\""},
+    {"text": "Ending callbacks to a concrete image already used earlier", "passed": true, "evidence": "Closing paragraph reuses \"cold turkey\" from the opening section: \"Cold turkey kept me safe from GrooveFunnels. It also kept me from Claude Pro for way longer than it should have.\""},
+    {"text": "Does not invent facts beyond what was given", "passed": true, "evidence": "No numbers, prices, or details appear beyond the task's supplied facts."},
+    {"text": "Does not contain banned buzzwords", "passed": true, "evidence": "None of the banned list (leverage, robust, elevate, etc.) present."},
+    {"text": "Does not contain generic AI wrap-up phrases", "passed": true, "evidence": "No 'in conclusion' / 'at the end of the day' constructions found."},
+    {"text": "Retains fragments/ellipses for emphasis", "passed": true, "evidence": "\"Cold turkey. Not a minimalist phase, not a budget thing. Scar tissue.\" and \"Months. One day.\""}
+  ],
+  "summary": {"passed": 8, "failed": 0, "total": 8, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {"Skill": 2, "Read": 3, "Bash": 2, "Write": 4, "Edit": 1, "PowerShell": 1}, "total_tool_calls": 13, "total_steps": 12, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 208.7},
+  "claims": [
+    {"claim": "Fixed a throat-clearing colon-reveal opener during the no-ai-slop pass", "type": "process", "verified": true, "evidence": "Transcript documents removing 'Here's the confession part:' as a no-ai-slop-flagged pattern not protected by asher-voice's overrides."}
+  ],
+  "eval_feedback": {"overall": "Assertions discriminated well here -- baseline failed 4 of the same 8 checks."}
+}

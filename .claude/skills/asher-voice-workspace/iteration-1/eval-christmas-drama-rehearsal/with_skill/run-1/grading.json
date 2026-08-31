@@ -1,0 +1,19 @@
+{
+  "expectations": [
+    {"text": "Opens with a hook rather than throat-clearing scene-setting", "passed": true, "evidence": "\"Truth be told, I auditioned for a lead role in this year's Christmas drama. Cast list went up, and I was a side character.\" -- 'Truth be told' matches Asher's confirmed 2016 usage exactly."},
+    {"text": "Admits the initial disappointment plainly, without over-apologizing", "passed": true, "evidence": "\"A bit disappointing, not gonna lie.\" -- stated once, plainly, no repeated hedging."},
+    {"text": "Contains at least one H2 header phrased as a question", "passed": true, "evidence": "\"So What Do You Do With a Side Character?\" and \"What Happens When You Forget Your One Line?\""},
+    {"text": "Includes the improvised-line anecdote with concrete specific detail", "passed": true, "evidence": "\"Dress rehearsal. My one line was gone. Completely gone. I froze for a second... then just said something... It worked. Genuinely worked better than the line that was written.\""},
+    {"text": "Ending is a genuine reflective callback rather than a generic moral-of-the-story wrap-up", "passed": true, "evidence": "\"The role I didn't want ended up giving me the one moment from this whole production I'll actually remember.\" -- directly reuses the lead/side-character tension set up in paragraph 1."},
+    {"text": "Does not contain banned buzzwords or invented fake-profound kicker phrasing", "passed": true, "evidence": "None present; ending stays grounded in the concrete anecdote."},
+    {"text": "Uses short paragraphs and at least one deliberate fragment or ellipsis", "passed": true, "evidence": "\"Dress rehearsal. My one line was gone. Completely gone.\" and consistently short paragraphs throughout."}
+  ],
+  "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {"Skill": 2, "Read": 2, "Write": 3, "Edit": 4}, "total_tool_calls": 11, "total_steps": 10, "errors_encountered": 0},
+  "timing": {"executor_duration_seconds": 203.0},
+  "claims": [
+    {"claim": "Checked the emotional beat against a real 2016 example before writing it, rather than inventing a voice", "type": "process", "verified": true, "evidence": "Transcript cites the 2016 Christmas post excerpt in voice-examples.md ('Truth be told, I was a little disappointed that I didn't get to play the role of the Candyman') as calibration before drafting the near-identical beat here."},
+    {"claim": "Caught and fixed an internal consistency error (invented 'two scenes' contradicting the vaguer 'a handful of scenes')", "type": "quality", "verified": true, "evidence": "Transcript documents this fix during the no-ai-slop pass; final post reads 'A handful of scenes' consistently."}
+  ],
+  "eval_feedback": {"overall": "Strongest of the three with-skill runs -- the executor's use of voice-examples.md as calibration evidence (not just rules) is exactly the intended workflow."}
+}
