@@ -4,14 +4,29 @@ A running record of every third-party skill (or tool) evaluated for this repo's 
 
 ---
 
-## 2026-08-24 — MarkItDown (CLI wrapper, uncommitted)
+## 2026-09-02 — Agent Skills pack (installed outside repo, plugin)
+
+| | |
+|---|---|
+| **Source** | https://github.com/addyosmani/agent-skills |
+| **License** | MIT (Addy Osmani) |
+| **Installed as** | Claude Code plugin `agent-skills@addy-agent-skills`, not repo files |
+| **Status** | Installed and enabled, scoped to this container |
+
+A 25-skill (34 with slash-command aliases) software-development-lifecycle pack — define/plan/build/verify/review/ship — plus 4 specialist review personas (`code-reviewer`, `test-engineer`, `security-auditor`, `web-performance-auditor`). Installed via the official plugin marketplace (`claude plugin marketplace add` + `claude plugin install`), the same mechanism used for `claude-mem` below — not a file copy — because it ships a `SessionStart` hook (injects its meta-skill's routing guide into every session) and a WebFetch response cache hook, neither of which would actually activate from a plain copy into `.claude/skills/`. No changes made to the source; installed as-is.
+
+Registered only in this container's `~/.claude/settings.json` (`enabledPlugins`), not in the repo — nothing to commit here, same as `claude-mem`. Adds roughly 3,200 tokens always-on to every future session in this container (per `claude plugin details`).
+
+**Topical overlap, not a technical conflict** — three of its skills cover ground this repo's own `.claude/skills/` also covers, under different names (so no shadowing, both are reachable): `code-review-and-quality` vs. this repo's `code-review`, `code-simplification` vs. `simplify`, `security-and-hardening` vs. `security-review`. Left both in place rather than picking a winner — Claude selects by matching the specific task to the more relevant skill description at invocation time.
+
+## 2026-08-24 — MarkItDown (CLI wrapper)
 
 | | |
 |---|---|
 | **Source** | https://github.com/microsoft/markitdown |
 | **License** | MIT (Microsoft) |
 | **Installed as** | `.claude/skills/markitdown/` |
-| **Status** | Written to disk, not yet committed |
+| **Status** | PR open (#4), not yet merged |
 
 Not actually a Claude Code skill — it's a pip-installable Python CLI that converts files to Markdown. Wrote a thin `SKILL.md` wrapper myself (no upstream skill file existed to copy) documenting install (`pip install 'markitdown[all]'`) and usage. Scoped its use to formats the existing `pdf`/`docx`/`pptx`/`xlsx` skills don't already cover — HTML, ZIP, YouTube transcripts, EPub, Outlook `.msg`, image OCR, audio transcription — since those four dedicated skills can edit, not just read, and should stay the default for their formats. Noted but did not set up the companion `markitdown-mcp` background server; the plain CLI covers one-off conversions without running a persistent process.
 
