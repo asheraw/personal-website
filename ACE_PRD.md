@@ -88,6 +88,11 @@ ACE is a unified, AI-assisted publishing platform designed for creator-owned, ca
   * Live preview: desktop, tablet, mobile; draft never public; scheduled/bulk publish.
   * Social/canonical/SEO metadata auto-generated but always reviewed; social image variants (open graph, Twitter, etc.).
   * Dashboard for publication health: errors, audit flags, asset issues, stale content.
+  * Distribution switchboard: per-post opt-in checklist (platform × format — text caption, short-video
+    script, carousel), drafted at publish time, synced to a persistent Studio table for later
+    review/action; nothing generates until explicitly checked (see `docs/ideas/distribution-switchboard.md`).
+  * Connected Accounts registry (Studio-level, one row per platform: platform dropdown + handle/URL) —
+    per-post social links reference a known account instead of being free-typed and re-entered each time.
 
 * **Presentation Layer (Priority: High)**
 
@@ -102,11 +107,19 @@ ACE is a unified, AI-assisted publishing platform designed for creator-owned, ca
   * Never overwrite manual edits; all suggestions logged.
   * Style/tone presets, voice protection.
   * Approval-driven workflow; never auto-publish.
+  * Editable prompt templates (Studio → AI Suggestion Settings) extend to short-video-script
+    (hook/beat/CTA structure) and carousel-image-prompt templates, same fixed-template-with-AI-filled-
+    placeholders pattern as the existing post-image prompt.
 
 * **Growth, Analytics, Engagement (Priority: Medium)**
 
   * Decoupled email model (multiple provider support), engagement-aware forms, newsletter archive, membership/paywall (Stripe tiers), analytics event taxonomy (30+ key events, no PII, GTM/GA4 portable), consent mode, A/B friendly, open export.
-  * Distribution dashboard: AI/social copy, open-post, engagement tracking, archive/reply log.
+  * Distribution dashboard: AI/social copy per platform+format (X, LinkedIn, Facebook, Threads,
+    Instagram, TikTok, YouTube), open-post, engagement tracking, archive/reply log. Comment pull-back
+    (Facebook first) via third-party scraping (Apify Actors, since no official platform offers real
+    comment API access for a personal account) merged into the site's own comment thread — manual
+    trigger only, no automated/continuous polling, consistent with the Non-Goals' "no automated
+    distribution without reviewer approval."
   * Audio narration (TTS per post), accessibility overlays, multi-device notification.
 
 * **Resilience, Backups, and Recovery (Priority: Critical)**
@@ -203,7 +216,7 @@ Asher, a detail-oriented creator, needed a publishing engine that harmonized rob
 
 ### Integration Points
 
-* Sanity CMS, decoupled mailing provider(s), analytics (GTM/GA4), newsletter archive, backup destinations, AI APIs (pluggable), Stripe (membership/paywall), social image generator, legacy import/export pipelines
+* Sanity CMS, decoupled mailing provider(s), analytics (GTM/GA4), newsletter archive, backup destinations, AI APIs (pluggable), Stripe (membership/paywall), social image generator, legacy import/export pipelines, Apify (third-party scraping Actors for per-post comment pull-back where no official platform API exists for a personal account)
 
 ### Data Storage & Privacy
 
