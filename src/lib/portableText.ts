@@ -5,13 +5,17 @@
  * it once here keeps the two from silently drifting apart.
  */
 
+import { isDefinitelyVideoEmbedUrl } from "@/lib/embedUrl";
+
 export type PortableTextBlock = {
   _type?: string;
   children?: { text?: string }[];
   text?: string | PortableTextBlock[];
   content?: string | PortableTextBlock[];
-  entries?: { name?: string; quote?: string }[];
+  entries?: { name?: string; quote?: string; details?: PortableTextBlock[] }[];
   items?: { title?: string; content?: string | PortableTextBlock[] }[];
+  // Only present on embed blocks -- see hasVideoEmbed() below.
+  url?: string;
 };
 
 // A single "block" node's own text, ignoring marks/annotations -- shared
@@ -61,6 +65,20 @@ export function portableTextToPlainText(blocks: unknown): string {
       if (block._type === "quoteGrid" && Array.isArray(block.entries)) {
         return block.entries.map((entry) => entry.quote || "").join(" ");
       }
+      // Same miss as Quote Grid above -- a Skill Grid's real content lives
+      // in its entries, not on the block itself. `details` is the same
+      // restricted-rich-text shape as Accordion's content (2026-08-29:
+      // replaced three separate plain-text fields), so it needs blockText()
+      // per block rather than being read as a plain string.
+      if (block._type === "skillGrid" && Array.isArray(block.entries)) {
+        return block.entries
+          .map((entry) =>
+            [entry.name, Array.isArray(entry.details) ? entry.details.map(blockText).join(" ") : ""]
+              .filter(Boolean)
+              .join(" ")
+          )
+          .join(" ");
+      }
       return "";
     })
     .filter(Boolean)
@@ -78,6 +96,19 @@ export function estimateReadingTimeFromText(text: string): number {
 /** Same as estimateReadingTimeFromText, but takes the raw Portable Text body array. */
 export function estimateReadingTimeMinutes(body: unknown): number {
   return estimateReadingTimeFromText(portableTextToPlainText(body));
+}
+
+// Drives the blog card "Video" tag -- checking _type === "embed" alone isn't
+// enough, since an Instagram /p/ URL could be a single photo or a whole
+// carousel, not necessarily video. isDefinitelyVideoEmbedUrl() only returns
+// true for a YouTube URL or an Instagram Reel, both unambiguous -- better to
+// miss tagging an occasional video post than to wrongly tag a photo
+// carousel as "Video."
+export function hasVideoEmbed(blocks: unknown): boolean {
+  if (!Array.isArray(blocks)) return false;
+  return (blocks as PortableTextBlock[]).some(
+    (block) => block?._type === "embed" && typeof block.url === "string" && isDefinitelyVideoEmbedUrl(block.url)
+  );
 }
 
 type MarkDefsBlock = { markDefs?: { _type?: string }[] };

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { PostSummary } from "@/sanity/lib/queries";
+import { SketchyDivider } from "@/components/asher/blog/SketchyDivider";
 
 // A persistent "jump to another post in this category" list, shown in the
 // open left margin on wide screens only -- a category can hold dozens of
@@ -76,7 +77,12 @@ export function CategoryPostList({ posts }: { posts: PostSummary[] }) {
 
   return (
     <aside className="sticky top-28 hidden max-h-[42rem] w-64 shrink-0 overflow-y-auto 2xl:block 2xl:-translate-x-20">
-      <p className="font-mono-stage text-[10px] uppercase tracking-[0.24em] text-stone/60">
+      {/* Hand-drawn top/bottom rules instead of a boxed border -- grounds the
+          panel in the open margin without it reading as a ruled-off "card",
+          matching SketchyDivider's own reasoning against a technical-grid
+          look elsewhere on the site. */}
+      <SketchyDivider index={0} />
+      <p className="mt-3 font-mono-stage text-[10px] uppercase tracking-[0.24em] text-stone/60">
         {posts.length} {posts.length === 1 ? "post" : "posts"} in this category
       </p>
       <ul className="mt-4 space-y-1">
@@ -96,6 +102,7 @@ export function CategoryPostList({ posts }: { posts: PostSummary[] }) {
           );
         })}
       </ul>
+      <SketchyDivider index={2} className="mt-4" />
     </aside>
   );
 }

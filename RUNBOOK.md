@@ -5286,6 +5286,30 @@ force-refreshed via [Facebook's Sharing Debugger](https://developers.facebook.co
 post URL in and click "Scrape Again." New shares of any post should show the image correctly without needing
 this step.
 
+### 2026-09-01 — Turbopack dev-server crash / system-wide memory exhaustion
+**Symptom:** Running `npm run dev` and loading `http://localhost:3000` locally would occasionally take down
+the whole machine: OS process count climbed from ~300 to the thousands within seconds, then Windows itself
+became unresponsive (Desktop Window Manager repeatedly crashing/restarting, Task Manager crashing, unrelated
+apps like VS Code and WhatsApp faulting). Looked at first like it could be a runaway Claude Code agent loop.
+**Root cause:** Turbopack (Next.js 16's Rust-based dev compiler, the default bundler for `next dev` on this
+version) crashed with a native allocator failure (`memory allocation of 1114128 bytes failed`) the instant it
+began compiling `/` — confirmed directly from the captured dev-server stdout log. Windows' own Event Log for
+the same minute showed a genuine system-wide memory-exhaustion cascade (`PerfProc`: "Not enough memory
+resources are available", repeated DWM crashes, multiple unrelated apps faulting) — not a Claude Code hook,
+cron job, or multi-session loop; four concurrent Claude Code sessions on this machine were checked directly
+and confirmed clean. This project's dependency graph is unusually heavy for a first Turbopack compile
+(three.js/@react-three/fiber, Sanity Studio, MDXEditor, dnd-kit, Playwright, Sentry, dozens of Radix
+packages all compiled together), which appears to trigger this Turbopack memory bug.
+**Fix:** Reproduced safely under a Windows Job Object memory cap (6GB hard limit on the whole `next dev`
+process tree) with Turbopack swapped for webpack (`next dev -p 3000 --webpack`): the same homepage compiled
+and served successfully (`GET / 200 in 21.1s`, peak ~1.9GB), with process count never leaving its normal
+baseline. Changed `package.json`'s `dev` script to `next dev -p 3000 --webpack` so this is the default going
+forward.
+**Follow-up:** If a future Next.js/Turbopack release fixes this upstream, `--webpack` is safe to drop, but
+only after another isolated test (ideally still under a memory cap) rather than reverting blind. Turbopack is
+otherwise the intended default for this Next.js version, so this is a deliberate, documented exception, not
+an oversight.
+
 ---
 
 ## Scheduled tasks: how purge-trash / check-links / publish-scheduled actually run (confirmed working 2026-08-30)

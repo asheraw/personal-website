@@ -7,8 +7,9 @@ import { urlFor } from "@/sanity/lib/image";
 import type { PostSummary } from "@/sanity/lib/queries";
 import { truncateText } from "@/lib/text";
 import { formatPostDate } from "@/lib/formatDate";
-import { portableTextToPlainText, estimateReadingTimeFromText } from "@/lib/portableText";
+import { portableTextToPlainText, estimateReadingTimeFromText, hasVideoEmbed } from "@/lib/portableText";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
+import { VideoTag } from "@/components/asher/blog/VideoTag";
 
 // Matches the excerpt field's own 160-character guidance in Studio, so
 // a manually-written excerpt basically never needs trimming here -- this
@@ -24,6 +25,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
   const blurbSource = post.excerpt || bodyPlainText;
   const blurb = blurbSource ? truncateText(blurbSource, CARD_BLURB_LENGTH) : undefined;
   const readingTime = bodyPlainText ? estimateReadingTimeFromText(bodyPlainText) : undefined;
+  const hasVideo = post.bodyBlocks ? hasVideoEmbed(post.bodyBlocks) : false;
 
   return (
     <motion.article
@@ -34,7 +36,8 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
       className="border-b border-amber-faint pb-12 last:border-none"
     >
       {post.mainImage && (
-        <Link href={`/blog/${post.slug}`} className="block mb-5">
+        <Link href={`/blog/${post.slug}`} className="relative block mb-5">
+          {hasVideo && <VideoTag />}
           <Image
             src={urlFor(post.mainImage).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()}
             alt={post.mainImageAlt ?? post.mainImage.alt ?? post.title}
@@ -71,6 +74,7 @@ export function PostCard({ post, priority = false }: { post: PostSummary; priori
             {category.title}
           </Link>
         ))}
+        {hasVideo && !post.mainImage && <VideoTag variant="inline" />}
         <CommentCountBadge slug={post.slug} count={post.commentCount} />
       </div>
 

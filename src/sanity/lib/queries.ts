@@ -14,16 +14,19 @@ export const POST_SUMMARY_PROJECTION = `{
   // GROQ's own pt::text(), which only reads _type == "block" spans and is
   // blind to custom block types. That blindness is exactly what made a
   // Quote-Grid-heavy post's listing card undercount its reading time
-  // (see RUNBOOK.md, "Post metadata: reading time"). Deliberately shallow:
-  // only the handful of fields that function actually reads, not the full
-  // body (markDefs, snippetRef resolution, etc. -- see POST_BY_SLUG_QUERY
-  // for those).
+  // (see RUNBOOK.md, "Post metadata: reading time"). Also powers the card's
+  // "Video" tag via hasVideoEmbed(), which is why url is projected even
+  // though the text/reading-time functions never read it -- otherwise
+  // deliberately shallow: only the handful of fields those functions
+  // actually read, not the full body (markDefs, snippetRef resolution,
+  // etc. -- see POST_BY_SLUG_QUERY for those).
   "bodyBlocks": body[]{
     _type,
     "children": children[]{text},
     text,
     content,
-    "entries": entries[]{quote}
+    "entries": entries[]{quote},
+    url
   },
   publishedAt,
   _updatedAt,
