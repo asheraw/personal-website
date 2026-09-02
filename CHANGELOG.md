@@ -82,6 +82,15 @@ returns `count` too) — the count does double duty, since a number next to a wo
 filterable collection of N things" even without the label. Verified the counts against real data (Theatre 9,
 Authenticity 33, etc. — matches exactly) before shipping.
 
+## 2026-08-24 — Added several third-party Claude Code skills
+
+Brought in a batch of external skills for design (taste/motion/reference), memory (`claude-mem`, alongside the
+existing `recall`), a UI/UX reference database (`ui-ux-pro-max`), AI ad-creative generation (`arcads-*`,
+`meta-ad-builder` — PR open, not yet merged), and file-to-Markdown conversion (`markitdown`). Full provenance —
+source repo links, license, what was changed from upstream and why, and what was evaluated but skipped
+(`twenty`, `voicebox`, `OmniRoute`, and others) — is tracked separately in `.claude/skills/SKILLS_LOG.md` rather
+than duplicated here, since it's an ongoing log scoped to the AI tooling layer, not a single shipped change.
+
 ## 2026-08-21 — Fixed: check-links was failing on a permissions-limited token on Netlify
 
 Testing the new GitHub Actions cron replacement turned up a second, separate bug: `check-links` returned a
