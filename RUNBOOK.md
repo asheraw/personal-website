@@ -208,10 +208,26 @@ never cost anything. (Originally built against Anthropic's Claude API, but Claud
 doesn't cover API usage — that's billed completely separately and needs its own top-up. Switched to Gemini
 on 2026-07-29 specifically because it has a genuine permanent free tier.) Requires a one-time setup:
 1. Get an API key from [aistudio.google.com](https://aistudio.google.com) (Google AI Studio) → Get API key.
-2. Add it to **Vercel** (Settings → Environment Variables) as `GEMINI_API_KEY` → redeploy.
+2. Add it to **Netlify** (Site configuration → Environment variables) as `GEMINI_API_KEY` → redeploy.
 
 **If "Suggest SEO & Excerpt" shows an error:** almost always the key above isn't set, or was only set for
-the wrong Vercel environment. The dialog's error message says plainly if the key is missing.
+the wrong Netlify context (Production/Deploy Previews/Branch deploys). The dialog's error message says
+plainly if the key is missing.
+
+**OpenRouter, as an optional alternate text-generation provider** (added 2026-09-04 alongside the
+`suggest-video-script`/`suggest-linkedin-post`/`suggest-image-carousel` distribution-derivative features):
+`src/lib/aiText.ts` is a thin abstraction every AI-suggestion route calls through, so a route never has to
+know or care which provider actually answers it. Gemini stays the default everywhere — nothing changes
+unless the "Text generation provider" field on **AI Workspace → Suggestion Settings** is deliberately
+switched to OpenRouter, which also needs a model id filled into the field right below it (e.g.
+`openai/gpt-4o-mini`).
+
+**Setup**: `OPENROUTER_API_KEY` — create an account at [openrouter.ai](https://openrouter.ai), generate a
+key from the dashboard, add credit (OpenRouter is pay-as-you-go per request, no permanent free tier the way
+Gemini has). Chosen because it exposes a wide range of text models AND an image-generation endpoint through
+one key/one billing relationship, useful for comparing output quality across models without juggling
+separate provider accounts. Stored in `.env.local` for local dev and added to Netlify's environment
+variables for Production (and any other context that needs it) → redeploy.
 
 **"Nothing to summarize" on a post that clearly has content:** happened once (2026-07-30) on a post with no
 pending edits — the action was only reading the *draft* version of the document, and a published, untouched

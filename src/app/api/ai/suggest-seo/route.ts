@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { truncateText } from "@/lib/text";
 import { writeClient } from "@/sanity/lib/write-client";
 import { DEFAULT_AI_PROMPT_INSTRUCTIONS, DEFAULT_VOICE_GUIDANCE } from "@/lib/aiPromptDefaults";
+import { generateStructuredText, type AiTextProvider } from "@/lib/aiText";
 
 // Called from Studio's "Suggest SEO & Excerpt" button (see
 // src/sanity/actions/suggestSeo.tsx). Never called for regular site
@@ -13,13 +14,6 @@ import { DEFAULT_AI_PROMPT_INSTRUCTIONS, DEFAULT_VOICE_GUIDANCE } from "@/lib/ai
 // separate from whether any of it gets used, which log-usage/route.ts
 // updates later if the editor actually applies something.
 export async function POST(request: NextRequest) {
-  if (!process.env.GEMINI_API_KEY) {
-    return NextResponse.json(
-      { error: "AI suggestions aren't set up yet — GEMINI_API_KEY is missing. See RUNBOOK.md." },
-      { status: 500 }
-    );
-  }
-
   const { title, bodyText, slug } = await request.json();
 
   if (!title || !bodyText || typeof title !== "string" || typeof bodyText !== "string") {
@@ -29,7 +23,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  let provider: AiTextProvider = "gemini";
 
   try {
     // Used so tag suggestions reuse an already-established tag instead of
@@ -49,14 +43,37 @@ export async function POST(request: NextRequest) {
     // back to the same defaults shown as each field's starting value if the
     // document doesn't exist yet or a field was cleared. voiceGuidance is
     // shared with suggest-social's own prompt too -- see aiPromptDefaults.ts.
-    const settings: {promptInstructions?: string; voiceGuidance?: string} | null = await writeClient.fetch(
-      `*[_type == "aiPromptSettings"][0]{promptInstructions, voiceGuidance}`
+    const settings: {
+      promptInstructions?: string;
+      voiceGuidance?: string;
+      textProvider?: AiTextProvider;
+      textModel?: string;
+    } | null = await writeClient.fetch(
+      `*[_type == "aiPromptSettings"][0]{promptInstructions, voiceGuidance, textProvider, textModel}`
     );
     const instructions = settings?.promptInstructions?.trim() || DEFAULT_AI_PROMPT_INSTRUCTIONS;
     const voice = settings?.voiceGuidance?.trim() || DEFAULT_VOICE_GUIDANCE;
+    provider = settings?.textProvider === "openrouter" ? "openrouter" : "gemini";
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+    const requiredKey = provider === "openrouter" ? "OPENROUTER_API_KEY" : "GEMINI_API_KEY";
+    if (!process.env[requiredKey]) {
+      return NextResponse.json(
+        { error: `AI suggestions aren't set up yet — ${requiredKey} is missing. See RUNBOOK.md.` },
+        { status: 500 }
+      );
+    }
+
+    const parsed = await generateStructuredText<{
+      seoTitles?: string[];
+      excerpts?: string[];
+      tags?: string[];
+      altHeadlines?: string[];
+      pullQuotes?: string[];
+      faqs?: { question?: string; answer?: string }[];
+    }>({
+      provider,
+      model: settings?.textModel?.trim() || undefined,
+      schemaName: "seo_suggestions",
       contents: `${voice}
 
 ${instructions}${existingTagsBlock}
@@ -65,70 +82,55 @@ Title: ${title}
 
 Content:
 ${bodyText.slice(0, 6000)}`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            seoTitles: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: "Exactly 3 suggested SEO titles, 70 characters or fewer each.",
-            },
-            excerpts: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description:
-                "Exactly 3 suggested excerpts, 160 characters or fewer each, key point within the first 120 characters, written to create curiosity.",
-            },
-            tags: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description:
-                "3-5 topic tags for the post, reusing an existing tag's exact spelling when one genuinely fits.",
-            },
-            altHeadlines: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description:
-                "Exactly 3 alternative options for the post's actual displayed title (not the SEO meta title) -- different angles or framings of the same post, not just rewordings.",
-            },
-            pullQuotes: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description:
-                "Exactly 2 short quotes taken word-for-word from the post's own content, each striking enough to pull out and highlight on its own. Never invented -- must be an exact substring of the content given.",
-            },
-            faqs: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  question: { type: Type.STRING },
-                  answer: { type: Type.STRING },
-                },
-                required: ["question", "answer"],
-              },
-              description:
-                "Exactly 3 FAQ-style question/answer pairs a reader of this post might genuinely search for, answerable from the post's own content -- never invented facts.",
-            },
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          seoTitles: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Exactly 3 suggested SEO titles, 70 characters or fewer each.",
           },
-          required: ["seoTitles", "excerpts", "tags"],
+          excerpts: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description:
+              "Exactly 3 suggested excerpts, 160 characters or fewer each, key point within the first 120 characters, written to create curiosity.",
+          },
+          tags: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description:
+              "3-5 topic tags for the post, reusing an existing tag's exact spelling when one genuinely fits.",
+          },
+          altHeadlines: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description:
+              "Exactly 3 alternative options for the post's actual displayed title (not the SEO meta title) -- different angles or framings of the same post, not just rewordings.",
+          },
+          pullQuotes: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description:
+              "Exactly 2 short quotes taken word-for-word from the post's own content, each striking enough to pull out and highlight on its own. Never invented -- must be an exact substring of the content given.",
+          },
+          faqs: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                answer: { type: Type.STRING },
+              },
+              required: ["question", "answer"],
+            },
+            description:
+              "Exactly 3 FAQ-style question/answer pairs a reader of this post might genuinely search for, answerable from the post's own content -- never invented facts.",
+          },
         },
+        required: ["seoTitles", "excerpts", "tags"],
       },
     });
-
-    const raw = response.text;
-    if (!raw) throw new Error("Empty response from model");
-
-    const parsed = JSON.parse(raw) as {
-      seoTitles?: string[];
-      excerpts?: string[];
-      tags?: string[];
-      altHeadlines?: string[];
-      pullQuotes?: string[];
-      faqs?: { question?: string; answer?: string }[];
-    };
 
     const seoTitles = (parsed.seoTitles || [])
       .map((t) => truncateText(t.trim(), 70))
@@ -185,7 +187,9 @@ ${bodyText.slice(0, 6000)}`,
     return NextResponse.json(
       {
         error: rateLimited
-          ? "Hit the free-tier daily limit for AI suggestions -- try again after it resets, or enable billing on the Gemini API project. See RUNBOOK.md."
+          ? provider === "openrouter"
+            ? "Hit a rate limit on OpenRouter -- try again in a moment, or check your OpenRouter account's usage/credit balance. See RUNBOOK.md."
+            : "Hit the free-tier daily limit for AI suggestions -- try again after it resets, or enable billing on the Gemini API project. See RUNBOOK.md."
           : "Couldn't get a suggestion right now — try again in a moment.",
       },
       { status: rateLimited ? 429 : 500 }

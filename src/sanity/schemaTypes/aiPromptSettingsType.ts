@@ -51,6 +51,23 @@ export const aiPromptSettingsType = defineType({
         'What Gemini is told when suggesting SEO titles, excerpts, and tags specifically -- the task itself (what to produce, length limits), not the voice (see above). Leave blank to fall back to the default shown here.',
     }),
     defineField({
+      name: 'textProvider',
+      title: 'Text generation provider',
+      type: 'string',
+      options: {list: [{title: 'Gemini', value: 'gemini'}, {title: 'OpenRouter', value: 'openrouter'}]},
+      initialValue: 'gemini',
+      description:
+        'Which AI provider drafts text (SEO suggestions today; more features over time). Gemini is the proven default -- switching to OpenRouter requires OPENROUTER_API_KEY to be set (see RUNBOOK.md) and lets you pick a specific model below.',
+    }),
+    defineField({
+      name: 'textModel',
+      title: 'OpenRouter text model',
+      type: 'string',
+      description:
+        'Only used when the provider above is set to OpenRouter -- an OpenRouter model id (e.g. "openai/gpt-4o-mini"). Ignored entirely on Gemini.',
+      hidden: ({parent}) => (parent as {textProvider?: string} | undefined)?.textProvider !== 'openrouter',
+    }),
+    defineField({
       name: 'imagePromptTemplate',
       title: 'Image prompt template',
       type: 'text',
