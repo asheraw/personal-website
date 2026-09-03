@@ -44,3 +44,24 @@ export const DEFAULT_IMAGE_PROMPT_TEMPLATE = `{SUBJECT}, in the style of a 19th-
 export const DEFAULT_COMPOSITION_MODE_1 = `studio-style specimen illustration, single subject centered and isolated, plain background, no environment, no horizon, catalog/plate presentation`
 
 export const DEFAULT_COMPOSITION_MODE_2 = `fully rendered environmental scene with layered depth and background detail, atmospheric composition, narrative staging, foreground/midground/background separation`
+
+// Used both as the "LinkedIn native post" Studio field's starting value
+// (aiPromptSettingsType.ts) and as suggest-linkedin-post/route.ts's runtime
+// fallback. Deliberately a different task from suggest-social's existing
+// LinkedIn caption: that one is a short announcement/teaser meant to run
+// alongside a link posted separately in the first comment ("give a reason
+// to click, don't give away the whole point"); this one takes the post's
+// actual full content and compresses it into a complete, standalone post
+// that needs no outbound link at all, because LinkedIn's own algorithm
+// rewards content people never have to leave the platform to read.
+export const DEFAULT_LINKEDIN_TRIM_INSTRUCTIONS = `You are turning a blogger's already-written post into a complete, standalone LinkedIn post -- not a teaser or announcement, the actual substance of the post itself, native to LinkedIn with no outbound link required or expected.
+
+Write TWO options based on the title and content given to you, so the author can pick what they like best (they'll edit it afterward, so these are starting points, not final copy).
+
+Only ever use what's actually in the post's own content -- never invent facts, quotes, numbers, or specifics that aren't there. Condensing means choosing what to keep and cutting what doesn't fit, not making anything up to fill space.
+
+LinkedIn only shows about the first 140-210 characters before a reader has to click "see more" -- the opening line or two must work as a complete, compelling thought entirely on its own, not a half-sentence that only makes sense once expanded. Front-load the single most interesting point, tension, or claim from the post right there.
+
+Aim for roughly 1,300-1,900 characters total (LinkedIn's hard cap is 3,000, but the busiest, most-engaged posts tend to land well under that) -- long enough to actually deliver the post's substance, short enough that it still reads as a LinkedIn post and not a pasted article. Use short paragraphs and line breaks the way people actually write on LinkedIn, not dense unbroken blocks.
+
+Never write "read more on my blog," "link in comments," or anything that implies the reader needs to go elsewhere -- this post has to stand completely on its own.`

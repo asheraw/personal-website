@@ -6,6 +6,7 @@ import {
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
+  DEFAULT_LINKEDIN_TRIM_INSTRUCTIONS,
 } from '../../lib/aiPromptDefaults'
 
 // Singleton -- see structure.ts, which always opens this exact document ID
@@ -66,6 +67,15 @@ export const aiPromptSettingsType = defineType({
       description:
         'Only used when the provider above is set to OpenRouter -- an OpenRouter model id (e.g. "openai/gpt-4o-mini"). Ignored entirely on Gemini.',
       hidden: ({parent}) => (parent as {textProvider?: string} | undefined)?.textProvider !== 'openrouter',
+    }),
+    defineField({
+      name: 'linkedinTrimInstructions',
+      title: 'LinkedIn native post instructions',
+      type: 'text',
+      rows: 14,
+      initialValue: DEFAULT_LINKEDIN_TRIM_INSTRUCTIONS,
+      description:
+        'What the AI is told when compressing a post’s full content into a standalone LinkedIn post -- deliberately separate from the "Draft Social Copy" feature’s own LinkedIn caption, which is a short announcement/teaser instead. Leave blank to fall back to the default shown here.',
     }),
     defineField({
       name: 'imagePromptTemplate',

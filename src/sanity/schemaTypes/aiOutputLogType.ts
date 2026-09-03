@@ -24,7 +24,7 @@ export const aiOutputLogType = defineType({
       title: 'Feature',
       type: 'string',
       readOnly: true,
-      options: {list: [{title: 'Suggest SEO & Excerpt', value: 'seo'}, {title: 'Draft Social Copy', value: 'social'}, {title: 'Suggest Image Prompt', value: 'imagePrompt'}, {title: 'Generate Featured Image', value: 'featuredImage'}]},
+      options: {list: [{title: 'Suggest SEO & Excerpt', value: 'seo'}, {title: 'Draft Social Copy', value: 'social'}, {title: 'Suggest Image Prompt', value: 'imagePrompt'}, {title: 'Generate Featured Image', value: 'featuredImage'}, {title: 'LinkedIn Native Post', value: 'linkedinTrim'}]},
     }),
     defineField({name: 'postTitle', title: 'Post', type: 'string', readOnly: true}),
     defineField({name: 'postSlug', title: 'Post slug', type: 'string', readOnly: true}),
@@ -77,7 +77,9 @@ export const aiOutputLogType = defineType({
             ? 'Image prompt'
             : feature === 'featuredImage'
               ? 'Featured image'
-              : 'SEO'
+              : feature === 'linkedinTrim'
+                ? 'LinkedIn native post'
+                : 'SEO'
       return {
         title: `${label} — ${postTitle || '(untitled post)'}`,
         subtitle: used ? '✓ used' : 'not used',

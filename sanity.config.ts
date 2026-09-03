@@ -17,6 +17,7 @@ import {withRevalidateOnPublish} from './src/sanity/actions/revalidateOnPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
+import {createSuggestLinkedInPostAction} from './src/sanity/actions/suggestLinkedInPost'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
 import {createGenerateFeaturedImageAction} from './src/sanity/actions/generateFeaturedImage'
 import {createExportAction} from './src/sanity/actions/exportPost'
@@ -101,6 +102,7 @@ export default defineConfig({
         openInPresentationAction,
         createSuggestSeoAction(),
         createSuggestSocialCopyAction(),
+        createSuggestLinkedInPostAction(),
         createSuggestImagePromptAction(),
         createGenerateFeaturedImageAction(),
         createExportAction(),
