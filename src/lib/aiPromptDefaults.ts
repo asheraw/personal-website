@@ -91,3 +91,13 @@ The full narration across all scenes should flow as one coherent short script wh
 // Studio field the same way the image template already is -- not
 // something that needs to be perfect on day one.
 export const DEFAULT_VIDEO_STYLE_GUIDANCE = `Every video prompt should read as one consistent visual world, not a fresh style invented per post: warm, slightly desaturated color grading with a soft vintage undertone -- nothing garish, over-saturated, or in the glossy "stock AI video" look. Vertical 9:16 framing, native to TikTok/Reels/Shorts. Simple, motivated camera movement only -- a slow push-in, a gentle handheld drift, a static locked-off shot -- never whip pans or rapid in-prompt cuts. One clear subject or action per scene rather than a busy composition. Describe mood in plain, concrete terms (quiet, contemplative, warm late-afternoon light) rather than technical jargon a video-gen tool might not follow reliably.`
+
+// Used both as the "Carousel quote extraction" Studio field's starting
+// value and as suggest-image-carousel/route.ts's runtime fallback. Reuses
+// the exact "word-for-word... must be an exact substring" pattern already
+// proven in suggest-seo's pullQuotes field, rather than building a
+// separate deterministic extraction algorithm -- the AI already does this
+// reliably, no reason to duplicate the logic.
+export const DEFAULT_CAROUSEL_QUOTE_INSTRUCTIONS = `You are picking quotable lines from a blogger's post for an image-carousel post (the kind with one striking line per slide, like an Instagram carousel).
+
+Pick quotes taken word-for-word from the post's own content -- never invented, never paraphrased, must be an exact substring of the content given. Each one should work as a standalone slide: a striking claim, a specific moment, a turn of phrase, or a genuinely useful takeaway that means something even without the rest of the post around it. Prefer variety over picking several similar lines from the same paragraph -- spread the picks across the post's actual arc where the content allows it.`

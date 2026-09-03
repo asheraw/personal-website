@@ -19,6 +19,7 @@ import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
 import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
 import {createSuggestLinkedInPostAction} from './src/sanity/actions/suggestLinkedInPost'
 import {createSuggestVideoScriptAction} from './src/sanity/actions/suggestVideoScript'
+import {createSuggestImageCarouselAction} from './src/sanity/actions/suggestImageCarousel'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
 import {createGenerateFeaturedImageAction} from './src/sanity/actions/generateFeaturedImage'
 import {createExportAction} from './src/sanity/actions/exportPost'
@@ -105,6 +106,7 @@ export default defineConfig({
         createSuggestSocialCopyAction(),
         createSuggestLinkedInPostAction(),
         createSuggestVideoScriptAction(),
+        createSuggestImageCarouselAction(),
         createSuggestImagePromptAction(),
         createGenerateFeaturedImageAction(),
         createExportAction(),

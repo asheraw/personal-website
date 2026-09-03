@@ -9,6 +9,7 @@ import {
   DEFAULT_LINKEDIN_TRIM_INSTRUCTIONS,
   DEFAULT_VIDEO_SCRIPT_INSTRUCTIONS,
   DEFAULT_VIDEO_STYLE_GUIDANCE,
+  DEFAULT_CAROUSEL_QUOTE_INSTRUCTIONS,
 } from '../../lib/aiPromptDefaults'
 
 // Singleton -- see structure.ts, which always opens this exact document ID
@@ -140,6 +141,24 @@ export const aiPromptSettingsType = defineType({
       initialValue: DEFAULT_COMPOSITION_MODE_2,
       description:
         'Substituted for {COMPOSITION_MODE} above when Gemini judges a subject fits better as a full staged scene -- a moment, a figure in a place, layered depth. Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'carouselQuoteInstructions',
+      title: 'Carousel quote-picking instructions',
+      type: 'text',
+      rows: 8,
+      initialValue: DEFAULT_CAROUSEL_QUOTE_INSTRUCTIONS,
+      description:
+        'What the AI is told when picking quotable lines for an image carousel\'s slides -- reuses the image prompt template and composition modes above for each slide\'s background. Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'carouselSlideCount',
+      title: 'Carousel slide count',
+      type: 'number',
+      initialValue: 6,
+      validation: (rule) => rule.min(4).max(8),
+      description:
+        'How many slides to generate per carousel -- each one is a text-extraction call plus an image-generation call, so cost/time scales with this number.',
     }),
   ],
   preview: {
