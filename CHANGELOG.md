@@ -11,6 +11,41 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-09-03 — Distribution Switchboard, Facebook skeleton: comments can now be pulled in from Facebook
+
+First real slice of the "distribution switchboard" idea (`docs/ideas/distribution-switchboard.md`): posts
+can now record their real social-platform links, and Facebook comments can be pulled in from a live
+Facebook thread instead of staying siloed there forever. Full task-by-task detail, acceptance criteria, and
+verification notes live in `tasks/plan.md`/`tasks/todo.md` (kept up to date as the actual source of truth
+for this feature, not just this summary) -- the short version:
+
+- **Validated the riskiest assumption first**: can Apify actually pull comments from a Facebook *personal
+  profile* post (harder than a Page, less-supported)? Yes -- `apify/facebook-comments-scraper`, ~$0.03 for
+  an 11-comment real test run, no login/cookies needed. Confirmed against a real post before any schema
+  work began, not assumed from a README.
+- **`socialLinks`** replaces the old single `legacyFacebookThreadUrl` string on posts -- a real array of
+  `{platform, url}`, Facebook first. 50 already-published posts migrated automatically
+  (`scripts/migrate-legacy-facebook-thread-url.mjs`), verified afterward: 0 posts still carry the old field.
+  **`connectedAccounts`** added to Site Settings for the site-wide account registry this'll eventually
+  read from for autofill.
+- **Distribution dashboard** now shows Facebook's drafted/copied status separately from X/LinkedIn's
+  (previously one bundled badge for all three), reusing the exact same usage-logging strings already being
+  written, no new tracking needed.
+- **A new "Pull comments" button** on each post's Facebook row calls a new API route
+  (`/api/ai/pull-facebook-comments`) that fetches the real thread via Apify, normalizes it, and imports it
+  through the same match/dedupe/preserve-approved-status logic the site's historical `.txt`-based importer
+  used (documented in RUNBOOK.md) -- new comments land as `pending`, ready to approve/reject like any other
+  comment, never auto-published.
+- **Verified for real, not just typechecked**: ran the actual import logic twice against a real post
+  (`even-my-discipline-was-an-escape`) once the Apify token was in place -- first run pulled 11 real
+  comments, created 10 as pending (correctly threaded replies), caught 1 genuine within-batch duplicate;
+  second run on the same thread created 0 and matched all 11, confirming a re-pull never duplicates. Two
+  pre-existing, unrelated approved comments on that post were untouched throughout.
+- **One honest gap, not hidden**: this verified the shared logic and the API route's own request shape
+  directly (not by clicking the actual Studio button, which remains untestable by automation -- Studio's
+  browser login stays blocked, a longstanding limitation). Asher's own next step: click the real button
+  once in Studio and confirm the pending batch already sitting there looks right in the moderation queue.
+
 ## 2026-08-31 — GIFs get the same float left/right option as Small/Medium photos
 
 Follow-up to the image float feature: Asher asked whether GIFs could wrap text the same way. Same shape as
