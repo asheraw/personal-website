@@ -98,6 +98,23 @@ export const aiPromptSettingsType = defineType({
         'The locked visual/tone throughline included in every scene’s video-gen prompt, so the visual style stays consistent across posts -- the video equivalent of the image prompt template below. Leave blank to fall back to the default shown here.',
     }),
     defineField({
+      name: 'imageProvider',
+      title: 'Image generation provider',
+      type: 'string',
+      options: {list: [{title: 'Gemini', value: 'gemini'}, {title: 'OpenRouter', value: 'openrouter'}]},
+      initialValue: 'gemini',
+      description:
+        'Which AI provider renders images (Generate Featured Image, and anything added later). Gemini is the proven default -- switching to OpenRouter requires OPENROUTER_API_KEY to be set (see RUNBOOK.md) and lets you pick a specific model below.',
+    }),
+    defineField({
+      name: 'imageModel',
+      title: 'OpenRouter image model',
+      type: 'string',
+      description:
+        'Only used when the provider above is set to OpenRouter -- an OpenRouter model id. Ignored entirely on Gemini.',
+      hidden: ({parent}) => (parent as {imageProvider?: string} | undefined)?.imageProvider !== 'openrouter',
+    }),
+    defineField({
       name: 'imagePromptTemplate',
       title: 'Image prompt template',
       type: 'text',

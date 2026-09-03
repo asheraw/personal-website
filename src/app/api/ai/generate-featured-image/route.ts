@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { writeClient } from "@/sanity/lib/write-client";
 import {
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
 } from "@/lib/aiPromptDefaults";
+import { generateImage, type AiImageProvider } from "@/lib/aiImage";
 
 // The automated sibling of suggest-image-prompt/route.ts. That route
 // deliberately stops at handing Asher 3 prompts to paste into DreamLab by
@@ -57,13 +58,19 @@ export async function POST(request: NextRequest) {
     // Same settings document, same fallback defaults as
     // suggest-image-prompt/route.ts -- editing the template in Studio's AI
     // Workspace applies to both this and the manual 3-option flow equally.
-    const settings: { imagePromptTemplate?: string; compositionMode1?: string; compositionMode2?: string } | null =
-      await writeClient.fetch(
-        `*[_type == "aiPromptSettings"][0]{imagePromptTemplate, compositionMode1, compositionMode2}`
-      );
+    const settings: {
+      imagePromptTemplate?: string;
+      compositionMode1?: string;
+      compositionMode2?: string;
+      imageProvider?: AiImageProvider;
+      imageModel?: string;
+    } | null = await writeClient.fetch(
+      `*[_type == "aiPromptSettings"][0]{imagePromptTemplate, compositionMode1, compositionMode2, imageProvider, imageModel}`
+    );
     const template = settings?.imagePromptTemplate?.trim() || DEFAULT_IMAGE_PROMPT_TEMPLATE;
     const mode1Text = settings?.compositionMode1?.trim() || DEFAULT_COMPOSITION_MODE_1;
     const mode2Text = settings?.compositionMode2?.trim() || DEFAULT_COMPOSITION_MODE_2;
+    const imageProvider: AiImageProvider = settings?.imageProvider === "openrouter" ? "openrouter" : "gemini";
 
     const ideaResponse = await ai.models.generateContent({
       model: "gemini-3.6-flash",
@@ -95,24 +102,20 @@ ${bodyText.slice(0, 6000)}`,
     const modeText = mode === 2 ? mode2Text : mode1Text;
     const prompt = template.split("{SUBJECT}").join(subject).split("{COMPOSITION_MODE}").join(modeText);
 
-    // Second Gemini call, image-capable model. responseModalities must
-    // include IMAGE (TEXT alone would just be a written description) --
-    // requesting both is the documented shape; the image is read off
-    // whichever returned part carries inlineData, any accompanying text
-    // part is discarded.
-    const imageResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
-      contents: prompt,
-      config: { responseModalities: [Modality.TEXT, Modality.IMAGE] },
-    });
-
-    const parts = imageResponse.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = parts.find((p) => p.inlineData?.data);
-    if (!imagePart?.inlineData?.data) {
-      throw new Error("The image model didn't return an image this time");
+    const requiredImageKey = imageProvider === "openrouter" ? "OPENROUTER_API_KEY" : "GEMINI_API_KEY";
+    if (!process.env[requiredImageKey]) {
+      return NextResponse.json(
+        { error: `Image generation isn't set up yet — ${requiredImageKey} is missing. See RUNBOOK.md.` },
+        { status: 500 }
+      );
     }
-    const mimeType = imagePart.inlineData.mimeType || "image/png";
-    const buffer = Buffer.from(imagePart.inlineData.data, "base64");
+
+    const { base64, mimeType } = await generateImage({
+      provider: imageProvider,
+      model: settings?.imageModel?.trim() || undefined,
+      prompt,
+    });
+    const buffer = Buffer.from(base64, "base64");
 
     const asset = await writeClient.assets.upload("image", buffer, {
       filename: `${typeof slug === "string" && slug ? slug : "featured"}-ai.${mimeType.split("/")[1] || "png"}`,
