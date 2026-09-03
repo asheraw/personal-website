@@ -56,6 +56,16 @@ function norm(s: string): string {
   return s.trim().toLowerCase()
 }
 
+// Facebook displays Asher's own name inconsistently across comments/replies
+// (sometimes "Asher Aw", sometimes just "Asher") -- both aliases are
+// confirmed against real existing isAuthorReply comments in the dataset,
+// not guessed.
+const AUTHOR_NAME_ALIASES = new Set(['asher', 'asher aw'])
+
+function isAuthorName(name: string): boolean {
+  return AUTHOR_NAME_ALIASES.has(norm(name))
+}
+
 export function findExistingMatch(
   candidate: {name: string; message: string; isTopLevel: boolean},
   existing: ExistingComment[],
@@ -157,7 +167,7 @@ export async function importFacebookComments({
       message: c.message,
       status: 'pending',
       createdAt: c.createdAt,
-      isAuthorReply: false,
+      isAuthorReply: isAuthorName(c.name),
       ...(parentSanityId ? {parentComment: {_type: 'reference', _ref: parentSanityId}} : {}),
     })
     bySourceId.set(c.sourceId, newId)
