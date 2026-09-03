@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useState} from 'react'
+import {Fragment, useCallback, useEffect, useState} from 'react'
 import {Badge, Box, Button, Checkbox, Flex, Select, Spinner, Stack, Text, TextArea} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {openPostInStudio} from '../lib/openPostInStudio'
@@ -221,9 +221,8 @@ export function DistributionDashboardTool() {
                 const notes = shareLog?.engagementNotes ?? []
 
                 return (
-                  <>
+                  <Fragment key={post.slug}>
                     <tr
-                      key={post.slug}
                       style={{
                         borderBottom: '1px solid var(--card-border-color)',
                         backgroundColor: isExpanded ? 'var(--card-hover-bg-color)' : 'transparent',
@@ -411,7 +410,7 @@ export function DistributionDashboardTool() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>
