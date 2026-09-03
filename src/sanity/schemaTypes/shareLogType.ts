@@ -74,6 +74,45 @@ export const shareLogType = defineType({
       type: 'number',
       readOnly: true,
     }),
+    defineField({
+      name: 'tiktokCommentsLastPulledAt',
+      title: 'TikTok comments last pulled',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
+    defineField({
+      name: 'tiktokCommentsLastPulledCount',
+      title: 'TikTok comments pulled (last run)',
+      type: 'number',
+      readOnly: true,
+    }),
+    defineField({
+      name: 'youtubeCommentsLastPulledAt',
+      title: 'YouTube comments last pulled',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
+    defineField({
+      name: 'youtubeCommentsLastPulledCount',
+      title: 'YouTube comments pulled (last run)',
+      type: 'number',
+      readOnly: true,
+    }),
+    defineField({
+      name: 'linkedinCommentsLastPulledAt',
+      title: 'LinkedIn comments last pulled',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
+    defineField({
+      name: 'linkedinCommentsLastPulledCount',
+      title: 'LinkedIn comments pulled (last run)',
+      type: 'number',
+      readOnly: true,
+    }),
     // Manual, not automated -- ACE_MASTER_SPEC.md is explicit that pulling
     // replies/engagement back from X/Facebook/LinkedIn's own APIs isn't
     // worth the ongoing fees/OAuth/platform churn for a solo creator. This

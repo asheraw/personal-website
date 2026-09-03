@@ -12,6 +12,9 @@ type Post = {
   publishedAt?: string
   facebookUrl?: string
   instagramUrl?: string
+  tiktokUrl?: string
+  youtubeUrl?: string
+  linkedinUrl?: string
 }
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
 type ShareLog = {
@@ -26,6 +29,12 @@ type ShareLog = {
   facebookCommentsLastPulledCount?: number
   instagramCommentsLastPulledAt?: string
   instagramCommentsLastPulledCount?: number
+  tiktokCommentsLastPulledAt?: string
+  tiktokCommentsLastPulledCount?: number
+  youtubeCommentsLastPulledAt?: string
+  youtubeCommentsLastPulledCount?: number
+  linkedinCommentsLastPulledAt?: string
+  linkedinCommentsLastPulledCount?: number
 }
 type AiLog = {feature: string; postSlug?: string; _createdAt: string; usedActions?: {action?: string}[]}
 
@@ -65,10 +74,10 @@ export function DistributionDashboardTool() {
   const load = useCallback(async () => {
     const [postsResult, shareLogResult, aiLogResult] = await Promise.all([
       client.fetch<Post[]>(
-        `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url, "instagramUrl": socialLinks[platform == "Instagram"][0].url}`,
+        `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url, "instagramUrl": socialLinks[platform == "Instagram"][0].url, "tiktokUrl": socialLinks[platform == "TikTok"][0].url, "youtubeUrl": socialLinks[platform == "YouTube"][0].url, "linkedinUrl": socialLinks[platform == "LinkedIn"][0].url}`,
       ),
       client.fetch<ShareLog[]>(
-        `*[_type == "shareLog"]{postSlug, totalShares, xCount, facebookCount, linkedinCount, whatsappCount, engagementNotes, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount}`,
+        `*[_type == "shareLog"]{postSlug, totalShares, xCount, facebookCount, linkedinCount, whatsappCount, engagementNotes, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount, tiktokCommentsLastPulledAt, tiktokCommentsLastPulledCount, youtubeCommentsLastPulledAt, youtubeCommentsLastPulledCount, linkedinCommentsLastPulledAt, linkedinCommentsLastPulledCount}`,
       ),
       client.fetch<AiLog[]>(`*[_type == "aiOutputLog"]{feature, postSlug, _createdAt, usedActions[]{action}}`),
     ])
@@ -232,6 +241,33 @@ export function DistributionDashboardTool() {
                         postId={post._id}
                         lastPulledAt={shareLog?.instagramCommentsLastPulledAt}
                         lastPulledCount={shareLog?.instagramCommentsLastPulledCount}
+                        onPulled={load}
+                      />
+                    )}
+                    {post.tiktokUrl && (
+                      <PullSocialCommentsButton
+                        platform="tiktok"
+                        postId={post._id}
+                        lastPulledAt={shareLog?.tiktokCommentsLastPulledAt}
+                        lastPulledCount={shareLog?.tiktokCommentsLastPulledCount}
+                        onPulled={load}
+                      />
+                    )}
+                    {post.youtubeUrl && (
+                      <PullSocialCommentsButton
+                        platform="youtube"
+                        postId={post._id}
+                        lastPulledAt={shareLog?.youtubeCommentsLastPulledAt}
+                        lastPulledCount={shareLog?.youtubeCommentsLastPulledCount}
+                        onPulled={load}
+                      />
+                    )}
+                    {post.linkedinUrl && (
+                      <PullSocialCommentsButton
+                        platform="linkedin"
+                        postId={post._id}
+                        lastPulledAt={shareLog?.linkedinCommentsLastPulledAt}
+                        lastPulledCount={shareLog?.linkedinCommentsLastPulledCount}
                         onPulled={load}
                       />
                     )}

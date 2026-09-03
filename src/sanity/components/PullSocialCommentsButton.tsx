@@ -16,7 +16,7 @@ export function PullSocialCommentsButton({
   lastPulledCount,
   onPulled,
 }: {
-  platform: 'facebook' | 'instagram'
+  platform: 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'youtube' | 'x' | 'threads'
   postId: string
   lastPulledAt?: string
   lastPulledCount?: number
