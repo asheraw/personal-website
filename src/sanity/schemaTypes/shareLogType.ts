@@ -113,6 +113,26 @@ export const shareLogType = defineType({
       type: 'number',
       readOnly: true,
     }),
+    defineField({
+      name: 'postedTo',
+      title: 'Posted to — your record',
+      type: 'object',
+      fields: [
+        defineField({name: 'facebook', type: 'datetime', hidden: true}),
+        defineField({name: 'instagram', type: 'datetime', hidden: true}),
+        defineField({name: 'tiktok', type: 'datetime', hidden: true}),
+        defineField({name: 'youtube', type: 'datetime', hidden: true}),
+        defineField({name: 'linkedin', type: 'datetime', hidden: true}),
+        defineField({name: 'x', type: 'datetime', hidden: true}),
+        defineField({name: 'threads', type: 'datetime', hidden: true}),
+      ],
+    }),
+    defineField({
+      name: 'newsletterSent',
+      title: 'Newsletter sent',
+      type: 'datetime',
+      hidden: true,
+    }),
     // Manual, not automated -- ACE_MASTER_SPEC.md is explicit that pulling
     // replies/engagement back from X/Facebook/LinkedIn's own APIs isn't
     // worth the ongoing fees/OAuth/platform churn for a solo creator. This

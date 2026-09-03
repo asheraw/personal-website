@@ -1,10 +1,9 @@
 import {useCallback, useEffect, useState} from 'react'
-import {Badge, Box, Button, Card, Flex, Select, Spinner, Stack, Text, TextArea} from '@sanity/ui'
-import {CommentIcon} from '@sanity/icons/Comment'
+import {Badge, Box, Button, Checkbox, Flex, Select, Spinner, Stack, Text, TextArea} from '@sanity/ui'
 import {useClient} from 'sanity'
 import {openPostInStudio} from '../lib/openPostInStudio'
 import {SharePanel} from './SharePanel'
-import {PullSocialCommentsButton, type SocialPlatform} from './PullSocialCommentsButton'
+import {PullSocialCommentsButton} from './PullSocialCommentsButton'
 
 type Post = {
   _id: string
@@ -17,30 +16,21 @@ type Post = {
   youtubeUrl?: string
   linkedinUrl?: string
 }
-
-// One row per platform in each post's "Platforms" panel. `available: false`
-// renders as a permanently disabled row -- X and Threads have no real Apify
-// actor worth building on yet (see tasks/todo.md Task 9), but sit here
-// ready to flip on the moment that changes, rather than needing new UI
-// bolted on later.
-const PLATFORM_META: {key: SocialPlatform; label: string; available: boolean}[] = [
-  {key: 'facebook', label: 'Facebook', available: true},
-  {key: 'instagram', label: 'Instagram', available: true},
-  {key: 'tiktok', label: 'TikTok', available: true},
-  {key: 'youtube', label: 'YouTube', available: true},
-  {key: 'linkedin', label: 'LinkedIn', available: true},
-  {key: 'x', label: 'X (Twitter)', available: false},
-  {key: 'threads', label: 'Threads', available: false},
-]
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
+
 type ShareLog = {
   postSlug: string
   totalShares?: number
-  xCount?: number
-  facebookCount?: number
-  linkedinCount?: number
-  whatsappCount?: number
-  engagementNotes?: EngagementNote[]
+  postedTo?: {
+    facebook?: string
+    instagram?: string
+    tiktok?: string
+    youtube?: string
+    linkedin?: string
+    x?: string
+    threads?: string
+  }
+  newsletterSent?: string
   facebookCommentsLastPulledAt?: string
   facebookCommentsLastPulledCount?: number
   instagramCommentsLastPulledAt?: string
@@ -51,64 +41,57 @@ type ShareLog = {
   youtubeCommentsLastPulledCount?: number
   linkedinCommentsLastPulledAt?: string
   linkedinCommentsLastPulledCount?: number
+  engagementNotes?: EngagementNote[]
 }
+
 type AiLog = {feature: string; postSlug?: string; _createdAt: string; usedActions?: {action?: string}[]}
 
-const PLATFORMS = ['X (Twitter)', 'LinkedIn', 'Facebook', 'WhatsApp', 'Email', 'Other']
+const PLATFORMS = [
+  {key: 'facebook', label: 'Facebook'},
+  {key: 'instagram', label: 'Instagram'},
+  {key: 'tiktok', label: 'TikTok'},
+  {key: 'youtube', label: 'YouTube'},
+  {key: 'linkedin', label: 'LinkedIn'},
+  {key: 'x', label: 'X'},
+  {key: 'threads', label: 'Threads'},
+] as const
 
-function shareLogId(slug: string): string {
-  return `share-${slug}`
-}
-
-function randomKey(): string {
-  return Math.random().toString(36).slice(2, 10)
-}
-
-function monthStartISO(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString()
-}
-
-// Ties together three things that were each already tracked separately --
-// which posts have drafted social copy (AI Output Log), how many times
-// each was actually shared (Social Shares), and now a place to jot down
-// engagement by hand -- into one per-post view. This is the ACE spec's
-// "distribution dashboard": Tier 1 (drafted copy + share counts + open
-// post, in one place) and Tier 2 (a manual engagement log) together.
-// Deliberately not automated engagement pulled from X/Facebook/LinkedIn's
-// own APIs -- ACE_MASTER_SPEC.md is explicit that isn't worth the ongoing
-// fees/OAuth/platform churn for a solo creator.
 export function DistributionDashboardTool() {
   const client = useClient({apiVersion: '2026-07-22'})
   const [posts, setPosts] = useState<Post[] | null>(null)
   const [shareLogs, setShareLogs] = useState<Record<string, ShareLog>>({})
+  const [linkPagePostIds, setLinkPagePostIds] = useState<Set<string>>(new Set())
   const [aiLogs, setAiLogs] = useState<AiLog[]>([])
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [platformsExpanded, setPlatformsExpanded] = useState<Set<string>>(new Set())
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [noteDrafts, setNoteDrafts] = useState<Record<string, {note: string; platform: string}>>({})
   const [savingSlug, setSavingSlug] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    const [postsResult, shareLogResult, aiLogResult] = await Promise.all([
+    const [postsResult, shareLogResult, aiLogResult, linkPageResult] = await Promise.all([
       client.fetch<Post[]>(
         `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url, "instagramUrl": socialLinks[platform == "Instagram"][0].url, "tiktokUrl": socialLinks[platform == "TikTok"][0].url, "youtubeUrl": socialLinks[platform == "YouTube"][0].url, "linkedinUrl": socialLinks[platform == "LinkedIn"][0].url}`,
       ),
       client.fetch<ShareLog[]>(
-        `*[_type == "shareLog"]{postSlug, totalShares, xCount, facebookCount, linkedinCount, whatsappCount, engagementNotes, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount, tiktokCommentsLastPulledAt, tiktokCommentsLastPulledCount, youtubeCommentsLastPulledAt, youtubeCommentsLastPulledCount, linkedinCommentsLastPulledAt, linkedinCommentsLastPulledCount}`,
+        `*[_type == "shareLog"]{postSlug, totalShares, postedTo, newsletterSent, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount, tiktokCommentsLastPulledAt, tiktokCommentsLastPulledCount, youtubeCommentsLastPulledAt, youtubeCommentsLastPulledCount, linkedinCommentsLastPulledAt, linkedinCommentsLastPulledCount, engagementNotes}`,
       ),
       client.fetch<AiLog[]>(`*[_type == "aiOutputLog"]{feature, postSlug, _createdAt, usedActions[]{action}}`),
+      client.fetch<{items?: Array<{post?: {_ref: string}}>} | null>(
+        `*[_type == "linkPage"][0]{items[]{post{_ref}}}`,
+      ),
     ])
     setPosts(postsResult)
     setShareLogs(Object.fromEntries(shareLogResult.map((s) => [s.postSlug, s])))
     setAiLogs(aiLogResult)
+    const linkIds = new Set((linkPageResult?.items ?? []).map((i) => i.post?._ref).filter(Boolean))
+    setLinkPagePostIds(linkIds)
   }, [client])
 
   useEffect(() => {
     load()
   }, [load])
 
-  function toggleExpanded(slug: string) {
-    setExpanded((prev) => {
+  function toggleRow(slug: string) {
+    setExpandedRows((prev) => {
       const next = new Set(prev)
       if (next.has(slug)) next.delete(slug)
       else next.add(slug)
@@ -116,13 +99,28 @@ export function DistributionDashboardTool() {
     })
   }
 
-  function togglePlatforms(slug: string) {
-    setPlatformsExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
-      return next
-    })
+  async function togglePlatform(postSlug: string, platform: string, currentValue: string | undefined) {
+    const shareLogId = `share-${postSlug}`
+    const newValue = currentValue ? undefined : new Date().toISOString()
+
+    try {
+      await client.patch(shareLogId).set({postedTo: {[platform]: newValue}}).commit()
+      await load()
+    } catch (error) {
+      console.error(`Failed to update ${platform}:`, error)
+    }
+  }
+
+  async function toggleNewsletter(postSlug: string, currentValue: string | undefined) {
+    const shareLogId = `share-${postSlug}`
+    const newValue = currentValue ? undefined : new Date().toISOString()
+
+    try {
+      await client.patch(shareLogId).set({newsletterSent: newValue}).commit()
+      await load()
+    } catch (error) {
+      console.error('Failed to update newsletter:', error)
+    }
   }
 
   async function saveNote(slug: string, title: string) {
@@ -130,24 +128,16 @@ export function DistributionDashboardTool() {
     if (!draft?.note?.trim()) return
     setSavingSlug(slug)
     try {
-      const id = shareLogId(slug)
+      const id = `share-${slug}`
       await client.createIfNotExists({
         _id: id,
         _type: 'shareLog',
         postSlug: slug,
         postTitle: title,
         totalShares: 0,
-        xCount: 0,
-        facebookCount: 0,
-        linkedinCount: 0,
-        whatsappCount: 0,
-        emailCount: 0,
-        copyLinkCount: 0,
-        nativeCount: 0,
-        engagementNotes: [],
       })
       const entry: EngagementNote = {
-        _key: randomKey(),
+        _key: Math.random().toString(36).slice(2, 10),
         note: draft.note.trim(),
         platform: draft.platform || undefined,
         timestamp: new Date().toISOString(),
@@ -169,232 +159,263 @@ export function DistributionDashboardTool() {
   }
 
   const socialDraftedSlugs = new Set(aiLogs.filter((l) => l.feature === 'social').map((l) => l.postSlug))
-  // Generation is still bundled (one suggest-social call drafts X/LinkedIn/
-  // Facebook together -- see socialDraftedSlugs above), but "used" is
-  // tracked per-platform via the exact strings SuggestSocialCopyShared.tsx
-  // logs on each copy-button click ("Copied Facebook caption (option N)").
-  // Only the display splits Facebook out here, not the generation itself.
-  const facebookCopiedSlugs = new Set(
-    aiLogs
-      .filter((l) => l.feature === 'social' && l.usedActions?.some((a) => a.action?.startsWith('Copied Facebook caption')))
-      .map((l) => l.postSlug),
-  )
-  const monthStart = monthStartISO()
-  const usageThisMonth = aiLogs.filter((l) => l._createdAt >= monthStart).length
-  const usageByFeature = aiLogs.reduce<Record<string, number>>((acc, l) => {
-    acc[l.feature] = (acc[l.feature] ?? 0) + 1
-    return acc
-  }, {})
+  const commentsWaitingCount = Object.values(shareLogs).filter((log) => (log.engagementNotes ?? []).length > 0).length
 
   return (
     <Box padding={4}>
       <Stack space={4}>
         <Stack space={2}>
-          <Text size={3} weight="bold">
+          <Text size={2} weight="bold">
             Distribution
           </Text>
           <Text size={1} muted>
-            Every post — whether social copy&rsquo;s been drafted, how many times it&rsquo;s actually been
-            shared, and a place to jot down engagement by hand (a reply, a comment elsewhere) since none of
-            that gets pulled automatically from X/LinkedIn/Facebook. &ldquo;Share this post&rdquo; drafts
-            captions on demand, written to stand alone with no link attached — post the caption first, then
-            paste the link as a follow-up reply/comment, which is what actually gets more reach on X and
-            LinkedIn specifically.
+            Where each post has been sent and what came back. Ticking a box is your own record — nothing posts
+            anywhere automatically.
           </Text>
           <Flex gap={3} wrap="wrap">
-            <Badge tone="primary" fontSize={0}>
-              {usageThisMonth} AI suggestion{usageThisMonth === 1 ? '' : 's'} this month
+            <Badge tone={commentsWaitingCount > 0 ? 'caution' : 'default'} fontSize={0}>
+              {commentsWaitingCount} post{commentsWaitingCount === 1 ? '' : 's'} with notes
             </Badge>
             <Badge tone="default" fontSize={0}>
-              {aiLogs.length} all time — SEO {usageByFeature.seo ?? 0} · Social {usageByFeature.social ?? 0} ·
-              Image {usageByFeature.imagePrompt ?? 0}
+              {posts.filter((p) => socialDraftedSlugs.has(p.slug)).length} social captions drafted
             </Badge>
           </Flex>
         </Stack>
 
-        <Stack space={3}>
-          {posts.map((post) => {
-            const isOpen = expanded.has(post.slug)
-            const platformsOpen = platformsExpanded.has(post.slug)
-            const shareLog = shareLogs[post.slug]
-            const notes = shareLog?.engagementNotes ?? []
-            const drafted = socialDraftedSlugs.has(post.slug)
-            const facebookCopied = facebookCopiedSlugs.has(post.slug)
-            const draft = noteDrafts[post.slug] ?? {note: '', platform: ''}
+        <div style={{overflowX: 'auto'}}>
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: '13px',
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  borderBottom: '1px solid var(--card-border-color)',
+                  position: 'sticky',
+                  top: 0,
+                  background: 'var(--card-bg-color)',
+                }}
+              >
+                <th style={{padding: '8px', textAlign: 'left', fontWeight: 500, width: '240px'}}>Post</th>
+                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '48px'}}>📝</th>
+                {PLATFORMS.map((p) => (
+                  <th key={p.key} style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}>
+                    {p.label}
+                  </th>
+                ))}
+                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}>📧</th>
+                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}>📌</th>
+                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '48px'}}>💬</th>
+                <th style={{padding: '8px', textAlign: 'left', fontWeight: 500, width: '80px'}}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {posts.map((post) => {
+                const shareLog = shareLogs[post.slug]
+                const isExpanded = expandedRows.has(post.slug)
+                const isOnLinkPage = linkPagePostIds.has(post._id)
+                const drafted = socialDraftedSlugs.has(post.slug)
+                const notes = shareLog?.engagementNotes ?? []
 
-            const urlByPlatform: Partial<Record<SocialPlatform, string | undefined>> = {
-              facebook: post.facebookUrl,
-              instagram: post.instagramUrl,
-              tiktok: post.tiktokUrl,
-              youtube: post.youtubeUrl,
-              linkedin: post.linkedinUrl,
-            }
-            const pullInfoByPlatform: Partial<Record<SocialPlatform, {at?: string; count?: number}>> = {
-              facebook: {at: shareLog?.facebookCommentsLastPulledAt, count: shareLog?.facebookCommentsLastPulledCount},
-              instagram: {at: shareLog?.instagramCommentsLastPulledAt, count: shareLog?.instagramCommentsLastPulledCount},
-              tiktok: {at: shareLog?.tiktokCommentsLastPulledAt, count: shareLog?.tiktokCommentsLastPulledCount},
-              youtube: {at: shareLog?.youtubeCommentsLastPulledAt, count: shareLog?.youtubeCommentsLastPulledCount},
-              linkedin: {at: shareLog?.linkedinCommentsLastPulledAt, count: shareLog?.linkedinCommentsLastPulledCount},
-            }
-            const linkedCount = PLATFORM_META.filter((p) => p.available && urlByPlatform[p.key]).length
-
-            return (
-              <Card key={post.slug} padding={3} radius={2} border>
-                <Stack space={3}>
-                  <Flex align="center" justify="space-between" wrap="wrap" gap={2}>
-                    <Text size={1} weight="medium">
-                      {post.title}
-                    </Text>
-                    <Flex align="center" gap={2}>
-                      <Badge tone={drafted ? 'positive' : 'default'} fontSize={0}>
-                        {drafted ? 'Social copy drafted' : 'Not drafted yet'}
-                      </Badge>
-                      {drafted && (
-                        <Badge tone={facebookCopied ? 'positive' : 'caution'} fontSize={0}>
-                          {facebookCopied ? 'Facebook copied' : 'Facebook not copied yet'}
-                        </Badge>
-                      )}
-                      <Badge tone="default" fontSize={0}>
-                        {shareLog?.totalShares ?? 0} share{(shareLog?.totalShares ?? 0) === 1 ? '' : 's'}
-                      </Badge>
-                      <Button
-                        text="Open post"
-                        mode="ghost"
-                        fontSize={0}
-                        padding={2}
-                        onClick={() => openPostInStudio(post._id)}
-                      />
-                    </Flex>
-                  </Flex>
-
-                  <SharePanel postId={post._id} title={post.title} slug={post.slug} />
-
-                  <Flex gap={4} wrap="wrap">
-                    <Text
-                      size={0}
-                      style={{cursor: 'pointer', textDecoration: 'underline'}}
-                      onClick={() => togglePlatforms(post.slug)}
+                return (
+                  <Box key={post.slug}>
+                    <tr
+                      style={{
+                        borderBottom: '1px solid var(--card-border-color)',
+                        backgroundColor: isExpanded ? 'var(--card-hover-bg-color)' : 'transparent',
+                      }}
                     >
-                      {platformsOpen ? 'Hide' : 'Show'} platforms ({linkedCount} linked)
-                    </Text>
-                    <Text
-                      size={0}
-                      style={{cursor: 'pointer', textDecoration: 'underline'}}
-                      onClick={() => toggleExpanded(post.slug)}
-                    >
-                      {isOpen ? 'Hide' : 'Show'} engagement notes ({notes.length})
-                    </Text>
-                  </Flex>
+                      <td style={{padding: '10px 8px'}}>
+                        <Text size={1} weight="medium" style={{cursor: 'pointer'}} onClick={() => toggleRow(post.slug)}>
+                          {isExpanded ? '▼' : '▶'} {post.title}
+                        </Text>
+                      </td>
+                      <td style={{padding: '10px 8px', textAlign: 'center'}}>
+                        {drafted ? <span title="Caption drafted">✓</span> : <span style={{opacity: 0.3}}>—</span>}
+                      </td>
+                      {PLATFORMS.map((p) => {
+                        const value = shareLog?.postedTo?.[p.key as keyof typeof shareLog.postedTo]
+                        return (
+                          <td key={p.key} style={{padding: '10px 8px', textAlign: 'center'}}>
+                            <Checkbox
+                              checked={Boolean(value)}
+                              onChange={() => togglePlatform(post.slug, p.key, value)}
+                            />
+                          </td>
+                        )
+                      })}
+                      <td style={{padding: '10px 8px', textAlign: 'center'}}>
+                        <Checkbox
+                          checked={Boolean(shareLog?.newsletterSent)}
+                          onChange={() => toggleNewsletter(post.slug, shareLog?.newsletterSent)}
+                        />
+                      </td>
+                      <td style={{padding: '10px 8px', textAlign: 'center'}}>
+                        {isOnLinkPage ? <span title="On link page">✓</span> : <span style={{opacity: 0.3}}>—</span>}
+                      </td>
+                      <td style={{padding: '10px 8px', textAlign: 'center', fontVariantNumeric: 'tabular-nums'}}>
+                        {notes.length > 0 ? <Badge tone="caution">{notes.length}</Badge> : null}
+                      </td>
+                      <td style={{padding: '10px 8px'}}>
+                        <Button
+                          text="Open"
+                          mode="ghost"
+                          fontSize={0}
+                          padding={2}
+                          onClick={() => openPostInStudio(post._id)}
+                        />
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr
+                        style={{
+                          borderBottom: '1px solid var(--card-border-color)',
+                          backgroundColor: 'var(--card-hover-bg-color)',
+                        }}
+                      >
+                        <td colSpan={100} style={{padding: '16px 8px'}}>
+                          <Stack space={3}>
+                            <SharePanel postId={post._id} title={post.title} slug={post.slug} />
 
-                  {platformsOpen && (
-                    <Card padding={3} radius={2} tone="transparent" border>
-                      <Stack space={3}>
-                        {PLATFORM_META.map((p) => {
-                          const url = urlByPlatform[p.key]
-                          const pullInfo = pullInfoByPlatform[p.key]
-                          return (
-                            <Flex key={p.key} align="center" justify="space-between" gap={3} wrap="wrap">
-                              <Stack space={1}>
-                                <Text size={1} weight="medium">
-                                  {p.label}
+                            <Stack space={2}>
+                              <Text size={0} weight="medium" muted>
+                                Pull comments from platforms
+                              </Text>
+                              <Flex gap={2} wrap="wrap">
+                                {post.facebookUrl && (
+                                  <PullSocialCommentsButton
+                                    platform="facebook"
+                                    postId={post._id}
+                                    lastPulledAt={shareLog?.facebookCommentsLastPulledAt}
+                                    lastPulledCount={shareLog?.facebookCommentsLastPulledCount}
+                                    onPulled={load}
+                                  />
+                                )}
+                                {post.instagramUrl && (
+                                  <PullSocialCommentsButton
+                                    platform="instagram"
+                                    postId={post._id}
+                                    lastPulledAt={shareLog?.instagramCommentsLastPulledAt}
+                                    lastPulledCount={shareLog?.instagramCommentsLastPulledCount}
+                                    onPulled={load}
+                                  />
+                                )}
+                                {post.tiktokUrl && (
+                                  <PullSocialCommentsButton
+                                    platform="tiktok"
+                                    postId={post._id}
+                                    lastPulledAt={shareLog?.tiktokCommentsLastPulledAt}
+                                    lastPulledCount={shareLog?.tiktokCommentsLastPulledCount}
+                                    onPulled={load}
+                                  />
+                                )}
+                                {post.youtubeUrl && (
+                                  <PullSocialCommentsButton
+                                    platform="youtube"
+                                    postId={post._id}
+                                    lastPulledAt={shareLog?.youtubeCommentsLastPulledAt}
+                                    lastPulledCount={shareLog?.youtubeCommentsLastPulledCount}
+                                    onPulled={load}
+                                  />
+                                )}
+                                {post.linkedinUrl && (
+                                  <PullSocialCommentsButton
+                                    platform="linkedin"
+                                    postId={post._id}
+                                    lastPulledAt={shareLog?.linkedinCommentsLastPulledAt}
+                                    lastPulledCount={shareLog?.linkedinCommentsLastPulledCount}
+                                    onPulled={load}
+                                  />
+                                )}
+                              </Flex>
+                            </Stack>
+
+                            {notes.length > 0 && (
+                              <Stack space={2}>
+                                <Text size={0} weight="medium" muted>
+                                  Engagement notes
                                 </Text>
-                                {!p.available && (
-                                  <Text size={0} muted>
-                                    Coming soon — no reliable way to pull this one yet
-                                  </Text>
-                                )}
-                                {p.available && !url && (
-                                  <Text size={0} muted>
-                                    Not linked — add a URL under Discussion → Social links
-                                  </Text>
-                                )}
+                                <Stack space={1}>
+                                  {[...notes].reverse().map((n) => (
+                                    <Text key={n._key} size={0} muted>
+                                      {n.timestamp ? `${new Date(n.timestamp).toLocaleDateString()} — ` : ''}
+                                      {n.platform ? `[${n.platform}] ` : ''}
+                                      {n.note}
+                                    </Text>
+                                  ))}
+                                </Stack>
                               </Stack>
-                              {p.available && url ? (
-                                <PullSocialCommentsButton
-                                  platform={p.key}
-                                  postId={post._id}
-                                  lastPulledAt={pullInfo?.at}
-                                  lastPulledCount={pullInfo?.count}
-                                  onPulled={load}
-                                />
-                              ) : (
+                            )}
+
+                            <Stack space={1}>
+                              <Text size={0} weight="medium" muted>
+                                Add note
+                              </Text>
+                              <Flex gap={2} align="flex-start">
+                                <Box style={{flex: '1 1 200px'}}>
+                                  <TextArea
+                                    fontSize={0}
+                                    rows={2}
+                                    placeholder="e.g. Got 3 replies asking about..."
+                                    value={noteDrafts[post.slug]?.note ?? ''}
+                                    onChange={(e) =>
+                                      setNoteDrafts((prev) => ({
+                                        ...prev,
+                                        [post.slug]: {
+                                          ...prev[post.slug],
+                                          note: e.currentTarget.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </Box>
+                                <Select
+                                  fontSize={0}
+                                  value={noteDrafts[post.slug]?.platform ?? ''}
+                                  onChange={(e) =>
+                                    setNoteDrafts((prev) => ({
+                                      ...prev,
+                                      [post.slug]: {
+                                        ...prev[post.slug],
+                                        platform: e.currentTarget.value,
+                                      },
+                                    }))
+                                  }
+                                  style={{width: 120}}
+                                >
+                                  <option value="">Platform</option>
+                                  <option value="Facebook">Facebook</option>
+                                  <option value="Instagram">Instagram</option>
+                                  <option value="TikTok">TikTok</option>
+                                  <option value="YouTube">YouTube</option>
+                                  <option value="LinkedIn">LinkedIn</option>
+                                  <option value="X">X</option>
+                                  <option value="Threads">Threads</option>
+                                  <option value="Newsletter">Newsletter</option>
+                                </Select>
                                 <Button
-                                  text="Pull comments"
-                                  icon={CommentIcon}
-                                  mode="ghost"
+                                  text={savingSlug === post.slug ? 'Saving…' : 'Add'}
+                                  tone="primary"
                                   fontSize={0}
                                   padding={2}
-                                  disabled
+                                  disabled={!(noteDrafts[post.slug]?.note?.trim()) || savingSlug === post.slug}
+                                  onClick={() => saveNote(post.slug, post.title)}
                                 />
-                              )}
-                            </Flex>
-                          )
-                        })}
-                      </Stack>
-                    </Card>
-                  )}
-
-                  {isOpen && (
-                    <Stack space={3}>
-                      {notes.length > 0 && (
-                        <Stack space={2}>
-                          {[...notes].reverse().map((n) => (
-                            <Text key={n._key} size={1} muted>
-                              {n.timestamp ? `${new Date(n.timestamp).toLocaleDateString()} — ` : ''}
-                              {n.platform ? `[${n.platform}] ` : ''}
-                              {n.note}
-                            </Text>
-                          ))}
-                        </Stack>
-                      )}
-                      <Flex gap={2} wrap="wrap" align="flex-start">
-                        <Box style={{flex: '1 1 240px'}}>
-                          <TextArea
-                            fontSize={1}
-                            rows={2}
-                            placeholder="e.g. Got 3 replies on LinkedIn asking about..."
-                            value={draft.note}
-                            onChange={(e) =>
-                              setNoteDrafts((prev) => ({
-                                ...prev,
-                                [post.slug]: {...draft, note: e.currentTarget.value},
-                              }))
-                            }
-                          />
-                        </Box>
-                        <Select
-                          fontSize={1}
-                          value={draft.platform}
-                          onChange={(e) =>
-                            setNoteDrafts((prev) => ({
-                              ...prev,
-                              [post.slug]: {...draft, platform: e.currentTarget.value},
-                            }))
-                          }
-                          style={{width: 150}}
-                        >
-                          <option value="">Platform (optional)</option>
-                          {PLATFORMS.map((p) => (
-                            <option key={p} value={p}>
-                              {p}
-                            </option>
-                          ))}
-                        </Select>
-                        <Button
-                          text={savingSlug === post.slug ? 'Saving…' : 'Add note'}
-                          tone="primary"
-                          fontSize={1}
-                          disabled={!draft.note.trim() || savingSlug === post.slug}
-                          onClick={() => saveNote(post.slug, post.title)}
-                        />
-                      </Flex>
-                    </Stack>
-                  )}
-                </Stack>
-              </Card>
-            )
-          })}
-        </Stack>
+                              </Flex>
+                            </Stack>
+                          </Stack>
+                        </td>
+                      </tr>
+                    )}
+                  </Box>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </Stack>
     </Box>
   )
