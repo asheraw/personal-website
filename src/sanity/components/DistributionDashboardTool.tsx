@@ -435,7 +435,12 @@ export function DistributionDashboardTool() {
                         }}
                       >
                         <td colSpan={100} style={{padding: '20px 16px'}}>
-                          <Stack space={4}>
+                          {/* The td spans every column (colSpan=100), so its own width is
+                              the full ~13-column table -- well over 1600px. Without a cap
+                              here, the notes textarea below (flex-grow) stretches to fill
+                              that whole width, turning a normal-sized input into a mostly
+                              empty box. */}
+                          <Stack space={4} style={{maxWidth: '760px'}}>
                             <SharePanel postId={post._id} title={post.title} slug={post.slug} />
 
                             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px'}}>
