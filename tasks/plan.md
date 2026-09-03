@@ -73,7 +73,10 @@ generation logic.
 - [ ] Asher to click the real "Pull comments" button in Studio at least once, confirm the pending comments
       show up correctly in the Comments moderation queue, and approve/reject the real batch already sitting
       there from the run above
-- [ ] Review with Asher before starting any second platform
+- [x] Review with Asher before starting a second platform -- **Instagram**, picked over the plan's original
+      Threads suggestion (X/Threads/YouTube engagement is near-zero for Asher; Instagram is where real
+      comments happen). See `tasks/todo.md` Task 8: validated, generalized the shared pipeline, verified
+      end-to-end for real (2026-09-03).
 
 ## Risks and Mitigations
 

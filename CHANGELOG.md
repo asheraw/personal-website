@@ -11,6 +11,44 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-09-03 — Fixed Facebook comment imports mislabeling Asher's own replies
+
+The Apify comment-pull path (see below) hardcoded `isAuthorReply: false` on every imported comment
+regardless of who wrote it, so Asher's own Facebook replies (imported under "Asher Aw") landed in the
+moderation queue looking like a stranger's comment instead of getting the site's author styling. Fixed to
+check the incoming name against the aliases Facebook actually uses for him (confirmed against existing
+`isAuthorReply` comments already in the dataset — "Asher" and "Asher Aw"), and retroactively patched the 5
+already-pending comments this affected.
+
+## 2026-09-03 — Instagram comment pull-back, and the Facebook pipeline generalized to share it
+
+Second platform for the distribution switchboard's comment pull-back, picked by Asher over the plan's
+original "Threads next" suggestion — X/Threads/YouTube engagement has been near-zero for him, Instagram is
+where real comments actually happen.
+
+Validated `apify/instagram-comment-scraper` (official Apify) against a real post
+(`https://www.instagram.com/p/Db3TQcwj57p/`, linked to `even-my-discipline-was-an-escape`), cross-checked
+against a second independent Actor — both agreed exactly (Asher's own single comment, no replies),
+confirming the result reflects the real post, not a scraper gap. Real limitation found along the way: on a
+free-tier Apify account this Actor only returns top-level comments (replies are paid-plan-gated) and caps
+at the newest ~15 per post — fine for the comment volumes seen so far.
+
+Since this is now a second platform doing the same thing, extracted the platform-agnostic dedupe/match/
+create logic out of the Facebook-only module into a new shared `src/lib/socialCommentImport.ts`, so
+Facebook and Instagram run through one implementation instead of two near-identical copies — each platform
+keeps only its own small raw-Apify-shape normalizer. The dashboard's "Pull comments" button is likewise now
+one generic, platform-parameterized component instead of a Facebook-specific one.
+
+Verified end-to-end for real, same bar as the Facebook slice: ran the actual shared logic against the real
+Apify output twice — first run created the one real comment as pending (correctly recognized as Asher's own
+via his real Instagram handle), second run matched it with zero duplicates.
+
+## 2026-09-03 — Link Page (asheraw.com/link) cards now show as a grid in Studio
+
+Asher recalled the card editor used to show a grid, matching the live page's layout, rather than one
+full-width row per card. Added Sanity Studio's built-in `layout: 'grid'` option to the cards array — same
+mechanism already used for the post gallery's "More photos" field.
+
 ## 2026-09-03 — Distribution Switchboard, Facebook skeleton: comments can now be pulled in from Facebook
 
 First real slice of the "distribution switchboard" idea (`docs/ideas/distribution-switchboard.md`): posts

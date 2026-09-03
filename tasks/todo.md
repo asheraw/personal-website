@@ -362,6 +362,41 @@ UI pattern (loading state, error handling) rather than inventing a new interacti
 
 ---
 
+## Task 8: Second platform — Instagram comment pull — DONE (2026-09-03)
+
+**Description:** Asher picked Instagram as the second platform (over the plan's original Threads
+suggestion), specifically because engagement on X/Threads/YouTube has been near-zero for him — Instagram
+is where real comments actually happen. Repeat the Facebook pattern: validate a real Apify Actor against
+a real post, then wire it into the dashboard.
+
+**Outcome:**
+
+- **Validated `apify/instagram-comment-scraper`** (official Apify, 51.6K users, 4.38★/56 ratings) against
+  a real post (`https://www.instagram.com/p/Db3TQcwj57p/`, linked to `even-my-discipline-was-an-escape`).
+  Cross-checked with a second, independent Actor (`apidojo/instagram-comments-scraper-api`) — both
+  returned the exact same single result (Asher's own comment, `replyCount: 0`), confirming this post
+  genuinely has one comment, not a scraper gap.
+- **Real limitation found, not assumed**: on a free-tier Apify account, this Actor only returns
+  top-level comments — replies are gated behind a paid Apify plan (`includeNestedComments` silently does
+  nothing on free tier) — and caps at the newest ~15 comments per post. Fine for Asher's actual comment
+  volumes seen so far; worth re-checking if a busier post ever seems to be missing replies.
+- **Generalized the pipeline** rather than copy-pasting a second near-identical implementation: extracted
+  the platform-agnostic dedupe/match/create core out of `facebookCommentImport.ts` into a new
+  `src/lib/socialCommentImport.ts` (`importSocialComments`, `findExistingMatch`, `isAuthorName`) — Facebook
+  and Instagram now share one implementation, each keeping only its own small raw-shape normalizer
+  (`normalizeFacebookComments` / `normalizeInstagramComments`). `AUTHOR_NAME_ALIASES` extended with
+  `itsasheraw` (Asher's real Instagram handle, confirmed against the real test comment).
+  `PullFacebookCommentsButton.tsx` → `PullSocialCommentsButton.tsx`, parameterized by `platform`.
+  `shareLogType.ts` gained `instagramCommentsLastPulledAt`/`Count`, mirroring Facebook's fields.
+- **Verified end-to-end for real**, same standard as Facebook: ran the actual `normalizeInstagramComments`
+  + `importSocialComments` against the real Apify output twice. First run: 1 created (pending,
+  `isAuthorReply: true` — correctly recognized `itsasheraw` as Asher himself). Second run: 0 created, 1
+  matched — confirms no duplication on re-pull. Same honest gap as Facebook: this verified the shared
+  logic and the real Apify data directly, not a literal click on the Studio button — Studio's browser
+  login remains untestable by automation.
+
+---
+
 ## Checkpoint: After Task 3
 - [ ] Studio schema deploys cleanly
 - [ ] `socialLinks` and `connectedAccounts` both editable against real documents
