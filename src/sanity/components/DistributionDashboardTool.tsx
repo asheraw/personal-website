@@ -119,24 +119,55 @@ export function DistributionDashboardTool() {
     })
   }
 
-  async function togglePlatform(postSlug: string, platform: string, currentValue: string | undefined) {
-    const shareLogId = `share-${postSlug}`
-    const newValue = currentValue ? undefined : new Date().toISOString()
+  async function togglePlatform(post: Post, platform: string, currentValue: string | undefined) {
+    const shareLogId = `share-${post.slug}`
 
     try {
-      await client.patch(shareLogId).set({postedTo: {[platform]: newValue}}).commit()
+      // createIfNotExists is a no-op once the doc already exists (from a
+      // note, a comment pull, or an earlier checkbox) -- needed here
+      // because plenty of posts have never had a shareLog created yet, and
+      // patching a document that doesn't exist fails outright.
+      await client.createIfNotExists({
+        _id: shareLogId,
+        _type: 'shareLog',
+        postSlug: post.slug,
+        postTitle: post.title,
+        totalShares: 0,
+      })
+      const patch = client.patch(shareLogId)
+      // .set({postedTo: {[platform]: ...}}) would REPLACE the whole
+      // postedTo object, wiping every other platform already checked --
+      // the path form only touches this one sub-field. unset (not a
+      // set-to-undefined, which JSON silently drops from the request body
+      // entirely) is what actually clears a checkbox back off.
+      if (currentValue) {
+        await patch.unset([`postedTo.${platform}`]).commit()
+      } else {
+        await patch.set({[`postedTo.${platform}`]: new Date().toISOString()}).commit()
+      }
       await load()
     } catch (error) {
       console.error(`Failed to update ${platform}:`, error)
     }
   }
 
-  async function toggleNewsletter(postSlug: string, currentValue: string | undefined) {
-    const shareLogId = `share-${postSlug}`
-    const newValue = currentValue ? undefined : new Date().toISOString()
+  async function toggleNewsletter(post: Post, currentValue: string | undefined) {
+    const shareLogId = `share-${post.slug}`
 
     try {
-      await client.patch(shareLogId).set({newsletterSent: newValue}).commit()
+      await client.createIfNotExists({
+        _id: shareLogId,
+        _type: 'shareLog',
+        postSlug: post.slug,
+        postTitle: post.title,
+        totalShares: 0,
+      })
+      const patch = client.patch(shareLogId)
+      if (currentValue) {
+        await patch.unset(['newsletterSent']).commit()
+      } else {
+        await patch.set({newsletterSent: new Date().toISOString()}).commit()
+      }
       await load()
     } catch (error) {
       console.error('Failed to update newsletter:', error)
@@ -404,7 +435,7 @@ export function DistributionDashboardTool() {
                           <td key={platform} style={{padding: '10px 8px', textAlign: 'center'}}>
                             <Checkbox
                               checked={Boolean(value)}
-                              onChange={() => togglePlatform(post.slug, platform, value)}
+                              onChange={() => togglePlatform(post, platform, value)}
                             />
                           </td>
                         )
@@ -412,7 +443,7 @@ export function DistributionDashboardTool() {
                       <td style={{padding: '10px 8px', textAlign: 'center'}}>
                         <Checkbox
                           checked={Boolean(shareLog?.newsletterSent)}
-                          onChange={() => toggleNewsletter(post.slug, shareLog?.newsletterSent)}
+                          onChange={() => toggleNewsletter(post, shareLog?.newsletterSent)}
                         />
                       </td>
                       <td style={{padding: '10px 8px', textAlign: 'center'}}>
