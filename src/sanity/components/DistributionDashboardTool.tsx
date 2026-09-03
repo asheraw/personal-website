@@ -119,8 +119,22 @@ export function DistributionDashboardTool() {
     })
   }
 
+  // Applies a change to one post's local shareLog state immediately, before
+  // the network call resolves -- a checkbox should tick the instant you
+  // click it, not wait on a create-if-missing + patch round trip (and
+  // previously a full dashboard reload on top of that, see load() below).
+  function updateShareLogLocally(slug: string, updater: (log: ShareLog) => ShareLog) {
+    setShareLogs((prev) => ({
+      ...prev,
+      [slug]: updater(prev[slug] ?? {postSlug: slug}),
+    }))
+  }
+
   async function togglePlatform(post: Post, platform: string, currentValue: string | undefined) {
     const shareLogId = `share-${post.slug}`
+    const newValue = currentValue ? undefined : new Date().toISOString()
+
+    updateShareLogLocally(post.slug, (log) => ({...log, postedTo: {...log.postedTo, [platform]: newValue}}))
 
     try {
       // createIfNotExists is a no-op once the doc already exists (from a
@@ -143,16 +157,19 @@ export function DistributionDashboardTool() {
       if (currentValue) {
         await patch.unset([`postedTo.${platform}`]).commit()
       } else {
-        await patch.set({[`postedTo.${platform}`]: new Date().toISOString()}).commit()
+        await patch.set({[`postedTo.${platform}`]: newValue}).commit()
       }
-      await load()
     } catch (error) {
       console.error(`Failed to update ${platform}:`, error)
+      updateShareLogLocally(post.slug, (log) => ({...log, postedTo: {...log.postedTo, [platform]: currentValue}}))
     }
   }
 
   async function toggleNewsletter(post: Post, currentValue: string | undefined) {
     const shareLogId = `share-${post.slug}`
+    const newValue = currentValue ? undefined : new Date().toISOString()
+
+    updateShareLogLocally(post.slug, (log) => ({...log, newsletterSent: newValue}))
 
     try {
       await client.createIfNotExists({
@@ -166,11 +183,11 @@ export function DistributionDashboardTool() {
       if (currentValue) {
         await patch.unset(['newsletterSent']).commit()
       } else {
-        await patch.set({newsletterSent: new Date().toISOString()}).commit()
+        await patch.set({newsletterSent: newValue}).commit()
       }
-      await load()
     } catch (error) {
       console.error('Failed to update newsletter:', error)
+      updateShareLogLocally(post.slug, (log) => ({...log, newsletterSent: currentValue}))
     }
   }
 
