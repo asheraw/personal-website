@@ -82,7 +82,9 @@ export function DistributionDashboardTool() {
     setPosts(postsResult)
     setShareLogs(Object.fromEntries(shareLogResult.map((s) => [s.postSlug, s])))
     setAiLogs(aiLogResult)
-    const linkIds = new Set((linkPageResult?.items ?? []).map((i) => i.post?._ref).filter(Boolean))
+    const linkIds = new Set(
+      (linkPageResult?.items ?? []).map((i) => i.post?._ref).filter((ref): ref is string => Boolean(ref)),
+    )
     setLinkPagePostIds(linkIds)
   }, [client])
 
@@ -182,7 +184,14 @@ export function DistributionDashboardTool() {
           </Flex>
         </Stack>
 
-        <div style={{overflowX: 'auto'}}>
+        {/* Bounded height + overflow:auto on both axes (not just overflowX) is
+            required for position:sticky on the header row to actually work --
+            overflowX alone implicitly forces overflowY to auto too, but with
+            no height limit the div just grows to fit everything, so it never
+            becomes the real scrolling container and sticky has nothing to
+            stick to. Giving it its own scrollbar here is what makes the
+            header actually pin in place while the body scrolls underneath. */}
+        <div style={{overflow: 'auto', maxHeight: 'calc(100vh - 280px)'}}>
           <table
             style={{
               width: '100%',
@@ -197,18 +206,39 @@ export function DistributionDashboardTool() {
                   position: 'sticky',
                   top: 0,
                   background: 'var(--card-bg-color)',
+                  zIndex: 1,
                 }}
               >
                 <th style={{padding: '8px', textAlign: 'left', fontWeight: 500, width: '240px'}}>Post</th>
-                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '48px'}}>📝</th>
+                <th
+                  title="Social caption drafted"
+                  style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '48px'}}
+                >
+                  📝
+                </th>
                 {PLATFORMS.map((p) => (
                   <th key={p.key} style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}>
                     {p.label}
                   </th>
                 ))}
-                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}>📧</th>
-                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}>📌</th>
-                <th style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '48px'}}>💬</th>
+                <th
+                  title="Newsletter sent"
+                  style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}
+                >
+                  📧
+                </th>
+                <th
+                  title="On link page"
+                  style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '56px'}}
+                >
+                  📌
+                </th>
+                <th
+                  title="Engagement notes"
+                  style={{padding: '8px', textAlign: 'center', fontWeight: 500, width: '48px'}}
+                >
+                  💬
+                </th>
                 <th style={{padding: '8px', textAlign: 'left', fontWeight: 500, width: '80px'}}></th>
               </tr>
             </thead>
@@ -276,15 +306,15 @@ export function DistributionDashboardTool() {
                           backgroundColor: 'var(--card-hover-bg-color)',
                         }}
                       >
-                        <td colSpan={100} style={{padding: '16px 8px'}}>
-                          <Stack space={3}>
+                        <td colSpan={100} style={{padding: '12px 8px'}}>
+                          <Stack space={2}>
                             <SharePanel postId={post._id} title={post.title} slug={post.slug} />
 
                             <Stack space={2}>
                               <Text size={0} weight="medium" muted>
                                 Pull comments from platforms
                               </Text>
-                              <Flex gap={2} wrap="wrap">
+                              <Flex gap={1} wrap="wrap">
                                 {post.facebookUrl && (
                                   <PullSocialCommentsButton
                                     platform="facebook"
