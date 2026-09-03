@@ -1,9 +1,10 @@
 import {useCallback, useEffect, useState} from 'react'
 import {Badge, Box, Button, Card, Flex, Select, Spinner, Stack, Text, TextArea} from '@sanity/ui'
+import {CommentIcon} from '@sanity/icons/Comment'
 import {useClient} from 'sanity'
 import {openPostInStudio} from '../lib/openPostInStudio'
 import {SharePanel} from './SharePanel'
-import {PullSocialCommentsButton} from './PullSocialCommentsButton'
+import {PullSocialCommentsButton, type SocialPlatform} from './PullSocialCommentsButton'
 
 type Post = {
   _id: string
@@ -16,6 +17,21 @@ type Post = {
   youtubeUrl?: string
   linkedinUrl?: string
 }
+
+// One row per platform in each post's "Platforms" panel. `available: false`
+// renders as a permanently disabled row -- X and Threads have no real Apify
+// actor worth building on yet (see tasks/todo.md Task 9), but sit here
+// ready to flip on the moment that changes, rather than needing new UI
+// bolted on later.
+const PLATFORM_META: {key: SocialPlatform; label: string; available: boolean}[] = [
+  {key: 'facebook', label: 'Facebook', available: true},
+  {key: 'instagram', label: 'Instagram', available: true},
+  {key: 'tiktok', label: 'TikTok', available: true},
+  {key: 'youtube', label: 'YouTube', available: true},
+  {key: 'linkedin', label: 'LinkedIn', available: true},
+  {key: 'x', label: 'X (Twitter)', available: false},
+  {key: 'threads', label: 'Threads', available: false},
+]
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
 type ShareLog = {
   postSlug: string
@@ -68,6 +84,7 @@ export function DistributionDashboardTool() {
   const [shareLogs, setShareLogs] = useState<Record<string, ShareLog>>({})
   const [aiLogs, setAiLogs] = useState<AiLog[]>([])
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [platformsExpanded, setPlatformsExpanded] = useState<Set<string>>(new Set())
   const [noteDrafts, setNoteDrafts] = useState<Record<string, {note: string; platform: string}>>({})
   const [savingSlug, setSavingSlug] = useState<string | null>(null)
 
@@ -92,6 +109,15 @@ export function DistributionDashboardTool() {
 
   function toggleExpanded(slug: string) {
     setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
+  }
+
+  function togglePlatforms(slug: string) {
+    setPlatformsExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(slug)) next.delete(slug)
       else next.add(slug)
@@ -189,11 +215,28 @@ export function DistributionDashboardTool() {
         <Stack space={3}>
           {posts.map((post) => {
             const isOpen = expanded.has(post.slug)
+            const platformsOpen = platformsExpanded.has(post.slug)
             const shareLog = shareLogs[post.slug]
             const notes = shareLog?.engagementNotes ?? []
             const drafted = socialDraftedSlugs.has(post.slug)
             const facebookCopied = facebookCopiedSlugs.has(post.slug)
             const draft = noteDrafts[post.slug] ?? {note: '', platform: ''}
+
+            const urlByPlatform: Partial<Record<SocialPlatform, string | undefined>> = {
+              facebook: post.facebookUrl,
+              instagram: post.instagramUrl,
+              tiktok: post.tiktokUrl,
+              youtube: post.youtubeUrl,
+              linkedin: post.linkedinUrl,
+            }
+            const pullInfoByPlatform: Partial<Record<SocialPlatform, {at?: string; count?: number}>> = {
+              facebook: {at: shareLog?.facebookCommentsLastPulledAt, count: shareLog?.facebookCommentsLastPulledCount},
+              instagram: {at: shareLog?.instagramCommentsLastPulledAt, count: shareLog?.instagramCommentsLastPulledCount},
+              tiktok: {at: shareLog?.tiktokCommentsLastPulledAt, count: shareLog?.tiktokCommentsLastPulledCount},
+              youtube: {at: shareLog?.youtubeCommentsLastPulledAt, count: shareLog?.youtubeCommentsLastPulledCount},
+              linkedin: {at: shareLog?.linkedinCommentsLastPulledAt, count: shareLog?.linkedinCommentsLastPulledCount},
+            }
+            const linkedCount = PLATFORM_META.filter((p) => p.available && urlByPlatform[p.key]).length
 
             return (
               <Card key={post.slug} padding={3} radius={2} border>
@@ -224,62 +267,72 @@ export function DistributionDashboardTool() {
                     </Flex>
                   </Flex>
 
-                  <Flex justify="space-between" align="flex-start" gap={3} wrap="wrap">
-                    <SharePanel postId={post._id} title={post.title} slug={post.slug} />
-                    {post.facebookUrl && (
-                      <PullSocialCommentsButton
-                        platform="facebook"
-                        postId={post._id}
-                        lastPulledAt={shareLog?.facebookCommentsLastPulledAt}
-                        lastPulledCount={shareLog?.facebookCommentsLastPulledCount}
-                        onPulled={load}
-                      />
-                    )}
-                    {post.instagramUrl && (
-                      <PullSocialCommentsButton
-                        platform="instagram"
-                        postId={post._id}
-                        lastPulledAt={shareLog?.instagramCommentsLastPulledAt}
-                        lastPulledCount={shareLog?.instagramCommentsLastPulledCount}
-                        onPulled={load}
-                      />
-                    )}
-                    {post.tiktokUrl && (
-                      <PullSocialCommentsButton
-                        platform="tiktok"
-                        postId={post._id}
-                        lastPulledAt={shareLog?.tiktokCommentsLastPulledAt}
-                        lastPulledCount={shareLog?.tiktokCommentsLastPulledCount}
-                        onPulled={load}
-                      />
-                    )}
-                    {post.youtubeUrl && (
-                      <PullSocialCommentsButton
-                        platform="youtube"
-                        postId={post._id}
-                        lastPulledAt={shareLog?.youtubeCommentsLastPulledAt}
-                        lastPulledCount={shareLog?.youtubeCommentsLastPulledCount}
-                        onPulled={load}
-                      />
-                    )}
-                    {post.linkedinUrl && (
-                      <PullSocialCommentsButton
-                        platform="linkedin"
-                        postId={post._id}
-                        lastPulledAt={shareLog?.linkedinCommentsLastPulledAt}
-                        lastPulledCount={shareLog?.linkedinCommentsLastPulledCount}
-                        onPulled={load}
-                      />
-                    )}
+                  <SharePanel postId={post._id} title={post.title} slug={post.slug} />
+
+                  <Flex gap={4} wrap="wrap">
+                    <Text
+                      size={0}
+                      style={{cursor: 'pointer', textDecoration: 'underline'}}
+                      onClick={() => togglePlatforms(post.slug)}
+                    >
+                      {platformsOpen ? 'Hide' : 'Show'} platforms ({linkedCount} linked)
+                    </Text>
+                    <Text
+                      size={0}
+                      style={{cursor: 'pointer', textDecoration: 'underline'}}
+                      onClick={() => toggleExpanded(post.slug)}
+                    >
+                      {isOpen ? 'Hide' : 'Show'} engagement notes ({notes.length})
+                    </Text>
                   </Flex>
 
-                  <Text
-                    size={0}
-                    style={{cursor: 'pointer', textDecoration: 'underline'}}
-                    onClick={() => toggleExpanded(post.slug)}
-                  >
-                    {isOpen ? 'Hide' : 'Show'} engagement notes ({notes.length})
-                  </Text>
+                  {platformsOpen && (
+                    <Card padding={3} radius={2} tone="transparent" border>
+                      <Stack space={3}>
+                        {PLATFORM_META.map((p) => {
+                          const url = urlByPlatform[p.key]
+                          const pullInfo = pullInfoByPlatform[p.key]
+                          return (
+                            <Flex key={p.key} align="center" justify="space-between" gap={3} wrap="wrap">
+                              <Stack space={1}>
+                                <Text size={1} weight="medium">
+                                  {p.label}
+                                </Text>
+                                {!p.available && (
+                                  <Text size={0} muted>
+                                    Coming soon — no reliable way to pull this one yet
+                                  </Text>
+                                )}
+                                {p.available && !url && (
+                                  <Text size={0} muted>
+                                    Not linked — add a URL under Discussion → Social links
+                                  </Text>
+                                )}
+                              </Stack>
+                              {p.available && url ? (
+                                <PullSocialCommentsButton
+                                  platform={p.key}
+                                  postId={post._id}
+                                  lastPulledAt={pullInfo?.at}
+                                  lastPulledCount={pullInfo?.count}
+                                  onPulled={load}
+                                />
+                              ) : (
+                                <Button
+                                  text="Pull comments"
+                                  icon={CommentIcon}
+                                  mode="ghost"
+                                  fontSize={0}
+                                  padding={2}
+                                  disabled
+                                />
+                              )}
+                            </Flex>
+                          )
+                        })}
+                      </Stack>
+                    </Card>
+                  )}
 
                   {isOpen && (
                     <Stack space={3}>

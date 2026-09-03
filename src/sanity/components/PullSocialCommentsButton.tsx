@@ -2,6 +2,8 @@ import {useState} from 'react'
 import {Button, Flex, Stack, Text} from '@sanity/ui'
 import {CommentIcon} from '@sanity/icons/Comment'
 
+export type SocialPlatform = 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'youtube' | 'x' | 'threads'
+
 // "Pull comments" on the Distribution dashboard's per-platform column --
 // calls /api/ai/pull-{platform}-comments, which itself does the Apify call,
 // the dedupe/import (src/lib/socialCommentImport.ts), and records the pull
@@ -16,7 +18,7 @@ export function PullSocialCommentsButton({
   lastPulledCount,
   onPulled,
 }: {
-  platform: 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'youtube' | 'x' | 'threads'
+  platform: SocialPlatform
   postId: string
   lastPulledAt?: string
   lastPulledCount?: number
