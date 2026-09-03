@@ -119,6 +119,7 @@ export const shareLogType = defineType({
       type: 'object',
       fields: [
         defineField({name: 'facebook', type: 'datetime', hidden: true}),
+        defineField({name: 'facebookPage', type: 'datetime', hidden: true}),
         defineField({name: 'instagram', type: 'datetime', hidden: true}),
         defineField({name: 'tiktok', type: 'datetime', hidden: true}),
         defineField({name: 'youtube', type: 'datetime', hidden: true}),

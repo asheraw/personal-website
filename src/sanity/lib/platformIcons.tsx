@@ -2,7 +2,15 @@ import type {ComponentType} from 'react'
 import {Linkedin} from 'lucide-react'
 import {siFacebook, siInstagram, siTiktok, siYoutube, siX, siThreads} from 'simple-icons'
 
-export type SocialPlatform = 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'youtube' | 'x' | 'threads'
+export type SocialPlatform =
+  | 'facebook'
+  | 'facebookPage'
+  | 'instagram'
+  | 'tiktok'
+  | 'linkedin'
+  | 'youtube'
+  | 'x'
+  | 'threads'
 
 function BrandIcon({path}: {path: string}) {
   return (
@@ -52,6 +60,9 @@ function LinkedinIcon() {
 // which glyph and label goes with which platform, so the two never drift.
 export const PLATFORM_META: Record<SocialPlatform, {label: string; icon: ComponentType}> = {
   facebook: {label: 'Facebook', icon: FacebookIcon},
+  // Same brand mark as facebook -- distinguished by label only, since it's
+  // still literally the Facebook logo, just for a Page instead of a Profile.
+  facebookPage: {label: 'Facebook Page', icon: FacebookIcon},
   instagram: {label: 'Instagram', icon: InstagramIcon},
   tiktok: {label: 'TikTok', icon: TiktokIcon},
   youtube: {label: 'YouTube', icon: YoutubeIcon},

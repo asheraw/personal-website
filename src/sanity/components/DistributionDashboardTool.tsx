@@ -13,6 +13,7 @@ type Post = {
   slug: string
   publishedAt?: string
   facebookUrl?: string
+  facebookPageUrl?: string
   instagramUrl?: string
   tiktokUrl?: string
   youtubeUrl?: string
@@ -40,10 +41,22 @@ type ShareLog = {
 
 type AiLog = {feature: string; postSlug?: string; _createdAt: string; usedActions?: {action?: string}[]}
 
-const ALL_PLATFORMS: SocialPlatform[] = ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'x', 'threads']
+const ALL_PLATFORMS: SocialPlatform[] = [
+  'facebook',
+  'facebookPage',
+  'instagram',
+  'tiktok',
+  'youtube',
+  'linkedin',
+  'x',
+  'threads',
+]
 // Only these five have a working Apify scraper behind them (see
 // src/app/api/ai/pull-*-comments) -- X and Threads get one combined,
-// permanently-disabled row instead of a broken button each.
+// permanently-disabled row instead of a broken button each. Facebook Page
+// comment-pulling is a real future possibility (the existing Facebook
+// Actor likely works on Page post URLs too) but hasn't been validated the
+// way Profile pulling was -- deliberately left off this list until it has.
 const PULLABLE_PLATFORMS: SocialPlatform[] = ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin']
 
 type FilterKey = 'all' | 'needsPosting' | 'commentsWaiting'
@@ -74,7 +87,7 @@ export function DistributionDashboardTool() {
         // that's currently being edited -- without it, an in-progress post
         // matches this query twice (its published _id and its drafts.<id>
         // counterpart, same slug on both), producing a duplicate React key.
-        `*[_type == "post" && !(_id in path("drafts.**")) && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url, "instagramUrl": socialLinks[platform == "Instagram"][0].url, "tiktokUrl": socialLinks[platform == "TikTok"][0].url, "youtubeUrl": socialLinks[platform == "YouTube"][0].url, "linkedinUrl": socialLinks[platform == "LinkedIn"][0].url}`,
+        `*[_type == "post" && !(_id in path("drafts.**")) && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url, "facebookPageUrl": socialLinks[platform == "Facebook Page"][0].url, "instagramUrl": socialLinks[platform == "Instagram"][0].url, "tiktokUrl": socialLinks[platform == "TikTok"][0].url, "youtubeUrl": socialLinks[platform == "YouTube"][0].url, "linkedinUrl": socialLinks[platform == "LinkedIn"][0].url}`,
       ),
       client.fetch<ShareLog[]>(
         `*[_type == "shareLog"]{postSlug, totalShares, postedTo, newsletterSent, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount, tiktokCommentsLastPulledAt, tiktokCommentsLastPulledCount, youtubeCommentsLastPulledAt, youtubeCommentsLastPulledCount, linkedinCommentsLastPulledAt, linkedinCommentsLastPulledCount, engagementNotes}`,
@@ -680,6 +693,7 @@ export function DistributionDashboardTool() {
                                 >
                                   <option value="">Platform</option>
                                   <option value="Facebook">Facebook</option>
+                                  <option value="Facebook Page">Facebook Page</option>
                                   <option value="Instagram">Instagram</option>
                                   <option value="TikTok">TikTok</option>
                                   <option value="YouTube">YouTube</option>

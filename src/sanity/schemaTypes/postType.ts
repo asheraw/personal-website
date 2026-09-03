@@ -232,7 +232,7 @@ export const postType = defineType({
               name: 'platform',
               type: 'string',
               options: {
-                list: ['Facebook', 'Instagram', 'TikTok', 'LinkedIn', 'X', 'Threads', 'YouTube'],
+                list: ['Facebook', 'Facebook Page', 'Instagram', 'TikTok', 'LinkedIn', 'X', 'Threads', 'YouTube'],
               },
               validation: (rule) => rule.required(),
             }),
