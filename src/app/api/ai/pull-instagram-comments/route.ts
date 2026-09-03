@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeClient } from "@/sanity/lib/write-client";
-import { normalizeFacebookComments, type RawApifyComment } from "@/lib/facebookCommentImport";
+import { normalizeInstagramComments, type RawInstagramComment } from "@/lib/instagramCommentImport";
 import { importSocialComments } from "@/lib/socialCommentImport";
 
-// Pulls comments from a post's Facebook socialLinks entry via the Apify
-// Actor validated in tasks/todo.md Task 1 (apify/facebook-comments-scraper),
-// normalizes them, and imports them through the same dedupe/preserve-status
-// logic the historical .txt importer used -- see src/lib/
-// facebookCommentImport.ts. Called from the "Pull comments" button on the
-// Distribution dashboard (DistributionDashboardTool.tsx).
+// Pulls comments from a post's Instagram socialLinks entry via
+// apify/instagram-comment-scraper (official Apify, validated against a real
+// post -- see tasks/todo.md), normalizes them, and imports them through the
+// same dedupe/preserve-status logic the Facebook route uses -- see
+// src/lib/socialCommentImport.ts. Called from the "Pull comments" button on
+// the Distribution dashboard (DistributionDashboardTool.tsx).
 //
-// APIFY_API_TOKEN is read server-side only, never returned to the client --
-// same "keep API keys server-side" rule as GEMINI_API_KEY/GIPHY_API_KEY.
-// This is a separate token from this session's own Apify MCP access, which
-// was only ever used for Task 1's one-off research spike.
+// Known limitation, confirmed against real output rather than assumed from
+// the Actor's docs: on a free-tier Apify account this Actor only returns
+// top-level comments (replies are gated to a paid Apify plan) and caps at
+// the newest ~15 per post. Fine for Asher's actual comment volumes so far,
+// but worth knowing if a busier post ever seems to be missing replies.
+//
+// APIFY_API_TOKEN is read server-side only, same env var the Facebook route
+// already uses (one Apify account, multiple Actors).
 
-const ACTOR_ID = "apify~facebook-comments-scraper";
+const ACTOR_ID = "apify~instagram-comment-scraper";
 
 export async function POST(request: NextRequest) {
   const { postId } = await request.json();
@@ -31,22 +35,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const post = await writeClient.fetch<{ facebookUrl?: string; slug?: string; title?: string } | null>(
-    `*[_id == $postId][0]{"facebookUrl": socialLinks[platform == "Facebook"][0].url, "slug": slug.current, title}`,
+  const post = await writeClient.fetch<{ instagramUrl?: string; slug?: string; title?: string } | null>(
+    `*[_id == $postId][0]{"instagramUrl": socialLinks[platform == "Instagram"][0].url, "slug": slug.current, title}`,
     { postId }
   );
 
   if (post === null) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
-  if (!post.facebookUrl) {
+  if (!post.instagramUrl) {
     return NextResponse.json(
-      { error: "This post has no Facebook link saved yet — add one under Discussion → Social links first." },
+      { error: "This post has no Instagram link saved yet — add one under Discussion → Social links first." },
       { status: 400 }
     );
   }
 
-  let items: RawApifyComment[];
+  let items: RawInstagramComment[];
   try {
     const res = await fetch(
       `https://api.apify.com/v2/actors/${ACTOR_ID}/run-sync-get-dataset-items?timeout=120`,
@@ -57,17 +61,16 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${process.env.APIFY_API_TOKEN}`,
         },
         body: JSON.stringify({
-          startUrls: [{ url: post.facebookUrl }],
+          directUrls: [post.instagramUrl],
           resultsLimit: 200,
           includeNestedComments: true,
-          viewOption: "RANKED_UNFILTERED",
         }),
       }
     );
 
     if (res.status === 408) {
       return NextResponse.json(
-        { error: "The Facebook comment pull took too long and timed out — try again in a moment." },
+        { error: "The Instagram comment pull took too long and timed out — try again in a moment." },
         { status: 504 }
       );
     }
@@ -77,27 +80,25 @@ export async function POST(request: NextRequest) {
     }
     items = await res.json();
   } catch (error) {
-    console.error("[ai/pull-facebook-comments] Apify call failed:", error);
+    console.error("[ai/pull-instagram-comments] Apify call failed:", error);
     return NextResponse.json(
-      { error: "Couldn't reach Facebook via Apify right now — try again in a moment." },
+      { error: "Couldn't reach Instagram via Apify right now — try again in a moment." },
       { status: 502 }
     );
   }
 
-  const comments = normalizeFacebookComments(items);
+  const comments = normalizeInstagramComments(items);
 
   try {
     const { created, matched } = await importSocialComments({
       client: writeClient,
       postId,
       comments,
-      idPrefix: "facebook-comment-apify",
+      idPrefix: "instagram-comment-apify",
     });
 
-    // Record the pull on the post's shareLog doc (share-<slug>, same
-    // singleton-per-post pattern DistributionDashboardTool.tsx already
-    // uses for engagement notes) so the dashboard can show "last pulled"
-    // without re-pulling just to check.
+    // Record the pull on the post's shareLog doc, same pattern the Facebook
+    // route already uses.
     if (post.slug) {
       const shareLogId = `share-${post.slug}`;
       await writeClient.createIfNotExists({
@@ -110,15 +111,15 @@ export async function POST(request: NextRequest) {
       await writeClient
         .patch(shareLogId)
         .set({
-          facebookCommentsLastPulledAt: new Date().toISOString(),
-          facebookCommentsLastPulledCount: comments.length,
+          instagramCommentsLastPulledAt: new Date().toISOString(),
+          instagramCommentsLastPulledCount: comments.length,
         })
         .commit();
     }
 
     return NextResponse.json({ pulled: comments.length, created, matched });
   } catch (error) {
-    console.error("[ai/pull-facebook-comments] import failed:", error);
+    console.error("[ai/pull-instagram-comments] import failed:", error);
     return NextResponse.json(
       { error: "Comments were pulled but couldn't be saved — try again in a moment." },
       { status: 500 }

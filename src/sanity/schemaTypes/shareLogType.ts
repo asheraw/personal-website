@@ -61,6 +61,19 @@ export const shareLogType = defineType({
       type: 'number',
       readOnly: true,
     }),
+    defineField({
+      name: 'instagramCommentsLastPulledAt',
+      title: 'Instagram comments last pulled',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
+    defineField({
+      name: 'instagramCommentsLastPulledCount',
+      title: 'Instagram comments pulled (last run)',
+      type: 'number',
+      readOnly: true,
+    }),
     // Manual, not automated -- ACE_MASTER_SPEC.md is explicit that pulling
     // replies/engagement back from X/Facebook/LinkedIn's own APIs isn't
     // worth the ongoing fees/OAuth/platform churn for a solo creator. This

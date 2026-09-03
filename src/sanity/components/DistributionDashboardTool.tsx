@@ -3,9 +3,16 @@ import {Badge, Box, Button, Card, Flex, Select, Spinner, Stack, Text, TextArea} 
 import {useClient} from 'sanity'
 import {openPostInStudio} from '../lib/openPostInStudio'
 import {SharePanel} from './SharePanel'
-import {PullFacebookCommentsButton} from './PullFacebookCommentsButton'
+import {PullSocialCommentsButton} from './PullSocialCommentsButton'
 
-type Post = {_id: string; title: string; slug: string; publishedAt?: string; facebookUrl?: string}
+type Post = {
+  _id: string
+  title: string
+  slug: string
+  publishedAt?: string
+  facebookUrl?: string
+  instagramUrl?: string
+}
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
 type ShareLog = {
   postSlug: string
@@ -17,6 +24,8 @@ type ShareLog = {
   engagementNotes?: EngagementNote[]
   facebookCommentsLastPulledAt?: string
   facebookCommentsLastPulledCount?: number
+  instagramCommentsLastPulledAt?: string
+  instagramCommentsLastPulledCount?: number
 }
 type AiLog = {feature: string; postSlug?: string; _createdAt: string; usedActions?: {action?: string}[]}
 
@@ -56,10 +65,10 @@ export function DistributionDashboardTool() {
   const load = useCallback(async () => {
     const [postsResult, shareLogResult, aiLogResult] = await Promise.all([
       client.fetch<Post[]>(
-        `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url}`,
+        `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url, "instagramUrl": socialLinks[platform == "Instagram"][0].url}`,
       ),
       client.fetch<ShareLog[]>(
-        `*[_type == "shareLog"]{postSlug, totalShares, xCount, facebookCount, linkedinCount, whatsappCount, engagementNotes, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount}`,
+        `*[_type == "shareLog"]{postSlug, totalShares, xCount, facebookCount, linkedinCount, whatsappCount, engagementNotes, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount}`,
       ),
       client.fetch<AiLog[]>(`*[_type == "aiOutputLog"]{feature, postSlug, _createdAt, usedActions[]{action}}`),
     ])
@@ -209,10 +218,20 @@ export function DistributionDashboardTool() {
                   <Flex justify="space-between" align="flex-start" gap={3} wrap="wrap">
                     <SharePanel postId={post._id} title={post.title} slug={post.slug} />
                     {post.facebookUrl && (
-                      <PullFacebookCommentsButton
+                      <PullSocialCommentsButton
+                        platform="facebook"
                         postId={post._id}
                         lastPulledAt={shareLog?.facebookCommentsLastPulledAt}
                         lastPulledCount={shareLog?.facebookCommentsLastPulledCount}
+                        onPulled={load}
+                      />
+                    )}
+                    {post.instagramUrl && (
+                      <PullSocialCommentsButton
+                        platform="instagram"
+                        postId={post._id}
+                        lastPulledAt={shareLog?.instagramCommentsLastPulledAt}
+                        lastPulledCount={shareLog?.instagramCommentsLastPulledCount}
                         onPulled={load}
                       />
                     )}

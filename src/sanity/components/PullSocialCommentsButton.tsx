@@ -2,18 +2,21 @@ import {useState} from 'react'
 import {Button, Flex, Stack, Text} from '@sanity/ui'
 import {CommentIcon} from '@sanity/icons/Comment'
 
-// "Pull comments" on the Distribution dashboard's Facebook column -- calls
-// /api/ai/pull-facebook-comments, which itself does the Apify call, the
-// dedupe/import (src/lib/facebookCommentImport.ts), and records the pull
+// "Pull comments" on the Distribution dashboard's per-platform column --
+// calls /api/ai/pull-{platform}-comments, which itself does the Apify call,
+// the dedupe/import (src/lib/socialCommentImport.ts), and records the pull
 // timestamp on this post's shareLog doc. Same loading/error UI pattern as
-// SharePanel.tsx's "Draft social copy" flow. Only rendered when the post
-// actually has a Facebook socialLinks entry -- nothing to pull otherwise.
-export function PullFacebookCommentsButton({
+// SharePanel.tsx's "Draft social copy" flow. Generalized from the original
+// Facebook-only button once Instagram became a second real platform --
+// endpoint and labels are the only per-platform difference.
+export function PullSocialCommentsButton({
+  platform,
   postId,
   lastPulledAt,
   lastPulledCount,
   onPulled,
 }: {
+  platform: 'facebook' | 'instagram'
   postId: string
   lastPulledAt?: string
   lastPulledCount?: number
@@ -27,7 +30,7 @@ export function PullFacebookCommentsButton({
     setStatus('loading')
     setError('')
     try {
-      const res = await fetch('/api/ai/pull-facebook-comments', {
+      const res = await fetch(`/api/ai/pull-${platform}-comments`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({postId}),
