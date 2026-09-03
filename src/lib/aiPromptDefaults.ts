@@ -65,3 +65,29 @@ LinkedIn only shows about the first 140-210 characters before a reader has to cl
 Aim for roughly 1,300-1,900 characters total (LinkedIn's hard cap is 3,000, but the busiest, most-engaged posts tend to land well under that) -- long enough to actually deliver the post's substance, short enough that it still reads as a LinkedIn post and not a pasted article. Use short paragraphs and line breaks the way people actually write on LinkedIn, not dense unbroken blocks.
 
 Never write "read more on my blog," "link in comments," or anything that implies the reader needs to go elsewhere -- this post has to stand completely on its own.`
+
+// Used both as the "Video script instructions" Studio field's starting
+// value and as suggest-video-script/route.ts's runtime fallback. Produces
+// paired scenes (narration + on-screen direction + a video-gen prompt) so
+// the readable script and the AI video-generation prompts stay coherent
+// with each other rather than being two independently-generated lists that
+// can drift apart.
+export const DEFAULT_VIDEO_SCRIPT_INSTRUCTIONS = `You are turning a blogger's already-written post into a short-form video (TikTok / Reels / YouTube Shorts style), broken into scenes.
+
+Write 3-6 scenes based on the title and content given to you. For each scene, provide:
+1. NARRATION -- what the author actually says out loud, in their own voice, conversational and easy to say naturally (not written like an essay). Only ever drawn from what's genuinely in the post -- never invent facts, numbers, or specifics that aren't there.
+2. ON-SCREEN DIRECTION -- a short, practical note for what's happening on screen while that narration plays (e.g. "talking to camera," "text overlay of the key stat," "b-roll of writing at a desk") -- simple enough to actually film or generate, not an elaborate production.
+3. VIDEO PROMPT -- a separate prompt describing that same moment for an AI video-generation tool, as an alternative to filming it -- camera framing, subject, action, mood, and a suggested clip length (5-8 seconds is typical for one continuous AI-generated shot).
+
+The full narration across all scenes should flow as one coherent short script when read straight through, with a clear hook in the very first scene -- the same "give a reason to keep watching" instinct as a strong opening line, not a slow wind-up.`
+
+// The "video prompt" equivalent of DEFAULT_IMAGE_PROMPT_TEMPLATE -- a
+// locked visual/tone throughline so every scene's video prompt reads as
+// one consistent world across posts, rather than the model reinventing a
+// look each time. Deliberately a different technique from the static
+// image style (a steel-plate engraving doesn't translate to motion), but
+// aiming for the same warm, restrained, unmistakably-not-generic-AI-video
+// mood. A first-pass draft, meant to be tuned over time via its matching
+// Studio field the same way the image template already is -- not
+// something that needs to be perfect on day one.
+export const DEFAULT_VIDEO_STYLE_GUIDANCE = `Every video prompt should read as one consistent visual world, not a fresh style invented per post: warm, slightly desaturated color grading with a soft vintage undertone -- nothing garish, over-saturated, or in the glossy "stock AI video" look. Vertical 9:16 framing, native to TikTok/Reels/Shorts. Simple, motivated camera movement only -- a slow push-in, a gentle handheld drift, a static locked-off shot -- never whip pans or rapid in-prompt cuts. One clear subject or action per scene rather than a busy composition. Describe mood in plain, concrete terms (quiet, contemplative, warm late-afternoon light) rather than technical jargon a video-gen tool might not follow reliably.`

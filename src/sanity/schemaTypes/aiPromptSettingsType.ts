@@ -7,6 +7,8 @@ import {
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
   DEFAULT_LINKEDIN_TRIM_INSTRUCTIONS,
+  DEFAULT_VIDEO_SCRIPT_INSTRUCTIONS,
+  DEFAULT_VIDEO_STYLE_GUIDANCE,
 } from '../../lib/aiPromptDefaults'
 
 // Singleton -- see structure.ts, which always opens this exact document ID
@@ -76,6 +78,24 @@ export const aiPromptSettingsType = defineType({
       initialValue: DEFAULT_LINKEDIN_TRIM_INSTRUCTIONS,
       description:
         'What the AI is told when compressing a post’s full content into a standalone LinkedIn post -- deliberately separate from the "Draft Social Copy" feature’s own LinkedIn caption, which is a short announcement/teaser instead. Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'videoScriptInstructions',
+      title: 'Video script instructions',
+      type: 'text',
+      rows: 12,
+      initialValue: DEFAULT_VIDEO_SCRIPT_INSTRUCTIONS,
+      description:
+        'What the AI is told when breaking a post into a short-form video script (narration + on-screen direction + a video-gen prompt, per scene). Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'videoStyleGuidance',
+      title: 'Video prompt house style',
+      type: 'text',
+      rows: 6,
+      initialValue: DEFAULT_VIDEO_STYLE_GUIDANCE,
+      description:
+        'The locked visual/tone throughline included in every scene’s video-gen prompt, so the visual style stays consistent across posts -- the video equivalent of the image prompt template below. Leave blank to fall back to the default shown here.',
     }),
     defineField({
       name: 'imagePromptTemplate',
