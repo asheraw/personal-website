@@ -11,6 +11,71 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-09-04 — Post-publish distribution derivatives: video scripts, LinkedIn native posts, carousel materials
+
+Six-phase plan giving Asher the actual derivative content to send after a post is published, not just
+tracking of where it's been sent (that's what the Distribution Switchboard, below, already covers):
+
+1. **Facebook Page platform** — `socialLinks` only ever meant Facebook Profile; added "Facebook Page" as
+   its own tracked platform (schema option, icon, `shareLog.postedTo` tracking, dashboard column/query).
+   Comment-pulling for it deliberately NOT included — the existing Apify Actor was only validated against
+   real Profile posts, and Page comment visibility can behave differently under Meta's moderation tooling.
+2. **OpenRouter, as an opt-in alternate AI provider** — `src/lib/aiText.ts` and `src/lib/aiImage.ts`, one
+   abstraction each for text/image generation that every route calls through instead of wrapping
+   `@google/genai` directly. Gemini stays the default everywhere; switching a feature to OpenRouter is a
+   Studio settings field, not a code change. See RUNBOOK.md for `OPENROUTER_API_KEY` setup.
+3. **"Draft LinkedIn Post"** — compresses a post's actual full content into a complete, standalone native
+   LinkedIn post needing no outbound link, deliberately separate from "Draft Social Copy"'s existing
+   LinkedIn caption (a short teaser meant to run with a link posted separately in the first comment).
+4. **"Draft Video Script"** — breaks a post into a short-form video script (3-6 scenes), each producing
+   narration to read on camera, an on-screen direction note, and a separate AI video-generation prompt (for
+   Sora/Runway/Veo-style tools) in a new locked house visual style, generated together so script and
+   prompts stay coherent.
+5. **"Draft Image Carousel"** — picks N quotable lines word-for-word from a post (reusing the same
+   approach already proven in "Suggest SEO & Excerpt"'s pull-quotes), each paired with a background-only
+   image (no baked-in text, image models render text unreliably). Deliberately stops there: no
+   compositing, no Canva API integration, no new schema field, no attach step — Asher builds the actual
+   editable carousel in Canva himself, using these as raw material.
+
+All five new/changed AI routes follow the exact same skeleton the existing `suggest-*` routes already
+established, verified end-to-end against real posts. One real bug caught and fixed during that
+verification: the image carousel's zero-slides-succeeded path re-threw a clean human-readable error that
+lost the "429"/"RESOURCE_EXHAUSTED" substring its own rate-limit detection regex looks for, so a genuine
+quota exhaustion was silently returning a generic 500 instead of a proper 429.
+
+Every new feature ships as a standalone Studio document action (Asher's own call) — wiring these into the
+Distribution Switchboard's status columns is explicit future work, not part of this round.
+
+## 2026-09-04 — Fixed slug auto-fill freezing after the first title character
+
+`SlugAutoGenerateInput.tsx` gated on "is the slug non-empty" to decide whether to keep following title
+changes — but since it fills the slug the instant there's a real title to slugify, typing just the first
+character immediately produced a one-letter slug, which the very next render read as "already has a
+slug," freezing it right there before the rest of the title was even typed. Now compares the current slug
+against what the effect itself last wrote (a ref) instead of just checking emptiness — keeps following the
+title live for the whole title, and only stops once something else changes the field (a manual edit, or,
+since the ref resets on remount, reopening a post that already has a real saved slug).
+
+## 2026-09-03 — Distribution Switchboard redesigned as a table, several real bugs fixed along the way
+
+The per-post card layout couldn't handle 71 posts — redesigned as a scannable table (sticky header,
+collapsible detail rows, search + filter pills, real platform brand icons) matching an approved wireframe.
+Several real bugs surfaced and fixed during the rebuild, worth remembering:
+- Checking one platform checkbox was wiping out every other platform already checked on that post — a
+  `.set({postedTo: {...}})` replaces the whole object rather than merging one field into it. Fixed with
+  path-form patches (`postedTo.facebook`) and real `.unset()` for unchecking (setting a field to
+  `undefined` is silently dropped by `JSON.stringify`, so it was doing nothing).
+- Checkboxes on posts with no existing `shareLog` document failed outright ("document not found") —
+  added the same `createIfNotExists` the note-saving code already used.
+- Checkbox clicks took ~5 seconds to visually respond — the UI waited on a full network round trip plus a
+  complete dashboard reload before updating. Switched to an optimistic local-state update with rollback
+  only on actual failure.
+- The post query matched a currently-being-edited post twice (its published id and its `drafts.<id>`
+  counterpart), producing a duplicate React key — excluded drafts from the query.
+- "Comments waiting" was showing the freeform engagement-notes count instead of the real Comments
+  moderation queue (pulled social comments land there too) — now queries `comment` documents with
+  `status == "pending"` per post, matching what's actually sitting in Studio → Comments.
+
 ## 2026-09-03 — TikTok, YouTube, and LinkedIn comment pull-back added
 
 Rounded out the remaining comment-pull platforms Asher asked for. Same generalized pipeline as Instagram:
