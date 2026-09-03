@@ -221,8 +221,9 @@ export function DistributionDashboardTool() {
                 const notes = shareLog?.engagementNotes ?? []
 
                 return (
-                  <Box key={post.slug}>
+                  <>
                     <tr
+                      key={post.slug}
                       style={{
                         borderBottom: '1px solid var(--card-border-color)',
                         backgroundColor: isExpanded ? 'var(--card-hover-bg-color)' : 'transparent',
@@ -410,7 +411,7 @@ export function DistributionDashboardTool() {
                         </td>
                       </tr>
                     )}
-                  </Box>
+                  </>
                 )
               })}
             </tbody>
