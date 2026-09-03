@@ -397,6 +397,34 @@ a real post, then wire it into the dashboard.
 
 ---
 
+## Task 9: TikTok, YouTube, LinkedIn comment pull — DONE (2026-09-03)
+
+**Description:** Asher asked to build out the remaining comment-pull platforms while he works through the
+per-post/checklist side later. Same generalized pipeline as Instagram (Task 8) — each platform is a small
+raw-shape normalizer plus a route.
+
+**Outcome:**
+
+- **TikTok** — `clockworks/tiktok-comments-scraper` (official Apify). Validated against a real public video
+  (5 real comments returned, flat rows, `repliesToId` for threading).
+- **YouTube** — `streamers/youtube-comments-scraper` (official Apify). Validated against a real public
+  video. Real limitation found: this Actor only returns a relative time string ("4 years ago"), never an
+  absolute date — every YouTube-imported comment falls back to "now" as its stored date.
+- **LinkedIn** — `harvestapi/linkedin-post-comments` (no official Apify LinkedIn actor exists; strongest
+  usage/rating among real third-party options). Validated against a real public post, but that post had no
+  replies — the actual reply shape is unconfirmed against real data (written defensively for a nested
+  `replies` array). Worth re-checking the first time a real post with real replies gets pulled.
+- **X (Twitter) and Threads deliberately NOT built**: no official Apify actor exists for either, the real
+  third-party options run meaningfully pricier ($0.015–0.02+/item vs ~$0.001–0.005 elsewhere) and are
+  lower-rated/lower-usage, and Asher's own stated priority is that engagement on those two platforms is
+  already near-zero. Flagged rather than silently built or silently skipped.
+- Same honest gap as Facebook/Instagram: validated against real public posts (not Asher's own — he hasn't
+  supplied TikTok/YouTube/LinkedIn post URLs yet), and the actual HTTP routes/dashboard buttons haven't been
+  clicked in Studio's browser UI. Asher's own next step, once he has a real post URL for each: add it to
+  that post's Social Links and click "Pull comments" for real.
+
+---
+
 ## Checkpoint: After Task 3
 - [ ] Studio schema deploys cleanly
 - [ ] `socialLinks` and `connectedAccounts` both editable against real documents

@@ -11,6 +11,21 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-09-03 — TikTok, YouTube, and LinkedIn comment pull-back added
+
+Rounded out the remaining comment-pull platforms Asher asked for. Same generalized pipeline as Instagram:
+**TikTok** via `clockworks/tiktok-comments-scraper` and **YouTube** via `streamers/youtube-comments-scraper`
+(both official Apify, both validated against a real public post/video), and **LinkedIn** via
+`harvestapi/linkedin-post-comments` (no official Apify LinkedIn actor exists — this one has the strongest
+usage/rating among the real options). Real limitation found on YouTube specifically: the Actor only returns
+a relative time string ("4 years ago"), never an absolute date, so YouTube-imported comments fall back to
+"now" for their stored date. LinkedIn's real-world reply shape is still unconfirmed (the validated test post
+had none) — written defensively, worth re-checking on the first real post with replies.
+
+X (Twitter) and Threads deliberately skipped this round: no official Apify actor exists for either, the
+real third-party alternatives cost meaningfully more per comment and carry lower usage/ratings, and Asher's
+own priority call is that engagement on both is already near-zero.
+
 ## 2026-09-03 — Fixed Facebook comment imports mislabeling Asher's own replies
 
 The Apify comment-pull path (see below) hardcoded `isAuthorReply: false` on every imported comment
