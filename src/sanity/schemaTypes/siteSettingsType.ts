@@ -1,5 +1,5 @@
 import {CogIcon} from '@sanity/icons/Cog'
-import {defineField, defineType} from 'sanity'
+import {defineArrayMember, defineField, defineType} from 'sanity'
 
 // Singleton -- see structure.tsx, which always opens this exact document ID
 // rather than listing many. Same pattern as `aiPromptSettingsType`.
@@ -34,6 +34,12 @@ export const siteSettingsType = defineType({
     {
       name: 'publishing',
       title: 'Publishing',
+      options: {collapsible: false},
+    },
+    {
+      name: 'distribution',
+      title: 'Connected accounts',
+      description: 'One-time registry of your real accounts on each platform, so posts can reference a known account instead of retyping a handle every time.',
       options: {collapsible: false},
     },
   ],
@@ -105,6 +111,38 @@ export const siteSettingsType = defineType({
       fieldset: 'publishing',
       description: 'Every new post starts assigned to this author. Change it here any time — it only affects posts created afterward, never existing ones.',
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'connectedAccounts',
+      title: 'Connected accounts',
+      type: 'array',
+      fieldset: 'distribution',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'connectedAccount',
+          fields: [
+            defineField({
+              name: 'platform',
+              type: 'string',
+              options: {
+                list: ['Facebook', 'Instagram', 'TikTok', 'LinkedIn', 'X', 'Threads', 'YouTube'],
+              },
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: 'url',
+              title: 'Profile URL / handle',
+              type: 'url',
+              validation: (rule) => rule.required().uri({scheme: ['http', 'https']}),
+            }),
+          ],
+          preview: {
+            select: {platform: 'platform', url: 'url'},
+            prepare: ({platform, url}) => ({title: platform, subtitle: url}),
+          },
+        }),
+      ],
     }),
   ],
   preview: {

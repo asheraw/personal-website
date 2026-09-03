@@ -43,6 +43,24 @@ export const shareLogType = defineType({
       options: {dateFormat: 'YYYY-MMM-DD'},
       readOnly: true,
     }),
+    // Set by the "Pull comments" button on the Distribution dashboard (see
+    // DistributionDashboardTool.tsx and /api/ai/pull-facebook-comments) --
+    // when this post's Facebook thread was last pulled, and how many
+    // comments came back that time, so the dashboard can show it without
+    // re-pulling just to check.
+    defineField({
+      name: 'facebookCommentsLastPulledAt',
+      title: 'Facebook comments last pulled',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      readOnly: true,
+    }),
+    defineField({
+      name: 'facebookCommentsLastPulledCount',
+      title: 'Facebook comments pulled (last run)',
+      type: 'number',
+      readOnly: true,
+    }),
     // Manual, not automated -- ACE_MASTER_SPEC.md is explicit that pulling
     // replies/engagement back from X/Facebook/LinkedIn's own APIs isn't
     // worth the ongoing fees/OAuth/platform churn for a solo creator. This

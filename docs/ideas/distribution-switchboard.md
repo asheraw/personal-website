@@ -31,9 +31,10 @@ silently fail to find one).
 
 ## Key Assumptions to Validate
 
-- [ ] An Apify Actor can reliably pull comments from Asher's personal Facebook profile posts (the
+- [x] An Apify Actor can reliably pull comments from Asher's personal Facebook profile posts (the
       confirmed first target) at a reasonable per-run cost — test against 2-3 real posts before building
-      the full pipeline around it.
+      the full pipeline around it. **Validated 2026-09-03**: `apify/facebook-comments-scraper`, $0.0285 for
+      an 11-comment test run against a real profile post (see `tasks/todo.md` Task 1).
 - [ ] A visible "0 of 7 drafted" indicator at publish time is actually enough to break the habit problem
       that made the existing Draft Social Copy button go unused — this is a UX bet, not a given; worth
       checking after a few weeks of real use rather than assuming it's solved by construction.

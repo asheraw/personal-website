@@ -3,8 +3,9 @@ import {Badge, Box, Button, Card, Flex, Select, Spinner, Stack, Text, TextArea} 
 import {useClient} from 'sanity'
 import {openPostInStudio} from '../lib/openPostInStudio'
 import {SharePanel} from './SharePanel'
+import {PullFacebookCommentsButton} from './PullFacebookCommentsButton'
 
-type Post = {_id: string; title: string; slug: string; publishedAt?: string}
+type Post = {_id: string; title: string; slug: string; publishedAt?: string; facebookUrl?: string}
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
 type ShareLog = {
   postSlug: string
@@ -14,8 +15,10 @@ type ShareLog = {
   linkedinCount?: number
   whatsappCount?: number
   engagementNotes?: EngagementNote[]
+  facebookCommentsLastPulledAt?: string
+  facebookCommentsLastPulledCount?: number
 }
-type AiLog = {feature: string; postSlug?: string; _createdAt: string}
+type AiLog = {feature: string; postSlug?: string; _createdAt: string; usedActions?: {action?: string}[]}
 
 const PLATFORMS = ['X (Twitter)', 'LinkedIn', 'Facebook', 'WhatsApp', 'Email', 'Other']
 
@@ -53,12 +56,12 @@ export function DistributionDashboardTool() {
   const load = useCallback(async () => {
     const [postsResult, shareLogResult, aiLogResult] = await Promise.all([
       client.fetch<Post[]>(
-        `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt}`,
+        `*[_type == "post" && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url}`,
       ),
       client.fetch<ShareLog[]>(
-        `*[_type == "shareLog"]{postSlug, totalShares, xCount, facebookCount, linkedinCount, whatsappCount, engagementNotes}`,
+        `*[_type == "shareLog"]{postSlug, totalShares, xCount, facebookCount, linkedinCount, whatsappCount, engagementNotes, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount}`,
       ),
-      client.fetch<AiLog[]>(`*[_type == "aiOutputLog"]{feature, postSlug, _createdAt}`),
+      client.fetch<AiLog[]>(`*[_type == "aiOutputLog"]{feature, postSlug, _createdAt, usedActions[]{action}}`),
     ])
     setPosts(postsResult)
     setShareLogs(Object.fromEntries(shareLogResult.map((s) => [s.postSlug, s])))
@@ -122,6 +125,16 @@ export function DistributionDashboardTool() {
   }
 
   const socialDraftedSlugs = new Set(aiLogs.filter((l) => l.feature === 'social').map((l) => l.postSlug))
+  // Generation is still bundled (one suggest-social call drafts X/LinkedIn/
+  // Facebook together -- see socialDraftedSlugs above), but "used" is
+  // tracked per-platform via the exact strings SuggestSocialCopyShared.tsx
+  // logs on each copy-button click ("Copied Facebook caption (option N)").
+  // Only the display splits Facebook out here, not the generation itself.
+  const facebookCopiedSlugs = new Set(
+    aiLogs
+      .filter((l) => l.feature === 'social' && l.usedActions?.some((a) => a.action?.startsWith('Copied Facebook caption')))
+      .map((l) => l.postSlug),
+  )
   const monthStart = monthStartISO()
   const usageThisMonth = aiLogs.filter((l) => l._createdAt >= monthStart).length
   const usageByFeature = aiLogs.reduce<Record<string, number>>((acc, l) => {
@@ -161,6 +174,7 @@ export function DistributionDashboardTool() {
             const shareLog = shareLogs[post.slug]
             const notes = shareLog?.engagementNotes ?? []
             const drafted = socialDraftedSlugs.has(post.slug)
+            const facebookCopied = facebookCopiedSlugs.has(post.slug)
             const draft = noteDrafts[post.slug] ?? {note: '', platform: ''}
 
             return (
@@ -174,6 +188,11 @@ export function DistributionDashboardTool() {
                       <Badge tone={drafted ? 'positive' : 'default'} fontSize={0}>
                         {drafted ? 'Social copy drafted' : 'Not drafted yet'}
                       </Badge>
+                      {drafted && (
+                        <Badge tone={facebookCopied ? 'positive' : 'caution'} fontSize={0}>
+                          {facebookCopied ? 'Facebook copied' : 'Facebook not copied yet'}
+                        </Badge>
+                      )}
                       <Badge tone="default" fontSize={0}>
                         {shareLog?.totalShares ?? 0} share{(shareLog?.totalShares ?? 0) === 1 ? '' : 's'}
                       </Badge>
@@ -187,7 +206,17 @@ export function DistributionDashboardTool() {
                     </Flex>
                   </Flex>
 
-                  <SharePanel postId={post._id} title={post.title} slug={post.slug} />
+                  <Flex justify="space-between" align="flex-start" gap={3} wrap="wrap">
+                    <SharePanel postId={post._id} title={post.title} slug={post.slug} />
+                    {post.facebookUrl && (
+                      <PullFacebookCommentsButton
+                        postId={post._id}
+                        lastPulledAt={shareLog?.facebookCommentsLastPulledAt}
+                        lastPulledCount={shareLog?.facebookCommentsLastPulledCount}
+                        onPulled={load}
+                      />
+                    )}
+                  </Flex>
 
                   <Text
                     size={0}

@@ -32,29 +32,47 @@ generation logic.
 ## Task List
 
 ### Phase 1: De-risk the unvalidated assumption
-- [ ] Task 1: Validate Apify can pull Facebook personal-profile comments
+- [x] Task 1: Validate Apify can pull Facebook personal-profile comments — DONE 2026-09-03
 
 ### Checkpoint: Phase 1
-- [ ] Apify spike result documented (works / doesn't work / partial) with real cost-per-run data
-- [ ] Go/no-go decision recorded before any schema work begins
+- [x] Apify spike result documented (works / doesn't work / partial) with real cost-per-run data — see
+      `tasks/todo.md` Task 1 findings: `apify/facebook-comments-scraper`, $0.0285 for an 11-comment test
+      run against a real personal-profile post
+- [x] Go/no-go decision recorded before any schema work begins — **GO**
 
 ### Phase 2: Data model
-- [ ] Task 2: Add `socialLinks` array to `postType.ts`
-- [ ] Task 3: Add `connectedAccounts` array to `siteSettingsType.ts`
+- [x] Task 2: Add `socialLinks` array to `postType.ts` — DONE 2026-09-03
+- [x] Task 3: Add `connectedAccounts` array to `siteSettingsType.ts` — DONE 2026-09-03
 
 ### Checkpoint: Phase 2
-- [ ] Studio schema deploys with no errors
-- [ ] Both new fields editable in Studio against a real (test) post/settings document
+- [x] Studio schema deploys with no errors — `tsc --noEmit` clean on both changed files (pre-existing,
+      unrelated errors elsewhere in the codebase are untouched by this work)
+- [x] Both new fields editable in Studio against a real (test) post/settings document — verified via the
+      Sanity write client directly: 50 real posts migrated into `socialLinks`, one real `connectedAccounts`
+      entry saved to Site Settings. **Not yet eyeballed in the Studio browser UI itself** — worth a quick
+      manual look before this ships, to confirm the dropdown and object preview render as expected.
 
 ### Phase 3: Surface Facebook status + close the comment loop
-- [ ] Task 4: Surface Facebook-specific drafted/used status in `DistributionDashboardTool.tsx`
-- [ ] Task 5: New API route — pull Facebook comments via the validated Apify Actor
-- [ ] Task 6: Extract shared comment dedupe/import logic for reuse
-- [ ] Task 7: "Pull comments" button wired into the dashboard's Facebook column
+- [x] Task 4: Surface Facebook-specific drafted/used status in `DistributionDashboardTool.tsx` — DONE 2026-09-03
+- [x] Task 5: New API route — pull Facebook comments via the validated Apify Actor — DONE 2026-09-03 (real
+      token added later the same day, real end-to-end run confirmed working)
+- [x] Task 6: Extract shared comment dedupe/import logic for reuse — DONE 2026-09-03, but written fresh
+      (see todo.md's caveat: the historical script this was meant to extract from no longer exists
+      anywhere in the repo or its git history)
+- [x] Task 7: "Pull comments" button wired into the dashboard's Facebook column — DONE 2026-09-03
 
 ### Checkpoint: Complete
-- [ ] End-to-end: click "Pull comments" on one real post with a known Facebook URL, confirm new comments
-      land in Sanity, already-`approved` comments keep their status, a second click doesn't duplicate
+- [x] End-to-end (logic level): once a real `APIFY_API_TOKEN` was added, ran the actual shared logic behind
+      the button twice against `even-my-discipline-was-an-escape` -- first run pulled 11 real comments, 10
+      created as `pending` (correctly threaded), 1 correctly caught as a within-batch duplicate; second run
+      pulled the same 11, 0 created / 11 matched, confirming no duplication on re-pull. Both existing
+      `approved` comments on that post stayed untouched. See `tasks/todo.md` Task 7 for the full numbers
+      and the one honest gap: this verified the shared logic and the route's exact request shape directly,
+      not a literal click on the Studio button or the live post page -- Studio's browser UI remains
+      unreachable for automated testing (documented limitation).
+- [ ] Asher to click the real "Pull comments" button in Studio at least once, confirm the pending comments
+      show up correctly in the Comments moderation queue, and approve/reject the real batch already sitting
+      there from the run above
 - [ ] Review with Asher before starting any second platform
 
 ## Risks and Mitigations

@@ -217,13 +217,37 @@ export const postType = defineType({
       initialValue: false,
     }),
     defineField({
-      name: 'legacyFacebookThreadUrl',
-      title: 'Original Facebook thread (internal note)',
-      type: 'url',
+      name: 'socialLinks',
+      title: 'Social links',
+      type: 'array',
       fieldset: 'discussion',
       description:
-        'Internal reference only -- never shown on the live site or fed into anything automated. Facebook comments on personal-profile posts (not a Page) aren\'t reachable through any API, so cross-checking an imported thread against the real one means opening this link by hand. Safe to delete once you\'re done cross-checking a post\'s comments -- nothing else in the codebase reads this field.',
-      validation: (rule) => rule.uri({scheme: ['http', 'https']}),
+        'Where this post lives on each social platform -- used to pull comments back from that platform and to link out to it. One entry per platform.',
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'socialLink',
+          fields: [
+            defineField({
+              name: 'platform',
+              type: 'string',
+              options: {
+                list: ['Facebook', 'Instagram', 'TikTok', 'LinkedIn', 'X', 'Threads', 'YouTube'],
+              },
+              validation: (rule) => rule.required(),
+            }),
+            defineField({
+              name: 'url',
+              type: 'url',
+              validation: (rule) => rule.required().uri({scheme: ['http', 'https']}),
+            }),
+          ],
+          preview: {
+            select: {platform: 'platform', url: 'url'},
+            prepare: ({platform, url}) => ({title: platform, subtitle: url}),
+          },
+        }),
+      ],
     }),
     // PLAY: an optional, interactive alternative way to experience this
     // post -- separate from the normal reading view (STORY), never
