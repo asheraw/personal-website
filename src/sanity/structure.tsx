@@ -14,6 +14,7 @@ import {LinkIcon} from '@sanity/icons/Link'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
+import {AiToolsView} from './components/AiToolsView'
 import {NotFoundHitsTool} from './components/NotFoundHitsTool'
 import {ContactSubmissionsTool} from './components/ContactSubmissionsTool'
 import {ExportTool} from './components/ExportTool'
@@ -49,7 +50,11 @@ export const structure: StructureResolver = (S) =>
           S.document()
             .schemaType('post')
             .documentId(crypto.randomUUID())
-            .views([S.view.form(), S.view.component(SeoPreviewView).title('SEO Preview')]),
+            .views([
+                  S.view.form(),
+                  S.view.component(AiToolsView).title('AI Tools'),
+                  S.view.component(SeoPreviewView).title('SEO Preview'),
+                ]),
         ),
       // Custom child so every post also gets an "SEO Preview" tab
       // alongside the normal Editor form -- approximate Google/social
@@ -66,7 +71,11 @@ export const structure: StructureResolver = (S) =>
               S.document()
                 .documentId(postId)
                 .schemaType('post')
-                .views([S.view.form(), S.view.component(SeoPreviewView).title('SEO Preview')]),
+                .views([
+                  S.view.form(),
+                  S.view.component(AiToolsView).title('AI Tools'),
+                  S.view.component(SeoPreviewView).title('SEO Preview'),
+                ]),
             ),
         ),
       // Custom child (instead of the plain documentTypeListItem default) so

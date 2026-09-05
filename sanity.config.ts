@@ -15,13 +15,7 @@ import {withAutoPublishDate} from './src/sanity/actions/publishWithDate'
 import {withPrePublishChecklist} from './src/sanity/actions/prepareForPublish'
 import {withRevalidateOnPublish} from './src/sanity/actions/revalidateOnPublish'
 import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
-import {createSuggestSeoAction} from './src/sanity/actions/suggestSeo'
-import {createSuggestSocialCopyAction} from './src/sanity/actions/suggestSocialCopy'
-import {createSuggestLinkedInPostAction} from './src/sanity/actions/suggestLinkedInPost'
-import {createSuggestVideoScriptAction} from './src/sanity/actions/suggestVideoScript'
-import {createSuggestImageCarouselAction} from './src/sanity/actions/suggestImageCarousel'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
-import {createGenerateFeaturedImageAction} from './src/sanity/actions/generateFeaturedImage'
 import {createExportAction} from './src/sanity/actions/exportPost'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
@@ -99,16 +93,17 @@ export default defineConfig({
       // Publish must stay the primary (first) action -- Studio renders
       // whichever action is first as the big prominent button. Everything
       // else goes after it as secondary actions instead.
+      // Suggest SEO, Draft Social Copy, Draft LinkedIn Post, Draft Video
+      // Script, Draft Image Carousel, and Generate Featured Image all moved
+      // OUT of this menu into the post editor's own "AI Tools" tab
+      // (structure.tsx) -- a visible tab beats a menu item buried ~14 deep.
+      // Suggest Image Prompt stays here; it already has its own better
+      // entry point right next to the Featured Image field
+      // (MainImageInputWithSuggestPrompt.tsx), unrelated to this move.
       return [
         withDateAction[0],
         openInPresentationAction,
-        createSuggestSeoAction(),
-        createSuggestSocialCopyAction(),
-        createSuggestLinkedInPostAction(),
-        createSuggestVideoScriptAction(),
-        createSuggestImageCarouselAction(),
         createSuggestImagePromptAction(),
-        createGenerateFeaturedImageAction(),
         createExportAction(),
         ...withDateAction.slice(1),
       ]
