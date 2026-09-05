@@ -67,10 +67,16 @@ export async function GET(request: NextRequest) {
             ? draft.scheduledPublishAt
             : currentPublishedAt;
 
+        // scheduledPublishAt's job is done the moment this runs -- leaving
+        // it set on the published doc made ScheduledPublishInput.tsx's own
+        // "date has passed" warning banner keep firing forever afterward,
+        // since it only checks the date, not whether a draft still exists.
+        const { scheduledPublishAt: _scheduledPublishAt, ...publishedFields } = fullDraft;
+
         await writeClient
           .transaction()
           .createOrReplace({
-            ...fullDraft,
+            ...publishedFields,
             _id: publishedId,
             publishedAt: finalPublishedAt,
           })
