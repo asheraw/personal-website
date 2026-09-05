@@ -10,6 +10,8 @@ import { SizedImage, type DisplaySize, type FloatDirection } from "@/components/
 import { WideBreakout } from "@/components/asher/blog/WideBreakout";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
 import { QuoteGrid, type QuoteEntry, type QuoteGridLayout, type QuoteGridWeight, type QuoteGridSize } from "@/components/asher/blog/QuoteGrid";
+import { SkillGrid, type SkillEntry } from "@/components/asher/blog/SkillGrid";
+import { SkillTable } from "@/components/asher/blog/SkillTable";
 import { isTextColorValue } from "@/lib/textColors";
 import { restrictedRichTextComponents } from "@/components/asher/blog/restrictedRichTextComponents";
 
@@ -337,6 +339,10 @@ export const postBodyComponents: PortableTextComponents = {
         size={(value?.textSize as QuoteGridSize) ?? "regular"}
       />
     ),
+    skillGrid: ({ value }) => {
+      const entries = (value?.entries ?? []) as SkillEntry[];
+      return value?.layout === "table" ? <SkillTable entries={entries} /> : <SkillGrid entries={entries} />;
+    },
     // Renders a Reusable Snippet inserted into this post -- `snippetData`
     // is the dereferenced snippet document (see POST_BY_SLUG_QUERY), never
     // a copy: editing the snippet in Studio updates every post that uses
