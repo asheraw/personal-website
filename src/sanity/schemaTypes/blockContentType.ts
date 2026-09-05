@@ -9,7 +9,6 @@ import {LinkIcon} from '@sanity/icons/Link'
 import {DocumentIcon} from '@sanity/icons/Document'
 import {TagIcon} from '@sanity/icons/Tag'
 import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
-import {ThListIcon} from '@sanity/icons/ThList'
 import {TEXT_COLORS} from '../../lib/textColors'
 import {SavedStatusInput} from '../components/SavedStatusInput'
 import {ImageGalleryStatusInput} from '../components/ImageGalleryStatusInput'
@@ -19,6 +18,8 @@ import {GifPickerInput} from '../components/GifPickerInput'
 import {CollapsedGifBlock} from '../components/CollapsedGifBlock'
 import {TooltipDescriptionField} from '../components/TooltipDescriptionField'
 import {BulkImagePickerInput} from '../components/BulkImagePickerInput'
+import {DataGridInput} from '../components/DataGridInput'
+import {DocumentSheetIcon} from '@sanity/icons/DocumentSheet'
 
 /**
  * This is the schema type for block content used in the post document type
@@ -578,170 +579,105 @@ export const blockContentType = defineType({
         },
       },
     }),
-    // A genuine rows-of-fields overview -- one card per entry, every field
-    // visible at once, no click needed to see it. Built for Asher's "How to
-    // Keep Track of Your Skills" post (2026-08-29): the Accordion Group
-    // alternative made every entry a click to open, which fought the whole
-    // point of the post (an at-a-glance list he can scan to decide keep/
-    // update/delete). Rendered by SkillGrid.tsx.
+    // A generic spreadsheet-style grid -- every cell is freeform: its own type (text/rich text/checkbox/select/image), no
+    // predeclared columns. Rows are the array Sanity orders natively;
+    // columns are NOT a stored entity, just however many cells the longest
+    // row has -- moving/adding/removing a "column" touches the same index
+    // across every row in one patch. `components: {input: DataGridInput}`
+    // fully replaces Studio's default array-of-objects editor with a real
+    // spreadsheet-feeling one (click a cell, type; drag rows/columns/
+    // individual cells to reorder or swap) -- see DataGridInput.tsx.
     defineArrayMember({
       type: 'object',
-      name: 'skillGrid',
-      title: 'Skill Grid',
-      icon: ThListIcon,
+      name: 'dataGrid',
+      title: 'Data Grid',
+      icon: DocumentSheetIcon,
+      components: {input: DataGridInput},
       fields: [
         defineField({
-          name: 'layout',
-          title: 'Layout',
+          name: 'headerMode',
+          title: 'Header',
           type: 'string',
-          description: 'Cards: every field visible per skill, no click needed. Table: one row per skill, longer fields (why/clash/improved) expand in place from the Details column.',
           options: {
             list: [
-              {title: 'Cards (grid of bordered cards)', value: 'cards'},
-              {title: 'Table (rows + columns, hover for details)', value: 'table'},
+              {title: 'First row', value: 'row'},
+              {title: 'First column', value: 'column'},
+              {title: 'None', value: 'none'},
             ],
           },
-          initialValue: 'cards',
+          initialValue: 'row',
+        }),
+        // Select-cell option lists live here, one entry per column index,
+        // NOT on the individual cells -- so changing "Status"'s dropdown
+        // options is one edit instead of one per row. Managed entirely by
+        // DataGridInput.tsx (kept in sync as columns are added/removed/
+        // reordered); hidden from Studio's default array UI since hand-
+        // editing this out of step with the actual column layout would
+        // desync it.
+        defineField({
+          name: 'columnSelectOptions',
+          title: 'Column select options',
+          type: 'array',
+          // An array can't directly contain another array as a member
+          // (a real Sanity schema restriction) -- wrapped in a one-field
+          // object instead of `array of array of string`.
+          of: [
+            defineArrayMember({
+              type: 'object',
+              name: 'columnOptionList',
+              fields: [defineField({name: 'options', title: 'Options', type: 'array', of: [{type: 'string'}]})],
+            }),
+          ],
+          hidden: true,
         }),
         defineField({
-          name: 'entries',
-          title: 'Skills',
+          name: 'rows',
+          title: 'Rows',
           type: 'array',
           of: [
             defineArrayMember({
               type: 'object',
-              name: 'skillEntry',
+              name: 'dataGridRow',
               fields: [
-                defineField({name: 'name', title: 'Name', type: 'string', validation: (rule) => rule.required()}),
-                // Right under Name -- Asher's ask (2026-08-29), the most
-                // logical spot for it editing-wise, and it's also what the
-                // rendered skill name itself links to.
                 defineField({
-                  name: 'sourceUrl',
-                  title: 'Source link (optional)',
-                  type: 'url',
-                  description: 'The original repo, marketplace, or listing this was installed from.',
-                }),
-                // What kind of skill this is, broader than just "coding" --
-                // Asher's ask (2026-08-29), planning ahead for Claude
-                // surfaces beyond Claude Code too (image/video generation,
-                // etc.), not just what's installed today. "Others" is a
-                // deliberate catch-all, not a sign the list is incomplete.
-                defineField({
-                  name: 'category',
-                  title: 'Category',
-                  type: 'string',
-                  options: {
-                    list: [
-                      {title: 'Coding & Dev', value: 'coding-dev'},
-                      {title: 'Design', value: 'design'},
-                      {title: 'Writing', value: 'writing'},
-                      {title: 'Productivity', value: 'productivity'},
-                      {title: 'Documents', value: 'documents'},
-                      {title: 'Memory & Data', value: 'memory-data'},
-                      {title: 'Media (graphic, video, audio)', value: 'media'},
-                      {title: 'Others', value: 'others'},
-                    ],
-                  },
-                  initialValue: 'others',
-                }),
-                // A multi-select checkbox list, same shape as Category
-                // above, not two separately-titled booleans -- Asher's ask
-                // (2026-08-29): the old "On this machine (user-level)" /
-                // "On this project (project-level, reaches the web
-                // session)" titles read inconsistently next to Category's
-                // clean short options. Meaning is unchanged: "Desktop" =
-                // installed at the user level (~/.claude/skills), works in
-                // any project on this computer but never reaches a web
-                // session. "Web" = installed at the project level
-                // (committed to this repo's .claude/skills), so it also
-                // follows into the browser-based session for this project.
-                // Any nuance that doesn't fit these two belongs in Details
-                // below instead.
-                defineField({
-                  name: 'platform',
-                  title: 'Platform',
+                  name: 'cells',
+                  title: 'Cells',
                   type: 'array',
-                  of: [{type: 'string'}],
-                  options: {
-                    list: [
-                      {title: 'Desktop', value: 'desktop'},
-                      {title: 'Web', value: 'web'},
-                    ],
-                  },
-                }),
-                defineField({
-                  name: 'installed',
-                  title: 'Installed',
-                  type: 'string',
-                  description: 'Plain text, e.g. "08 Aug 2026".',
-                }),
-                // One rich-text field, not several separate plain-text
-                // boxes -- Asher's ask (2026-08-29): three fields (Why /
-                // Clash / Improved) to tab through felt like more editing
-                // overhead than the content warranted, and "Where from"
-                // (originally its own field, later a Table column) turned
-                // out to belong here too rather than needing its own slot
-                // anywhere. Same restricted rich text as Accordion/
-                // Callout's own content fields -- write it as one
-                // continuous note (bold a "From:"/"Why:"/"Clash:"/
-                // "Improved:" label inline if that structure's useful for a
-                // given entry, or just write freely).
-                restrictedRichTextField('details', 'Details'),
-                // Three states, not a boolean -- "unmodified off-the-shelf"
-                // and "unmodified but changed/merged since" are genuinely
-                // different answers to "should I keep this as is," which a
-                // Yes/No Custom-built toggle couldn't tell apart (Asher's
-                // ask, 2026-08-29). "Status" was briefly relabeled "Origin"
-                // the same day, then reverted -- "Status" was fine all
-                // along, it was the "Off the shelf" *value* that read
-                // wrong; renamed that to "Installed" instead, which now
-                // reads as a real lifecycle rather than just "how much did
-                // I touch this": Installed -> Modified -> Custom is how
-                // active entries progress, Shelved and Removed cover the
-                // two ways an entry stops being active (never adopted vs.
-                // adopted then taken out). Value key changed from
-                // `off-the-shelf` to `installed` to match (migrated every
-                // existing entry, 2026-08-29) -- worth doing properly now
-                // rather than leaving the stored value and the displayed
-                // label permanently out of sync with each other.
-                defineField({
-                  name: 'status',
-                  title: 'Status',
-                  type: 'string',
-                  options: {
-                    list: [
-                      {title: 'Installed (unmodified)', value: 'installed'},
-                      {title: 'Modified (installed, but changed or merged since)', value: 'modified'},
-                      {title: 'Custom (built it myself)', value: 'custom'},
-                      {title: 'Shelved (considered, never actually installed)', value: 'shelved'},
-                      {title: 'Removed (installed once, taken out since)', value: 'removed'},
-                    ],
-                  },
-                  initialValue: 'installed',
+                  of: [
+                    defineArrayMember({
+                      type: 'object',
+                      name: 'dataGridCell',
+                      fields: [
+                        defineField({
+                          name: 'type',
+                          title: 'Type',
+                          type: 'string',
+                          options: {list: ['text', 'richText', 'checkbox', 'select', 'image', 'date']},
+                          initialValue: 'text',
+                        }),
+                        // Also holds the raw ISO date string for a 'date'
+                        // cell -- one less field to add for a single
+                        // <input type="date">'s worth of value.
+                        defineField({name: 'text', title: 'Text', type: 'string'}),
+                        restrictedRichTextField('richText', 'Rich text'),
+                        defineField({name: 'checked', title: 'Checked', type: 'boolean'}),
+                        defineField({name: 'selectValue', title: 'Selected value', type: 'string'}),
+                        defineField({name: 'image', title: 'Image', type: 'image'}),
+                      ],
+                    }),
+                  ],
                 }),
               ],
-              preview: {
-                select: {name: 'name', details: 'details'},
-                prepare: ({name, details}) => {
-                  const flatText = Array.isArray(details)
-                    ? (details as {children?: {text?: string}[]}[])
-                        .map((block) => (block.children ?? []).map((c) => c.text ?? '').join(''))
-                        .join(' ')
-                    : ''
-                  return {title: name || 'Skill', subtitle: flatText}
-                },
-              },
             }),
           ],
-          validation: (rule) => rule.min(1).error('Add at least one skill.'),
         }),
       ],
       preview: {
-        select: {entries: 'entries'},
-        prepare: ({entries}) => {
-          const count = (entries as unknown[] | undefined)?.length ?? 0
-          return {title: `Skill Grid (${count} ${count === 1 ? 'skill' : 'skills'})`}
+        select: {rows: 'rows'},
+        prepare: ({rows}) => {
+          const rowCount = (rows as unknown[] | undefined)?.length ?? 0
+          const colCount = (rows as {cells?: unknown[]}[] | undefined)?.[0]?.cells?.length ?? 0
+          return {title: `Data Grid (${rowCount}×${colCount})`}
         },
       },
     }),

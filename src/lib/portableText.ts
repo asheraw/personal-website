@@ -14,6 +14,7 @@ export type PortableTextBlock = {
   content?: string | PortableTextBlock[];
   entries?: { name?: string; quote?: string; details?: PortableTextBlock[] }[];
   items?: { title?: string; content?: string | PortableTextBlock[] }[];
+  rows?: { cells?: {type?: string; text?: string; richText?: PortableTextBlock[]; selectValue?: string}[] }[];
   // Only present on embed blocks -- see hasVideoEmbed() below.
   url?: string;
 };
@@ -65,18 +66,23 @@ export function portableTextToPlainText(blocks: unknown): string {
       if (block._type === "quoteGrid" && Array.isArray(block.entries)) {
         return block.entries.map((entry) => entry.quote || "").join(" ");
       }
-      // Same miss as Quote Grid above -- a Skill Grid's real content lives
-      // in its entries, not on the block itself. `details` is the same
-      // restricted-rich-text shape as Accordion's content (2026-08-29:
-      // replaced three separate plain-text fields), so it needs blockText()
-      // per block rather than being read as a plain string.
-      if (block._type === "skillGrid" && Array.isArray(block.entries)) {
-        return block.entries
-          .map((entry) =>
-            [entry.name, Array.isArray(entry.details) ? entry.details.map(blockText).join(" ") : ""]
+      // Same miss as Quote Grid above -- a Data Grid's real content lives in
+      // its rows' cells, not on the block itself. Checkbox/image cells carry
+      // no readable text, so they're skipped rather than stringified.
+      if (block._type === "dataGrid" && Array.isArray(block.rows)) {
+        return block.rows
+          .map((row) =>
+            (row.cells ?? [])
+              .map((cell) => {
+                if (cell.type === "richText" && Array.isArray(cell.richText)) return cell.richText.map(blockText).join(" ");
+                if (cell.type === "text") return cell.text || "";
+                if (cell.type === "select") return cell.selectValue || "";
+                return "";
+              })
               .filter(Boolean)
               .join(" ")
           )
+          .filter(Boolean)
           .join(" ");
       }
       return "";
