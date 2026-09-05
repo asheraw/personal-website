@@ -24,15 +24,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const post = await writeClient.fetch<{ tiktokUrl?: string; slug?: string; title?: string } | null>(
-    `*[_id == $postId][0]{"tiktokUrl": socialLinks[platform == "TikTok"][0].url, "slug": slug.current, title}`,
+  // No [0] -- every TikTok link on this post, not just the first.
+  const post = await writeClient.fetch<{ tiktokUrls?: string[]; slug?: string; title?: string } | null>(
+    `*[_id == $postId][0]{"tiktokUrls": socialLinks[platform == "TikTok"].url, "slug": slug.current, title}`,
     { postId }
   );
 
   if (post === null) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
-  if (!post.tiktokUrl) {
+  if (!post.tiktokUrls?.length) {
     return NextResponse.json(
       { error: "This post has no TikTok link saved yet — add one under Discussion → Social links first." },
       { status: 400 }
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${process.env.APIFY_API_TOKEN}`,
         },
         body: JSON.stringify({
-          postURLs: [post.tiktokUrl],
+          postURLs: post.tiktokUrls,
           commentsPerPost: 200,
           maxRepliesPerComment: 20,
         }),

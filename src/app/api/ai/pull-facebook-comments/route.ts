@@ -31,15 +31,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const post = await writeClient.fetch<{ facebookUrl?: string; slug?: string; title?: string } | null>(
-    `*[_id == $postId][0]{"facebookUrl": socialLinks[platform == "Facebook"][0].url, "slug": slug.current, title}`,
+  // socialLinks[platform == "Facebook"] (no [0]) returns every entry for
+  // this platform, not just the first -- a post shared to Facebook more
+  // than once (e.g. a re-share weeks later) previously had every URL past
+  // the first silently ignored. Apify's startUrls already accepts more
+  // than one, so this is one call covering every link, not a loop.
+  const post = await writeClient.fetch<{ facebookUrls?: string[]; slug?: string; title?: string } | null>(
+    `*[_id == $postId][0]{"facebookUrls": socialLinks[platform == "Facebook"].url, "slug": slug.current, title}`,
     { postId }
   );
 
   if (post === null) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
-  if (!post.facebookUrl) {
+  if (!post.facebookUrls?.length) {
     return NextResponse.json(
       { error: "This post has no Facebook link saved yet — add one under Discussion → Social links first." },
       { status: 400 }
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${process.env.APIFY_API_TOKEN}`,
         },
         body: JSON.stringify({
-          startUrls: [{ url: post.facebookUrl }],
+          startUrls: post.facebookUrls.map((url) => ({ url })),
           resultsLimit: 200,
           includeNestedComments: true,
           viewOption: "RANKED_UNFILTERED",

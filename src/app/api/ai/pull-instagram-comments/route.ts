@@ -35,15 +35,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const post = await writeClient.fetch<{ instagramUrl?: string; slug?: string; title?: string } | null>(
-    `*[_id == $postId][0]{"instagramUrl": socialLinks[platform == "Instagram"][0].url, "slug": slug.current, title}`,
+  // No [0] -- every Instagram link on this post, not just the first.
+  const post = await writeClient.fetch<{ instagramUrls?: string[]; slug?: string; title?: string } | null>(
+    `*[_id == $postId][0]{"instagramUrls": socialLinks[platform == "Instagram"].url, "slug": slug.current, title}`,
     { postId }
   );
 
   if (post === null) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
-  if (!post.instagramUrl) {
+  if (!post.instagramUrls?.length) {
     return NextResponse.json(
       { error: "This post has no Instagram link saved yet — add one under Discussion → Social links first." },
       { status: 400 }
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${process.env.APIFY_API_TOKEN}`,
         },
         body: JSON.stringify({
-          directUrls: [post.instagramUrl],
+          directUrls: post.instagramUrls,
           resultsLimit: 200,
           includeNestedComments: true,
         }),

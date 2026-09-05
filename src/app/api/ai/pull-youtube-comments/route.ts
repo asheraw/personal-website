@@ -24,15 +24,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const post = await writeClient.fetch<{ youtubeUrl?: string; slug?: string; title?: string } | null>(
-    `*[_id == $postId][0]{"youtubeUrl": socialLinks[platform == "YouTube"][0].url, "slug": slug.current, title}`,
+  // No [0] -- every YouTube link on this post, not just the first.
+  const post = await writeClient.fetch<{ youtubeUrls?: string[]; slug?: string; title?: string } | null>(
+    `*[_id == $postId][0]{"youtubeUrls": socialLinks[platform == "YouTube"].url, "slug": slug.current, title}`,
     { postId }
   );
 
   if (post === null) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
-  if (!post.youtubeUrl) {
+  if (!post.youtubeUrls?.length) {
     return NextResponse.json(
       { error: "This post has no YouTube link saved yet — add one under Discussion → Social links first." },
       { status: 400 }
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${process.env.APIFY_API_TOKEN}`,
         },
         body: JSON.stringify({
-          startUrls: [{ url: post.youtubeUrl }],
+          startUrls: post.youtubeUrls.map((url) => ({ url })),
           maxComments: 200,
           sortCommentsBy: "NEWEST_FIRST",
         }),

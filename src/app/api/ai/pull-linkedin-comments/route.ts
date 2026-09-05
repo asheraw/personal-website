@@ -26,15 +26,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const post = await writeClient.fetch<{ linkedinUrl?: string; slug?: string; title?: string } | null>(
-    `*[_id == $postId][0]{"linkedinUrl": socialLinks[platform == "LinkedIn"][0].url, "slug": slug.current, title}`,
+  // No [0] -- every LinkedIn link on this post, not just the first.
+  const post = await writeClient.fetch<{ linkedinUrls?: string[]; slug?: string; title?: string } | null>(
+    `*[_id == $postId][0]{"linkedinUrls": socialLinks[platform == "LinkedIn"].url, "slug": slug.current, title}`,
     { postId }
   );
 
   if (post === null) {
     return NextResponse.json({ error: "Post not found." }, { status: 404 });
   }
-  if (!post.linkedinUrl) {
+  if (!post.linkedinUrls?.length) {
     return NextResponse.json(
       { error: "This post has no LinkedIn link saved yet — add one under Discussion → Social links first." },
       { status: 400 }
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
           Authorization: `Bearer ${process.env.APIFY_API_TOKEN}`,
         },
         body: JSON.stringify({
-          posts: [post.linkedinUrl],
+          posts: post.linkedinUrls,
           maxItems: 200,
           scrapeReplies: true,
         }),

@@ -12,12 +12,12 @@ type Post = {
   title: string
   slug: string
   publishedAt?: string
-  facebookUrl?: string
+  facebookUrls?: string[]
   facebookPageUrl?: string
-  instagramUrl?: string
-  tiktokUrl?: string
-  youtubeUrl?: string
-  linkedinUrl?: string
+  instagramUrls?: string[]
+  tiktokUrls?: string[]
+  youtubeUrls?: string[]
+  linkedinUrls?: string[]
 }
 type EngagementNote = {_key: string; note?: string; platform?: string; timestamp?: string}
 
@@ -87,7 +87,14 @@ export function DistributionDashboardTool() {
         // that's currently being edited -- without it, an in-progress post
         // matches this query twice (its published _id and its drafts.<id>
         // counterpart, same slug on both), producing a duplicate React key.
-        `*[_type == "post" && !(_id in path("drafts.**")) && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrl": socialLinks[platform == "Facebook"][0].url, "facebookPageUrl": socialLinks[platform == "Facebook Page"][0].url, "instagramUrl": socialLinks[platform == "Instagram"][0].url, "tiktokUrl": socialLinks[platform == "TikTok"][0].url, "youtubeUrl": socialLinks[platform == "YouTube"][0].url, "linkedinUrl": socialLinks[platform == "LinkedIn"][0].url}`,
+        // No [0] on the five pullable platforms -- a post shared to the
+        // same platform more than once (a re-share weeks later, say) used
+        // to have every URL past the first silently ignored, both here and
+        // by the pull-*-comments routes. Facebook Page stays singular/[0]:
+        // it's not in PULLABLE_PLATFORMS and nothing else in this file
+        // reads facebookPageUrl beyond this fetch, so widening it would be
+        // dead scope.
+        `*[_type == "post" && !(_id in path("drafts.**")) && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrls": socialLinks[platform == "Facebook"].url, "facebookPageUrl": socialLinks[platform == "Facebook Page"][0].url, "instagramUrls": socialLinks[platform == "Instagram"].url, "tiktokUrls": socialLinks[platform == "TikTok"].url, "youtubeUrls": socialLinks[platform == "YouTube"].url, "linkedinUrls": socialLinks[platform == "LinkedIn"].url}`,
       ),
       client.fetch<ShareLog[]>(
         `*[_type == "shareLog"]{postSlug, totalShares, postedTo, newsletterSent, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount, tiktokCommentsLastPulledAt, tiktokCommentsLastPulledCount, youtubeCommentsLastPulledAt, youtubeCommentsLastPulledCount, linkedinCommentsLastPulledAt, linkedinCommentsLastPulledCount, engagementNotes}`,
@@ -409,29 +416,33 @@ export function DistributionDashboardTool() {
                 const notes = shareLog?.engagementNotes ?? []
                 const pendingCount = pendingCommentsByPost[post._id] ?? 0
 
-                const pullInfo: Partial<Record<SocialPlatform, {url?: string; lastPulledAt?: string; lastPulledCount?: number}>> = {
+                // urls (plural) -- a platform can have more than one link
+                // (a re-share weeks later, say); "Pull comments" covers all
+                // of them in one Apify call, but the row only links out to
+                // the first when showing a clickable label.
+                const pullInfo: Partial<Record<SocialPlatform, {urls: string[]; lastPulledAt?: string; lastPulledCount?: number}>> = {
                   facebook: {
-                    url: post.facebookUrl,
+                    urls: post.facebookUrls ?? [],
                     lastPulledAt: shareLog?.facebookCommentsLastPulledAt,
                     lastPulledCount: shareLog?.facebookCommentsLastPulledCount,
                   },
                   instagram: {
-                    url: post.instagramUrl,
+                    urls: post.instagramUrls ?? [],
                     lastPulledAt: shareLog?.instagramCommentsLastPulledAt,
                     lastPulledCount: shareLog?.instagramCommentsLastPulledCount,
                   },
                   tiktok: {
-                    url: post.tiktokUrl,
+                    urls: post.tiktokUrls ?? [],
                     lastPulledAt: shareLog?.tiktokCommentsLastPulledAt,
                     lastPulledCount: shareLog?.tiktokCommentsLastPulledCount,
                   },
                   youtube: {
-                    url: post.youtubeUrl,
+                    urls: post.youtubeUrls ?? [],
                     lastPulledAt: shareLog?.youtubeCommentsLastPulledAt,
                     lastPulledCount: shareLog?.youtubeCommentsLastPulledCount,
                   },
                   linkedin: {
-                    url: post.linkedinUrl,
+                    urls: post.linkedinUrls ?? [],
                     lastPulledAt: shareLog?.linkedinCommentsLastPulledAt,
                     lastPulledCount: shareLog?.linkedinCommentsLastPulledCount,
                   },
@@ -521,9 +532,10 @@ export function DistributionDashboardTool() {
                                 <Stack space={4}>
                                   {PULLABLE_PLATFORMS.map((platform) => {
                                     const info = pullInfo[platform]
+                                    const urls = info?.urls ?? []
                                     const statusText = info?.lastPulledAt
                                       ? `${info.lastPulledCount ?? 0} pulled · ${new Date(info.lastPulledAt).toLocaleDateString()}`
-                                      : info?.url
+                                      : urls.length > 0
                                         ? 'Not pulled yet'
                                         : 'No link yet'
                                     return (
@@ -531,9 +543,9 @@ export function DistributionDashboardTool() {
                                         <Flex align="center" gap={3}>
                                           <PlatformIcon platform={platform} size={22} />
                                           <Stack space={2}>
-                                            {info?.url ? (
+                                            {urls.length > 0 ? (
                                               <a
-                                                href={info.url}
+                                                href={urls[0]}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 style={{color: 'inherit', textDecoration: 'none'}}
@@ -542,6 +554,7 @@ export function DistributionDashboardTool() {
                                               >
                                                 <Text size={1} weight="medium">
                                                   {PLATFORM_META[platform].label} ↗
+                                                  {urls.length > 1 ? ` (+${urls.length - 1} more)` : ''}
                                                 </Text>
                                               </a>
                                             ) : (
@@ -563,8 +576,8 @@ export function DistributionDashboardTool() {
                                           platform={platform}
                                           postId={post._id}
                                           onPulled={load}
-                                          disabled={!info?.url}
-                                          disabledReason={!info?.url ? 'No link yet' : undefined}
+                                          disabled={urls.length === 0}
+                                          disabledReason={urls.length === 0 ? 'No link yet' : undefined}
                                         />
                                       </Flex>
                                     )
