@@ -31,6 +31,40 @@ function BrandIcon({path}: {path: string}) {
 function FacebookIcon() {
   return <BrandIcon path={siFacebook.path} />
 }
+// Facebook Page shares the exact same brand mark as Facebook Profile --
+// simple-icons only ships one Facebook glyph, there's no separate "Page"
+// version to swap in. A small "P" badge in the corner is the actual
+// differentiator, so the two are still tellable apart at a glance rather
+// than only on hover (where the title="Facebook Page" tooltip already
+// worked). Sized entirely in em so it scales correctly whether this
+// renders at table-header size or inside a Button's own icon slot.
+function FacebookPageIcon() {
+  return (
+    <span style={{position: 'relative', display: 'inline-flex', width: '1em', height: '1em'}}>
+      <BrandIcon path={siFacebook.path} />
+      <span
+        style={{
+          position: 'absolute',
+          bottom: '-8%',
+          right: '-12%',
+          width: '0.52em',
+          height: '0.52em',
+          borderRadius: '50%',
+          background: 'var(--card-bg-color, Canvas)',
+          border: '0.07em solid currentColor',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '0.4em',
+          fontWeight: 700,
+          lineHeight: 1,
+        }}
+      >
+        P
+      </span>
+    </span>
+  )
+}
 function InstagramIcon() {
   return <BrandIcon path={siInstagram.path} />
 }
@@ -60,9 +94,7 @@ function LinkedinIcon() {
 // which glyph and label goes with which platform, so the two never drift.
 export const PLATFORM_META: Record<SocialPlatform, {label: string; icon: ComponentType}> = {
   facebook: {label: 'Facebook', icon: FacebookIcon},
-  // Same brand mark as facebook -- distinguished by label only, since it's
-  // still literally the Facebook logo, just for a Page instead of a Profile.
-  facebookPage: {label: 'Facebook Page', icon: FacebookIcon},
+  facebookPage: {label: 'Facebook Page', icon: FacebookPageIcon},
   instagram: {label: 'Instagram', icon: InstagramIcon},
   tiktok: {label: 'TikTok', icon: TiktokIcon},
   youtube: {label: 'YouTube', icon: YoutubeIcon},

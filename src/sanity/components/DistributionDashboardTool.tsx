@@ -525,15 +525,30 @@ export function DistributionDashboardTool() {
                                       ? `${info.lastPulledCount ?? 0} pulled · ${new Date(info.lastPulledAt).toLocaleDateString()}`
                                       : info?.url
                                         ? 'Not pulled yet'
-                                        : 'No link saved yet'
+                                        : 'No link yet'
                                     return (
                                       <Flex key={platform} justify="space-between" align="center" gap={3}>
                                         <Flex align="center" gap={3}>
                                           <PlatformIcon platform={platform} size={22} />
                                           <Stack space={2}>
-                                            <Text size={1} weight="medium">
-                                              {PLATFORM_META[platform].label}
-                                            </Text>
+                                            {info?.url ? (
+                                              <a
+                                                href={info.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                style={{color: 'inherit', textDecoration: 'none'}}
+                                                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                              >
+                                                <Text size={1} weight="medium">
+                                                  {PLATFORM_META[platform].label} ↗
+                                                </Text>
+                                              </a>
+                                            ) : (
+                                              <Text size={1} weight="medium">
+                                                {PLATFORM_META[platform].label}
+                                              </Text>
+                                            )}
                                             <Text size={1} muted={!info?.lastPulledAt}>
                                               {statusText}
                                             </Text>
@@ -549,7 +564,7 @@ export function DistributionDashboardTool() {
                                           postId={post._id}
                                           onPulled={load}
                                           disabled={!info?.url}
-                                          disabledReason={!info?.url ? 'No link saved yet' : undefined}
+                                          disabledReason={!info?.url ? 'No link yet' : undefined}
                                         />
                                       </Flex>
                                     )
@@ -666,29 +681,38 @@ export function DistributionDashboardTool() {
                                     rows={2}
                                     placeholder="e.g. Got 3 replies asking about..."
                                     value={noteDrafts[post.slug]?.note ?? ''}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
+                                      // Read the value synchronously here, not inside the
+                                      // updater below -- React can invoke a functional
+                                      // setState updater outside the original event's
+                                      // dispatch (Strict Mode double-invokes it to check
+                                      // purity), by which point e.currentTarget is already
+                                      // null. Extracting the plain string first avoids ever
+                                      // touching the event from inside the updater.
+                                      const note = e.currentTarget.value
                                       setNoteDrafts((prev) => ({
                                         ...prev,
                                         [post.slug]: {
                                           ...prev[post.slug],
-                                          note: e.currentTarget.value,
+                                          note,
                                         },
                                       }))
-                                    }
+                                    }}
                                   />
                                 </Box>
                                 <Select
                                   fontSize={1}
                                   value={noteDrafts[post.slug]?.platform ?? ''}
-                                  onChange={(e) =>
+                                  onChange={(e) => {
+                                    const platform = e.currentTarget.value
                                     setNoteDrafts((prev) => ({
                                       ...prev,
                                       [post.slug]: {
                                         ...prev[post.slug],
-                                        platform: e.currentTarget.value,
+                                        platform,
                                       },
                                     }))
-                                  }
+                                  }}
                                   style={{width: 130}}
                                 >
                                   <option value="">Platform</option>
