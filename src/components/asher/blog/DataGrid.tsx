@@ -26,7 +26,14 @@ export type DataGridRow = {
 export type DataGridValue = {
   headerMode?: "row" | "column" | "none";
   rows?: DataGridRow[];
+  wide?: boolean;
 };
+
+// A cell only needs flattening + clamping if it's actually long enough to
+// wrap past 2 lines -- a short cell (a name, say) renders its real
+// PortableText untouched, links and all, since there's no clamp to garble
+// in the first place.
+const LONG_THRESHOLD = 80;
 
 function formatDate(iso: string | undefined): string {
   if (!iso) return "";
@@ -109,17 +116,23 @@ function flattenRichText(blocks: unknown): string {
   return (blocks as { children?: { text?: string }[] }[]).map((b) => (b.children ?? []).map((c) => c.text ?? "").join("")).join(" ");
 }
 
-// The row's normal, always-collapsed cell -- text/richText render as flat
-// plain text here, never the real PortableText tree. `-webkit-line-clamp`
-// only clamps cleanly across a single text node; PortableText's multiple
-// per-paragraph <p> elements clamp into overlapping, garbled text instead.
-// Full formatting only ever renders in the expanded full-width panel below.
+// The row's normal, always-collapsed cell. Short text/richText (a name, a
+// short label) renders the real PortableText tree untouched -- links stay
+// clickable, and there's nothing long enough to clamp anyway. Only content
+// past LONG_THRESHOLD gets flattened to plain text and clamped:
+// `-webkit-line-clamp` only clamps cleanly across a single text node,
+// PortableText's multiple per-paragraph <p> elements clamp into
+// overlapping, garbled text instead -- full formatting for long cells only
+// ever renders in the expanded full-width panel below.
 function CellPreview({ cell }: { cell: DataGridCell | undefined }) {
   if (!cell) return null;
   if (cell.type === "richText") {
-    return <span className="line-clamp-2 text-sm text-ivory/90">{flattenRichText(cell.richText)}</span>;
+    const flat = flattenRichText(cell.richText);
+    if (flat.length <= LONG_THRESHOLD) return <CellContent cell={cell} />;
+    return <span className="line-clamp-2 text-sm text-ivory/90">{flat}</span>;
   }
   if (cell.type === "text") {
+    if ((cell.text ?? "").length <= LONG_THRESHOLD) return <CellContent cell={cell} />;
     return <span className="line-clamp-2 text-sm text-ivory/90">{cell.text}</span>;
   }
   return <CellContent cell={cell} />;
@@ -139,6 +152,7 @@ function CellPreview({ cell }: { cell: DataGridCell | undefined }) {
 export function DataGrid({ value }: { value: DataGridValue }) {
   const rows = value.rows ?? [];
   const headerMode = value.headerMode ?? "row";
+  const wide = value.wide ?? false;
   const [sort, setSort] = useState<{ colIndex: number; dir: "asc" | "desc" } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -177,7 +191,11 @@ export function DataGrid({ value }: { value: DataGridValue }) {
   }
 
   return (
-    <div className="my-8 max-h-[70vh] overflow-auto rounded-2xl border border-amber-faint bg-stage/40">
+    <div
+      className={`my-8 max-h-[70vh] overflow-auto rounded-2xl border border-amber-faint bg-stage/40 ${
+        wide ? "relative left-1/2 w-screen max-w-5xl -translate-x-1/2" : ""
+      }`}
+    >
       <div
         className="grid min-w-[520px] gap-px"
         style={{ gridTemplateColumns: `20px repeat(${columnCount}, minmax(120px, 1fr))` }}
@@ -209,10 +227,9 @@ export function DataGrid({ value }: { value: DataGridValue }) {
           const isOpen = expanded.has(row._key);
           // A column only gets a breakout panel row if it's actually long
           // enough to have been clamped -- a short richText cell (a name,
-          // say) already shows in full at 2 lines and doesn't need
+          // say) already shows in full, links included, and doesn't need
           // repeating below; only genuinely long content (like Details)
           // does.
-          const LONG_THRESHOLD = 80;
           const expandableColumns = Array.from({ length: columnCount })
             .map((_, i) => i)
             .filter((i) => {

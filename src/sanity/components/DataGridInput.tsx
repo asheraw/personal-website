@@ -45,6 +45,7 @@ type DataGridValue = {
   headerMode?: 'row' | 'column' | 'none'
   rows?: DataGridRow[]
   columnSelectOptions?: ColumnOptionList[]
+  wide?: boolean
 }
 
 const CELL_TYPE_LABELS: Record<CellType, string> = {
@@ -156,6 +157,7 @@ export function DataGridInput(props: ObjectInputProps) {
   const gridValue = (value ?? {}) as DataGridValue
   const rows = gridValue.rows ?? []
   const headerMode = gridValue.headerMode ?? 'row'
+  const wide = gridValue.wide ?? false
   const columnSelectOptions = gridValue.columnSelectOptions ?? []
   const columnCount = Math.max(1, ...rows.map((r) => r.cells.length))
   const client = useClient({apiVersion: '2026-07-22'})
@@ -173,6 +175,10 @@ export function DataGridInput(props: ObjectInputProps) {
 
   function patchHeaderMode(mode: 'row' | 'column' | 'none') {
     onChange(set(mode, ['headerMode']))
+  }
+
+  function patchWide(wide: boolean) {
+    onChange(set(wide, ['wide']))
   }
 
   function patchColumnSelectOptions(next: ColumnOptionList[]) {
@@ -331,6 +337,12 @@ export function DataGridInput(props: ObjectInputProps) {
         </Flex>
         <Button icon={AddIcon} text="Add row" mode="ghost" fontSize={1} onClick={addRow} />
         <Button icon={AddIcon} text="Add column" mode="ghost" fontSize={1} onClick={addColumn} disabled={rows.length === 0} />
+        <Flex as="label" align="center" gap={2} style={{cursor: 'pointer'}}>
+          <Checkbox checked={wide} onChange={(e) => patchWide(e.currentTarget.checked)} />
+          <Text size={1} muted>
+            Wide layout (for tables with several columns)
+          </Text>
+        </Flex>
       </Flex>
 
       {rows.length === 0 ? (
@@ -344,7 +356,12 @@ export function DataGridInput(props: ObjectInputProps) {
         // of THIS box (not the page) -- a 30+ row grid used to push the
         // horizontal scrollbar to the very bottom of the page, unreachable
         // without scrolling past everything first.
-        <Box style={{overflow: 'auto', maxHeight: '65vh', border: '1px solid var(--card-border-color)', borderRadius: 4}}>
+        // 50vh, not 65 -- the dialog around this already spends real
+        // height on its own header/toolbar before this box even starts,
+        // and at 65vh the box's own horizontal scrollbar ended up below
+        // the visible viewport, forcing a scroll of the outer dialog
+        // just to reach it.
+        <Box style={{overflow: 'auto', maxHeight: '50vh', border: '1px solid var(--card-border-color)', borderRadius: 4}}>
           <div
             style={{
               display: 'grid',

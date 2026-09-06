@@ -11,6 +11,83 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-09-06 — Data Grid replaces Skill Grid; Distribution/scheduling bug fixes; Editor facelift phases 1+2
+
+**Data Grid**: a new generic spreadsheet-style block type for post bodies, replacing Skill Grid entirely.
+Each cell carries its own type (text/rich text/checkbox/select/image/date) rather than a predeclared
+column shape — rows are Sanity's own ordered array, columns are NOT a stored entity, just however many
+cells the longest row has. The Studio editor (`DataGridInput.tsx`) is a real spreadsheet-feeling surface:
+click a cell and type, drag rows/columns to reorder, drag one cell onto another to swap their contents
+(cut-and-paste, not a relational move), column-level Select option lists (defined once per column via the
+pencil icon in each header, not duplicated per cell), and genuine bold/italic/underline/link formatting in
+rich text cells through a small markdown-lite syntax (`**bold**`, `_italic_`, `~underline~`,
+`[text](url)`) with toolbar buttons that wrap the current selection. The frontend renderer (`DataGrid.tsx`)
+is a responsive CSS grid, not a literal `<table>`: sortable headers (client-side only), a sticky header row
+while scrolling, and click-to-expand rows — a row's long columns (over ~80 characters) break out into a
+full-width detail panel below the row instead of squeezing into their own narrow column, the same
+click-to-reveal-Details behavior Skill Grid's old Table view had, generalized to any long column instead of
+one hardcoded field. Two real bugs found and fixed along the way, worth remembering: (1) Sanity schemas
+can't nest an array directly inside another array — `columnSelectOptions` had to be `array of {options:
+[string]}` objects, not `array of array of string`, or Studio throws a `SchemaError` on load; (2)
+`-webkit-line-clamp` doesn't clamp cleanly across PortableText's multiple per-paragraph `<p>` elements — it
+renders garbled, overlapping text instead of a clean 2-line cut. Fixed by never running the real
+PortableText renderer through line-clamp: the collapsed row always shows flattened plain text (clamped),
+and only the expanded full-width panel renders real formatting.
+
+Skill Grid (`SkillGrid.tsx`, `SkillTable.tsx`, its schema in `blockContentType.ts`) removed outright — its
+one real use, the "How to Keep Track of Your Skills" post (31 entries, draft-only, never published), was
+migrated to Data Grid first and verified field-by-field by script against the original content (zero data
+loss) before deleting anything. The migration took the chance to fix three things Skill Grid's fixed schema
+couldn't: skill names are now rich text with the source link embedded directly (no separate URL field),
+Category is free rich text instead of a locked dropdown, and Platform (previously a single multi-select
+field) became two independent checkbox columns (Desktop/Web). `portableText.ts`'s plain-text extractor
+(used for reading-time estimates and AI prompt context) updated to read `dataGrid` blocks the same way it
+used to read `skillGrid` — would otherwise have silently dropped all Data Grid content from both.
+
+**Distribution dashboard bug fixes**:
+- Fixed a real production crash: typing into the engagement-notes box or changing the platform dropdown
+  threw "Cannot read properties of null (reading 'value')" on the second keystroke. Root cause: both
+  handlers read `e.currentTarget.value` *inside* a functional `setState` updater rather than synchronously
+  in the handler — React can invoke a functional updater outside the original event's dispatch lifetime
+  (Strict Mode double-invokes updaters to check purity), by which point the native event's `currentTarget`
+  had already gone null. Fixed by reading the value synchronously before calling the updater.
+- Facebook Page and Facebook Profile shared one icon, indistinguishable at a glance — added a small "P"
+  corner badge to a new `FacebookPageIcon`.
+- "No link saved yet" → "No link yet"; the platform label is now a clickable link straight to the saved
+  URL when one exists.
+- **Multi-share-per-platform**: `socialLinks[platform == "X"][0].url` only ever read the *first* share of
+  a post to a given platform — sharing the same post to Facebook twice meant the second share was silently
+  invisible to both the dashboard and comment-pulling. Dropped the `[0]` across the dashboard's query and
+  all five `pull-*-comments` routes; each now fetches and pulls comments from every share, not just the
+  first.
+- The daily scheduled-publish cron copied a draft's `scheduledPublishAt` straight into the published
+  document via `createOrReplace` without ever clearing it, so `ScheduledPublishInput.tsx`'s "this date has
+  already passed" warning banner kept firing on already-published posts forever afterward. Cron now strips
+  the field before publishing.
+- Fixed a stale unmigrated `callout` block (old plain-string shape, pre-dating the 2026-08-29 rich-text
+  upgrade) that was blocking Publish on "Getting My Writing Home Back" with a schema validation error —
+  same transformation `scripts/migrate-callout-text.mjs` already does, applied directly to the block that
+  slipped through (the original migration run only touched the post's published copy, not a draft that
+  still had the old shape).
+
+**Editor facelift, phases 1 and 2** (phase 3 concluded no build needed — see below): AI Prompt Settings'
+fields reorganized into four Studio tabs (Voice/Providers/Prompts/Image style) via Sanity's `groups` schema
+API. A new "AI Tools" document view (`AiToolsView.tsx`) gives every post its own tab with all six AI
+generators (Suggest SEO, Draft Social Copy, Draft LinkedIn Post, Draft Video Script, Draft Image Carousel,
+Generate Featured Image) as cards opening the exact same dialogs their old `document.actions` menu items
+did — all six actions removed from the Publish button's "..." menu, which had grown to roughly 14 items
+deep. Four of the six generation flows extracted into a shared hook + results-component pair
+(`Suggest*Shared.tsx`) so the document action and the new view call the same real logic rather than two
+copies of it — the same pattern `SuggestSeoShared.tsx`/`SuggestSocialCopyShared.tsx` already established.
+The AI Tools tab also gets its own "Generated for this post" table (`DataTable.tsx`, from an earlier
+session) as its first real consumer, listing every `aiOutputLog` entry for that post.
+
+Phase 3 (a planned "Changes" tab) turned out not to need building at all: Sanity Studio v6.9.0 already ships
+a native "Review changes" button in every document's status bar, confirmed by reading the bundled
+`resources-DWYbg5ya.js` i18n strings — a real field-level diff between the current draft and the last
+published version, more capable than anything worth duplicating here. The actual gap was awareness, not
+missing functionality.
+
 ## 2026-09-04 — Post-publish distribution derivatives: video scripts, LinkedIn native posts, carousel materials
 
 Six-phase plan giving Asher the actual derivative content to send after a post is published, not just

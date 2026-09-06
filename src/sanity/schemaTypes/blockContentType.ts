@@ -607,6 +607,17 @@ export const blockContentType = defineType({
           },
           initialValue: 'row',
         }),
+        // A wider grid (7+ columns) needs more room than the article's
+        // normal reading-width column -- when on, the frontend breaks the
+        // grid out to a wider centered width instead of squeezing into
+        // the same ~65ch column as prose text.
+        defineField({
+          name: 'wide',
+          title: 'Wide layout',
+          type: 'boolean',
+          description: 'Breaks the grid out of the normal article width -- useful once a table has several columns.',
+          initialValue: false,
+        }),
         // Select-cell option lists live here, one entry per column index,
         // NOT on the individual cells -- so changing "Status"'s dropdown
         // options is one edit instead of one per row. Managed entirely by
