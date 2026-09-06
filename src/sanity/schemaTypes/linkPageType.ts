@@ -1,5 +1,6 @@
 import {LinkIcon} from '@sanity/icons/Link'
 import {defineArrayMember, defineField, defineType} from 'sanity'
+import {LinkPageItemsInput} from '../components/LinkPageItemsInput'
 
 // Singleton -- see structure.tsx, same "always open this exact document"
 // pattern as siteSettingsType/aiPromptSettingsType.
@@ -35,13 +36,14 @@ export const linkPageType = defineType({
       name: 'items',
       title: 'Cards',
       type: 'array',
-      description: 'Shown top to bottom exactly in this order -- drag to reorder.',
-      // Sanity's own default array-of-objects rendering is one full-width
-      // row per card -- 'grid' is Studio's built-in alternative, same one
-      // already used for the post gallery's "More photos" field: square
-      // tiles wrapping several per row instead of a stacked list, closer to
-      // how these cards actually look on the live /link page.
-      options: {layout: 'grid'},
+      description: 'Shown top to bottom exactly in this order -- drag to reorder. Click a card to edit it.',
+      // A real 3-column preview grid matching the live /link page almost
+      // exactly (same aspect-[3/4] tiles, same title overlay), not
+      // Sanity's built-in `layout: 'grid'` option -- that auto-fits tiles
+      // by available panel width (however many ~100px tiles fit, not a
+      // fixed count), which can't be pinned to match the live page's fixed
+      // 3-column grid (Asher's own ask, 2026-09-06: "almost WYSIWYG").
+      components: {input: LinkPageItemsInput},
       of: [
         defineArrayMember({
           type: 'object',
