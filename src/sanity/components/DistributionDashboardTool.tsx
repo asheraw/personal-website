@@ -247,14 +247,6 @@ export function DistributionDashboardTool() {
   }
 
   const socialDraftedSlugs = new Set(aiLogs.filter((l) => l.feature === 'social').map((l) => l.postSlug))
-  // Generation is bundled (one suggest-social call drafts X/LinkedIn/
-  // Facebook together), but "copied" is tracked per-platform via the exact
-  // strings SuggestSocialCopyShared.tsx logs on each copy-button click.
-  const facebookCopiedSlugs = new Set(
-    aiLogs
-      .filter((l) => l.feature === 'social' && l.usedActions?.some((a) => a.action?.startsWith('Copied Facebook caption')))
-      .map((l) => l.postSlug),
-  )
   const needsPostingCount = posts.filter((p) => !hasAnyDistribution(shareLogs[p.slug])).length
   const commentsWaitingPostCount = posts.filter((p) => (pendingCommentsByPost[p._id] ?? 0) > 0).length
   const totalPendingComments = Object.values(pendingCommentsByPost).reduce((sum, n) => sum + n, 0)
@@ -370,12 +362,6 @@ export function DistributionDashboardTool() {
                 <th style={{padding: '10px 8px', textAlign: 'left', fontSize: '14px', fontWeight: 500, width: '240px'}}>
                   Post
                 </th>
-                <th
-                  title="Social caption drafted"
-                  style={{padding: '10px 8px', textAlign: 'center', fontSize: '18px', width: '48px'}}
-                >
-                  📝
-                </th>
                 {ALL_PLATFORMS.map((platform) => (
                   <th
                     key={platform}
@@ -412,7 +398,6 @@ export function DistributionDashboardTool() {
                 const isExpanded = expandedRows.has(post.slug)
                 const isOnLinkPage = linkPagePostIds.has(post._id)
                 const drafted = socialDraftedSlugs.has(post.slug)
-                const facebookCopied = facebookCopiedSlugs.has(post.slug)
                 const notes = shareLog?.engagementNotes ?? []
                 const pendingCount = pendingCommentsByPost[post._id] ?? 0
 
@@ -448,11 +433,11 @@ export function DistributionDashboardTool() {
                   },
                 }
 
-                const captionsStatusText = !drafted
-                  ? 'No captions drafted yet'
-                  : facebookCopied
-                    ? 'Captions drafted · Facebook copied'
-                    : 'Captions drafted'
+                // No longer tracks "copied" -- clicking a copy button only
+                // ever proved a click happened, not that the caption
+                // actually got posted anywhere (Asher's own point,
+                // 2026-09-06). Drafted or not is the honest signal.
+                const captionsStatusText = drafted ? 'Captions drafted' : 'No captions drafted yet'
 
                 return (
                   <Fragment key={post.slug}>
@@ -466,9 +451,6 @@ export function DistributionDashboardTool() {
                         <Text size={1} weight="medium" style={{cursor: 'pointer'}} onClick={() => toggleRow(post.slug)}>
                           {isExpanded ? '▼' : '▶'} {post.title}
                         </Text>
-                      </td>
-                      <td style={{padding: '10px 8px', textAlign: 'center'}}>
-                        {drafted ? <span title="Caption drafted">✓</span> : <span style={{opacity: 0.3}}>—</span>}
                       </td>
                       {ALL_PLATFORMS.map((platform) => {
                         const value = shareLog?.postedTo?.[platform]
@@ -517,21 +499,6 @@ export function DistributionDashboardTool() {
                               that whole width, turning a normal-sized input into a mostly
                               empty box. */}
                           <Stack space={4} style={{maxWidth: '1160px'}}>
-                            {/* Used to be "Share this post" -> an inline mini
-                                Draft-Social-Copy panel, a narrower duplicate of
-                                one of the AI Tools tab's six generators. Fixed
-                                (Asher's own ask, 2026-09-06): jump straight into
-                                that real tab instead of re-implementing a slice
-                                of it here. */}
-                            <Button
-                              text="Create AI Content"
-                              icon={ShareIcon}
-                              mode="ghost"
-                              fontSize={0}
-                              padding={2}
-                              onClick={() => openPostInStudio(post._id)}
-                            />
-
                             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px'}}>
                               <Stack space={3}>
                                 <Text
@@ -640,7 +607,7 @@ export function DistributionDashboardTool() {
                                       fontSize={1}
                                       padding={3}
                                       radius={6}
-                                      onClick={() => window.open('/studio/comments', '_blank')}
+                                      onClick={() => (window.location.href = '/studio/comments')}
                                     />
                                   </Flex>
                                   <Flex justify="space-between" align="center" gap={3}>
@@ -653,13 +620,18 @@ export function DistributionDashboardTool() {
                                       fontSize={1}
                                       padding={3}
                                       radius={6}
-                                      onClick={() => window.open('/studio/intent/edit/id=linkPage;type=linkPage/', '_blank')}
+                                      onClick={() => (window.location.href = '/studio/intent/edit/id=linkPage;type=linkPage/')}
                                     />
                                   </Flex>
                                   <Flex justify="space-between" align="center" gap={3}>
                                     <Text size={1}>{captionsStatusText}</Text>
+                                    {/* Used to be two buttons here ("Draft captions" plus
+                                        a separate "Share this post") doing the same jump
+                                        into Studio -- consolidated into one (Asher's own
+                                        ask, 2026-09-06). */}
                                     <Button
-                                      text="Draft captions"
+                                      text="Create AI Content"
+                                      icon={ShareIcon}
                                       mode="ghost"
                                       fontSize={1}
                                       padding={3}

@@ -1,7 +1,10 @@
 // Shared by every tool with an "open this in Studio" button (ContentAuditTool,
 // DistributionDashboardTool, LinkCheckerTool, ...) -- opens a document
-// straight into its own Studio editor in a new tab, rather than the live
-// site.
+// straight into its own Studio editor, in the same tab: every caller is
+// already inside Studio itself clicking to go work on a document, not
+// switching away from something else worth keeping open (Asher's own ask,
+// 2026-09-06 -- unlike Presentation preview, which deliberately opens
+// alongside the editor in its own tab).
 //
 // Uses Sanity's own "intent" URL scheme (documented, stable, resolved
 // dynamically at runtime by Studio's router) rather than constructing a
@@ -13,7 +16,7 @@
 // about pane topology at all -- it finds the document by id/type and opens
 // whatever the right editor view is, however structure.tsx is shaped.
 export function openDocumentInStudio(schemaType: 'post' | 'snippet' | 'page' | 'linkPage', id: string) {
-  window.open(`/studio/intent/edit/id=${encodeURIComponent(id)};type=${schemaType}/`, '_blank')
+  window.location.href = `/studio/intent/edit/id=${encodeURIComponent(id)};type=${schemaType}/`
 }
 
 export function openPostInStudio(postId: string) {

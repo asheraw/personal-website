@@ -230,8 +230,12 @@ export function MobileTestimonialCard({ testimonials }: { testimonials: Testimon
   const { testimonial, rotates, cardRef, size, reduceMotion, advance } = useRotatingTestimonial(testimonials);
   if (!testimonial) return null;
 
+  // Hidden below `sm` (phone widths) -- Asher's own ask, 2026-09-06: it was
+  // eating too much first-fold space on mobile specifically. Still shows
+  // from `sm` up to `2xl` (where CommentTestimonialBubble, the desktop
+  // side-bubble, takes over instead), where the fold isn't nearly as tight.
   return (
-    <div className="relative mt-6 2xl:hidden">
+    <div className="relative mt-6 hidden sm:block 2xl:hidden">
       <span
         aria-hidden="true"
         className="absolute -top-2 left-6 h-4 w-4 rotate-45 border-l border-t border-amber-faint bg-card"

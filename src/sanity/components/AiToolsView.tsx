@@ -37,6 +37,58 @@ const FEATURE_LABEL: Record<string, string> = {
   imageCarousel: 'Image carousel',
 }
 
+// Formats a camelCase/snake_case JSON key as a readable label -- "seoTitles"
+// -> "Seo Titles", "on_screen_direction" -> "On Screen Direction".
+function labelFromKey(key: string): string {
+  const spaced = key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/_/g, ' ')
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
+// Every AI feature's `output` field is raw JSON, but a different shape per
+// feature (SEO: titles/excerpts/tags; social: x/linkedin/facebook; video
+// script: scenes; ...) -- rather than six bespoke renderers, one small
+// recursive one that turns arbitrary JSON into labeled sections and lists
+// reads as an actual reference panel instead of a debugging dump.
+function JsonPrettyView({value, depth = 0}: {value: unknown; depth?: number}) {
+  if (value === null || value === undefined || value === '') return null
+  if (Array.isArray(value)) {
+    return (
+      <Stack space={3}>
+        {value.map((item, i) =>
+          typeof item === 'object' && item !== null ? (
+            <Card key={i} padding={3} radius={2} border tone="transparent">
+              <JsonPrettyView value={item} depth={depth + 1} />
+            </Card>
+          ) : (
+            <Text key={i} size={1}>
+              {String(item)}
+            </Text>
+          ),
+        )}
+      </Stack>
+    )
+  }
+  if (typeof value === 'object') {
+    return (
+      <Stack space={4}>
+        {Object.entries(value as Record<string, unknown>).map(([key, v]) => (
+          <Stack key={key} space={2}>
+            <Text size={0} weight="semibold" muted style={{letterSpacing: '0.06em', textTransform: 'uppercase'}}>
+              {labelFromKey(key)}
+            </Text>
+            <JsonPrettyView value={v} depth={depth + 1} />
+          </Stack>
+        ))}
+      </Stack>
+    )
+  }
+  return (
+    <Text size={1} style={{whiteSpace: 'pre-wrap'}}>
+      {String(value)}
+    </Text>
+  )
+}
+
 type AiLogDoc = {
   _id: string
   feature: string
@@ -310,15 +362,26 @@ export function AiToolsView(props: {documentId: string}) {
           onClose={() => setViewingLog(null)}
         >
           <Box padding={4}>
-            <Stack space={3}>
+            <Stack space={4}>
               <Text size={1} muted>
                 {viewingLog.used ? '✓ At least one suggestion from this was used.' : 'Not used.'}
               </Text>
-              <Card padding={3} radius={2} border tone="transparent">
-                <Text size={1} style={{whiteSpace: 'pre-wrap', fontFamily: 'monospace'}}>
-                  {viewingLog.output || '(no output recorded)'}
+              {viewingLog.output ? (
+                (() => {
+                  try {
+                    return <JsonPrettyView value={JSON.parse(viewingLog.output)} />
+                  } catch {
+                    // Not valid JSON (shouldn't normally happen -- every
+                    // route logs its raw structured response) -- show the
+                    // plain text rather than a blank panel.
+                    return <Text size={1} style={{whiteSpace: 'pre-wrap'}}>{viewingLog.output}</Text>
+                  }
+                })()
+              ) : (
+                <Text size={1} muted>
+                  No output recorded.
                 </Text>
-              </Card>
+              )}
             </Stack>
           </Box>
         </Dialog>
