@@ -10,6 +10,7 @@ import {StarIcon} from '@sanity/icons/Star'
 import {StarFilledIcon} from '@sanity/icons/StarFilled'
 import {TrashIcon} from '@sanity/icons/Trash'
 import {UndoIcon} from '@sanity/icons/Undo'
+import {relativeTime} from '../lib/relativeTime'
 
 // Shown as the name on every reply created from this tool. Cosmetic only --
 // the frontend's distinct reply styling keys off isAuthorReply, not this
@@ -186,18 +187,6 @@ function CommentGifPreview({url}: {url: string}) {
 // for moderating is "roughly how old is this," which a relative phrase
 // answers faster. Nothing lost: the exact timestamp is still one hover
 // away via the native title attribute on whatever renders this.
-function relativeTime(iso: string): string {
-  const diffSec = Math.round((Date.now() - new Date(iso).getTime()) / 1000)
-  if (diffSec < 60) return 'just now'
-  const diffMin = Math.round(diffSec / 60)
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHr = Math.round(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
-  const diffDay = Math.round(diffHr / 24)
-  if (diffDay < 30) return `${diffDay}d ago`
-  return new Date(iso).toLocaleDateString(undefined, {year: 'numeric', month: 'short', day: 'numeric'})
-}
-
 // Deterministic per-name hue -- the same commenter gets the same avatar
 // colour everywhere in this tool, which makes a long thread scannable
 // without reading every name first. Asher's own replies get a fixed hue

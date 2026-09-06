@@ -16,6 +16,8 @@ import {ComponentIcon} from '@sanity/icons/Component'
 import {usePendingCommentCount} from '../hooks/usePendingCommentCount'
 import {usePendingContactCount} from '../hooks/usePendingContactCount'
 import {openDocumentInStudio} from '../lib/openPostInStudio'
+import {relativeTime} from '../lib/relativeTime'
+import {EditIcon} from '@sanity/icons/Edit'
 
 // Landing screen (see sanity.config.ts -- this tool is prepended before
 // Sanity's own default tools, which is what makes it the first thing shown
@@ -118,6 +120,41 @@ function activeIssueCount(p: {
   if (!p.excerpt && !dismissed.has('hasExcerpt')) count++
   if (!p.categories?.length && !dismissed.has('hasCategory')) count++
   return count
+}
+
+type DraftPost = {_id: string; title?: string; _updatedAt: string}
+
+// Every open draft IS a "still being worked on" post by definition -- a
+// draft document only exists in Sanity while there's unpublished/unsaved-
+// to-live work sitting on it. Asher's own ask: he kept having to go
+// Structure -> Posts to find where he left off, when the Dashboard is
+// already his landing screen.
+function useDraftPosts(): DraftPost[] | null {
+  const client = useClient({apiVersion: '2026-07-22'})
+  const [drafts, setDrafts] = useState<DraftPost[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    client
+      // perspective: 'raw' -- same requirement as scheduledCount below,
+      // the default query perspective excludes drafts.* documents entirely.
+      .fetch<DraftPost[]>(
+        `*[_type == "post" && _id in path("drafts.**")] | order(_updatedAt desc){_id, title, _updatedAt}`,
+        {},
+        {perspective: 'raw'}
+      )
+      .then((res) => {
+        if (!cancelled) setDrafts(res)
+      })
+      .catch(() => {
+        if (!cancelled) setDrafts([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [client])
+
+  return drafts
 }
 
 function usePostIssueCounts(): {auditIssues: number; socialNeeded: number} | null {
@@ -293,6 +330,7 @@ export function DashboardTool() {
   const pendingContacts = usePendingContactCount()
   const counts = useDashboardCounts()
   const postIssues = usePostIssueCounts()
+  const draftPosts = useDraftPosts()
 
   const contentHealthTotal =
     counts && postIssues !== null ? counts.linkIssues + postIssues.auditIssues : null
@@ -315,6 +353,46 @@ export function DashboardTool() {
                 : `${totalPending} thing${totalPending === 1 ? '' : 's'} worth a look.`}
           </Text>
         </Stack>
+
+        {draftPosts !== null && draftPosts.length > 0 && (
+          <Stack space={3}>
+            <SectionHeading>Continue a draft</SectionHeading>
+            <Stack space={2}>
+              {draftPosts.slice(0, 5).map((post) => (
+                <motion.div key={post._id} variants={staggerItem}>
+                  <Card
+                    as="button"
+                    radius={3}
+                    shadow={1}
+                    padding={3}
+                    style={{width: '100%', textAlign: 'left', cursor: 'pointer'}}
+                    onClick={() => openDocumentInStudio('post', post._id.replace(/^drafts\./, ''))}
+                  >
+                    <Flex align="center" justify="space-between" gap={3}>
+                      <Flex align="center" gap={3} style={{minWidth: 0}}>
+                        <Box flex="none">
+                          <EditIcon />
+                        </Box>
+                        <Text size={1} textOverflow="ellipsis">
+                          {post.title || '(untitled post)'}
+                        </Text>
+                      </Flex>
+                      <Text size={0} muted style={{flexShrink: 0}}>
+                        Edited {relativeTime(post._updatedAt)}
+                      </Text>
+                    </Flex>
+                  </Card>
+                </motion.div>
+              ))}
+            </Stack>
+            {draftPosts.length > 5 && (
+              <Text size={1} muted>
+                +{draftPosts.length - 5} more draft{draftPosts.length - 5 === 1 ? '' : 's'} — see Posts in
+                Structure for the rest.
+              </Text>
+            )}
+          </Stack>
+        )}
 
         <Stack space={3}>
           <SectionHeading>Quick actions</SectionHeading>
