@@ -102,10 +102,29 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('author').title('Authors'),
       // Standalone pages living at the site root (asheraw.com/<slug>), not
       // under a /blog prefix -- the WordPress "Pages vs Posts" distinction.
-      // Link Page and /connect stay exactly as they are (purpose-built,
-      // already working) -- this is for the actual gap, a plain new page
-      // with nowhere to live without writing code each time.
-      S.documentTypeListItem('page').title('Pages'),
+      // Groups the generic `page` type together with every other
+      // already-existing page-shaped singleton (currently just Link Page --
+      // Asher's own ask, 2026-09-06) so "everything that's a page" lives in
+      // one place instead of Link Page sitting unrelated further down.
+      // /connect stays where it is -- not a Sanity document at all (mostly
+      // hardcoded, pulling a few fields from Site Settings), nothing to
+      // move here.
+      S.listItem()
+        .title('Pages')
+        .id('pages')
+        .icon(DocumentsIcon)
+        .child(
+          S.list()
+            .title('Pages')
+            .items([
+              S.documentTypeListItem('page').title('All Pages'),
+              S.listItem()
+                .title('Link Page (asheraw.com/link)')
+                .id('linkPage')
+                .icon(LinkIcon)
+                .child(S.document().schemaType('linkPage').documentId('linkPage')),
+            ]),
+        ),
       S.divider(),
       // Same "Posts" tab pattern as categories -- see which posts insert a
       // given snippet before editing or deleting it.
@@ -217,10 +236,6 @@ export const structure: StructureResolver = (S) =>
         .title('Site Settings')
         .icon(CogIcon)
         .child(S.document().schemaType('siteSettings').documentId('siteSettings')),
-      S.listItem()
-        .title('Link Page (asheraw.com/link)')
-        .icon(LinkIcon)
-        .child(S.document().schemaType('linkPage').documentId('linkPage')),
       // Grouped together (2026-08-11 cleanup) -- two views of the same
       // thing, the AI features' settings and the log of what those settings
       // actually produced, previously two unrelated-looking top-level items.
