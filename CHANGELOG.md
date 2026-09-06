@@ -88,6 +88,74 @@ a native "Review changes" button in every document's status bar, confirmed by re
 published version, more capable than anything worth duplicating here. The actual gap was awareness, not
 missing functionality.
 
+**Later the same session** — a long round of real usage against the Skills post (the Data Grid's actual
+first live content), each issue found by using it, not guessed at:
+
+- **Column-level Select options**: a pencil icon per column, buried in an already-tight drag-handle strip,
+  replaced with a "Select Options" dialog off the main toolbar — one place, not squeezed in, name says
+  exactly what it's for.
+- **Real formatting restored in short cells**: fixing the multi-paragraph clamp-garbling bug (see above) had
+  gone too far — every richText cell was being flattened to plain text on the collapsed row, including short
+  ones like a name, silently dropping their links. Only genuinely long cells (over ~80 characters) flatten
+  now; short ones render their real PortableText, links included.
+- **A `wide` layout toggle** for tables with several columns, breaking the frontend grid out of the article's
+  normal reading-width column.
+- **A `date` cell type** — native date picker, used to convert the Skills grid's "Installed" column from
+  free text ("28 Jul 2026") to real dates.
+- **Header row/column styling fixed** in both the Studio editor and the frontend — was using either a tone
+  that cancelled Sanity's own header coloring, or just a more-opaque shade of the same background; both now
+  use a real, distinct accent color.
+- **A `page` document type** (`pageType.ts`) — standalone pages living at the site root
+  (`asheraw.com/<slug>`, not `/page/<slug>`), the WordPress Pages-vs-Posts gap. Reuses the same blockContent
+  body as posts. A reserved-slug guard in Studio blocks a new Page from claiming an already-real route
+  (`blog`/`connect`/`link`/`privacy`/`studio`/`api`).
+- **One-click Pages overview**: Sanity's built-in list tool can show a live document-type list OR a mix of
+  static rows in one click, not both merged — so a small custom tool (`PagesOverviewTool.tsx`) queries every
+  `page` document, Link Page, and the 4 confirmed-hardcoded routes (Home, Blog, Connect, Privacy) itself and
+  renders them as one flat list, same feel as clicking "Posts." Code-managed rows show the file to edit
+  instead of an "Open" button, since there's no document behind them to open.
+- **Link Page: a real 3-column grid matching the live page.** Sanity's built-in array grid layout auto-fits
+  tiles by panel width, not a fixed count — checked its actual type definitions rather than assumed, and
+  there's no documented way to pin an exact column count on it. Built a custom input
+  (`LinkPageItemsInput.tsx`) instead: a true 3-column CSS grid with the live page's own aspect ratio and
+  title-overlay styling, click a card to edit inline, drag to reorder.
+- **Distribution dashboard, several fixes from real use**: "Share this post" was a narrower, duplicate
+  version of one of the AI Tools tab's six generators (Draft Social Copy only) — relabeled "Create AI
+  Content" and pointed at the real tab instead, then moved into the "This Post" column, replacing an
+  identical "Draft captions" button. The "Facebook copied" status claim only ever tracked one platform's
+  copy-button click — which proves a click happened, not that the caption was actually posted anywhere — so
+  it's gone, along with the separate "social caption drafted" tick column in the summary table (that detail
+  already lives in the expanded per-post row).
+- **Studio navigation opens in the same tab now**, not a new one — every "open in Studio" jump is already
+  inside Studio, going to work on a document, not switching away from something worth keeping open.
+  Presentation preview kept its own new tab; that one's deliberately alongside the editor.
+- **AI Tools "Generated for this post"**: the history spinner ran permanently until manually clicked,
+  reading as "actively working" rather than "waiting for you" — now auto-loads with a real loading state.
+  Clicking a row opens a view of what was actually generated, now rendered as labeled sections and real
+  lists (`JsonPrettyView`) instead of a raw indented JSON dump, working across all six generators' different
+  output shapes without a bespoke renderer per feature.
+- **Dashboard**: a "Continue a draft" section right under the headline stat, listing up to 5 most recently
+  edited drafts — Structure → Posts was the only way back into unfinished work before this.
+- **Fixed duplicate Google search descriptions** on every category/tag/blog-index page: each set its own
+  `description` correctly but never set `openGraph`/`twitter`, so Next's shallow per-key metadata merge left
+  every one of them inheriting the root layout's whole `openGraph` object — the same generic site-wide bio,
+  on every page, which is exactly what `site:asheraw.com/blog` showed in Google. Likely also why Google was
+  self-extracting a date-prefixed snippet instead of trusting a description it could see duplicated
+  site-wide.
+- **Two pending error logs resolved**: a `ChunkLoadError` from a bot hitting a stale cached asset URL after a
+  deploy (not a bug), and a React error #31 from an old callout-rendering gap that turned out to already be
+  fixed in the current code (checked the actual post's data directly).
+- **Sanity updated 6.9.0 → 6.12.0** (minor version, already inside the existing `^6.9.0` range) — verified
+  clean: unchanged pre-existing typecheck-error count, Studio loads with zero console errors.
+- **The Skills post itself moved to a Page** (`asheraw.com/skills`) — copied, not moved (the original post is
+  untouched), and reordered so the Data Grid leads instead of sitting after a long personal story: "myself
+  and others can straight away get to the table." The heading and intro paragraphs written to sit directly
+  above the table ("What's Actually On The Shelf...") moved with it, rather than being left stranded at the
+  end of the page pointing at nothing. A fuller redesign is parked for later, once it's had time to be
+  thought through properly — ideas noted: search/filter above the grid, a summary stat row, grouping by
+  category or status, a collapsed backstory section, a machine-readable summary block for AI sessions to
+  reference directly.
+
 ## 2026-09-04 — Post-publish distribution derivatives: video scripts, LinkedIn native posts, carousel materials
 
 Six-phase plan giving Asher the actual derivative content to send after a post is published, not just
