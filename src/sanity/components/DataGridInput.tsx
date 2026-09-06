@@ -482,11 +482,14 @@ export function DataGridInput(props: ObjectInputProps) {
                       key={cellId}
                       padding={2}
                       radius={1}
-                      tone={header ? 'transparent' : undefined}
-                      style={{
-                        background: header ? 'var(--card-muted-bg-color, rgba(150,150,150,0.08))' : undefined,
-                        fontWeight: header ? 600 : undefined,
-                      }}
+                      // `tone="primary"` -- was `tone="transparent"` plus a
+                      // hand-rolled `background` override using a real but
+                      // very faint muted-bg var, which barely registered as
+                      // a header at all. Letting Sanity's own tone system
+                      // color the card properly reads as an actual header
+                      // instead of a slightly-different-shade cell.
+                      tone={header ? 'primary' : undefined}
+                      style={{fontWeight: header ? 600 : undefined}}
                       draggable
                       onDragStart={() => setDragCell({rowKey: row._key, colIndex: colIdx})}
                       onDragOver={(e) => e.preventDefault()}

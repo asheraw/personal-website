@@ -203,12 +203,12 @@ export function DataGrid({ value }: { value: DataGridValue }) {
       >
         {headerRow && (
           <div className="contents" role="row">
-            <div className="sticky top-0 z-10 border-b border-amber-faint bg-stage/95 backdrop-blur" aria-hidden="true" />
+            <div className="sticky top-0 z-10 border-b border-amber-faint bg-spotlight/10 backdrop-blur" aria-hidden="true" />
             {headerRow.cells.map((cell, colIndex) => (
               <div
                 key={cell._key}
                 role="columnheader"
-                className="sticky top-0 z-10 border-b border-amber-faint bg-stage/95 p-3 font-mono-stage text-[10px] uppercase tracking-[0.12em] text-stone/70 backdrop-blur"
+                className="sticky top-0 z-10 border-b border-amber-faint bg-spotlight/10 p-3 font-mono-stage text-[10px] uppercase tracking-[0.12em] text-stone/70 backdrop-blur"
               >
                 <button
                   type="button"
@@ -264,7 +264,7 @@ export function DataGrid({ value }: { value: DataGridValue }) {
                     key={cell?._key ?? `${row._key}-${colIndex}`}
                     role={isHeaderCol ? "rowheader" : "cell"}
                     className={`border-b border-amber-faint/40 p-3 last:border-b-0 ${
-                      isHeaderCol ? "bg-stage/70 font-medium text-ivory" : ""
+                      isHeaderCol ? "bg-spotlight/10 font-medium text-ivory" : ""
                     }`}
                   >
                     <CellPreview cell={cell} />
