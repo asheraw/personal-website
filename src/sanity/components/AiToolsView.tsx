@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {useDocumentOperation, useEditState} from 'sanity'
 import {Box, Card, Dialog, Flex, Grid, Spinner, Stack, Text} from '@sanity/ui'
 import {SparklesIcon} from '@sanity/icons/Sparkles'
@@ -7,6 +7,7 @@ import {EditIcon} from '@sanity/icons/Edit'
 import {ComponentIcon} from '@sanity/icons/Component'
 import {ImagesIcon} from '@sanity/icons/Images'
 import {ImageIcon} from '@sanity/icons/Image'
+import {ArrowRightIcon} from '@sanity/icons/ArrowRight'
 import type {ComponentType} from 'react'
 import {logUsage, useSeoSuggestions, SuggestSeoDialogBody} from './SuggestSeoShared'
 import {useSocialSuggestions, SocialCopyResults} from './SuggestSocialCopyShared'
@@ -42,6 +43,7 @@ type AiLogDoc = {
   _createdAt: string
   used?: boolean
   usedActions?: {action?: string}[]
+  output?: string
 }
 
 // A persistent "AI Tools" tab on every post (wired in structure.tsx,
@@ -63,6 +65,8 @@ export function AiToolsView(props: {documentId: string}) {
 
   const [openDialog, setOpenDialog] = useState<ToolKey | null>(null)
   const [aiLogs, setAiLogs] = useState<AiLogDoc[] | null>(null)
+  const [loadingLogs, setLoadingLogs] = useState(false)
+  const [viewingLog, setViewingLog] = useState<AiLogDoc | null>(null)
 
   const seo = useSeoSuggestions(doc)
   const [currentTags, setCurrentTags] = useState<string[]>(() => doc?.tags ?? [])
@@ -74,12 +78,25 @@ export function AiToolsView(props: {documentId: string}) {
 
   async function loadLogs() {
     if (!doc?.slug?.current) return
-    const rows = await client.fetch<AiLogDoc[]>(
-      `*[_type == "aiOutputLog" && postSlug == $slug] | order(_createdAt desc){_id, feature, _createdAt, used, usedActions[]{action}}`,
-      {slug: doc.slug.current}
-    )
-    setAiLogs(rows)
+    setLoadingLogs(true)
+    try {
+      const rows = await client.fetch<AiLogDoc[]>(
+        `*[_type == "aiOutputLog" && postSlug == $slug] | order(_createdAt desc){_id, feature, _createdAt, used, usedActions[]{action}, output}`,
+        {slug: doc.slug.current}
+      )
+      setAiLogs(rows)
+    } finally {
+      setLoadingLogs(false)
+    }
   }
+
+  // Loads automatically once the post's slug is known -- a spinner that
+  // never resolves until manually clicked reads as "actively working," not
+  // "waiting for you," which was confusing (Asher's own report).
+  useEffect(() => {
+    if (doc?.slug?.current && aiLogs === null) loadLogs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the slug itself changes, not on every doc/aiLogs identity change
+  }, [doc?.slug?.current])
 
   function openTool(tool: ToolKey, start: () => void, status: string) {
     setOpenDialog(tool)
@@ -99,6 +116,8 @@ export function AiToolsView(props: {documentId: string}) {
     {key: 'carousel', title: 'Draft Image Carousel', description: 'Quote cards + backgrounds', icon: ImagesIcon, status: carousel.status, start: carousel.run},
     {key: 'image', title: 'Generate Featured Image', description: 'Renders & attaches', icon: ImageIcon, status: featuredImage.status, start: featuredImage.run},
   ]
+
+  const logsById = new Map((aiLogs ?? []).map((log) => [log._id, log]))
 
   const rows: DataTableRow[] = (aiLogs ?? []).map((log) => ({
     id: log._id,
@@ -137,12 +156,22 @@ export function AiToolsView(props: {documentId: string}) {
               padding={3}
               radius={2}
               border
-              tone={tool.status === 'loading' ? 'transparent' : undefined}
-              style={{textAlign: 'left', cursor: 'pointer'}}
+              shadow={1}
+              tone={tool.status === 'loading' ? 'transparent' : 'primary'}
+              style={{textAlign: 'left', cursor: 'pointer', transition: 'transform 80ms ease'}}
               onClick={() => openTool(tool.key, tool.start, tool.status)}
+              onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+              onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               <Flex align="center" gap={3}>
-                <tool.icon />
+                <Flex
+                  align="center"
+                  justify="center"
+                  style={{width: 32, height: 32, borderRadius: 8, background: 'rgba(90,130,255,0.15)', flexShrink: 0}}
+                >
+                  <tool.icon />
+                </Flex>
                 <Stack space={2} flex={1}>
                   <Text size={1} weight="semibold">
                     {tool.title}
@@ -151,7 +180,7 @@ export function AiToolsView(props: {documentId: string}) {
                     {tool.description}
                   </Text>
                 </Stack>
-                {tool.status === 'loading' && <Spinner muted />}
+                {tool.status === 'loading' ? <Spinner muted /> : <ArrowRightIcon style={{opacity: 0.4, flexShrink: 0}} />}
               </Flex>
             </Card>
           ))}
@@ -161,15 +190,31 @@ export function AiToolsView(props: {documentId: string}) {
           <Text size={1} weight="semibold" muted style={{letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '11px'}}>
             Generated for this post
           </Text>
-          {aiLogs === null ? (
-            <Flex align="center" gap={2}>
+          {loadingLogs ? (
+            <Flex align="center" gap={2} padding={2}>
               <Spinner muted />
-              <Text size={1} muted onClick={loadLogs} style={{cursor: 'pointer'}}>
-                Load history
+              <Text size={1} muted>
+                Loading…
               </Text>
             </Flex>
           ) : (
-            <DataTable columns={columns} rows={rows} reorderableColumns emptyMessage="Nothing generated for this post yet." />
+            <>
+              <DataTable
+                columns={columns}
+                rows={rows}
+                reorderableColumns
+                emptyMessage="Nothing generated for this post yet."
+                onRowClick={(row) => {
+                  const log = logsById.get(String(row.id))
+                  if (log) setViewingLog(log)
+                }}
+              />
+              {rows.length > 0 && (
+                <Text size={0} muted>
+                  Click a row to see what was generated.
+                </Text>
+              )}
+            </>
           )}
         </Stack>
       </Stack>
@@ -254,6 +299,27 @@ export function AiToolsView(props: {documentId: string}) {
               onRetry={featuredImage.run}
               onClose={closeAndRefresh}
             />
+          </Box>
+        </Dialog>
+      )}
+
+      {viewingLog && (
+        <Dialog
+          id="ai-tools-view-log"
+          header={`${FEATURE_LABEL[viewingLog.feature] ?? viewingLog.feature} — ${new Date(viewingLog._createdAt).toLocaleString()}`}
+          onClose={() => setViewingLog(null)}
+        >
+          <Box padding={4}>
+            <Stack space={3}>
+              <Text size={1} muted>
+                {viewingLog.used ? '✓ At least one suggestion from this was used.' : 'Not used.'}
+              </Text>
+              <Card padding={3} radius={2} border tone="transparent">
+                <Text size={1} style={{whiteSpace: 'pre-wrap', fontFamily: 'monospace'}}>
+                  {viewingLog.output || '(no output recorded)'}
+                </Text>
+              </Card>
+            </Stack>
           </Box>
         </Dialog>
       )}

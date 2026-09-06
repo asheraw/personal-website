@@ -516,10 +516,10 @@ export function DistributionDashboardTool() {
                               here, the notes textarea below (flex-grow) stretches to fill
                               that whole width, turning a normal-sized input into a mostly
                               empty box. */}
-                          <Stack space={4} style={{maxWidth: '760px'}}>
+                          <Stack space={4} style={{maxWidth: '1160px'}}>
                             <SharePanel postId={post._id} title={post.title} slug={post.slug} />
 
-                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px'}}>
+                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px'}}>
                               <Stack space={3}>
                                 <Text
                                   size={1}
@@ -656,39 +656,37 @@ export function DistributionDashboardTool() {
                                   </Flex>
                                 </Stack>
                               </Stack>
-                            </div>
 
-                            <Stack space={3}>
-                              <Text
-                                size={1}
-                                weight="semibold"
-                                muted
-                                style={{letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '11px'}}
-                              >
-                                Engagement notes
-                              </Text>
-                              {notes.length === 0 ? (
-                                <Box
-                                  padding={3}
-                                  style={{border: '1px dashed var(--card-border-color)', borderRadius: 6}}
+                              <Stack space={3}>
+                                <Text
+                                  size={1}
+                                  weight="semibold"
+                                  muted
+                                  style={{letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '11px'}}
                                 >
-                                  <Text size={1} muted style={{fontStyle: 'italic'}}>
-                                    No notes yet — jot down a reply or DM that happened off-site.
-                                  </Text>
-                                </Box>
-                              ) : (
-                                <Stack space={2}>
-                                  {[...notes].reverse().map((n) => (
-                                    <Text key={n._key} size={1} muted>
-                                      {n.timestamp ? `${new Date(n.timestamp).toLocaleDateString()} — ` : ''}
-                                      {n.platform ? `[${n.platform}] ` : ''}
-                                      {n.note}
+                                  Engagement notes
+                                </Text>
+                                {notes.length === 0 ? (
+                                  <Box
+                                    padding={3}
+                                    style={{border: '1px dashed var(--card-border-color)', borderRadius: 6}}
+                                  >
+                                    <Text size={1} muted style={{fontStyle: 'italic'}}>
+                                      No notes yet — jot down a reply or DM that happened off-site.
                                     </Text>
-                                  ))}
-                                </Stack>
-                              )}
-                              <Flex gap={2} align="flex-start">
-                                <Box style={{flex: '1 1 200px'}}>
+                                  </Box>
+                                ) : (
+                                  <Stack space={2}>
+                                    {[...notes].reverse().map((n) => (
+                                      <Text key={n._key} size={1} muted>
+                                        {n.timestamp ? `${new Date(n.timestamp).toLocaleDateString()} — ` : ''}
+                                        {n.platform ? `[${n.platform}] ` : ''}
+                                        {n.note}
+                                      </Text>
+                                    ))}
+                                  </Stack>
+                                )}
+                                <Stack space={2}>
                                   <TextArea
                                     fontSize={1}
                                     rows={2}
@@ -712,47 +710,49 @@ export function DistributionDashboardTool() {
                                       }))
                                     }}
                                   />
-                                </Box>
-                                <Select
-                                  fontSize={1}
-                                  value={noteDrafts[post.slug]?.platform ?? ''}
-                                  onChange={(e) => {
-                                    const platform = e.currentTarget.value
-                                    setNoteDrafts((prev) => ({
-                                      ...prev,
-                                      [post.slug]: {
-                                        ...prev[post.slug],
-                                        platform,
-                                      },
-                                    }))
-                                  }}
-                                  style={{width: 130}}
-                                >
-                                  <option value="">Platform</option>
-                                  <option value="Facebook">Facebook</option>
-                                  <option value="Facebook Page">Facebook Page</option>
-                                  <option value="Instagram">Instagram</option>
-                                  <option value="TikTok">TikTok</option>
-                                  <option value="YouTube">YouTube</option>
-                                  <option value="LinkedIn">LinkedIn</option>
-                                  <option value="X">X</option>
-                                  <option value="Threads">Threads</option>
-                                  <option value="Newsletter">Newsletter</option>
-                                </Select>
-                                <Button
-                                  text={savingSlug === post.slug ? 'Saving…' : 'Add'}
-                                  tone="primary"
-                                  fontSize={1}
-                                  padding={3}
-                                  disabled={!(noteDrafts[post.slug]?.note?.trim()) || savingSlug === post.slug}
-                                  onClick={() => saveNote(post.slug, post.title)}
-                                />
-                              </Flex>
-                              <Text size={0} muted>
-                                Links live on the post itself, under Discussion → Social links. Add one there and
-                                its Pull button switches on here.
-                              </Text>
-                            </Stack>
+                                  <Flex gap={2} align="center">
+                                    <Select
+                                      fontSize={1}
+                                      value={noteDrafts[post.slug]?.platform ?? ''}
+                                      onChange={(e) => {
+                                        const platform = e.currentTarget.value
+                                        setNoteDrafts((prev) => ({
+                                          ...prev,
+                                          [post.slug]: {
+                                            ...prev[post.slug],
+                                            platform,
+                                          },
+                                        }))
+                                      }}
+                                      style={{flex: 1}}
+                                    >
+                                      <option value="">Platform</option>
+                                      <option value="Facebook">Facebook</option>
+                                      <option value="Facebook Page">Facebook Page</option>
+                                      <option value="Instagram">Instagram</option>
+                                      <option value="TikTok">TikTok</option>
+                                      <option value="YouTube">YouTube</option>
+                                      <option value="LinkedIn">LinkedIn</option>
+                                      <option value="X">X</option>
+                                      <option value="Threads">Threads</option>
+                                      <option value="Newsletter">Newsletter</option>
+                                    </Select>
+                                    <Button
+                                      text={savingSlug === post.slug ? 'Saving…' : 'Add'}
+                                      tone="primary"
+                                      fontSize={1}
+                                      padding={3}
+                                      disabled={!(noteDrafts[post.slug]?.note?.trim()) || savingSlug === post.slug}
+                                      onClick={() => saveNote(post.slug, post.title)}
+                                    />
+                                  </Flex>
+                                  <Text size={0} muted>
+                                    Links live on the post itself, under Discussion → Social links. Add one there
+                                    and its Pull button switches on here.
+                                  </Text>
+                                </Stack>
+                              </Stack>
+                            </div>
                           </Stack>
                         </td>
                       </tr>

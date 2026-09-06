@@ -53,6 +53,7 @@ export function DataTable({
   reorderableRows = false,
   onReorderColumns,
   onReorderRows,
+  onRowClick,
   emptyMessage = 'Nothing to show yet.',
 }: {
   columns: DataTableColumn[]
@@ -62,6 +63,7 @@ export function DataTable({
   reorderableRows?: boolean
   onReorderColumns?: (newColumnOrder: string[]) => void
   onReorderRows?: (newRowOrder: string[]) => void
+  onRowClick?: (row: DataTableRow) => void
   emptyMessage?: string
 }) {
   const [columnOrder, setColumnOrder] = useState<string[]>(() => columns.map((c) => c.id))
@@ -256,7 +258,8 @@ export function DataTable({
               if (dragRowId) moveRow(dragRowId, row.id)
               setDragRowId(null)
             }}
-            style={{borderBottom: '1px solid var(--card-border-color)'}}
+            onClick={() => onRowClick?.(row)}
+            style={{borderBottom: '1px solid var(--card-border-color)', cursor: onRowClick ? 'pointer' : undefined}}
           >
             {reorderableRows && (
               <td
