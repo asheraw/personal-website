@@ -128,6 +128,34 @@ export const SEARCH_INDEX_QUERY = `
   }
 `;
 
+// Same body[]{...} projection shape as POST_BY_SLUG_QUERY (internalLink ->
+// slug, snippetRef -> content) -- a Page reuses the exact same blockContent
+// type, so it needs the same reference resolution, not a second copy of it.
+export const PAGE_BY_SLUG_QUERY = `
+  *[_type == "page" && slug.current == $slug][0]{
+    _id,
+    title,
+    "slug": slug.current,
+    excerpt,
+    seoTitle,
+    noIndex,
+    body[]{
+      ...,
+      _type == "block" => {
+        markDefs[]{
+          ...,
+          _type == "internalLink" => {
+            "slug": reference->slug.current
+          }
+        }
+      },
+      _type == "snippetRef" => {
+        "snippetData": @->{title, snippetType, content}
+      }
+    }
+  }
+`;
+
 export const POST_BY_SLUG_QUERY = `
   *[_type == "post" && slug.current == $slug][0]{
     _id,

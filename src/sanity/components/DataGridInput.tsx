@@ -2,12 +2,12 @@ import {Fragment, useRef, useState} from 'react'
 import {set} from 'sanity'
 import type {ObjectInputProps} from 'sanity'
 import {useClient} from 'sanity'
-import {Box, Button, Card, Checkbox, Flex, Select, Stack, Text, TextArea, TextInput} from '@sanity/ui'
+import {Box, Button, Card, Checkbox, Dialog, Flex, Select, Stack, Text, TextArea, TextInput} from '@sanity/ui'
 import {AddIcon} from '@sanity/icons/Add'
 import {TrashIcon} from '@sanity/icons/Trash'
 import {DragHandleIcon} from '@sanity/icons/DragHandle'
 import {ImageIcon} from '@sanity/icons/Image'
-import {EditIcon} from '@sanity/icons/Edit'
+import {ControlsIcon} from '@sanity/icons/Controls'
 import {urlFor} from '../lib/image'
 
 type CellType = 'text' | 'richText' | 'checkbox' | 'select' | 'image' | 'date'
@@ -166,7 +166,7 @@ export function DataGridInput(props: ObjectInputProps) {
   const [dragRowKey, setDragRowKey] = useState<string | null>(null)
   const [dragColIndex, setDragColIndex] = useState<number | null>(null)
   const [dragCell, setDragCell] = useState<{rowKey: string; colIndex: number} | null>(null)
-  const [editingOptionsForCol, setEditingOptionsForCol] = useState<number | null>(null)
+  const [columnsDialogOpen, setColumnsDialogOpen] = useState(false)
   const [uploadingCell, setUploadingCell] = useState<string | null>(null)
 
   function patchRows(newRows: DataGridRow[]) {
@@ -317,7 +317,13 @@ export function DataGridInput(props: ObjectInputProps) {
     updateCell(rowKey, colIdx, (c) => ({...c, richText: textToRichTextBlocks(newText)}))
   }
 
+  function columnLabel(colIdx: number): string {
+    const headerText = headerMode === 'row' ? rows[0]?.cells[colIdx]?.text : undefined
+    return headerText || `Column ${colIdx + 1}`
+  }
+
   return (
+    <>
     <Stack space={3}>
       <Flex align="center" gap={3} wrap="wrap">
         <Flex align="center" gap={2}>
@@ -337,6 +343,14 @@ export function DataGridInput(props: ObjectInputProps) {
         </Flex>
         <Button icon={AddIcon} text="Add row" mode="ghost" fontSize={1} onClick={addRow} />
         <Button icon={AddIcon} text="Add column" mode="ghost" fontSize={1} onClick={addColumn} disabled={rows.length === 0} />
+        <Button
+          icon={ControlsIcon}
+          text="Columns"
+          mode="ghost"
+          fontSize={1}
+          onClick={() => setColumnsDialogOpen(true)}
+          disabled={rows.length === 0}
+        />
         <Flex as="label" align="center" gap={2} style={{cursor: 'pointer'}}>
           <Checkbox checked={wide} onChange={(e) => patchWide(e.currentTarget.checked)} />
           <Text size={1} muted>
@@ -398,46 +412,16 @@ export function DataGridInput(props: ObjectInputProps) {
                 title="Drag to reorder column"
               >
                 <DragHandleIcon style={{opacity: 0.4}} />
-                <Flex gap={1}>
-                  <button
-                    type="button"
-                    onClick={() => setEditingOptionsForCol(colIdx)}
-                    style={{background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: 0.5}}
-                    title="Edit this column's Select options"
-                  >
-                    <EditIcon />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeColumn(colIdx)}
-                    style={{background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: 0.5}}
-                    title="Delete column"
-                  >
-                    <TrashIcon />
-                  </button>
-                </Flex>
+                <button
+                  type="button"
+                  onClick={() => removeColumn(colIdx)}
+                  style={{background: 'none', border: 'none', cursor: 'pointer', padding: 2, opacity: 0.5}}
+                  title="Delete column"
+                >
+                  <TrashIcon />
+                </button>
               </div>
             ))}
-
-            {editingOptionsForCol !== null && (
-              <div style={{gridColumn: `2 / span ${columnCount}`, padding: '6px 8px', background: 'var(--card-bg-color)'}}>
-                <TextInput
-                  fontSize={0}
-                  radius={1}
-                  placeholder="Comma-separated options for this column's Select cells"
-                  defaultValue={(columnSelectOptions[editingOptionsForCol]?.options ?? []).join(', ')}
-                  onBlur={(e) => {
-                    const options = e.currentTarget.value
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                    setColumnOptions(editingOptionsForCol, options)
-                    setEditingOptionsForCol(null)
-                  }}
-                  autoFocus
-                />
-              </div>
-            )}
 
             {rows.map((row, rowIdx) => (
               <Fragment key={row._key}>
@@ -659,5 +643,40 @@ export function DataGridInput(props: ObjectInputProps) {
         </Box>
       )}
     </Stack>
+
+    {columnsDialogOpen && (
+      // One place for every Select column's option list, instead of a
+      // pencil icon crammed into the already-tight per-column drag-handle
+      // strip -- doesn't care whether the header runs across the top or
+      // down the side, since it's keyed off column position, not header
+      // orientation.
+      <Dialog id="data-grid-columns" header="Columns" onClose={() => setColumnsDialogOpen(false)} width={1}>
+        <Box padding={4}>
+          <Stack space={4}>
+            {Array.from({length: columnCount}).map((_, colIdx) => (
+              <Stack key={colIdx} space={2}>
+                <Text size={1} weight="semibold">
+                  {columnLabel(colIdx)}
+                </Text>
+                <TextInput
+                  fontSize={1}
+                  radius={1}
+                  placeholder="Comma-separated options for this column's Select cells"
+                  defaultValue={(columnSelectOptions[colIdx]?.options ?? []).join(', ')}
+                  onBlur={(e) => {
+                    const options = e.currentTarget.value
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                    setColumnOptions(colIdx, options)
+                  }}
+                />
+              </Stack>
+            ))}
+          </Stack>
+        </Box>
+      </Dialog>
+    )}
+    </>
   )
 }

@@ -2,12 +2,15 @@ import type { MetadataRoute } from "next";
 import { client } from "@/sanity/lib/client";
 import { ALL_POSTS_QUERY, ALL_CATEGORIES_QUERY, type PostSummary } from "@/sanity/lib/queries";
 
+const ALL_PAGES_QUERY = `*[_type == "page" && defined(slug.current) && noIndex != true]{"slug": slug.current, _updatedAt}`;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://asheraw.com";
 
-  const [posts, categories] = await Promise.all([
+  const [posts, categories, pages] = await Promise.all([
     client.fetch<PostSummary[]>(ALL_POSTS_QUERY),
     client.fetch<{ title: string; slug: string }[]>(ALL_CATEGORIES_QUERY),
+    client.fetch<{ slug: string; _updatedAt: string }[]>(ALL_PAGES_QUERY),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -19,6 +22,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${baseUrl}/privacy`, lastModified: new Date(), changeFrequency: "yearly", priority: 0.3 },
   ];
+
+  const rootPages: MetadataRoute.Sitemap = pages.map((page) => ({
+    url: `${baseUrl}/${page.slug}`,
+    lastModified: new Date(page._updatedAt || Date.now()),
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
 
   const postPages: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
@@ -48,5 +58,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.4,
   }));
 
-  return [...staticPages, ...postPages, ...categoryPages, ...tagPages];
+  return [...staticPages, ...rootPages, ...postPages, ...categoryPages, ...tagPages];
 }

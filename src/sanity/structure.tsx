@@ -100,6 +100,12 @@ export const structure: StructureResolver = (S) =>
             ),
         ),
       S.documentTypeListItem('author').title('Authors'),
+      // Standalone pages living at the site root (asheraw.com/<slug>), not
+      // under a /blog prefix -- the WordPress "Pages vs Posts" distinction.
+      // Link Page and /connect stay exactly as they are (purpose-built,
+      // already working) -- this is for the actual gap, a plain new page
+      // with nowhere to live without writing code each time.
+      S.documentTypeListItem('page').title('Pages'),
       S.divider(),
       // Same "Posts" tab pattern as categories -- see which posts insert a
       // given snippet before editing or deleting it.
@@ -255,6 +261,7 @@ export const structure: StructureResolver = (S) =>
             'post',
             'category',
             'author',
+            'page',
             'contactSubmission',
             'notFoundHit',
             'aiPromptSettings',
