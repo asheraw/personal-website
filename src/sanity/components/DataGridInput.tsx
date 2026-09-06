@@ -345,7 +345,7 @@ export function DataGridInput(props: ObjectInputProps) {
         <Button icon={AddIcon} text="Add column" mode="ghost" fontSize={1} onClick={addColumn} disabled={rows.length === 0} />
         <Button
           icon={ControlsIcon}
-          text="Columns"
+          text="Select Options"
           mode="ghost"
           fontSize={1}
           onClick={() => setColumnsDialogOpen(true)}
@@ -650,7 +650,7 @@ export function DataGridInput(props: ObjectInputProps) {
       // strip -- doesn't care whether the header runs across the top or
       // down the side, since it's keyed off column position, not header
       // orientation.
-      <Dialog id="data-grid-columns" header="Columns" onClose={() => setColumnsDialogOpen(false)} width={1}>
+      <Dialog id="data-grid-columns" header="Select Options" onClose={() => setColumnsDialogOpen(false)} width={1}>
         <Box padding={4}>
           <Stack space={4}>
             {Array.from({length: columnCount}).map((_, colIdx) => (
