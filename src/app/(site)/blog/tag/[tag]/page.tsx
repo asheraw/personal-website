@@ -17,13 +17,22 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { tag } = await params;
   const decoded = decodeURIComponent(tag);
+  const title = `#${decoded} — Blog`;
+  const description = `Posts tagged #${decoded}.`;
+  const url = `${SITE_URL}/blog/tag/${tag}`;
   return {
-    title: `#${decoded} — Blog`,
-    description: `Posts tagged #${decoded}.`,
+    title,
+    description,
     alternates: {
       canonical: `/blog/tag/${tag}`,
       types: { "application/rss+xml": `${SITE_URL}/blog/tag/${tag}/rss.xml` },
     },
+    // See category/[slug]/page.tsx's own comment on this -- without an
+    // explicit openGraph/twitter here, this page silently inherited the
+    // root layout's generic site-wide bio for og:description instead of
+    // its own specific one.
+    openGraph: { type: "website", url, title, description },
+    twitter: { card: "summary", title, description },
   };
 }
 

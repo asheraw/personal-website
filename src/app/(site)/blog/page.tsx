@@ -40,12 +40,22 @@ const FALLBACK_BLOG_TAGLINE =
 // instead of only ever showing what existed at the last deploy.
 export const revalidate = 60;
 
+const BLOG_TITLE = "Blog";
+const BLOG_DESCRIPTION = "Essays, stories, and lessons from Asher Aw — actor, coach, and storyteller.";
+
 export const metadata: Metadata = {
-  title: "Blog",
-  description: "Essays, stories, and lessons from Asher Aw — actor, coach, and storyteller.",
+  title: BLOG_TITLE,
+  description: BLOG_DESCRIPTION,
   // Metadata objects don't deep-merge across nested layouts -- defining
   // `alternates` here without `types` would otherwise silently drop the
-  // root layout's rss+xml discovery link on this specific page.
+  // root layout's rss+xml discovery link on this specific page. Same
+  // reasoning applies to `openGraph`/`twitter` below: without setting
+  // them explicitly, this page would inherit the root layout's entire
+  // openGraph object -- generic site-wide bio description included,
+  // identical to what category/tag pages show -- instead of this page's
+  // own description.
+  openGraph: { type: "website", url: `${SITE_URL}/blog`, title: BLOG_TITLE, description: BLOG_DESCRIPTION },
+  twitter: { card: "summary", title: BLOG_TITLE, description: BLOG_DESCRIPTION },
   alternates: {
     canonical: "/blog",
     types: { "application/rss+xml": "https://asheraw.com/rss.xml" },

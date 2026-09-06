@@ -33,13 +33,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const author = await getAuthor(slug);
   if (!author) return {};
+  const title = `${author.name} — Blog`;
+  const description = `Posts written by ${author.name}.`;
+  const url = `${SITE_URL}/blog/author/${slug}`;
   return {
-    title: `${author.name} — Blog`,
-    description: `Posts written by ${author.name}.`,
+    title,
+    description,
     alternates: {
       canonical: `/blog/author/${slug}`,
       types: { "application/rss+xml": `${SITE_URL}/blog/author/${slug}/rss.xml` },
     },
+    // Excluded from search anyway (robots below), but a shared link still
+    // deserves its own social preview instead of silently inheriting the
+    // root layout's whole openGraph object -- same gap category/tag pages
+    // had.
+    openGraph: { type: "website", url, title, description },
+    twitter: { card: "summary", title, description },
     // This lists the same posts as /blog for a single-author site, so it's
     // kept out of search results to avoid competing with /blog for ranking.
     // Revisit if guest authors are ever added.

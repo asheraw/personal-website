@@ -24,13 +24,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   const category = await getCategory(slug);
   if (!category) return {};
+  const title = `${category.title} — Blog`;
+  const description = category.description || `Posts filed under ${category.title}.`;
+  const url = `${SITE_URL}/blog/category/${slug}`;
   return {
-    title: `${category.title} — Blog`,
-    description: category.description || `Posts filed under ${category.title}.`,
+    title,
+    description,
     alternates: {
       canonical: `/blog/category/${slug}`,
       types: { "application/rss+xml": `${SITE_URL}/blog/category/${slug}/rss.xml` },
     },
+    // Metadata objects merge shallowly per top-level key -- a page that
+    // sets `description` without ALSO setting `openGraph`/`twitter`
+    // inherits the root layout's entire openGraph object, generic bio
+    // description included. Every category/tag/blog-index page was doing
+    // exactly this, so Google (and anything else reading og:description)
+    // saw the identical site-wide bio on every one of them -- likely also
+    // why Google started self-extracting a snippet (date prefix included)
+    // instead of trusting a description it could see was duplicated
+    // across the whole site.
+    openGraph: { type: "website", url, title, description },
+    twitter: { card: "summary", title, description },
   };
 }
 
