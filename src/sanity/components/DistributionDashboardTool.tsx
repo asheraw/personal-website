@@ -1,10 +1,10 @@
 import {Fragment, useCallback, useEffect, useState} from 'react'
 import {Badge, Box, Button, Checkbox, Flex, Select, Spinner, Stack, Text, TextArea, TextInput} from '@sanity/ui'
 import {SearchIcon} from '@sanity/icons/Search'
+import {ShareIcon} from '@sanity/icons/Share'
 import {useClient} from 'sanity'
 import {openPostInStudio} from '../lib/openPostInStudio'
 import {PLATFORM_META, PlatformIcon, type SocialPlatform} from '../lib/platformIcons'
-import {SharePanel} from './SharePanel'
 import {PullSocialCommentsButton} from './PullSocialCommentsButton'
 
 type Post = {
@@ -517,7 +517,20 @@ export function DistributionDashboardTool() {
                               that whole width, turning a normal-sized input into a mostly
                               empty box. */}
                           <Stack space={4} style={{maxWidth: '1160px'}}>
-                            <SharePanel postId={post._id} title={post.title} slug={post.slug} />
+                            {/* Used to be "Share this post" -> an inline mini
+                                Draft-Social-Copy panel, a narrower duplicate of
+                                one of the AI Tools tab's six generators. Fixed
+                                (Asher's own ask, 2026-09-06): jump straight into
+                                that real tab instead of re-implementing a slice
+                                of it here. */}
+                            <Button
+                              text="Create AI Content"
+                              icon={ShareIcon}
+                              mode="ghost"
+                              fontSize={0}
+                              padding={2}
+                              onClick={() => openPostInStudio(post._id)}
+                            />
 
                             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px'}}>
                               <Stack space={3}>

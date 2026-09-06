@@ -13,9 +13,9 @@ import {useSocialSuggestions, SocialCopyResults, type PostDraft} from '../compon
  * "Suggest SEO & Excerpt" already does.
  *
  * The actual fetch/state logic and every result card live in
- * SuggestSocialCopyShared.tsx -- shared with the "Share this post" panel on
- * the Distribution dashboard (SharePanel.tsx), so there are two entry
- * points into exactly one drafting flow, not two copies of it.
+ * SuggestSocialCopyShared.tsx -- also used by the AI Tools editor tab's
+ * "Draft Social Copy" card (AiToolsView.tsx), so both entry points call the
+ * same real drafting flow, not two copies of it.
  */
 export function createSuggestSocialCopyAction(): DocumentActionComponent {
   const SuggestSocialCopyAction: DocumentActionComponent = (props: DocumentActionProps) => {

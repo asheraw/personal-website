@@ -11,11 +11,10 @@ export type PostDraft = {
   slug?: {current?: string}
 }
 
-// Shared by the "Draft Social Copy" document action (suggestSocialCopy.tsx,
-// triggered from the Publish button's own menu) and the "Share this post"
-// panel on the Distribution dashboard (SharePanel.tsx) -- same reasoning as
-// SuggestSeoShared.tsx: one real fetch/render implementation, two entry
-// points into it.
+// Shared by the "Draft Social Copy" document action (suggestSocialCopy.tsx)
+// and the AI Tools editor tab's own "Draft Social Copy" card
+// (AiToolsView.tsx) -- same reasoning as SuggestSeoShared.tsx: one real
+// fetch/render implementation, two entry points into it.
 
 // Fire-and-forget -- a failed log-usage call shouldn't interrupt or delay
 // the actual copy-to-clipboard action, it's purely a record of it.

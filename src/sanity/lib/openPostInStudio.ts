@@ -12,7 +12,7 @@
 // hand-guess from outside the structure tree. `intent/edit` doesn't care
 // about pane topology at all -- it finds the document by id/type and opens
 // whatever the right editor view is, however structure.tsx is shaped.
-export function openDocumentInStudio(schemaType: 'post' | 'snippet', id: string) {
+export function openDocumentInStudio(schemaType: 'post' | 'snippet' | 'page' | 'linkPage', id: string) {
   window.open(`/studio/intent/edit/id=${encodeURIComponent(id)};type=${schemaType}/`, '_blank')
 }
 

@@ -10,11 +10,11 @@ import {DownloadIcon} from '@sanity/icons/Download'
 import {EditIcon} from '@sanity/icons/Edit'
 import {SearchIcon} from '@sanity/icons/Search'
 import {BugIcon} from '@sanity/icons/Bug'
-import {LinkIcon} from '@sanity/icons/Link'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
 import {AiToolsView} from './components/AiToolsView'
+import {PagesOverviewTool} from './components/PagesOverviewTool'
 import {NotFoundHitsTool} from './components/NotFoundHitsTool'
 import {ContactSubmissionsTool} from './components/ContactSubmissionsTool'
 import {ExportTool} from './components/ExportTool'
@@ -102,29 +102,20 @@ export const structure: StructureResolver = (S) =>
       S.documentTypeListItem('author').title('Authors'),
       // Standalone pages living at the site root (asheraw.com/<slug>), not
       // under a /blog prefix -- the WordPress "Pages vs Posts" distinction.
-      // Groups the generic `page` type together with every other
-      // already-existing page-shaped singleton (currently just Link Page --
-      // Asher's own ask, 2026-09-06) so "everything that's a page" lives in
-      // one place instead of Link Page sitting unrelated further down.
-      // /connect stays where it is -- not a Sanity document at all (mostly
-      // hardcoded, pulling a few fields from Site Settings), nothing to
-      // move here.
+      // One click straight into a flat list of every page on the site,
+      // Studio-managed (the generic `page` type, Link Page) and
+      // code-managed (Home, Blog, Connect, Privacy) together -- same feel
+      // as clicking "Posts", not nested behind an extra "All Pages" click
+      // (Asher's own ask, 2026-09-06: the nested version felt
+      // counterintuitive next to how Posts works). Sanity's built-in list
+      // tool can't merge a live document query with static extra rows into
+      // one list on its own, so this is a small custom component
+      // (PagesOverviewTool.tsx) instead, same pattern as DashboardTool.tsx.
       S.listItem()
         .title('Pages')
         .id('pages')
         .icon(DocumentsIcon)
-        .child(
-          S.list()
-            .title('Pages')
-            .items([
-              S.documentTypeListItem('page').title('All Pages'),
-              S.listItem()
-                .title('Link Page (asheraw.com/link)')
-                .id('linkPage')
-                .icon(LinkIcon)
-                .child(S.document().schemaType('linkPage').documentId('linkPage')),
-            ]),
-        ),
+        .child(S.component(PagesOverviewTool).title('Pages')),
       S.divider(),
       // Same "Posts" tab pattern as categories -- see which posts insert a
       // given snippet before editing or deleting it.
