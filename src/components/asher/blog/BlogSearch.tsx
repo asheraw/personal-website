@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
+import { SketchyPillFrame } from "@/components/asher/blog/SketchyPillFrame";
 
 export type SearchablePost = {
   _id: string;
@@ -106,7 +107,8 @@ export function BlogSearch({ posts }: { posts: SearchablePost[] }) {
 
   return (
     <div ref={containerRef} className="relative max-w-sm grow print:hidden">
-      <div className="flex items-center gap-2 rounded-full border border-amber-faint bg-stage/40 px-4 py-2.5 transition-colors focus-within:border-spotlight/50">
+      <div className="relative flex items-center gap-2 rounded-full bg-stage/40 px-4 py-2.5 transition-colors focus-within:outline focus-within:outline-1 focus-within:outline-spotlight/50">
+        <SketchyPillFrame variant={0} />
         <Search size={14} className="shrink-0 text-stone/50" aria-hidden="true" />
         <input
           type="search"

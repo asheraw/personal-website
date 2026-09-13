@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { truncateText } from "@/lib/text";
 import { track } from "@/lib/analytics";
+import { SketchyPillFrame } from "@/components/asher/blog/SketchyPillFrame";
 
 export type CommentStats = { totalComments: number; authorReplies: number };
 export type Testimonial = { _id: string; name: string; message: string | null; createdAt: string; postTitle: string; postSlug: string };
@@ -195,7 +196,8 @@ export function CommentStatsBadge({ stats }: { stats: CommentStats }) {
   if (stats.totalComments === 0) return null;
 
   return (
-    <p className="rounded-full border border-amber-faint bg-card/30 px-4 py-2.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/70">
+    <p className="relative rounded-full bg-card/30 px-4 py-2.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/70">
+      <SketchyPillFrame variant={1} />
       <span className="text-spotlight">{stats.totalComments.toLocaleString()}</span> comment
       {stats.totalComments === 1 ? "" : "s"} from readers
       {stats.authorReplies > 0 && (

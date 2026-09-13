@@ -6,7 +6,7 @@ import { PortableText } from "@portabletext/react";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import { AUTHOR_BY_SLUG_QUERY, POSTS_BY_AUTHOR_QUERY, type PostSummary } from "@/sanity/lib/queries";
-import { PostCard } from "@/components/asher/blog/PostCard";
+import { StickyPostStack } from "@/components/asher/blog/StickyPostStack";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { postBodyComponents } from "@/components/asher/blog/portableTextComponents";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
@@ -115,10 +115,8 @@ export default async function AuthorPage({ params }: PageProps) {
         {posts.length === 0 ? (
           <p className="mt-16 text-stone/70">No posts from this author yet.</p>
         ) : (
-          <div className="mt-16 space-y-16">
-            {posts.map((post, index) => (
-              <PostCard key={post._id} post={post} priority={index === 0} />
-            ))}
+          <div className="mt-16">
+            <StickyPostStack posts={posts} />
           </div>
         )}
       </div>

@@ -78,9 +78,9 @@ export function BlogPostList({
 
   return (
     <>
-      <div className="mt-16 space-y-16">
+      <div className="mt-16 grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
         {posts.map((post, index) => (
-          <PostCard key={post._id} post={post} priority={index === 0} />
+          <PostCard key={post._id} post={post} priority={index === 0} index={index} />
         ))}
       </div>
 

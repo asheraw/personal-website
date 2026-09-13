@@ -19,3 +19,19 @@ export function formatPostDate(iso: string): string {
   const year = date.getUTCFullYear();
   return `${day} ${month} ${year}`;
 }
+
+// "X hours ago" for anything published in the last day, matching the
+// content.game reference Asher pointed at -- falls back to the plain
+// formatPostDate() once a post is a day old, same as that reference does.
+// Computed from the caller's own clock (not UTC-pinned like formatPostDate
+// above), so it can drift by a few minutes between server render and
+// client hydration right at an hour boundary -- caller should mark the
+// element `suppressHydrationWarning` to accept that known, harmless drift.
+export function formatPostDateRelative(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMin = Math.round(diffMs / 60_000);
+  if (diffMin < 60) return diffMin <= 1 ? "just now" : `${diffMin} minutes ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hour${diffHr === 1 ? "" : "s"} ago`;
+  return formatPostDate(iso);
+}

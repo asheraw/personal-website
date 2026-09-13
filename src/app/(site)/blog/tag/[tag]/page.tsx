@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { client } from "@/sanity/lib/client";
 import { POSTS_BY_TAG_QUERY, type PostSummary } from "@/sanity/lib/queries";
-import { PostCard } from "@/components/asher/blog/PostCard";
+import { StickyPostStack } from "@/components/asher/blog/StickyPostStack";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
@@ -70,10 +70,8 @@ export default async function TagPage({ params }: PageProps) {
         {posts.length === 0 ? (
           <p className="mt-16 text-stone/70">No posts tagged #{decoded} yet.</p>
         ) : (
-          <div className="mt-16 space-y-16">
-            {posts.map((post, index) => (
-              <PostCard key={post._id} post={post} priority={index === 0} />
-            ))}
+          <div className="mt-16">
+            <StickyPostStack posts={posts} />
           </div>
         )}
       </div>

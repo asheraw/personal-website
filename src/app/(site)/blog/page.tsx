@@ -22,6 +22,8 @@ import {
   type CommentStats,
   type Testimonial,
 } from "@/components/asher/blog/CommentSocialProof";
+import { SketchyPillFrame } from "@/components/asher/blog/SketchyPillFrame";
+import { HoverDrawHeadline } from "@/components/asher/blog/HoverDrawHeadline";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
@@ -105,9 +107,10 @@ export default async function BlogPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
-        <h1 className="font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl">
-          {blogHeading}
-        </h1>
+        <HoverDrawHeadline
+          text={blogHeading}
+          className="font-display text-5xl font-semibold tracking-[-0.01em] text-ivory sm:text-6xl"
+        />
         <p className="mt-4 max-w-xl whitespace-pre-wrap leading-relaxed text-stone/80">{blogTagline}</p>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -122,20 +125,46 @@ export default async function BlogPage() {
 
         {categories.length > 0 && (
           <div className="mt-8">
-            <p className="font-mono-stage text-[10px] uppercase tracking-[0.24em] text-stone/60">
+            {/* Desktop/tablet: the old flat row. Mobile: the same pills
+                behind a collapsed <details> disclosure instead -- a category
+                list long enough to wrap several lines was pushing the first
+                post card way down the page on narrow screens. */}
+            <p className="hidden font-mono-stage text-[10px] uppercase tracking-[0.24em] text-stone/60 sm:block">
               Browse by topic
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {categories.map((category) => (
+            <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
+              {categories.map((category, i) => (
                 <Link
                   key={category.slug}
                   href={`/blog/category/${category.slug}`}
-                  className="rounded-full border border-amber-faint px-3.5 py-1.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/80 transition-colors hover:border-spotlight/50 hover:text-spotlight"
+                  className="relative rounded-full px-3.5 py-1.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/80 transition-colors hover:text-spotlight"
                 >
+                  <SketchyPillFrame variant={i} />
                   {category.title} <span className="text-stone/50">{category.count}</span>
                 </Link>
               ))}
             </div>
+
+            <details className="group rounded-lg border border-amber-faint sm:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-mono-stage text-[10px] uppercase tracking-[0.24em] text-stone/60 [&::-webkit-details-marker]:hidden">
+                Browse by topic
+                <span className="transition-transform group-open:rotate-180" aria-hidden="true">
+                  ▾
+                </span>
+              </summary>
+              <div className="flex flex-wrap gap-2 px-4 pb-4">
+                {categories.map((category, i) => (
+                  <Link
+                    key={category.slug}
+                    href={`/blog/category/${category.slug}`}
+                    className="relative rounded-full px-3.5 py-1.5 font-mono-stage text-[10px] uppercase tracking-[0.16em] text-stone/80 transition-colors hover:text-spotlight"
+                  >
+                    <SketchyPillFrame variant={i} />
+                    {category.title} <span className="text-stone/50">{category.count}</span>
+                  </Link>
+                ))}
+              </div>
+            </details>
           </div>
         )}
 
@@ -145,14 +174,21 @@ export default async function BlogPage() {
           </div>
         )}
 
-        {totalCount === 0 ? (
-          featuredPost ? null : (
-            <p className="mt-16 text-stone/70">Nothing published yet — check back soon.</p>
-          )
-        ) : (
-          <BlogPostList initialPosts={initialPosts} totalCount={totalCount} excludeId={excludeId} />
+        {totalCount === 0 && !featuredPost && (
+          <p className="mt-16 text-stone/70">Nothing published yet — check back soon.</p>
         )}
       </div>
+
+      {totalCount > 0 && (
+        // Wider than the max-w-3xl reading column above -- that width
+        // matches a single post's prose, but a 3-card grid needs more room
+        // to breathe than 768px allows. Only this grid section widens; the
+        // heading/search/featured-post block above keeps the narrower,
+        // single-column reading width.
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <BlogPostList initialPosts={initialPosts} totalCount={totalCount} excludeId={excludeId} />
+        </div>
+      )}
     </BlogChrome>
   );
 }

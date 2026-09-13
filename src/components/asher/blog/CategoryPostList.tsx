@@ -43,10 +43,16 @@ export function CategoryPostList({ posts }: { posts: PostSummary[] }) {
           if (entry.isIntersecting) visible.set(id, entry.boundingClientRect.top);
           else visible.delete(id);
         }
-        // Whichever visible card sits closest to (or just past) the top of
-        // the viewport is the one actually being read right now.
-        const topmost = [...visible.entries()].sort((a, b) => a[1] - b[1])[0];
-        setActiveId(topmost ? topmost[0] : null);
+        // The post list uses StickyPostStack's pin-and-cover layout: every
+        // card that has reached its sticky offset stays geometrically
+        // "intersecting" for as long as it's pinned, even after a later
+        // card has visually covered it (position: sticky keeps the same
+        // rect while a later sibling just paints over it) -- so several
+        // cards can be "visible" at once here, and the one actually on
+        // screen is always the LAST one in reading order among them, never
+        // whichever happens to sit at the smallest boundingClientRect.top.
+        const activeIndex = [...posts].reverse().findIndex((post) => visible.has(post._id));
+        setActiveId(activeIndex === -1 ? null : posts[posts.length - 1 - activeIndex]._id);
       },
       // A thin band starting just below the fixed header -- a card only
       // counts as "active" once it's actually near the top of the reading

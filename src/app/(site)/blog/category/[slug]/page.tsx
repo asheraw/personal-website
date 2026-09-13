@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { client } from "@/sanity/lib/client";
 import { CATEGORY_BY_SLUG_QUERY, POSTS_BY_CATEGORY_QUERY, type PostSummary } from "@/sanity/lib/queries";
-import { PostCard } from "@/components/asher/blog/PostCard";
+import { StickyPostStack } from "@/components/asher/blog/StickyPostStack";
 import { CategoryPostList, CategoryPostListMobile } from "@/components/asher/blog/CategoryPostList";
 import { BlogChrome } from "@/components/asher/blog/BlogChrome";
 import { buildBreadcrumbSchema } from "@/lib/structuredData";
@@ -96,12 +96,8 @@ export default async function CategoryPage({ params }: PageProps) {
           {posts.length === 0 ? (
             <p className="mt-16 text-stone/70">No posts in this category yet.</p>
           ) : (
-            <div className="mt-16 space-y-16">
-              {posts.map((post, index) => (
-                <div key={post._id} id={`post-${post._id}`}>
-                  <PostCard post={post} priority={index === 0} />
-                </div>
-              ))}
+            <div className="mt-16">
+              <StickyPostStack posts={posts} />
             </div>
           )}
         </div>
