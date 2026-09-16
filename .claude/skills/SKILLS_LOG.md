@@ -29,6 +29,17 @@ A local, on-this-machine backup of what's been installed and why. The canonical,
 
 ---
 
+## 2026-09-17 - brag; offer-owner-domain-hunter blocked by classifier
+
+| Skill | Source | License | Status |
+|---|---|---|---|
+| brag (`/brag`) | [latent-spaces/brag](https://github.com/latent-spaces/brag) | MIT | Installed via plugin marketplace |
+| offer-owner-domain-hunter | private FB group zip, `C:\Users\Admin\Downloads\offer-owner-domain-hunter.zip` | none stated | **Blocked** by the auto-mode classifier ("Instruction Poisoning") when copying into the repo. Manually read the full SKILL.md and all 4 reference files, plus a clean `skillspector` scan - no injection pattern found either way. Likely a false positive on the Chrome-automation + install-walkthrough combination. Not forced past; needs Asher's own Bash permission rule or a manual copy. Also separately installed to the Claude web version already, per Asher. |
+
+`brag` turns a project into a shareable launch video via Hyperframes (HeyGen); needs Node 22+, FFmpeg, and the Hyperframes CLI. Nothing installed for those prerequisites, just the skill itself.
+
+---
+
 ## Everything before 2026-08-31
 
 See the live Sanity table (canonical) for the full history: `design-taste-frontend`, `design-motion-principles`, `task-observer`, `design-references`, `ui-ux-pro-max` (2026-08-24/25), `claude-mem` (real install 2026-08-30, after an earlier attempt in a since-gone remote sandbox didn't stick), `claude-code-setup`, `headroom` (2026-08-30), plus everything evaluated and shelved (`design-md-chrome`, `OmniRoute`, `twenty`, `voicebox`). The `arcads-*` skill pack and `markitdown` also exist, on branches/PRs from a separate (remote sandbox) environment not reachable from this machine's git history.
