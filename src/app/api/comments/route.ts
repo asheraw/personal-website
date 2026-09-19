@@ -43,9 +43,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing postId." }, { status: 400 });
   }
 
+  // A removed-by-author comment stays in this result (unlike a trashed
+  // one) so its reply chain keeps rendering -- the frontend only ever
+  // nests a reply under a parent that's actually present in this list.
+  // Real name/message/gifUrl still come back as-is; CommentSection swaps
+  // in the "removed by author" placeholder itself once it sees
+  // removedByAuthor set, so the original content is never sent stripped.
   const comments = await writeClient.fetch(
-    `*[_type == "comment" && post._ref == $postId && status == "approved" && !defined(trashedAt)] | order(createdAt asc){
-      _id, name, message, gifUrl, createdAt, isAuthorReply,
+    `*[_type == "comment" && post._ref == $postId && !defined(trashedAt) && (status == "approved" || defined(removedByAuthor))] | order(createdAt asc){
+      _id, name, message, gifUrl, createdAt, isAuthorReply, removedByAuthor,
       "parentComment": parentComment._ref
     }`,
     { postId }

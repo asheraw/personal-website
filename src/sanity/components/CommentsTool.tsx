@@ -10,6 +10,7 @@ import {StarIcon} from '@sanity/icons/Star'
 import {StarFilledIcon} from '@sanity/icons/StarFilled'
 import {TrashIcon} from '@sanity/icons/Trash'
 import {UndoIcon} from '@sanity/icons/Undo'
+import {EyeClosedIcon} from '@sanity/icons/EyeClosed'
 import {relativeTime} from '../lib/relativeTime'
 
 // Shown as the name on every reply created from this tool. Cosmetic only --
@@ -84,6 +85,7 @@ type CommentRow = {
   addedAt: string
   editedAt: string | null
   trashedAt: string | null
+  removedByAuthor: string | null
   postId: string | null
   postTitle: string | null
   postSlug: string | null
@@ -293,7 +295,7 @@ export function CommentsTool() {
     client
       .fetch<CommentRow[]>(
         `*[_type == "comment"] | order(createdAt desc){
-          _id, name, email, ip, message, gifUrl, status, createdAt, "addedAt": _createdAt, editedAt, trashedAt, isAuthorReply,
+          _id, name, email, ip, message, gifUrl, status, createdAt, "addedAt": _createdAt, editedAt, trashedAt, removedByAuthor, isAuthorReply,
           "featuredTestimonial": featuredTestimonial == true,
           "postId": post._ref, "postTitle": post->title, "postSlug": post->slug.current,
           "postCommentsLocked": post->commentsLocked,
@@ -435,6 +437,33 @@ export function CommentsTool() {
     }
   }
 
+  // Distinct from trashComment: the comment (and its reply chain, since
+  // the frontend keeps a removed-by-author parent in its query results
+  // unlike a trashed one -- see /api/comments's GET handler) stays fully
+  // visible on the live site, just swapped for an obvious "removed by
+  // author" placeholder there. name/message/gifUrl are never touched, so
+  // restoreRemoved brings back the exact original content.
+  async function removeComment(id: string) {
+    setBusyId(id)
+    try {
+      const removedByAuthor = new Date().toISOString()
+      await client.patch(id).set({removedByAuthor}).commit()
+      setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, removedByAuthor} : c)) : prev))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function restoreRemoved(id: string) {
+    setBusyId(id)
+    try {
+      await client.patch(id).unset(['removedByAuthor']).commit()
+      setComments((prev) => (prev ? prev.map((c) => (c._id === id ? {...c, removedByAuthor: null} : c)) : prev))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   // Actually irreversible, unlike trashComment -- only ever called from
   // the Trash view, after its own separate confirm step.
   async function deleteForever(id: string) {
@@ -571,6 +600,7 @@ export function CommentsTool() {
                 addedAt: new Date().toISOString(),
                 editedAt: null,
                 trashedAt: null,
+                removedByAuthor: null,
                 postId: parent.postId,
                 postTitle: parent.postTitle,
                 postSlug: parent.postSlug,
@@ -1366,6 +1396,8 @@ export function CommentsTool() {
                             onReject={() => setStatus(comment._id, 'rejected')}
                             onSpam={() => setStatus(comment._id, 'spam')}
                             onTrash={() => trashComment(comment._id)}
+                            onRemove={() => removeComment(comment._id)}
+                            onRestoreRemoved={() => restoreRemoved(comment._id)}
                             onToggleFeatured={() => toggleFeatured(comment._id, !comment.featuredTestimonial)}
                             onEditClick={() => startEdit(comment)}
                             onSaveEdit={() => saveEdit(comment._id)}
@@ -1418,6 +1450,8 @@ export function CommentsTool() {
                                     onReject={() => setStatus(reply._id, 'rejected')}
                                     onSpam={() => setStatus(reply._id, 'spam')}
                                     onTrash={() => trashComment(reply._id)}
+                                    onRemove={() => removeComment(reply._id)}
+                                    onRestoreRemoved={() => restoreRemoved(reply._id)}
                                     onToggleFeatured={() => toggleFeatured(reply._id, !reply.featuredTestimonial)}
                                     onEditClick={() => startEdit(reply)}
                                     onSaveEdit={() => saveEdit(reply._id)}
@@ -1468,6 +1502,8 @@ export function CommentsTool() {
                                           onReject={() => setStatus(reply3._id, 'rejected')}
                                           onSpam={() => setStatus(reply3._id, 'spam')}
                                           onTrash={() => trashComment(reply3._id)}
+                                          onRemove={() => removeComment(reply3._id)}
+                                          onRestoreRemoved={() => restoreRemoved(reply3._id)}
                                           onToggleFeatured={() => toggleFeatured(reply3._id, !reply3.featuredTestimonial)}
                                           onEditClick={() => startEdit(reply3)}
                                           onSaveEdit={() => saveEdit(reply3._id)}
@@ -1852,6 +1888,8 @@ function CommentCard({
   onReject,
   onSpam,
   onTrash,
+  onRemove,
+  onRestoreRemoved,
   onEditClick,
   onSaveEdit,
   onCancelEdit,
@@ -1875,6 +1913,8 @@ function CommentCard({
   onReject: () => void
   onSpam: () => void
   onTrash: () => void
+  onRemove: () => void
+  onRestoreRemoved: () => void
   onEditClick: () => void
   onSaveEdit: () => void
   onCancelEdit: () => void
@@ -1933,11 +1973,24 @@ function CommentCard({
                 </Text>
               </Stack>
             </Flex>
-            <Badge tone={STATUS_TONE[comment.status]} fontSize={0}>
-              {comment.status}
-            </Badge>
+            <Flex align="center" gap={2}>
+              {comment.removedByAuthor && (
+                <Badge tone="critical" fontSize={0}>
+                  Removed
+                </Badge>
+              )}
+              <Badge tone={STATUS_TONE[comment.status]} fontSize={0}>
+                {comment.status}
+              </Badge>
+            </Flex>
           </Flex>
         </Stack>
+        {comment.removedByAuthor && (
+          <Text size={0} muted title={new Date(comment.removedByAuthor).toLocaleString()}>
+            Removed {relativeTime(comment.removedByAuthor)} -- hidden on the live site behind a placeholder, real
+            content below is only visible here.
+          </Text>
+        )}
         {parentStatus && parentStatus !== 'approved' && (
           <Text size={0} muted>
             The comment this replies to isn&rsquo;t approved yet, so this reply won&rsquo;t show in context on
@@ -2073,6 +2126,26 @@ function CommentCard({
                     fontSize={1}
                     disabled={busy}
                     onClick={onToggleFeatured}
+                  />
+                )}
+                {comment.status === 'approved' && !comment.removedByAuthor && (
+                  <Button
+                    text="Remove"
+                    icon={EyeClosedIcon}
+                    mode="bleed"
+                    fontSize={1}
+                    disabled={busy}
+                    onClick={onRemove}
+                  />
+                )}
+                {comment.removedByAuthor && (
+                  <Button
+                    text="Restore"
+                    icon={UndoIcon}
+                    mode="bleed"
+                    fontSize={1}
+                    disabled={busy}
+                    onClick={onRestoreRemoved}
                   />
                 )}
               </Flex>

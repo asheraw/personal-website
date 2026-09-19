@@ -18,6 +18,7 @@ type Comment = {
   createdAt: string;
   isAuthorReply?: boolean;
   parentComment?: string | null;
+  removedByAuthor?: string | null;
 };
 
 export function CommentSection({ postId, commentsLocked = false }: { postId: string; commentsLocked?: boolean }) {
@@ -138,7 +139,8 @@ function ReplyControl({
   refetch: () => void;
   locked: boolean;
 }) {
-  if (locked) return null;
+  // Nothing to reply to once the original content's been removed.
+  if (locked || comment.removedByAuthor) return null;
 
   return (
     <>
@@ -175,6 +177,19 @@ function ReplyControl({
 // isAuthorReply false) still renders in the normal neutral style -- it's
 // just indented under the comment it answers.
 function CommentCard({ comment }: { comment: Comment }) {
+  // The comment's real content still exists in the data (see
+  // /api/comments's GET handler) -- this just swaps the render so it
+  // reads as an obvious, deliberate removal rather than hiding it
+  // entirely, and its reply chain keeps showing underneath, same as
+  // before it was removed.
+  if (comment.removedByAuthor) {
+    return (
+      <div className="rounded-lg border border-amber-faint/60 bg-stage/20 p-4">
+        <p className="text-sm italic text-stone/50">Comment removed by author</p>
+      </div>
+    );
+  }
+
   if (comment.isAuthorReply) {
     return (
       <div className="rounded-lg border border-spotlight/40 bg-spotlight/[0.06] p-4">

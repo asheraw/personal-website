@@ -38,7 +38,7 @@ export const POST_SUMMARY_PROJECTION = `{
   "author": author->{name, "slug": slug.current},
   "categories": categories[]->{title, "slug": slug.current},
   tags,
-  "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && references(^._id)])
+  "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && !defined(removedByAuthor) && references(^._id)])
 }`;
 
 export const ALL_POSTS_QUERY = `
@@ -75,8 +75,8 @@ export const FEATURED_POST_QUERY = `
 // post isn't something a visitor could ever actually see or verify, so
 // counting it here would be a real, if small, exaggeration).
 export const COMMENT_STATS_QUERY = `{
-  "totalComments": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && defined(post->slug.current)]),
-  "authorReplies": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && isAuthorReply == true && defined(post->slug.current)])
+  "totalComments": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && !defined(removedByAuthor) && defined(post->slug.current)]),
+  "authorReplies": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && !defined(removedByAuthor) && isAuthorReply == true && defined(post->slug.current)])
 }`;
 
 // Every comment Asher has hand-picked as a testimonial (Studio -> Comments
@@ -85,7 +85,7 @@ export const COMMENT_STATS_QUERY = `{
 // rather than already narrowing to one server-side; also scoped to
 // published posts for the same reason as COMMENT_STATS_QUERY above.
 export const FEATURED_TESTIMONIALS_QUERY = `
-  *[_type == "comment" && featuredTestimonial == true && status == "approved" && !defined(trashedAt) && defined(post->slug.current)]{
+  *[_type == "comment" && featuredTestimonial == true && status == "approved" && !defined(trashedAt) && !defined(removedByAuthor) && defined(post->slug.current)]{
     _id, name, message, createdAt,
     "postTitle": post->title, "postSlug": post->slug.current
   }
@@ -190,7 +190,7 @@ export const POST_BY_SLUG_QUERY = `
     "author": author->{name, "slug": slug.current, image, bio},
     "categories": categories[]->{title, "slug": slug.current},
     "primaryCategory": primaryCategory->{title, "slug": slug.current},
-    "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && references(^._id)])
+    "commentCount": count(*[_type == "comment" && status == "approved" && !defined(trashedAt) && !defined(removedByAuthor) && references(^._id)])
   }
 `;
 

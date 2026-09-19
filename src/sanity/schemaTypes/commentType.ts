@@ -158,6 +158,16 @@ export const commentType = defineType({
       hidden: ({document}) => !document?.editedAt,
     }),
     defineField({
+      name: 'removedByAuthor',
+      title: 'Removed by author',
+      type: 'datetime',
+      options: {dateFormat: 'YYYY-MMM-DD'},
+      description:
+        'Set by the Remove button in Studio -> Comments. Unlike Trash, this keeps the comment (and its reply chain) visible on the live site, showing "Comment removed by author" in place of the real content -- the original name/message/GIF are never touched, just hidden from public view, so Restore brings it back exactly as it was. Meant for a comment you want obviously gone but don\'t want to erase from the thread or lose the record of.',
+      readOnly: true,
+      hidden: ({document}) => !document?.removedByAuthor,
+    }),
+    defineField({
       name: 'trashedAt',
       title: 'Trashed',
       type: 'datetime',
@@ -184,11 +194,12 @@ export const commentType = defineType({
       postTitle: 'post.title',
       parentComment: 'parentComment._ref',
       trashedAt: 'trashedAt',
+      removedByAuthor: 'removedByAuthor',
       featuredTestimonial: 'featuredTestimonial',
     },
-    prepare: ({name, message, gifUrl, status, postTitle, parentComment, trashedAt, featuredTestimonial}) => ({
+    prepare: ({name, message, gifUrl, status, postTitle, parentComment, trashedAt, removedByAuthor, featuredTestimonial}) => ({
       title: `${parentComment ? '↳ ' : ''}${featuredTestimonial ? '★ ' : ''}${name}: ${message?.slice(0, 60) ?? (gifUrl ? '[GIF]' : '')}`,
-      subtitle: `${trashedAt ? 'trashed · ' : ''}${status} · on "${postTitle ?? 'unknown post'}"`,
+      subtitle: `${trashedAt ? 'trashed · ' : ''}${removedByAuthor ? 'removed · ' : ''}${status} · on "${postTitle ?? 'unknown post'}"`,
     }),
   },
 })
