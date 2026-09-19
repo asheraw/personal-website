@@ -28,14 +28,29 @@ export async function GET(request: NextRequest) {
 
   const cutoff = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
 
+  // One transaction per comment, not one covering all of them -- a reply
+  // can still legitimately reference an expired parent (e.g. Asher's own
+  // reply kept live after the comment it answers was trashed), which Sanity
+  // refuses to delete out from under. A single shared transaction meant
+  // that one such comment failed the whole batch, every single day, since
+  // the earlier all-or-nothing version never made progress on the other,
+  // unblocked comments either.
   const commentIds: string[] = await writeClient.fetch(
     `*[_type == "comment" && defined(trashedAt) && trashedAt < $cutoff]._id`,
     { cutoff }
   );
-  if (commentIds.length > 0) {
-    const tx = writeClient.transaction();
-    for (const id of commentIds) tx.delete(id);
-    await tx.commit();
+  let commentsDeleted = 0;
+  let commentsSkipped = 0;
+  for (const id of commentIds) {
+    try {
+      await writeClient.delete(id);
+      commentsDeleted++;
+    } catch (err) {
+      // Still referenced (e.g. by a live reply) -- leave it trashed and
+      // move on, same tolerance the image-asset loop below already has.
+      commentsSkipped++;
+      console.error(`purge-trash: could not delete comment ${id}:`, err);
+    }
   }
 
   // Image assets get an extra check comments don't need: re-confirm
@@ -54,20 +69,26 @@ export async function GET(request: NextRequest) {
   let imagesDeleted = 0;
   let imagesSkipped = 0;
   for (const doc of trashDocs) {
-    const stillUsed: number = await writeClient.fetch(`count(*[references($id)])`, {
-      id: doc.assetId,
-    });
-    if (stillUsed > 0) {
+    try {
+      const stillUsed: number = await writeClient.fetch(`count(*[references($id)])`, {
+        id: doc.assetId,
+      });
+      if (stillUsed > 0) {
+        imagesSkipped++;
+        continue;
+      }
+      await writeClient.transaction().delete(doc._id).delete(doc.assetId).commit();
+      imagesDeleted++;
+    } catch (err) {
       imagesSkipped++;
-      continue;
+      console.error(`purge-trash: could not delete image ${doc._id}:`, err);
     }
-    await writeClient.transaction().delete(doc._id).delete(doc.assetId).commit();
-    imagesDeleted++;
   }
 
   return NextResponse.json({
     success: true,
-    commentsDeleted: commentIds.length,
+    commentsDeleted,
+    commentsSkipped,
     imagesDeleted,
     imagesSkipped,
   });
