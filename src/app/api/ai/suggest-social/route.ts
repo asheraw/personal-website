@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { truncateText } from "@/lib/text";
 import { writeClient } from "@/sanity/lib/write-client";
 import { DEFAULT_VOICE_GUIDANCE } from "@/lib/aiPromptDefaults";
+import { generateStructuredText } from "@/lib/aiText";
 
 // Called from Studio's "Draft Social Copy" action (see
 // src/sanity/actions/suggestSocialCopy.tsx). Same "AI proposes, human
@@ -50,8 +51,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
   try {
     // Same shared field suggest-seo reads -- see the comment on
     // SOCIAL_TASK_INSTRUCTIONS above for why voice lives separately from
@@ -61,8 +60,9 @@ export async function POST(request: NextRequest) {
     );
     const voice = settings?.voiceGuidance?.trim() || DEFAULT_VOICE_GUIDANCE;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+    const parsed = await generateStructuredText<{ x?: string[]; linkedin?: string[]; facebook?: string[] }>({
+      provider: "gemini",
+      schemaName: "social_captions",
       contents: `${voice}
 
 ${SOCIAL_TASK_INSTRUCTIONS}
@@ -71,36 +71,28 @@ Title: ${title}
 
 Content:
 ${bodyText.slice(0, 6000)}`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            x: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: "Exactly 2 options, 240 characters or fewer each, no URL, no hashtags unless clearly warranted.",
-            },
-            linkedin: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: "Exactly 2 options, 2-4 short paragraphs each, professional but personal, no URL.",
-            },
-            facebook: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: "Exactly 2 options, mid-length, conversational, no URL.",
-            },
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          x: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Exactly 2 options, 240 characters or fewer each, no URL, no hashtags unless clearly warranted.",
           },
-          required: ["x", "linkedin", "facebook"],
+          linkedin: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Exactly 2 options, 2-4 short paragraphs each, professional but personal, no URL.",
+          },
+          facebook: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "Exactly 2 options, mid-length, conversational, no URL.",
+          },
         },
+        required: ["x", "linkedin", "facebook"],
       },
     });
-
-    const raw = response.text;
-    if (!raw) throw new Error("Empty response from model");
-
-    const parsed = JSON.parse(raw) as { x?: string[]; linkedin?: string[]; facebook?: string[] };
 
     const x = (parsed.x || []).map((t) => truncateText(t.trim(), 240)).filter(Boolean).slice(0, 2);
     const linkedin = (parsed.linkedin || []).map((t) => t.trim()).filter(Boolean).slice(0, 2);
@@ -132,9 +124,15 @@ ${bodyText.slice(0, 6000)}`,
     return NextResponse.json({ x, linkedin, facebook, logId });
   } catch (error) {
     console.error("[ai/suggest-social] failed:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    const rateLimited = /RESOURCE_EXHAUSTED|429|quota/i.test(message);
     return NextResponse.json(
-      { error: "Couldn't get a suggestion right now — try again in a moment." },
-      { status: 500 }
+      {
+        error: rateLimited
+          ? "Hit the free-tier daily limit for AI suggestions -- try again after it resets, or enable billing on the Gemini API project. See RUNBOOK.md."
+          : "Couldn't get a suggestion right now — try again in a moment.",
+      },
+      { status: rateLimited ? 429 : 500 }
     );
   }
 }

@@ -12,6 +12,22 @@ import type { SchemaUnion } from "@google/genai";
 export type AiTextProvider = "gemini" | "openrouter";
 
 const DEFAULT_OPENROUTER_TEXT_MODEL = "openai/gpt-4o-mini";
+const DEFAULT_GEMINI_TEXT_MODEL = "gemini-3.6-flash";
+// gemini-3.6-flash is the current model Google's own API error message
+// points at when an older pinned version (2.5/2.0) gets sunset -- but a
+// pinned version can still go down on its own: confirmed 2026-09-23, every
+// call to it was failing with a real 503 "currently experiencing high
+// demand" for hours, not a one-off blip. The `-latest` alias tracks
+// whichever flash release Google currently has healthy capacity behind,
+// so it's the fallback here, not the default -- an alias can silently
+// change behavior over time, which is fine for "rescue this one call" but
+// not something to pin every request to permanently.
+const GEMINI_FALLBACK_MODEL = "gemini-flash-latest";
+
+function isUnavailableError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /"code":503|UNAVAILABLE|currently experiencing high demand/i.test(message);
+}
 
 // Recursively maps Gemini's Type enum (Type.OBJECT, Type.ARRAY, ...) onto
 // plain JSON Schema type strings -- the two are structurally identical
@@ -106,14 +122,30 @@ export async function generateStructuredText<T>({
     throw new Error("GEMINI_API_KEY is missing -- see RUNBOOK.md.");
   }
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const response = await ai.models.generateContent({
-    model: model || "gemini-3.6-flash",
-    contents,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema,
-    },
-  });
+  const targetModel = model || DEFAULT_GEMINI_TEXT_MODEL;
+
+  let response;
+  try {
+    response = await ai.models.generateContent({
+      model: targetModel,
+      contents,
+      config: { responseMimeType: "application/json", responseSchema },
+    });
+  } catch (error) {
+    // A pinned model version going down (Google's own infrastructure, not
+    // this account's quota -- distinct from the 429/RESOURCE_EXHAUSTED case
+    // every route already handles separately) shouldn't sink every request
+    // until Google fixes it. Retried once, only for this specific failure,
+    // only if the fallback isn't just the same model already tried.
+    if (!isUnavailableError(error) || targetModel === GEMINI_FALLBACK_MODEL) throw error;
+    console.error(`[aiText] ${targetModel} unavailable, retrying once with ${GEMINI_FALLBACK_MODEL}:`, error);
+    response = await ai.models.generateContent({
+      model: GEMINI_FALLBACK_MODEL,
+      contents,
+      config: { responseMimeType: "application/json", responseSchema },
+    });
+  }
+
   const raw = response.text;
   if (!raw) throw new Error("Empty response from model");
   return JSON.parse(raw) as T;

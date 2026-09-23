@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { writeClient } from "@/sanity/lib/write-client";
 import {
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
 } from "@/lib/aiPromptDefaults";
+import { generateStructuredText } from "@/lib/aiText";
 
 // Called from Studio's "Suggest Image Prompt" action (see
 // src/sanity/actions/suggestImagePrompt.tsx) -- the "generate a prompt,
@@ -65,8 +66,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
   try {
     // Editable in Studio under "AI Suggestion Settings" -- same fallback
     // pattern as suggest-seo's promptInstructions/voiceGuidance: falls back
@@ -80,41 +79,34 @@ export async function POST(request: NextRequest) {
     const mode1Text = settings?.compositionMode1?.trim() || DEFAULT_COMPOSITION_MODE_1;
     const mode2Text = settings?.compositionMode2?.trim() || DEFAULT_COMPOSITION_MODE_2;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+    const parsed = await generateStructuredText<{ ideas?: { subject?: string; mode?: number }[] }>({
+      provider: "gemini",
+      schemaName: "image_prompt_ideas",
       contents: `${imagePromptTaskInstructions(mode1Text, mode2Text)}
 
 Title: ${title}
 
 Content:
 ${bodyText.slice(0, 6000)}`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            ideas: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  subject: { type: Type.STRING },
-                  mode: { type: Type.NUMBER },
-                },
-                required: ["subject", "mode"],
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          ideas: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                subject: { type: Type.STRING },
+                mode: { type: Type.NUMBER },
               },
-              description: "Exactly 3 distinct ideas, each a concrete subject plus its composition mode (1 or 2).",
+              required: ["subject", "mode"],
             },
+            description: "Exactly 3 distinct ideas, each a concrete subject plus its composition mode (1 or 2).",
           },
-          required: ["ideas"],
         },
+        required: ["ideas"],
       },
     });
-
-    const raw = response.text;
-    if (!raw) throw new Error("Empty response from model");
-
-    const parsed = JSON.parse(raw) as { ideas?: { subject?: string; mode?: number }[] };
 
     // Assembled here, not by Gemini -- {SUBJECT} and {COMPOSITION_MODE} are
     // the only two variables; the rest of `template` is used byte-for-byte
@@ -165,9 +157,15 @@ ${bodyText.slice(0, 6000)}`,
     return NextResponse.json({ ideas, logId });
   } catch (error) {
     console.error("[ai/suggest-image-prompt] failed:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    const rateLimited = /RESOURCE_EXHAUSTED|429|quota/i.test(message);
     return NextResponse.json(
-      { error: "Couldn't get a suggestion right now — try again in a moment." },
-      { status: 500 }
+      {
+        error: rateLimited
+          ? "Hit the free-tier daily limit for AI suggestions -- try again after it resets, or enable billing on the Gemini API project. See RUNBOOK.md."
+          : "Couldn't get a suggestion right now — try again in a moment.",
+      },
+      { status: rateLimited ? 429 : 500 }
     );
   }
 }

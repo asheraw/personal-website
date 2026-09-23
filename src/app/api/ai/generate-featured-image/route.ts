@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { writeClient } from "@/sanity/lib/write-client";
 import {
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
@@ -7,6 +7,7 @@ import {
   DEFAULT_COMPOSITION_MODE_2,
 } from "@/lib/aiPromptDefaults";
 import { generateImage, type AiImageProvider } from "@/lib/aiImage";
+import { generateStructuredText } from "@/lib/aiText";
 
 // The automated sibling of suggest-image-prompt/route.ts. That route
 // deliberately stops at handing Asher 3 prompts to paste into DreamLab by
@@ -52,8 +53,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing postId to attach the image to." }, { status: 400 });
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
   try {
     // Same settings document, same fallback defaults as
     // suggest-image-prompt/route.ts -- editing the template in Studio's AI
@@ -72,30 +71,24 @@ export async function POST(request: NextRequest) {
     const mode2Text = settings?.compositionMode2?.trim() || DEFAULT_COMPOSITION_MODE_2;
     const imageProvider: AiImageProvider = settings?.imageProvider === "openrouter" ? "openrouter" : "gemini";
 
-    const ideaResponse = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+    const ideaParsed = await generateStructuredText<{ subject?: string; mode?: number }>({
+      provider: "gemini",
+      schemaName: "featured_image_idea",
       contents: `${singleIdeaInstructions(mode1Text, mode2Text)}
 
 Title: ${title}
 
 Content:
 ${bodyText.slice(0, 6000)}`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            subject: { type: Type.STRING },
-            mode: { type: Type.NUMBER },
-          },
-          required: ["subject", "mode"],
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          subject: { type: Type.STRING },
+          mode: { type: Type.NUMBER },
         },
+        required: ["subject", "mode"],
       },
     });
-
-    const ideaRaw = ideaResponse.text;
-    if (!ideaRaw) throw new Error("Empty response from model");
-    const ideaParsed = JSON.parse(ideaRaw) as { subject?: string; mode?: number };
     const subject = ideaParsed.subject?.trim().replace(/[.。]+$/, "");
     if (!subject) throw new Error("Suggestion was incomplete");
     const mode = ideaParsed.mode === 2 ? 2 : 1;
