@@ -3,19 +3,12 @@ import {useEditState} from 'sanity'
 import {Badge, Box, Card, Flex, Heading, Stack, Text} from '@sanity/ui'
 import {urlFor} from '../lib/image'
 import {getChecklistIssues, type PostDraft} from '../actions/prepareForPublish'
-import {SuggestSeoButton} from './SuggestSeoButton'
 
 type PostForPreview = PostDraft & {
   slug?: {current?: string}
   socialImage?: unknown
   useBrandedSocialCard?: boolean
   noIndex?: boolean
-  // Not read by anything else in this view -- added purely to pass through
-  // as the source data for SuggestSeoButton below, same fields
-  // suggestSeo.tsx's own document action already reads from props.draft/
-  // props.published.
-  body?: unknown
-  tags?: string[]
 }
 
 const SITE_HOST = 'asheraw.com'
@@ -70,11 +63,8 @@ export function SeoPreviewView(props: {documentId: string}) {
           Approximate previews of how this post shows up in a Google search result and when shared on social —
           not pixel-perfect (every platform renders slightly differently), but close enough to catch a title
           that&rsquo;s too long or a missing description before it goes live. Updates as the draft autosaves.
+          Want AI-suggested titles/excerpts/tags? That&rsquo;s the &ldquo;AI Tools&rdquo; tab now.
         </Text>
-
-        <Box>
-          <SuggestSeoButton documentId={publishedId} source={doc} />
-        </Box>
 
         {issues.length > 0 && (
           <Card padding={3} radius={2} tone="caution" border>

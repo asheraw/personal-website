@@ -18,11 +18,13 @@ import {logUsage, useSeoSuggestions, SuggestSeoDialogBody, type PostDraft} from 
  *
  * The actual fetch/state logic and every result card live in
  * SuggestSeoShared.tsx -- shared with the identical "Suggest SEO & Excerpt"
- * button on the SEO Preview tab (SuggestSeoButton.tsx), so there are two
- * entry points into exactly one dialog experience, not two copies of it.
- * This file is just the document-action glue: opening/closing via the
- * action framework's own `dialog` return shape, and patching the document
- * via useDocumentOperation.
+ * button inlined under the Title field (SuggestSeoButton.tsx via
+ * TitleInputWithSeoSuggest.tsx), so there are two entry points into exactly
+ * one dialog experience, not two copies of it (a third, on the SEO Preview
+ * tab, was removed 2026-09-23 as a pure duplicate once the AI Tools tab's
+ * own SEO card covered that spot instead). This file is just the
+ * document-action glue: opening/closing via the action framework's own
+ * `dialog` return shape, and patching the document via useDocumentOperation.
  */
 export function createSuggestSeoAction(): DocumentActionComponent {
   const SuggestSeoAction: DocumentActionComponent = (props: DocumentActionProps) => {

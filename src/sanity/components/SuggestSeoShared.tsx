@@ -24,12 +24,12 @@ export type PostDraft = {
 
 // Shared by the "Suggest SEO & Excerpt" document action (suggestSeo.tsx,
 // triggered from the Publish button's own menu) and the same-named button
-// on the SEO Preview tab (SuggestSeoButton.tsx) -- one real fetch/patch
-// flow and one set of result cards, not two copies of either. Split out
-// specifically because those are two different entry points into the exact
-// same suggestion dialog: clicking the document action before ever opening
-// the SEO Preview tab should work identically to clicking the button once
-// already looking at that tab's "Worth a look" checklist.
+// inlined under the Title field (SuggestSeoButton.tsx via
+// TitleInputWithSeoSuggest.tsx) -- one real fetch/patch flow and one set of
+// result cards, not two copies of either. Split out specifically because
+// those are two different entry points into the exact same suggestion
+// dialog. A third entry point, on the SEO Preview tab, was removed
+// 2026-09-23 once the AI Tools tab's own SEO card made it a pure duplicate.
 
 // Fire-and-forget -- a failed log-usage call shouldn't interrupt or delay
 // applying a suggestion, it's purely a record of it. No-ops if this

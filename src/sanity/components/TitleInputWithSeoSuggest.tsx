@@ -5,9 +5,8 @@ import {SuggestSeoButton} from './SuggestSeoButton'
 import type {PostDraft} from './SuggestSeoShared'
 
 // Inlines the same "Suggest SEO & Excerpt" button already available from
-// the Publish button's overflow menu (suggestSeo.tsx) and the SEO Preview
-// tab (SuggestSeoButton.tsx, SeoPreviewView.tsx), right underneath the
-// Title field itself -- Asher's own ask (2026-08-29): this is one of only
+// the Publish button's overflow menu (suggestSeo.tsx) and the AI Tools tab,
+// right underneath the Title field itself -- Asher's own ask (2026-08-29): this is one of only
 // two AI-assist actions he wants living in the actual writing flow instead
 // of behind "...", specifically because title is the field it most
 // directly affects (alternative headlines patch straight into it).
