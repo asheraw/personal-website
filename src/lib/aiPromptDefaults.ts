@@ -39,7 +39,41 @@ Never invent facts, quotes, numbers, or specifics that aren't actually in the so
 // never re-paraphrased by the model, so the visual style stays byte-for-
 // byte consistent across every post instead of drifting suggestion to
 // suggestion.
-export const DEFAULT_IMAGE_PROMPT_TEMPLATE = `{SUBJECT}, in the style of a 19th-century steel-plate engraving / pen-and-ink illustration, dense fine crosshatching and stippling for shading and volume, confident unbroken linework, high contrast, hand-engraved antique naturalist or encyclopedia-plate quality, rendered entirely in sepia monochrome — warm brown ink tones on aged ivory paper, no flat color, no digital shading, no gradients, sharp fine detail throughout, {COMPOSITION_MODE}. No text on the visual except for an unobtrusive "Asher Aw, 1984" in the bottom margin.`
+//
+// Revised 2026-09-23: kept the sepia steel-plate look (consistency with
+// every existing featured image), but pushed toward hand-made rather than
+// perfectly rendered -- uneven line weight, inconsistent ink, paper grain --
+// plus an explicit "what NOT to make" list, since image models drift toward
+// polished/vector/digital output unless told otherwise. {ASPECT_RATIO} was
+// added the same day (see fillImagePromptTemplate below).
+export const DEFAULT_IMAGE_PROMPT_TEMPLATE = `{SUBJECT}, in the style of a 19th-century steel-plate engraving / pen-and-ink illustration from an old illustrated book or encyclopedia, dense fine crosshatching, parallel hatching and stippling for shading and volume, expressive hand-drawn linework with subtle variations in line weight and uneven ink density, skilled but visibly hand-made draughtsmanship, tactile hand-printed quality with subtle paper grain, high contrast, rendered entirely in sepia monochrome — warm brown ink tones on aged ivory paper, {COMPOSITION_MODE}, {ASPECT_RATIO}. It should feel like a fragment cut from an old illustrated publication. Avoid: polished modern illustration, clean vector lines, minimalist line art, tattoo flash, comic-book ink, digital sketching, photorealism, 3D rendering, glossy surfaces, flat color, gradients, digital shading, modern infographic design, decorative borders, ornamental flourishes. No text on the visual except for an unobtrusive "Asher Aw, 1984" in the bottom margin.`
+
+// Default output shape for anything that's a post's featured/social image
+// (Suggest Image Prompt, Generate Featured Image) -- 16:9 unless a feature
+// states otherwise (the image carousel uses square slides instead).
+// `sentence` is what goes into the prompt text; `api` is the value passed to
+// Gemini's imageConfig.aspectRatio, since prompt wording alone isn't a
+// reliable way to control output shape.
+export const FEATURED_IMAGE_ASPECT = { sentence: "16:9 landscape widescreen format", api: "16:9" };
+export const CAROUSEL_IMAGE_ASPECT = { sentence: "1:1 square format", api: "1:1" };
+
+// Fills an image prompt template's placeholders -- shared by every route
+// that renders one (suggest-image-prompt, generate-featured-image,
+// suggest-image-carousel) instead of three copies of the same split/join.
+// split/join rather than .replace() so a placeholder used more than once is
+// replaced everywhere. A template saved before {ASPECT_RATIO} existed (or
+// edited in Studio to drop it) still gets the aspect ratio, appended.
+export function fillImagePromptTemplate(
+  template: string,
+  { subject, composition, aspectSentence }: { subject: string; composition: string; aspectSentence: string }
+): string {
+  const filled = template
+    .split("{SUBJECT}").join(subject)
+    .split("{COMPOSITION_MODE}").join(composition);
+  return filled.includes("{ASPECT_RATIO}")
+    ? filled.split("{ASPECT_RATIO}").join(aspectSentence)
+    : `${filled} ${aspectSentence}.`;
+}
 
 // Used both as the "Suggest Image Prompt instructions" Studio field's
 // starting value and as suggest-image-prompt/route.ts's runtime fallback --
@@ -57,6 +91,8 @@ Before choosing a subject, think through the post like a visual director would:
 - The emotional response the image should create in a reader
 - The strongest visual metaphor or human situation that captures that message -- not just a literal illustration of an event described in the post
 - What would feel generic, misleading, or too on-the-nose, so you can avoid it
+
+Favor clever visual metaphors, physical analogies and slightly absurd literal interpretations of abstract ideas over literal depictions. Translate the idea into an old-fashioned physical object, gesture or situation that tells the story on its own, with no words or labels needed -- e.g. for "AI is replacing boring office work", not a robot at a desk, but a Victorian machine swallowing stacks of paperwork, or a tiny clerk desperately turning the crank of an enormous contraption. Ideas can be witty, curious or mildly absurd, as long as they'd look believable as an antique engraving.
 
 Based on the title and content given to you, and that thinking, for each of the 3 ideas provide:
 1. A concrete, specific SUBJECT (not the full prompt, not the style description -- just what the image depicts): a single symbolic object/scene/moment drawn from the post's actual mood and themes. Never invent specific facts/people/events from the post as literal photographic subjects -- work from the post's mood and themes, not its literal claims. Write it as a noun phrase that flows directly into a longer sentence when followed by a comma -- e.g. "a solitary figure standing on a cliff edge at sunrise", NOT "A solitary figure stands on a cliff edge at sunrise." (no capital letter to start, no trailing period).

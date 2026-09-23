@@ -6,6 +6,8 @@ import {
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
+  CAROUSEL_IMAGE_ASPECT,
+  fillImagePromptTemplate,
 } from "@/lib/aiPromptDefaults";
 import { generateStructuredText, type AiTextProvider } from "@/lib/aiText";
 import { generateImage, type AiImageProvider } from "@/lib/aiImage";
@@ -134,13 +136,22 @@ ${bodyText.slice(0, 8000)}`,
     for (const candidate of candidates) {
       const subject = candidate.subject!.trim();
       const modeText = candidate.mode === 2 ? mode2Text : mode1Text;
-      const prompt = template.split("{SUBJECT}").join(subject).split("{COMPOSITION_MODE}").join(modeText);
+      // Square slides -- the one feature that states otherwise from the
+      // 16:9 featured-image default (see CAROUSEL_IMAGE_ASPECT). 1:1 was
+      // already what these came out as (Gemini's own default shape), now
+      // stated explicitly since the shared template carries {ASPECT_RATIO}.
+      const prompt = fillImagePromptTemplate(template, {
+        subject,
+        composition: modeText,
+        aspectSentence: CAROUSEL_IMAGE_ASPECT.sentence,
+      });
 
       try {
         const { base64, mimeType } = await generateImage({
           provider: imageProvider,
           model: settings?.imageModel?.trim() || undefined,
           prompt,
+          aspectRatio: CAROUSEL_IMAGE_ASPECT.api,
         });
         const buffer = Buffer.from(base64, "base64");
         const asset = await writeClient.assets.upload("image", buffer, {

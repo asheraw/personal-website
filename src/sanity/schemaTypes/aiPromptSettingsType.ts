@@ -166,7 +166,7 @@ export const aiPromptSettingsType = defineType({
       group: 'imageStyle',
       initialValue: DEFAULT_IMAGE_PROMPT_TEMPLATE,
       description:
-        'The full image-generation prompt "Suggest Image Prompt" assembles for each idea -- keep both {SUBJECT} and {COMPOSITION_MODE} exactly as written; those are the only two parts Gemini fills in (a concrete subject, and which mode below fits it). Everything else here is used word-for-word, every time, so the visual style stays consistent across posts instead of being reworded by the AI. Leave blank to fall back to the default shown here.',
+        'The full image-generation prompt assembled for each idea -- keep {SUBJECT}, {COMPOSITION_MODE} and {ASPECT_RATIO} exactly as written. Gemini fills in the subject and picks a mode below; {ASPECT_RATIO} becomes "16:9 landscape widescreen format" for featured images and "1:1 square format" for carousel slides. Everything else is used word-for-word, every time, so the visual style stays consistent across posts. Leave blank to fall back to the default shown here.',
     }),
     defineField({
       name: 'compositionMode1',

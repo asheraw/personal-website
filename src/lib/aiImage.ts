@@ -16,6 +16,7 @@ export async function generateImage({
   provider,
   model,
   prompt,
+  aspectRatio,
 }: {
   provider: AiImageProvider;
   // Ignored on the Gemini path (always "gemini-2.5-flash-image", matching
@@ -23,6 +24,10 @@ export async function generateImage({
   // "openrouter".
   model?: string;
   prompt: string;
+  // e.g. "16:9" -- enforced via Gemini's imageConfig (prompt wording alone
+  // doesn't reliably control output shape). Not sent on the OpenRouter
+  // path, where it only travels as part of the prompt text.
+  aspectRatio?: string;
 }): Promise<{ base64: string; mimeType: string }> {
   if (provider === "openrouter") {
     if (!process.env.OPENROUTER_API_KEY) {
@@ -66,7 +71,10 @@ export async function generateImage({
   const response = await ai.models.generateContent({
     model: model || "gemini-2.5-flash-image",
     contents: prompt,
-    config: { responseModalities: [Modality.TEXT, Modality.IMAGE] },
+    config: {
+      responseModalities: [Modality.TEXT, Modality.IMAGE],
+      ...(aspectRatio ? { imageConfig: { aspectRatio } } : {}),
+    },
   });
   const parts = response.candidates?.[0]?.content?.parts ?? [];
   const imagePart = parts.find((p) => p.inlineData?.data);

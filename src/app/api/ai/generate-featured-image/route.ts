@@ -5,6 +5,8 @@ import {
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
+  FEATURED_IMAGE_ASPECT,
+  fillImagePromptTemplate,
 } from "@/lib/aiPromptDefaults";
 import { generateImage, type AiImageProvider } from "@/lib/aiImage";
 import { generateStructuredText } from "@/lib/aiText";
@@ -93,7 +95,11 @@ ${bodyText.slice(0, 6000)}`,
     if (!subject) throw new Error("Suggestion was incomplete");
     const mode = ideaParsed.mode === 2 ? 2 : 1;
     const modeText = mode === 2 ? mode2Text : mode1Text;
-    const prompt = template.split("{SUBJECT}").join(subject).split("{COMPOSITION_MODE}").join(modeText);
+    const prompt = fillImagePromptTemplate(template, {
+      subject,
+      composition: modeText,
+      aspectSentence: FEATURED_IMAGE_ASPECT.sentence,
+    });
 
     const requiredImageKey = imageProvider === "openrouter" ? "OPENROUTER_API_KEY" : "GEMINI_API_KEY";
     if (!process.env[requiredImageKey]) {
@@ -107,6 +113,7 @@ ${bodyText.slice(0, 6000)}`,
       provider: imageProvider,
       model: settings?.imageModel?.trim() || undefined,
       prompt,
+      aspectRatio: FEATURED_IMAGE_ASPECT.api,
     });
     const buffer = Buffer.from(base64, "base64");
 

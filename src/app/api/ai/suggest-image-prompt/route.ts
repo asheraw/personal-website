@@ -6,6 +6,8 @@ import {
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
   DEFAULT_IMAGE_PROMPT_TASK_INSTRUCTIONS,
+  FEATURED_IMAGE_ASPECT,
+  fillImagePromptTemplate,
 } from "@/lib/aiPromptDefaults";
 import { generateStructuredText } from "@/lib/aiText";
 
@@ -123,10 +125,11 @@ ${bodyText.slice(0, 6000)}`,
         const mode = idea.mode === 2 ? 2 : 1;
         if (!subject) return null;
         const modeText = mode === 2 ? mode2Text : mode1Text;
-        // split/join, not .replace() -- replaces every occurrence, not
-        // just the first, in case the template is ever edited in Studio to
-        // reference {SUBJECT} or {COMPOSITION_MODE} more than once.
-        const prompt = template.split("{SUBJECT}").join(subject).split("{COMPOSITION_MODE}").join(modeText);
+        const prompt = fillImagePromptTemplate(template, {
+          subject,
+          composition: modeText,
+          aspectSentence: FEATURED_IMAGE_ASPECT.sentence,
+        });
         return { subject, mode, prompt };
       })
       .filter((idea): idea is { subject: string; mode: number; prompt: string } => idea !== null)
