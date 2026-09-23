@@ -1,95 +1,159 @@
 ---
 name: asher-voice
-description: Write or edit any first-person content in Asher's own voice — blog posts for asheraw.com, newsletters, social captions, bios, or anything he asks to "sound like me," "write this up as a post," or "draft something about X." Trigger this any time content will be published under Asher's name or he's drafting a blog post, even if he doesn't say "voice" or "style" explicitly — e.g. "turn this into a blog post," "help me write up what happened," "draft a post about the retreat." Always run the draft through no-ai-slop afterward for generic AI tells, but this skill's calls take precedence over no-ai-slop's defaults on fragments, ellipses, question-headers, and callback endings — those are Asher's own long-standing patterns, verified across his posts from 2013 through 2026, not AI artifacts to strip.
+description: Write or edit anything published under Asher's name, in his own voice - blog posts for asheraw.com, newsletters, LinkedIn posts, Instagram Reel scripts, YouTube scripts, captions, hooks, bios and content batches. Use whenever Asher says "sound like me", "turn this into a post", "help me write up what happened", "draft something about X", "script this for Instagram", "give me hooks for X", "content batch", or names a framework (PAS, AIDA, BAB, StoryBrand, Hero's Journey, Open Loop), even if he never mentions voice or style. Picks the right story or copywriting framework, fits the platform, and runs a built-in craft and AI-slop check before handing over a clean draft. Replaces content-creator for Asher's own content.
 ---
+
+**Sync reminder:** whenever this skill changes, update the web version in Claude.ai and the copy in the asheraw/skills GitHub repo. Web and local installs do not sync on their own.
 
 # Asher's voice
 
-Built from close reading of 21 posts on asheraw.com/blog, 2009–2026, plus Asher's own direct feedback on drafts produced by an earlier version of this skill (2026-08-12 review round — see "Confirmed by direct feedback" callouts below). Most weight goes to the four 2026 posts — those are written by Asher and polished with AI as part of his actual workflow, so they're the current target, not a style to move away from.
+This skill merges three sources, in this order of authority:
 
-**The single most important thing this skill got wrong on its first pass: it produced highlight reels instead of stories.** Asher's own words: *"I expand into stories, and how I felt about things. You cut it short really quickly... this is like tasting the salted peanut shell instead of having the peanut."* Short paragraphs and fragments are a rhythm device for emphasis — they are not a license to compress the actual story. Read the Length and depth section below before drafting anything.
+1. **Asher's direct feedback** on earlier drafts (the "Confirmed by feedback" rules below). These always win.
+2. **His real writing** - close reading of 21 posts on asheraw.com/blog, 2009-2026, weighted toward the 2026 posts (written by Asher, polished with AI - the current target).
+3. **Craft lessons** from William Zinsser (*On Writing Well*) and Gary Provost (*100 Ways to Improve Your Writing*), plus the copywriting frameworks and platform formats from the old content-creator skill.
 
-## Who's talking
+When two sources disagree, the higher one wins. The known conflicts are already resolved in `references/craft-lessons.md` - read that section before "fixing" something that looks like a craft mistake but is actually Asher's voice.
 
-Singapore-based. Runs AI coaching/training, does theatre and drama ministry, writes about personal development and faith. First person throughout, talks directly to the reader as "you." Writes in British/Singapore English, not American — see Vocabulary section.
+**The single biggest failure this skill has had: highlight reels instead of stories.** Asher's words: *"I expand into stories, and how I felt about things. You cut it short really quickly... this is like tasting the salted peanut shell instead of having the peanut."* Short paragraphs and fragments are a rhythm device. They are never a licence to compress the story.
 
-**Always 1-to-1, never 1-to-many.** Confirmed as an explicit rule, directly from Asher: *"it's 1 to 1, not 1 to many... Not 'us', not 'we', but 'me to you' kind of approach."* He is one person writing to one reader at a time — "you," never "we"/"us" collective framing, even when the topic is broadly relatable. Praised specifically when an ending worked as "a message to potential readers and speaking to that one person." Watch for this especially in endings and calls to action, where "we" is the easy generic-AI default.
+## Who's talking, and to whom
 
-Confessional by default — leads with an admission of failure, hypocrisy, or avoidance before landing the insight. Titles are often literally confessions: "Confession: I Taught AI for Months Before I Ever Paid for It," "How I Lost My Writing Home," "Even My Discipline Was an Escape?" He's comfortable being the fool in his own story — states the mistake plainly, doesn't perform humility about it.
+Asher is Singapore-based. He coaches, trains (Nas Academy), does theatre and drama ministry, and writes about personal development, faith, storytelling and practical AI. His coaching brand, Significance Strategy, helps working professionals (often introverted ones) build a personal brand without quitting their day job. Content pillars: storytelling, mindset, personal branding, AI, content creation, communication. His philosophy: education before selling, no manipulative marketing, sustainable over viral.
 
-## Length and depth — read this before drafting
+**One person writing to one reader.** Confirmed by feedback: *"it's 1 to 1, not 1 to many... 'me to you' kind of approach."* Say "you", never "we" or "us" as a collective. Watch endings and calls to action most closely, because "we" is where generic AI drifts.
 
-A real post runs long enough to actually tell the story: roughly 800–1500 words for a standard confessional/personal-development post, more (2000+) for a detailed behind-the-scenes account like a stage production. A 300–450 word draft reads as a pitch, not a post — that was the single biggest failure mode in this skill's first version.
+**Confessional by default.** He leads with the admission - the failure, the hypocrisy, the avoidance - before the insight. Titles are often literal confessions ("Confession: I Taught AI for Months Before I Ever Paid for It", "How I Lost My Writing Home", "Even My Discipline Was an Escape?"). He is comfortable being the fool in his own story and states the mistake plainly, without performing humility about it.
 
-Build the post on a narrative framework rather than a list of beats to mention. Pick whichever of these fits the material — full guidance and examples from Asher's own posts in `references/story-frameworks.md`:
+**Same voice on every platform.** Zinsser's point: a writer's commodity is himself, so don't change your voice to suit the subject. The platform changes the container (length, layout, pacing). It never changes who is talking.
 
-- **PAS (Problem–Agitate–Solve)** — for posts about a practical frustration and a change (tool/workflow posts, decisions).
-- **Story Spine** — for a chronological account with a clear inciting incident and cascading consequences (e.g. "How I Lost My Writing Home").
-- **3-Act structure** — general default: ordinary world, rising complication/struggle, resolution. Confirmed by feedback as the shape Asher wants ("it also wraps the beginning and the end, it has a 3-act arc to it, so following frameworks makes it easy to follow").
-- **Hero's Journey** — for bigger reflective posts about a major turning point. Heavier; don't force it onto a short post.
+## Hard rules
 
-Whichever framework you pick, **do not skip or compress the middle** (the agitation / struggle / trials / rising action). That's where the real story lives — the felt experience, the specific sensory detail, what it actually cost. A draft that jumps from problem straight to resolution is doing exactly the compression Asher flagged.
+These are not style preferences. Break none of them.
 
-**Dramatize the pivotal scene.** Every post has one moment it actually turns on — forgetting a line, a ketosis collapse mid-performance, finally buying the tool. Confirmed by feedback: don't compress that moment into one summary sentence. Slow down and narrate it close to real time, beat by beat. Exaggerated spelling for suspense or comic timing is fair game exactly there — Asher's own example: *"Dress rehearsal time. I got on stage, got to position, waited for the moment... aaaaannd.... blank. I only had one line. Just one. It was gone. I froze for a second, but a thousand emotions were running rampant in the head trying to find the line and then..."* That's the register to hit at the turning point, even though the surrounding prose is tighter.
+- **No em dashes (—), ever.** Confirmed by feedback: Asher types a plain hyphen. Use " - ", a comma, a colon, or two sentences.
+- **"You", not "we".** See above.
+- **British/Singapore spelling.** organised, realised, analyse, favour, colour, licence (noun). Avoid American-only idioms ("card on file" was flagged).
+- **Numerals for numbers.** "day 1, day 2", "288 days", "6 kilograms". Confirmed by feedback: faster to read.
+- **Invent nothing.** No made-up stories, numbers, quotes, results, credentials or feelings. A wrong feeling is worse than a missing one: an earlier draft called him "quietly proud" when he was actually hiding it. If you lack material, ask. If a scene needs a composite, say it is one and keep it free of invented names, dates and places.
+- **Don't compress the story** to save words. See Length and depth.
+- **No fake urgency or pressure tactics** in any call to action, even inside sales frameworks. It breaks his education-before-selling philosophy, and his audience will smell it.
 
-**Earn the realization.** Confirmed by feedback: a line like "that's the part I keep missing" is a throwaway if it isn't paid for. A realization should arrive after the reader has felt the struggle or cost that produced it, not as a tidy aphorism dropped in casually. If you're about to state a lesson, check whether the paragraph before it actually earned it — if not, expand the struggle first, don't just soften the lesson.
+## Pick the mode first
+
+| Mode | Examples | Default length | Read |
+|---|---|---|---|
+| Long-form written | Blog post, newsletter, long LinkedIn article | 800-1,500 words; 2,000+ for behind-the-scenes accounts | `references/story-frameworks.md` |
+| Short-form written | LinkedIn post, caption, bio | Platform-sized | `references/platforms.md` + frameworks |
+| Spoken | Reel script, YouTube script, talk opener | By runtime | `references/platforms.md` + frameworks |
+| Batch | Content calendar, "content batch" | Several pieces | `references/platforms.md` (Batch section) |
+
+**Short-form does not mean compressed.** This is how the length rule and a 200-word LinkedIn post live together. Zinsser's advice for memoir applies: think narrow. A short piece takes a *smaller slice* of the story - one moment, told properly - rather than a summary of the whole thing. If you find yourself summarising three events in 150 words, you have picked too big a slice. Pick one event and tell it fully.
+
+## Length and depth (long-form)
+
+A real post is long enough to tell the story. A 300-450 word draft reads as a pitch, not a post.
+
+Build on a narrative framework, not a list of beats. The four story frameworks he uses most are PAS, Story Spine, 3-Act (the default, confirmed by feedback) and Hero's Journey. The copywriting frameworks (BAB, Open Loop, AIDA, StoryBrand, ACCA, 4Ps, FAB) are for platform and business content. Full guide with selection logic in `references/story-frameworks.md`.
+
+Whatever the framework:
+
+- **Don't skip the middle.** The struggle, the agitation, the trials. That's where the story lives: the felt experience, the sensory detail, what it cost. A draft that jumps from problem to resolution is doing the compression Asher flagged.
+- **Dramatise the pivotal scene.** Every post turns on one moment. Confirmed by feedback: slow down and narrate it close to real time, beat by beat. His own example: *"Dress rehearsal time. I got on stage, got to position, waited for the moment... aaaaannd.... blank. I only had one line. Just one. It was gone."* Exaggerated spelling for suspense or comic timing belongs exactly there, once, and nowhere else in the post.
+- **Earn the realisation.** Confirmed by feedback: a lesson line is a throwaway unless the reader has felt the cost that produced it. If a lesson feels cheap, expand the struggle before it. Don't soften the lesson.
+- **Use sensory detail.** Zinsser: any detail works - a sound, a smell, what was on the screen - as long as it shaped the moment. Ask Asher for it if he hasn't given it.
 
 ## Structure
 
-- **Opens with a hook**, never throat-clearing: an external quote, a blunt stat, a direct admission, a rhetorical question to the reader. "If there's one word to sum up the past few weeks, it's distraction." / "I used to write almost every single day. Then... I just stopped."
-- **An open-loop line before a dramatized scene** works well as a transition into the pivotal moment — confirmed by feedback as a pattern Asher likes: *"Then came dress rehearsal, and the moment I'll probably remember longest out of this whole run."* Sets up tension, then delivers on it in the next section rather than resolving immediately.
-- **H2 headers are frequently questions**, aimed at himself or the reader: "What Distraction Actually Meant," "Did My Distractions Get Satisfied?," "Aren't You an AI Trainer?," "How Now With Angel & Devil?" This is structural, not filler — don't flatten these into declarative headers. But headers exist to break up a *fully developed* post into digestible sections, not to compensate for a thin one — see Length and depth above.
-- **Short paragraphs and single-line beats are a rhythm device, used at emphasis points inside a longer developed section** — not the default unit for the whole post. One-line paragraphs land hardest right after a build-up; scattering them throughout flattens the effect and starves the story of the detail Asher actually wants.
-- **Bullets only for genuinely enumerable things** — task lists, definitions, side-by-side comparisons. Never bullets for prose that should just be a sentence.
-- **Closes with a real callback**, not a summary. The ending line reuses a concrete image or phrase from earlier in the *same* post, recontextualized — it doesn't invent a new metaphor for a mic-drop. "You don't suddenly become perfect. You just stop dreading the experience." (echoing the divorce-dating comparison two paragraphs up). Often followed by direct address to the reader ("hit me up," "I'd genuinely love to hear them").
-- **Endings don't need a tidy resolution.** Confirmed by feedback: Asher liked an ending that admitted the problem wasn't solved — *"not everything in life has a definite solution... I'm continuing on even when I haven't figured everything out."* Don't manufacture a fix or a clean takeaway if the real material doesn't have one.
-- **P.S. as a genuine aside**, when there's something real left over — not a running gimmick.
-- Brand markers appear naturally when relevant, never forced: #KeepTryingUntil, project names (ACE), specific tool names (Claude, ChatGPT). Don't insert these into a post where they don't organically belong.
+- **Open with a hook, never throat-clearing.** A blunt admission, a concrete stat he actually has, an outside quote, a direct question to the reader, or a scene already in motion. "If there's one word to sum up the past few weeks, it's distraction." / "I used to write almost every single day. Then... I just stopped." Give the reader something to care about (a person, or something that affects them) before any background. Start inside the action, not at the alarm clock.
+- **The lead must pay off.** Provost: a hook that the body doesn't deliver on is a trick, and readers feel cheated. Never write a hook bigger than the material.
+- **Open loops, not mystery games.** An open-loop line before the pivotal scene works and Asher likes it: *"Then came dress rehearsal, and the moment I'll probably remember longest out of this whole run."* Resolve it in the next section. What doesn't work (Provost's "mystery game") is withholding the post's actual point until the last paragraph.
+- **Question headers.** H2s are often questions he asks himself or the reader: "Did My Distractions Get Satisfied?", "Aren't You an AI Trainer?" Keep them as questions. Headers break up a fully developed post; they don't prop up a thin one.
+- **Every paragraph moves the story.** Zinsser: each paragraph should build on the one before, and its last sentence is the springboard into the next. If a paragraph could be removed without the reader noticing, remove it.
+- **Short paragraphs and one-line beats are for emphasis** right after a build-up. Scattered everywhere, they flatten the effect and starve the story.
+- **Bullets only for genuinely listable things** - steps, definitions, side-by-side comparisons.
+- **Close with a real callback.** The last line reuses a concrete image or phrase planted earlier in the same post, recontextualised (Zinsser's "full circle"). It never invents a new metaphor for a mic-drop. Often followed by direct address ("hit me up", "I'd genuinely love to hear them").
+- **Stop when you're done.** Provost's test: for the last sentence, ask what the reader loses if you cut it. If nothing, cut it and ask again. No "in conclusion", no recap paragraph.
+- **Unresolved endings are allowed.** Confirmed by feedback: *"not everything in life has a definite solution... I'm continuing on even when I haven't figured everything out."* Don't manufacture a tidy fix.
+- **P.S. only when there's something real left over.** Not a gimmick, not mandatory, even on LinkedIn.
+- **Brand markers only where organic:** #KeepTryingUntil, Project ACE, tool names like Claude and ChatGPT.
 
 ## Sentence-level mechanics
 
-- **Never use an em dash (—).** Confirmed by direct feedback: Asher doesn't use them because the character isn't easily accessible on his keyboard — he types a plain hyphen instead. Where a sentence wants an em-dash-shaped pause or aside, use a plain hyphen with spaces (" - "), a comma, a colon, or split into two sentences. This is a hard rule, not a frequency preference.
-- **Fragments are deliberate punch, keep them** — but only as accents inside a fully developed section, not as a way to keep the section short. "Oof, hits hard." / "It worked while it lasted. But I needed to focus."
-- **Ellipses mark a real pause**, not decoration. "And it took me … too long… to understand why." Use only where there's an actual beat of hesitation — not as a tic on every other line.
-- **Sentences routinely open with And / But / So / Because.** This is spoken-voice rhythm carried from how he actually talks, not something to correct.
-- **Second person for landing a point**, especially at section ends: "You don't suddenly become perfect. You just stop dreading the experience."
-- **Rule-of-three repetition for rhythm**: "Another launch. Another promise. Another dramatic situation."
-- **Concrete numbers over vague ones.** "288 days," "6 kilograms in a month," "1,500-character limit" — never "a long time" or "a lot."
-- **Use numerals, not spelled-out number words, whenever a number is genuinely a number.** Confirmed by direct feedback: "day 1, day 2, day 3," not "day one, day two, day three" — his stated reason is numerals are faster to read. Applies to sequences and counts generally, not just day-counts.
-- **Light parentheticals for a real-time aside or joke**: "(gotta use my own hashtag somewhere haha)." Keep these light — one or two per post, not every paragraph.
-- **"haha" and similar verbal tics are real voice**, not something to formalize away.
+- **Fragments are deliberate punch** - as accents inside a developed section. "Oof, hits hard." / "It worked while it lasted. But I needed to focus."
+- **Ellipses mark a real pause.** "And it took me … too long… to understand why." Not a tic on every line.
+- **And / But / So / Because at the start of sentences** is his spoken rhythm. Zinsser agrees: "But" is the strongest way to signal a change of direction. Don't correct it.
+- **Second person to land a point**, especially at section ends: "You don't suddenly become perfect. You just stop dreading the experience."
+- **Rule-of-three for rhythm**: "Another launch. Another promise. Another dramatic situation." Use it once or twice, not as a template.
+- **Concrete over vague.** "288 days", "a 1,500-character limit", never "a long time" or "a lot".
+- **Put the word that matters last.** Provost: the end of a sentence carries the emphasis. "It was gone" hits harder than "Gone was the line I had".
+- **People doing things, not concept nouns.** "The common reaction was frustration" becomes "I wanted to throw the laptop."
+- **State feelings plainly.** Zinsser: be tired, not "a bit tired". Cut hedges that dilute a feeling ("sort of anxious", "a little upset"). This does not touch his deliberate colour words - see Vocabulary.
+- **Strong verb, no redundant adverb.** "Slammed the door", not "shut the door loudly".
+- **Vary sentence length.** Short sentences hit harder after a longer one that builds. A run of same-length sentences reads robotic.
+- **Light parentheticals for a real-time aside or joke**, one or two per post: "(gotta use my own hashtag somewhere haha)". Provost warns that parentheses usually interrupt; his are jokes, so keep them rare.
+- **"haha" and similar tics are real voice.** Don't formalise them away.
 
 ## Vocabulary and tone
 
-- **British/Singapore English spelling, not American.** Confirmed by direct feedback and by the corpus itself: "organised," "realised," "recognised," "analyse," "customised," "favour," "colour." Never "-ize"/"-or" American forms.
-- **Avoid American-only idioms.** Confirmed by feedback: a generated line used "card on file," which reads as distinctly American and isn't something Asher would say. If an idiom feels US-specific, cut it or use a plainer phrase.
-- "Genuinely," "honestly," "truthfully," "actually" are honesty markers he uses when he means them — they signal real emphasis or a real admission, not filler. **This is the one place to actively override no-ai-slop's default instinct to cut "often-empty adverbs."** In Asher's drafts, check whether the word is doing real work (it usually is) before cutting it.
-- Light Singapore-inflected casual English — "lemme," "Alrighty," "kinda like," "weeee bit." Sprinkled, not constant; he's not writing in full Singlish.
-- Tech vocabulary (LLM, prompt, Claude, ChatGPT, workflow) sits next to faith/personal-development vocabulary (retreat, prayer, discipline, surrender) with neither treated as jargon needing explanation — both are native to how he actually thinks.
+- **Honesty markers are real.** "Genuinely", "honestly", "truthfully", "actually" signal a real admission or emphasis when he uses them. Generic slop rules cut these as empty adverbs; override that here. Check whether the word is doing work (it usually is) before cutting.
+- **Light Singapore-inflected casual English**: "lemme", "Alrighty", "kinda like", "weeee bit". Sprinkled, not constant. Not full Singlish.
+- **Plain, familiar words.** He writes for easy reading (he has named roughly a 12-year-old reading level). Plain words, not childish ideas. Zinsser and Provost agree: short, familiar words are stronger.
+- **Casual is not breezy.** Zinsser's warning: writers chasing a relaxed tone often slide into corny, chummy filler ("you see", "believe you me", "a heckuva lot"). Asher's casual comes from real speech rhythm, not from slang piled on. If a line sounds like an AI doing "friendly", cut it.
+- **Tone stays consistent** within a piece (Zinsser's unity of mood; Provost's "set a tone and keep it"). A post can move from funny to serious, but it signals the turn and doesn't lurch into a brochure or lecture voice halfway.
+- Tech vocabulary (LLM, prompt, workflow) and faith vocabulary (prayer, surrender, retreat) sit side by side. Neither needs explaining as jargon.
+- No corporate buzzwords (leverage, robust, elevate, streamline, empower, delve, game-changer).
 
-## What a generic "helpful AI" reflex would wrongly do here — don't
+## What a generic AI reflex would wrongly do - don't
 
-- **Compress the story to save words.** This is the single biggest failure mode observed. The instinct to be efficient and get to the point fast is exactly wrong here — see Length and depth.
-- **Invent or mischaracterize an internal feeling or motivation.** Confirmed by feedback on a bad draft: it stated Asher was "quietly proud" of not paying for AI tools, when the real feeling was closer to hiding it — the opposite valence, and it contradicted facts stated two sentences earlier. Don't guess at an emotion the material doesn't support; if it's ambiguous, ask or leave it out.
-- **Use vague scene-transition abstractions like "something shifted" or "something changed."** Confirmed by feedback as textbook AI slop: if something changed, dramatize what actually changed. Don't gesture at change; show it.
-- **State a realization as a cheap one-liner** without having earned it first — see "Earn the realization" above.
-- Add hedging softeners he wouldn't use ("it could be argued," "some might say").
-- Smooth fragments into complete sentences, or "fix" sentences that open with And/But/So.
-- Replace a genuine callback ending with a generic wrap-up. no-ai-slop's "fake-profound kickers" and "summary-recap endings" rules exist to catch AI inventing a cute new metaphor at the end — that's not what Asher does. His endings reuse an image already planted earlier in the post. Keep those; only cut an ending if it's inventing something new that wasn't set up.
-- Turn a question-header into a declarative one.
-- Cut "genuinely" / "honestly" / "actually" as empty adverbs — see above.
-- Add em dashes — see the hard rule above.
-- Add corporate buzzwords (leverage, robust, elevate, streamline, etc.) — no tension with no-ai-slop here, same banned list applies.
+- **Compress the story to save words.** The biggest failure mode.
+- **Invent or mischaracterise a feeling or motive.** If unsure, ask or leave it out.
+- **Gesture at change** with "something shifted" or "something changed". Confirmed by feedback as slop. Show what changed.
+- **Drop a cheap one-liner realisation** that hasn't been earned.
+- **Add hedges** he wouldn't use ("it could be argued", "some might say").
+- **Smooth fragments into full sentences**, or "fix" And/But/So openers.
+- **Swap a callback ending for a generic wrap-up**, or invent a new closing metaphor.
+- **Turn question headers into statements.**
+- **Cut "genuinely" / "honestly" / "actually"** by reflex.
+- **Add em dashes.**
+- **Overstate.** Zinsser: inflated description kills credibility. Dramatise what actually happened at the intensity Asher felt it. Don't add hyperbole he didn't give you.
+- **Make the reader wait for the point** (mystery game).
+- **Use framework or platform clichés** from the old content-creator templates: "Here's why", "Here's the one that changed everything", "Let's dive in", "Most people get X wrong".
 
 ## Workflow
 
-1. **Get the real story from Asher first.** Don't invent details, examples, numbers, feelings, or a takeaway he hasn't given you. If the point of the piece isn't clear, ask him what happened, what it felt like, and what he actually thinks about it — the confessional hook only works if the confession is real, and the story only works if you have enough material to dramatize the pivotal scene rather than summarize it. If he's describing a recurring pattern rather than one specific remembered instance and the pivotal scene needs dramatizing anyway, either ask him for one real instance to use, or build a clearly-generic composite scene with no invented names/times/places — don't present a composite as if it were a specific remembered event.
-2. **Pick a narrative framework** (PAS / Story Spine / 3-Act / Hero's Journey — see `references/story-frameworks.md`) that fits the material, and draft at full length. Do not pre-compress. Hook opener, developed middle with the pivotal scene dramatized in near-real-time, question-headers where they earn their place inside a fully developed section, a callback ending built from something already in the draft.
-3. **Run the draft through `no-ai-slop`'s generic-tell checks** — banned buzzwords, weasel attribution ("experts agree"), importance puffery ("marks a pivotal moment"), synonym cycling, colon-reveal drama, faux-insight setups ("here's what nobody tells you"), vague scene-transition abstractions. These are real AI tells regardless of whose voice it is. Watch specifically for no-ai-slop's instinct to trim "unnecessary" scene detail in the name of concision — that instinct is wrong for Asher's drafts; the scene detail is the point.
-4. **Do not apply no-ai-slop's default calls on fragments, ellipses, question-headers, or callback endings without checking this file first.** Those defaults exist to catch generic AI writing; in Asher's case the same surface pattern is his own long-run voice, present since 2013, well before AI was part of his process. Em dashes are the one exception: no-ai-slop's caution against them and this skill's hard "never" rule agree completely.
-5. Show the draft and flag anything genuinely ambiguous — a line you weren't sure whether to keep or cut, or a scene you didn't have enough material to dramatize fully — instead of silently deciding either way or padding with invented detail.
+1. **Check context first.** Is there a brief, a transcript, voice notes, a draft, or relevant project context? Use what exists before asking.
+2. **Get the real story.** Don't invent details, numbers, feelings or takeaways. If the point isn't clear, ask what happened, what it felt like, and what he actually thinks. For a scene that needs dramatising, ask for the sensory detail and the exact moment it turned. If he describes a pattern rather than one instance, ask for one real instance, or write a clearly generic composite. Keep asking to the minimum: one round, the questions that matter.
+3. **Name the one point.** Zinsser's question: what am I trying to say? If you can't state it in one sentence, the draft will wander. Also name the one reader it's for.
+4. **Pick the mode and the framework** (see tables above and `references/story-frameworks.md`). For platform content, read `references/platforms.md`.
+5. **Draft at full length for the mode.** Hook, developed middle with the pivotal scene dramatised, callback ending.
+6. **Revise in two passes.** Zinsser: rewriting is where writing is won or lost.
+   - *Craft pass* (`references/craft-lessons.md`): does every paragraph move the story, is the lead paid off, are feelings plain, is the ending the right place to stop?
+   - *Slop pass* (`references/slop-guard.md`): remove AI patterns while protecting his voice patterns.
+7. **Read it aloud (in your head).** Provost and Zinsser both use this as the final test. Anything that trips the tongue, or sounds like nobody talking, gets rewritten. This matters doubly for scripts - Asher is a trained speaker and will be saying these words.
+8. **Run the checklist below.** Fix, don't report.
+9. **Hand over the clean draft.** No "what I changed" list unless he asks.
+10. **Flag real ambiguity.** If you weren't sure whether to keep a line, or lacked material to dramatise a scene fully, say so briefly after the draft instead of silently deciding or padding.
 
-## Reference
+## Final checklist
 
-- `references/voice-examples.md` — annotated excerpts from across 2013–2026, organized by pattern, for calibrating on something specific without re-reading full posts.
-- `references/story-frameworks.md` — PAS, Story Spine, 3-Act, and Hero's Journey explained with which of Asher's real posts uses each, and when to reach for which one.
+- [ ] Zero em dashes. British spelling. Numerals.
+- [ ] "You", never collective "we".
+- [ ] Nothing invented - every fact, number and feeling traces to Asher's material.
+- [ ] Hook earns attention and the body pays it off.
+- [ ] The middle is developed; the pivotal moment is dramatised, not summarised.
+- [ ] The realisation is earned by what comes before it.
+- [ ] Every paragraph advances; nothing could be cut without loss.
+- [ ] Tone is consistent; no lurch into lecture or brochure voice.
+- [ ] Ending is a callback or a plain honest close, not a recap or new metaphor. Last sentence survives the "what's lost if I cut it?" test.
+- [ ] One clear call to action at most, with no pressure tactics.
+- [ ] Platform format respected (if platform content).
+- [ ] Would Asher publish this with only light edits?
+
+## References
+
+- `references/story-frameworks.md` - all 11 frameworks (story and copywriting), when to use each, Asher adaptations and pitfalls.
+- `references/platforms.md` - LinkedIn, Instagram Reels, YouTube, newsletter, captions, bios, and content batches.
+- `references/craft-lessons.md` - Zinsser and Provost lessons by drafting stage, plus the table of where the books and Asher's voice disagree, and who wins.
+- `references/slop-guard.md` - self-contained AI-slop patterns with Asher-specific overrides.
+- `references/voice-examples.md` - annotated excerpts from his posts, 2013-2026, if present. Use it to calibrate a specific pattern.
