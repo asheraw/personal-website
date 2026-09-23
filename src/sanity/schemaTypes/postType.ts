@@ -18,27 +18,28 @@ export const postType = defineType({
   // Field order matches how Asher actually writes, not a database-y default
   // order: draft the body first, then title, then everything downstream of
   // the title (slug), then the image (made manually, after the content is
-  // settled), then category/tags, then the stuff that's basically automatic
-  // (author) or decided right before hitting Publish (date, SEO, social).
+  // settled), the excerpt, then category/tags, then publish date.
   //
-  // Fieldsets add visual dividers/headings on top of that same order --
-  // deliberately not reordering anything, just marking where one concern
-  // ends and another begins on what was previously one unbroken scroll of
-  // 17 fields. Body/title/slug/main image stay ungrouped on purpose: they're
-  // the very first thing in the form, so there's nothing above them to
-  // visually separate them from. Only PLAY mode collapses by default -- it's
-  // off for most posts; every other fieldset stays open since its fields are
-  // either touched on every post (Organize, Publishing) or matter enough to
-  // stay visible without an extra click (Search & Sharing, Discussion).
+  // Visible by default: only what gets touched on (nearly) every post.
+  // Everything else -- SEO/social overrides, discussion settings, author
+  // (always Asher, set automatically from Site Settings), PLAY mode --
+  // sits in collapsed fieldsets (2026-09-23 editor cleanup, Asher's call:
+  // those used to be open on every post, a long scroll of fields almost
+  // never changed). Excerpt moved out of Search & Sharing up next to the
+  // featured image at the same time: it's the blog-listing summary too,
+  // filled in on every post, so it doesn't belong behind a collapsed
+  // "overrides" section.
   fieldsets: [
     {name: 'organize', title: 'Organize'},
     {name: 'publishing', title: 'Publishing'},
     {
       name: 'seoSharing',
-      title: 'Search & Sharing',
-      description: 'These are exactly the fields the "SEO Preview" tab (next to Editor, above) previews.',
+      title: 'Search & sharing overrides',
+      description: 'Optional -- leave blank to use the title, excerpt and featured image. Previewed in the SEO Preview tab.',
+      options: {collapsible: true, collapsed: true},
     },
-    {name: 'discussion', title: 'Discussion'},
+    {name: 'discussion', title: 'Discussion', options: {collapsible: true, collapsed: true}},
+    {name: 'byline', title: 'Author', options: {collapsible: true, collapsed: true}},
     {name: 'playMode', title: 'PLAY mode', options: {collapsible: true, collapsed: true}},
   ],
   fields: [
@@ -76,10 +77,18 @@ export const postType = defineType({
       components: {input: MainImageInputWithSuggestPrompt},
     }),
     defineField({
+      name: 'excerpt',
+      title: 'Excerpt / SEO description',
+      type: 'text',
+      rows: 3,
+      description: 'Blog listing summary + search/social description. Under 160 characters.',
+      validation: (rule) => rule.max(160).warning('Past ~160 characters this gets cut off in Google and social previews.'),
+    }),
+    defineField({
       name: 'categories',
       type: 'array',
       fieldset: 'organize',
-      description: 'Pick from existing categories. To add a brand-new category, do that from the Categories tab in the left sidebar, then come back here to pick it.',
+      description: 'New categories are added from the Categories tab in the sidebar.',
       of: [defineArrayMember({type: 'reference', to: {type: 'category'}, options: {disableNew: true}})],
       components: {input: CategoryCheckboxInput},
     }),
@@ -89,8 +98,10 @@ export const postType = defineType({
       type: 'reference',
       fieldset: 'organize',
       to: {type: 'category'},
-      description:
-        "Which category should show in the breadcrumb and drive this post's main topic. Only matters if you picked more than one category above — leave blank to just use the first one. Tap one of the buttons below to pick it -- only ever shows categories you've already ticked above, so there's nothing to search for.",
+      description: 'Which ticked category shows in the breadcrumb. Blank = the first one.',
+      // Only meaningful with 2+ categories ticked -- with one (most posts)
+      // the breadcrumb just uses it, so the field was dead space every time.
+      hidden: ({document}) => (((document as {categories?: unknown[]})?.categories?.length ?? 0) < 2),
       options: {
         disableNew: true,
         filter: ({document}) => {
@@ -105,35 +116,14 @@ export const postType = defineType({
       type: 'array',
       fieldset: 'organize',
       of: [defineArrayMember({type: 'string'})],
-      description: 'Free-form topic labels, separate from categories. Existing tags are suggested as you type, to avoid near-duplicates.',
+      description: 'Existing tags are suggested as you type.',
       components: {input: TagsAutocompleteInput},
-    }),
-    defineField({
-      name: 'author',
-      type: 'reference',
-      fieldset: 'publishing',
-      to: {type: 'author'},
-      // Reads the default author from the Site Settings singleton (Studio
-      // sidebar -> Site Settings), configurable there instead of hardcoded.
-      // Falls back to the old slug-based lookup only if Site Settings has
-      // no default set yet (e.g. a fresh dataset before it's configured).
-      initialValue: async (_params, context) => {
-        const client = context.getClient({apiVersion: '2023-01-01'})
-        const fromSettings = await client.fetch<string | null>(
-          `*[_type == "siteSettings"][0].defaultAuthor._ref`
-        )
-        if (fromSettings) return {_ref: fromSettings}
-        const fallbackId = await client.fetch<string | null>(
-          `*[_type == "author" && slug.current == "asher-aw"][0]._id`
-        )
-        return fallbackId ? {_ref: fallbackId} : undefined
-      },
     }),
     defineField({
       name: 'publishedAt',
       type: 'datetime',
       fieldset: 'publishing',
-      description: 'Defaults to the moment you create the post. Change it any time — your change is always kept.',
+      description: 'Defaults to when the post was created.',
       options: {dateFormat: 'YYYY-MMM-DD'},
       initialValue: () => new Date().toISOString(),
     }),
@@ -144,25 +134,14 @@ export const postType = defineType({
       fieldset: 'publishing',
       options: {dateFormat: 'YYYY-MMM-DD'},
       components: {input: ScheduledPublishInput},
-      description:
-        'Set a date on an unpublished draft and it publishes itself automatically -- no need to come back and click Publish by hand. Checked once a day, so treat this as "goes live sometime that day," not an exact time. Has no effect on an already-published post -- only unpublished drafts get auto-published.',
-    }),
-    defineField({
-      name: 'excerpt',
-      title: 'Excerpt / SEO description',
-      type: 'text',
-      fieldset: 'seoSharing',
-      rows: 3,
-      description:
-        'Shown on the blog listing AND used as the search-engine/social description — one summary, doing both jobs. Keep it under 160 characters; anything past that gets cut off in Google results and doesn’t help clicks anyway.',
-      validation: (rule) => rule.max(160).warning('Past ~160 characters this gets cut off in Google and social previews.'),
+      description: 'Unpublished drafts only -- publishes itself sometime that day (checked once daily).',
     }),
     defineField({
       name: 'seoTitle',
       title: 'SEO title (optional)',
       type: 'string',
       fieldset: 'seoSharing',
-      description: 'Overrides the page title shown in search results and browser tabs. Leave blank to use the post title.',
+      description: 'Search results + browser tab. Blank = post title.',
       validation: (rule) => rule.max(70),
     }),
     defineField({
@@ -170,7 +149,7 @@ export const postType = defineType({
       title: 'Social sharing image (optional)',
       type: 'image',
       fieldset: 'seoSharing',
-      description: 'Overrides the image shown when this post is shared on social media. Leave blank to use the featured image.',
+      description: 'Blank = featured image.',
       options: {
         hotspot: true,
       },
@@ -180,8 +159,7 @@ export const postType = defineType({
       title: 'Use branded social card instead of the photo',
       type: 'boolean',
       fieldset: 'seoSharing',
-      description:
-        'Turn on to show a generated title/category/author card (site colors and type) when this post is shared, instead of the featured photo — useful for posts without a strong photo, or ones you’d rather represent with text. Off by default; existing behavior (the photo) is unaffected unless you turn this on.',
+      description: 'Shares show a generated title card instead of the image.',
       initialValue: false,
     }),
     defineField({
@@ -189,7 +167,7 @@ export const postType = defineType({
       title: 'Hide from search engines',
       type: 'boolean',
       fieldset: 'seoSharing',
-      description: 'Turn on to keep this post out of Google and other search results (it stays visible on your site).',
+      description: 'Stays on the site, just out of Google.',
       initialValue: false,
     }),
     // Which of Content Audit's four checks (image/alt text/excerpt/
@@ -212,8 +190,7 @@ export const postType = defineType({
       title: 'Lock comments',
       type: 'boolean',
       fieldset: 'discussion',
-      description:
-        'Turn on to stop new comments and replies on this post -- existing comments stay exactly as they are, just no new ones can be added. Can also be toggled per-post from Studio -> Comments, right where you already moderate.',
+      description: 'Stops new comments; existing ones stay. Also toggleable from Comments.',
       initialValue: false,
     }),
     defineField({
@@ -221,8 +198,7 @@ export const postType = defineType({
       title: 'Social links',
       type: 'array',
       fieldset: 'discussion',
-      description:
-        'Where this post lives on each social platform -- used to pull comments back from that platform and to link out to it. One entry per platform.',
+      description: 'Where this post was shared -- used to pull comments back.',
       of: [
         defineArrayMember({
           type: 'object',
@@ -248,6 +224,27 @@ export const postType = defineType({
           },
         }),
       ],
+    }),
+    defineField({
+      name: 'author',
+      type: 'reference',
+      fieldset: 'byline',
+      to: {type: 'author'},
+      // Reads the default author from the Site Settings singleton (Studio
+      // sidebar -> Site Settings), configurable there instead of hardcoded.
+      // Falls back to the old slug-based lookup only if Site Settings has
+      // no default set yet (e.g. a fresh dataset before it's configured).
+      initialValue: async (_params, context) => {
+        const client = context.getClient({apiVersion: '2023-01-01'})
+        const fromSettings = await client.fetch<string | null>(
+          `*[_type == "siteSettings"][0].defaultAuthor._ref`
+        )
+        if (fromSettings) return {_ref: fromSettings}
+        const fallbackId = await client.fetch<string | null>(
+          `*[_type == "author" && slug.current == "asher-aw"][0]._id`
+        )
+        return fallbackId ? {_ref: fallbackId} : undefined
+      },
     }),
     // PLAY: an optional, interactive alternative way to experience this
     // post -- separate from the normal reading view (STORY), never

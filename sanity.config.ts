@@ -6,7 +6,7 @@
 
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
-import {presentationTool, defineLocations, defineDocuments} from 'sanity/presentation'
+import {presentationTool, defineDocuments} from 'sanity/presentation'
 
 import {dataset, projectId} from './src/sanity/env'
 import {schema} from './src/sanity/schemaTypes'
@@ -131,17 +131,11 @@ export default defineConfig({
             filter: `_type == "post" && slug.current == $slug`,
           },
         ]),
-        locations: {
-          post: defineLocations({
-            select: {title: 'title', slug: 'slug.current'},
-            resolve: (doc) => ({
-              locations: [
-                {title: doc?.title || 'Untitled post', href: `/blog/${doc?.slug}`},
-                {title: 'Blog index', href: '/blog'},
-              ],
-            }),
-          }),
-        },
+        // No `locations` resolver on purpose (removed 2026-09-23): it drove
+        // the "Used on 2 pages" banner at the top of every post form, which
+        // always listed the same two things (the post itself + Blog index)
+        // -- no information, just vertical space. Presentation still opens
+        // from the Publish menu's "Open in Presentation" action.
       },
     }),
   ],
