@@ -4,6 +4,7 @@ import {
   DEFAULT_AI_PROMPT_INSTRUCTIONS,
   DEFAULT_VOICE_GUIDANCE,
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
+  DEFAULT_IMAGE_PROMPT_TASK_INSTRUCTIONS,
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
   DEFAULT_LINKEDIN_TRIM_INSTRUCTIONS,
@@ -106,6 +107,16 @@ export const aiPromptSettingsType = defineType({
       initialValue: DEFAULT_AI_PROMPT_INSTRUCTIONS,
       description:
         'What Gemini is told when suggesting SEO titles, excerpts, and tags specifically -- the task itself (what to produce, length limits), not the voice (see above). Leave blank to fall back to the default shown here.',
+    }),
+    defineField({
+      name: 'imagePromptTaskInstructions',
+      title: 'Suggest Image Prompt instructions',
+      type: 'text',
+      rows: 14,
+      group: 'prompts',
+      initialValue: DEFAULT_IMAGE_PROMPT_TASK_INSTRUCTIONS,
+      description:
+        'What Gemini is told when drafting the 3 visual-concept ideas for "Suggest Image Prompt" (the "think like a visual director" task itself) -- keep {MODE_1} and {MODE_2} exactly as written, substituted with Composition Mode 1/2 below. Separate from the image style template below, which is the fixed visual look, not the thinking task. Leave blank to fall back to the default shown here.',
     }),
     defineField({
       name: 'linkedinTrimInstructions',

@@ -5,6 +5,7 @@ import {
   DEFAULT_IMAGE_PROMPT_TEMPLATE,
   DEFAULT_COMPOSITION_MODE_1,
   DEFAULT_COMPOSITION_MODE_2,
+  DEFAULT_IMAGE_PROMPT_TASK_INSTRUCTIONS,
 } from "@/lib/aiPromptDefaults";
 import { generateStructuredText } from "@/lib/aiText";
 
@@ -29,24 +30,16 @@ import { generateStructuredText } from "@/lib/aiText";
 // crosshatching/sepia/paper description, the signature) comes from the
 // fixed template below, substituted in verbatim server-side -- Gemini
 // never touches that wording, so it can't drift from post to post.
-function imagePromptTaskInstructions(mode1: string, mode2: string): string {
-  return `You are helping a blogger come up with THREE distinct visual concepts for their post's featured/social image, each to be rendered by an AI image generator in a fixed illustration style the blogger has already established (you don't need to describe the art style yourself -- that's handled separately).
-
-Before choosing a subject, think through the post like a visual director would:
-- The central message of the piece
-- The emotional response the image should create in a reader
-- The strongest visual metaphor or human situation that captures that message -- not just a literal illustration of an event described in the post
-- What would feel generic, misleading, or too on-the-nose, so you can avoid it
-
-Based on the title and content given to you, and that thinking, for each of the 3 ideas provide:
-
-1. A concrete, specific SUBJECT (not the full prompt, not the style description -- just what the image depicts): a single symbolic object/scene/moment drawn from the post's actual mood and themes. Never invent specific facts/people/events from the post as literal photographic subjects -- work from the post's mood and themes, not its literal claims. Write it as a noun phrase that flows directly into a longer sentence when followed by a comma -- e.g. "a solitary figure standing on a cliff edge at sunrise", NOT "A solitary figure stands on a cliff edge at sunrise." (no capital letter to start, no trailing period).
-2. Which composition MODE (1 or 2) that subject fits better:
-   - Mode 1: ${mode1}
-   - Mode 2: ${mode2}
-   Vary this across the 3 ideas where it genuinely fits -- don't default to the same mode for all three unless the post's content really only supports one shape of image.
-
-Leave out any text/words to render in the image itself (AI image generators render text unreliably) -- describe the visual only, not any lettering.`;
+//
+// The task text itself (`taskInstructions`) used to be hardcoded here --
+// moved into aiPromptSettings (Studio -> AI Workspace -> Suggestion
+// Settings -> Prompts -> "Suggest Image Prompt instructions") on Asher's
+// ask, same reasoning as every other feature's task instructions: lets him
+// tweak the thinking process, or reuse/test it elsewhere, without a code
+// change. {MODE_1}/{MODE_2} are substituted the same split/join way
+// imagePromptTemplate's own {SUBJECT}/{COMPOSITION_MODE} are below.
+function imagePromptTaskInstructions(taskInstructions: string, mode1: string, mode2: string): string {
+  return taskInstructions.split("{MODE_1}").join(mode1).split("{MODE_2}").join(mode2);
 }
 
 export async function POST(request: NextRequest) {
@@ -71,18 +64,23 @@ export async function POST(request: NextRequest) {
     // pattern as suggest-seo's promptInstructions/voiceGuidance: falls back
     // to the shipped defaults if the document doesn't exist yet or a field
     // was cleared.
-    const settings: { imagePromptTemplate?: string; compositionMode1?: string; compositionMode2?: string } | null =
-      await writeClient.fetch(
-        `*[_type == "aiPromptSettings"][0]{imagePromptTemplate, compositionMode1, compositionMode2}`
-      );
+    const settings: {
+      imagePromptTemplate?: string;
+      compositionMode1?: string;
+      compositionMode2?: string;
+      imagePromptTaskInstructions?: string;
+    } | null = await writeClient.fetch(
+      `*[_type == "aiPromptSettings"][0]{imagePromptTemplate, compositionMode1, compositionMode2, imagePromptTaskInstructions}`
+    );
     const template = settings?.imagePromptTemplate?.trim() || DEFAULT_IMAGE_PROMPT_TEMPLATE;
     const mode1Text = settings?.compositionMode1?.trim() || DEFAULT_COMPOSITION_MODE_1;
     const mode2Text = settings?.compositionMode2?.trim() || DEFAULT_COMPOSITION_MODE_2;
+    const taskInstructions = settings?.imagePromptTaskInstructions?.trim() || DEFAULT_IMAGE_PROMPT_TASK_INSTRUCTIONS;
 
     const parsed = await generateStructuredText<{ ideas?: { subject?: string; mode?: number }[] }>({
       provider: "gemini",
       schemaName: "image_prompt_ideas",
-      contents: `${imagePromptTaskInstructions(mode1Text, mode2Text)}
+      contents: `${imagePromptTaskInstructions(taskInstructions, mode1Text, mode2Text)}
 
 Title: ${title}
 

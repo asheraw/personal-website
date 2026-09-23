@@ -55,11 +55,19 @@ export function useImagePromptSuggestions(source: ImagePromptSource | null) {
   return {status, suggestions, error, runSuggestion}
 }
 
-// Mode shown as a small badge above the assembled prompt -- lets Asher tell
-// the 3 ideas apart at a glance (isolated subject vs. full scene) before
-// reading the whole prompt text.
+// Mode shown as a small badge above the concept -- lets Asher tell the 3
+// ideas apart at a glance (isolated subject vs. full scene). Leads with just
+// `idea.subject` (the actual concept -- a short phrase) rather than
+// `idea.prompt` (that concept with the full style template already baked
+// in) -- the style wording is fixed and already known, reading it fresh in
+// all 3 cards every time was the long-scroll complaint this was built to
+// fix. The full assembled prompt is still there, collapsed by default,
+// since that's what actually needs pasting into the image generator --
+// "Copy prompt" always copies the full version regardless of whether it's
+// expanded on screen.
 function PromptOption({idea, onCopy}: {idea: Idea; onCopy: () => void}) {
   const [copied, setCopied] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   async function handleCopy() {
     try {
@@ -80,9 +88,22 @@ function PromptOption({idea, onCopy}: {idea: Idea; onCopy: () => void}) {
             {idea.mode === 2 ? 'Environmental scene' : 'Isolated specimen'}
           </Badge>
         </Flex>
-        <Text style={{whiteSpace: 'pre-wrap'}}>{idea.prompt}</Text>
+        <Text weight="semibold" style={{whiteSpace: 'pre-wrap'}}>
+          {idea.subject}
+        </Text>
+        {expanded && (
+          <Text size={1} muted style={{whiteSpace: 'pre-wrap'}}>
+            {idea.prompt}
+          </Text>
+        )}
       </Stack>
-      <Flex justify="flex-end" marginTop={3}>
+      <Flex justify="flex-end" align="center" gap={2} marginTop={3}>
+        <Button
+          text={expanded ? 'Hide full prompt' : 'Show full prompt'}
+          mode="bleed"
+          fontSize={1}
+          onClick={() => setExpanded((v) => !v)}
+        />
         <Button
           text={copied ? 'Copied!' : 'Copy prompt'}
           tone={copied ? 'positive' : 'primary'}

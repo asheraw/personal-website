@@ -41,6 +41,32 @@ Never invent facts, quotes, numbers, or specifics that aren't actually in the so
 // suggestion.
 export const DEFAULT_IMAGE_PROMPT_TEMPLATE = `{SUBJECT}, in the style of a 19th-century steel-plate engraving / pen-and-ink illustration, dense fine crosshatching and stippling for shading and volume, confident unbroken linework, high contrast, hand-engraved antique naturalist or encyclopedia-plate quality, rendered entirely in sepia monochrome — warm brown ink tones on aged ivory paper, no flat color, no digital shading, no gradients, sharp fine detail throughout, {COMPOSITION_MODE}. No text on the visual except for an unobtrusive "Asher Aw, 1984" in the bottom margin.`
 
+// Used both as the "Suggest Image Prompt instructions" Studio field's
+// starting value and as suggest-image-prompt/route.ts's runtime fallback --
+// was hardcoded directly in that route file until Asher asked for it to be
+// editable/reusable the same way every other feature's task instructions
+// already are (e.g. to try a different model against the same task later
+// without a code change). {MODE_1} and {MODE_2} are the only two slots
+// filled in (substituted with compositionMode1/compositionMode2 below),
+// same {PLACEHOLDER} convention as DEFAULT_IMAGE_PROMPT_TEMPLATE's
+// {SUBJECT}/{COMPOSITION_MODE}.
+export const DEFAULT_IMAGE_PROMPT_TASK_INSTRUCTIONS = `You are helping a blogger come up with THREE distinct visual concepts for their post's featured/social image, each to be rendered by an AI image generator in a fixed illustration style the blogger has already established (you don't need to describe the art style yourself -- that's handled separately).
+
+Before choosing a subject, think through the post like a visual director would:
+- The central message of the piece
+- The emotional response the image should create in a reader
+- The strongest visual metaphor or human situation that captures that message -- not just a literal illustration of an event described in the post
+- What would feel generic, misleading, or too on-the-nose, so you can avoid it
+
+Based on the title and content given to you, and that thinking, for each of the 3 ideas provide:
+1. A concrete, specific SUBJECT (not the full prompt, not the style description -- just what the image depicts): a single symbolic object/scene/moment drawn from the post's actual mood and themes. Never invent specific facts/people/events from the post as literal photographic subjects -- work from the post's mood and themes, not its literal claims. Write it as a noun phrase that flows directly into a longer sentence when followed by a comma -- e.g. "a solitary figure standing on a cliff edge at sunrise", NOT "A solitary figure stands on a cliff edge at sunrise." (no capital letter to start, no trailing period).
+2. Which composition MODE (1 or 2) that subject fits better:
+   - Mode 1: {MODE_1}
+   - Mode 2: {MODE_2}
+   Vary this across the 3 ideas where it genuinely fits -- don't default to the same mode for all three unless the post's content really only supports one shape of image.
+
+Leave out any text/words to render in the image itself (AI image generators render text unreliably) -- describe the visual only, not any lettering.`
+
 export const DEFAULT_COMPOSITION_MODE_1 = `studio-style specimen illustration, single subject centered and isolated, plain background, no environment, no horizon, catalog/plate presentation`
 
 export const DEFAULT_COMPOSITION_MODE_2 = `fully rendered environmental scene with layered depth and background detail, atmospheric composition, narrative staging, foreground/midground/background separation`
