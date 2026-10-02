@@ -142,7 +142,7 @@ export function useImageCarouselSuggestion(source: PostDraft | null) {
 
 export type CarouselActions = ReturnType<typeof useImageCarouselSuggestion>['actions']
 
-function CopyPromptButton({text}: {text: string}) {
+export function CopyPromptButton({text}: {text: string}) {
   const [copied, setCopied] = useState(false)
   return (
     <Button

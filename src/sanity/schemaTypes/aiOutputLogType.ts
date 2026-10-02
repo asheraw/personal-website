@@ -24,7 +24,7 @@ export const aiOutputLogType = defineType({
       title: 'Feature',
       type: 'string',
       readOnly: true,
-      options: {list: [{title: 'Suggest SEO & Excerpt', value: 'seo'}, {title: 'Draft Social Copy', value: 'social'}, {title: 'Suggest Image Prompt', value: 'imagePrompt'}, {title: 'Generate Featured Image', value: 'featuredImage'}, {title: 'LinkedIn Native Post', value: 'linkedinTrim'}, {title: 'Video Script', value: 'videoScript'}, {title: 'Image Carousel', value: 'imageCarousel'}]},
+      options: {list: [{title: 'Suggest SEO & Excerpt', value: 'seo'}, {title: 'Draft Social Copy', value: 'social'}, {title: 'Suggest Image Prompt', value: 'imagePrompt'}, {title: 'Generate Featured Image', value: 'featuredImage'}, {title: 'LinkedIn Native Post', value: 'linkedinTrim'}, {title: 'Video Script', value: 'videoScript'}, {title: 'Image Carousel', value: 'imageCarousel'}, {title: 'Comic Strip', value: 'comic'}, {title: 'Meme', value: 'meme'}]},
     }),
     defineField({name: 'postTitle', title: 'Post', type: 'string', readOnly: true}),
     defineField({name: 'postSlug', title: 'Post slug', type: 'string', readOnly: true}),
@@ -83,7 +83,11 @@ export const aiOutputLogType = defineType({
                   ? 'Video script'
                   : feature === 'imageCarousel'
                     ? 'Image carousel'
-                    : 'SEO'
+                    : feature === 'comic'
+                      ? 'Comic strip'
+                      : feature === 'meme'
+                        ? 'Meme'
+                        : 'SEO'
       return {
         title: `${label} — ${postTitle || '(untitled post)'}`,
         subtitle: used ? '✓ used' : 'not used',

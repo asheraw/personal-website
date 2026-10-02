@@ -7,6 +7,8 @@ import {EditIcon} from '@sanity/icons/Edit'
 import {ComponentIcon} from '@sanity/icons/Component'
 import {ImagesIcon} from '@sanity/icons/Images'
 import {ImageIcon} from '@sanity/icons/Image'
+import {ThLargeIcon} from '@sanity/icons/ThLarge'
+import {CommentIcon} from '@sanity/icons/Comment'
 import {ArrowRightIcon} from '@sanity/icons/ArrowRight'
 import type {ComponentType} from 'react'
 import {logUsage, useSeoSuggestions, SuggestSeoDialogBody} from './SuggestSeoShared'
@@ -14,6 +16,7 @@ import {useSocialSuggestions, SocialCopyResults} from './SuggestSocialCopyShared
 import {useLinkedInPostSuggestion, LinkedInPostResults} from './SuggestLinkedInPostShared'
 import {useVideoScriptSuggestion, VideoScriptResults} from './SuggestVideoScriptShared'
 import {useImageCarouselSuggestion, ImageCarouselResults} from './SuggestImageCarouselShared'
+import {useVisualPack, VisualPackResults} from './SuggestComicMemeShared'
 import {useFeaturedImageGeneration, FeaturedImageResults} from './GenerateFeaturedImageShared'
 import {DataTable, type DataTableColumn, type DataTableRow} from './DataTable'
 import {useClient} from 'sanity'
@@ -25,9 +28,11 @@ type PostForTools = {
   slug?: {current?: string}
 }
 
-type ToolKey = 'seo' | 'social' | 'linkedin' | 'video' | 'carousel' | 'image'
+type ToolKey = 'seo' | 'social' | 'linkedin' | 'video' | 'carousel' | 'comic' | 'meme' | 'image'
 
 const FEATURE_LABEL: Record<string, string> = {
+  comic: 'Comic strip',
+  meme: 'Meme',
   seo: 'SEO & excerpt',
   social: 'Social copy',
   imagePrompt: 'Image prompt',
@@ -126,6 +131,8 @@ export function AiToolsView(props: {documentId: string}) {
   const linkedin = useLinkedInPostSuggestion(doc)
   const video = useVideoScriptSuggestion(doc)
   const carousel = useImageCarouselSuggestion(doc)
+  const comic = useVisualPack('comic', doc)
+  const meme = useVisualPack('meme', doc)
   const featuredImage = useFeaturedImageGeneration(doc, publishedId)
 
   async function loadLogs() {
@@ -166,6 +173,8 @@ export function AiToolsView(props: {documentId: string}) {
     {key: 'linkedin', title: 'Draft LinkedIn Post', description: 'Full standalone native post', icon: EditIcon, status: linkedin.status, start: linkedin.run},
     {key: 'video', title: 'Draft Video Script', description: 'Scenes + video-gen prompts', icon: ComponentIcon, status: video.status, start: video.run},
     {key: 'carousel', title: 'Draft Image Carousel', description: 'Finished quote slides, any count', icon: ImagesIcon, status: carousel.status, start: carousel.run},
+    {key: 'comic', title: 'Draft Comic Strip', description: '4 square panels + the full strip', icon: ThLargeIcon, status: comic.status, start: comic.run},
+    {key: 'meme', title: 'Draft Meme', description: '3 top/bottom-text options', icon: CommentIcon, status: meme.status, start: meme.run},
     {key: 'image', title: 'Generate Featured Image', description: 'Renders & attaches', icon: ImageIcon, status: featuredImage.status, start: featuredImage.run},
   ]
 
@@ -337,6 +346,22 @@ export function AiToolsView(props: {documentId: string}) {
         <Dialog id="ai-tools-carousel" header="AI-generated carousel materials" onClose={closeAndRefresh}>
           <Box padding={4}>
             <ImageCarouselResults status={carousel.status} result={carousel.result} error={carousel.error} onRetry={carousel.run} actions={carousel.actions} />
+          </Box>
+        </Dialog>
+      )}
+
+      {openDialog === 'comic' && (
+        <Dialog id="ai-tools-comic" header="AI-drafted comic strip" onClose={closeAndRefresh}>
+          <Box padding={4}>
+            <VisualPackResults kind="comic" pack={comic} />
+          </Box>
+        </Dialog>
+      )}
+
+      {openDialog === 'meme' && (
+        <Dialog id="ai-tools-meme" header="AI-drafted memes" onClose={closeAndRefresh}>
+          <Box padding={4}>
+            <VisualPackResults kind="meme" pack={meme} />
           </Box>
         </Dialog>
       )}

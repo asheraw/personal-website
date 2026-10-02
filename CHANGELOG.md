@@ -34,6 +34,27 @@ Verified: type-check clean on touched files; text route live (5 slides on a shor
 the post); card renderer checked visually over a real engraving. NOT verified live: the AI image step and
 upload path — the free-tier image quota returned 429 (the error path and its message were confirmed).
 
+## 2026-10-02 (continued) — Comic strip and meme generators
+
+Two new tools in the post editor's AI Tools tab, built on the carousel's pattern (text first, then one picture
+at a time, text composited by an edge route so the image model never has to letter anything):
+
+- **Draft Comic Strip** — 4 beats (setup / build / turn / punchline) with one invented recurring character
+  whose description is repeated in every panel's prompt, for look consistency. Outputs **five images**: four
+  standalone square panels (`/api/og/comic?n=1..4`, caption band at the bottom) plus the combined 2×2 comic
+  page (`/api/og/comic`). "Download all 5 (zip)".
+- **Draft Meme** — 3 top/bottom-text options (`/api/og/meme`, Anton capitals with black outline).
+- One text route for both, `/api/ai/suggest-visual` (`kind: "comic" | "meme"`); pictures reuse
+  `/api/ai/generate-carousel-slide`. Same per-picture controls as the carousel: Generate, Copy image prompt
+  (for the Gemini app), Upload picture, Download. Captions are editable in the dialog (commit on blur).
+- New `src/lib/ogFont.ts` (Google-font loader + Sanity-CDN-only guard for the `bg` params).
+- Instruction text lives in `aiPromptDefaults.ts` as constants (no Studio fields yet).
+
+Verified: type-check clean on new files; comic grid, single panel and meme rendered over real images; live
+text route returns a coherent 4-panel strip and 3 memes. NOT verified live: AI picture generation and the
+Studio click-through (free-tier image quota was exhausted; Studio login can't be automated). One bug found and
+fixed during testing: an `undefined` style value (`border`) crashed the renderer's single-panel mode.
+
 ## 2026-09-06 — Data Grid replaces Skill Grid; Distribution/scheduling bug fixes; Editor facelift phases 1+2
 
 **Data Grid**: a new generic spreadsheet-style block type for post bodies, replacing Skill Grid entirely.

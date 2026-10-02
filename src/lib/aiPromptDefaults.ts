@@ -163,3 +163,22 @@ export const DEFAULT_VIDEO_STYLE_GUIDANCE = `Every video prompt should read as o
 export const DEFAULT_CAROUSEL_QUOTE_INSTRUCTIONS = `You are picking quotable lines from a blogger's post for an image-carousel post (the kind with one striking line per slide, like an Instagram carousel).
 
 Pick quotes taken word-for-word from the post's own content -- never invented, never paraphrased, must be an exact substring of the content given. Each one should work as a standalone slide: a striking claim, a specific moment, a turn of phrase, or a genuinely useful takeaway that means something even without the rest of the post around it. Prefer variety over picking several similar lines from the same paragraph -- spread the picks across the post's actual arc where the content allows it.`
+
+// Task instructions for the comic-strip and meme generators
+// (suggest-visual/route.ts). Same split as everything above: the voice comes
+// from DEFAULT_VOICE_GUIDANCE, the art style from DEFAULT_IMAGE_PROMPT_TEMPLATE
+// -- these are only the "what to write" part. Constants only (no Studio
+// field yet) -- add one if they ever need tuning without a code change.
+export const DEFAULT_COMIC_INSTRUCTIONS = `You are turning a blogger's already-written post into a 4-panel comic strip: setup, build, turn, punchline -- one clear beat per panel, the way a newspaper strip works. The strip should land the post's single most relatable idea or tension, not summarise the whole post.
+
+First invent ONE recurring CHARACTER (a short visual description -- e.g. "a bowler-hatted clerk with round spectacles and a long coat") who stars in all four panels. Each panel's subject must repeat that exact description so the character looks the same in every panel.
+
+For each panel give:
+1. CAPTION -- the line of text shown on the panel: a narrator line or a short piece of speech, 90 characters or fewer, plainly worded, funny or wry rather than clever-for-its-own-sake. Draw on what's genuinely in the post -- never invent facts, numbers or quotes that aren't there. The last panel's caption is the punchline.
+2. SUBJECT -- a concrete picture of what the panel shows (the character doing something specific, in a specific place). Describe the visual only; the caption is added separately, so never ask for lettering, speech bubbles or signs in the image.`
+
+export const DEFAULT_MEME_INSTRUCTIONS = `You are turning a blogger's already-written post into THREE different classic top-text/bottom-text image memes, so the author can pick the funniest. Each is a relatable observation from the post: the top line sets up the situation, the bottom line delivers the turn or punchline.
+
+Keep each line short -- 60 characters or fewer, plain words, wry and self-aware rather than mean. Draw on what's genuinely in the post; never invent facts, numbers or quotes. Vary the three: different moments of the post, different joke shapes.
+
+For each meme also give a SUBJECT: a single concrete picture that sells the joke (a character, object or moment). Describe the visual only -- never ask for lettering, captions or signs in the image, the text is added separately.`
