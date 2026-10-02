@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-10-02 — Image carousel: finished slides, any slide count, per-slide backgrounds
+
+"Draft Image Carousel" used to hand back quotes plus text-free backgrounds that had to be assembled by hand
+in Canva. It now produces the finished slides:
+
+- **Slide count is the AI's call.** `carouselSlideCount` is now a *maximum* (3-12, default 8); the AI picks
+  as many quotes as the post earns, never padding a short post.
+- **Quotes are verified.** The route drops any quote that isn't really in the post (whitespace/curly-quote
+  normalised) — the prompt always demanded exact substrings, nothing checked it.
+- **Text and images are separate steps.** `suggest-image-carousel` now only picks quotes + writes each
+  slide's image prompt (fast, no images). New `generate-carousel-slide` renders ONE background per request,
+  so a slow/rate-limited image no longer sinks the batch. The dialog has per slide: Generate/Regenerate
+  background, **Copy image prompt** (paste into the free Gemini app), **Upload background** (put the result
+  back), Download; plus "Generate missing backgrounds" (stops on a 429) and "Download all (zip)".
+- **Cards are composited by `/api/og/quote`**, which gained an optional `bg` param (Sanity CDN URLs only)
+  with a dark scrim for legibility. A slide with no background is still a valid plain card.
+- **Signature fixed:** the shared image template asked the model to letter "Asher Aw, 1984"; carousel prompts
+  now strip that and the card renderer stamps it instead, so it's always spelled right.
+
+Verified: type-check clean on touched files; text route live (5 slides on a short post, all quotes found in
+the post); card renderer checked visually over a real engraving. NOT verified live: the AI image step and
+upload path — the free-tier image quota returned 429 (the error path and its message were confirmed).
+
 ## 2026-09-06 — Data Grid replaces Skill Grid; Distribution/scheduling bug fixes; Editor facelift phases 1+2
 
 **Data Grid**: a new generic spreadsheet-style block type for post bodies, replacing Skill Grid entirely.

@@ -165,7 +165,7 @@ export function AiToolsView(props: {documentId: string}) {
     {key: 'social', title: 'Draft Social Copy', description: 'X · LinkedIn · Facebook', icon: ShareIcon, status: social.status, start: social.runSuggestion},
     {key: 'linkedin', title: 'Draft LinkedIn Post', description: 'Full standalone native post', icon: EditIcon, status: linkedin.status, start: linkedin.run},
     {key: 'video', title: 'Draft Video Script', description: 'Scenes + video-gen prompts', icon: ComponentIcon, status: video.status, start: video.run},
-    {key: 'carousel', title: 'Draft Image Carousel', description: 'Quote cards + backgrounds', icon: ImagesIcon, status: carousel.status, start: carousel.run},
+    {key: 'carousel', title: 'Draft Image Carousel', description: 'Finished quote slides, any count', icon: ImagesIcon, status: carousel.status, start: carousel.run},
     {key: 'image', title: 'Generate Featured Image', description: 'Renders & attaches', icon: ImageIcon, status: featuredImage.status, start: featuredImage.run},
   ]
 
@@ -336,7 +336,7 @@ export function AiToolsView(props: {documentId: string}) {
       {openDialog === 'carousel' && (
         <Dialog id="ai-tools-carousel" header="AI-generated carousel materials" onClose={closeAndRefresh}>
           <Box padding={4}>
-            <ImageCarouselResults status={carousel.status} result={carousel.result} error={carousel.error} onRetry={carousel.run} />
+            <ImageCarouselResults status={carousel.status} result={carousel.result} error={carousel.error} onRetry={carousel.run} actions={carousel.actions} />
           </Box>
         </Dialog>
       )}

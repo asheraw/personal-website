@@ -30,6 +30,10 @@ export async function GET(request: Request) {
   const {searchParams} = new URL(request.url)
   const quote = (searchParams.get('text') || '').slice(0, 400)
   const attribution = (searchParams.get('attribution') || '').slice(0, 120)
+  // Optional background (carousel slides): only our own Sanity CDN, so this
+  // route can't be used to make the server fetch arbitrary URLs.
+  const bgParam = searchParams.get('bg') || ''
+  const bg = /^https:\/\/cdn\.sanity\.io\//.test(bgParam) ? bgParam : ''
 
   if (!quote) {
     return new Response('Missing "text" query param', {status: 400})
@@ -58,8 +62,17 @@ export async function GET(request: Request) {
           alignItems: 'center',
           padding: '96px',
           backgroundColor: '#0a0807',
+          position: 'relative',
         }}
       >
+        {bg && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={bg} width={1200} height={1200} style={{position: 'absolute', top: 0, left: 0, width: 1200, height: 1200, objectFit: 'cover'}} />
+        )}
+        {/* Dark scrim so the cream quote stays legible over any engraving. */}
+        {bg && (
+          <div style={{position: 'absolute', top: 0, left: 0, width: 1200, height: 1200, backgroundColor: 'rgba(10,8,7,0.68)'}} />
+        )}
         <div style={{display: 'flex', fontSize: 120, lineHeight: 1, color: '#f0b865', opacity: 0.5, fontFamily: 'sans-serif'}}>
           &ldquo;
         </div>
@@ -84,7 +97,7 @@ export async function GET(request: Request) {
             display: 'flex',
             alignItems: 'center',
             fontSize: 26,
-            color: '#9a8d78',
+            color: bg ? '#d8cbb3' : '#9a8d78',
             marginTop: 48,
             fontFamily: 'sans-serif',
           }}

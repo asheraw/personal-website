@@ -150,13 +150,13 @@ export const aiPromptSettingsType = defineType({
     }),
     defineField({
       name: 'carouselSlideCount',
-      title: 'Carousel slide count',
+      title: 'Carousel max slides',
       type: 'number',
       group: 'prompts',
-      initialValue: 6,
-      validation: (rule) => rule.min(4).max(8),
+      initialValue: 8,
+      validation: (rule) => rule.min(3).max(12),
       description:
-        'How many slides to generate per carousel -- each one is a text-extraction call plus an image-generation call, so cost/time scales with this number.',
+        'The most slides a carousel can have. The AI picks fewer when a post is short -- it only uses as many as the content earns.',
     }),
     defineField({
       name: 'imagePromptTemplate',
