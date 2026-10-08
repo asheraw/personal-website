@@ -4,17 +4,18 @@ import { createContext, useContext, useEffect, useRef, type ReactNode } from "re
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
-// Black line art on a transparent background disappears on a dark page, so a
-// post image block can be marked "line art": everything inside this wrapper
-// flips to white in dark mode (invert keeps transparency). The lightbox is
-// portalled out of the wrapper and always sits on a black overlay, so it
-// reads the same flag from context and inverts unconditionally.
+// Black line art on a transparent background disappears on a dark page. A
+// post image block can be marked "line art": in dark mode each image gets a
+// cream paper backing, so it reads like a printed plate instead of vanishing.
+// (Inverting to white was tried first and looked like a photo negative.) The
+// lightbox is portalled out of the wrapper onto a black overlay, so it reads
+// the same flag from context and always adds the backing.
 const LineArtContext = createContext(false);
 
 export function LineArt({ children }: { children: ReactNode }) {
   return (
     <LineArtContext.Provider value={true}>
-      <div className="contents dark:[&_img]:invert">{children}</div>
+      <div className="contents dark:[&_img]:bg-[#f4efe4]">{children}</div>
     </LineArtContext.Provider>
   );
 }
@@ -85,7 +86,7 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
       <img
         src={src}
         alt={alt}
-        className={`max-h-full max-w-full object-contain${lineArt ? " invert" : ""}`}
+        className={`max-h-full max-w-full object-contain${lineArt ? " rounded bg-[#f4efe4]" : ""}`}
         onClick={(e) => e.stopPropagation()}
       />
     </div>,

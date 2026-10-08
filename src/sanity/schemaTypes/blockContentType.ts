@@ -379,11 +379,11 @@ export const blockContentType = defineType({
         }),
         defineField({
           name: 'invertInDark',
-          title: 'Black line art (turn white in dark mode)',
+          title: 'Black line art (cream backing in dark mode)',
           type: 'boolean',
           initialValue: false,
           description:
-            'Turn this on for black drawings or logos with a transparent background -- they vanish on the dark theme. Readers on the dark theme see them in white instead; the light theme is unchanged. Leave it off for photos and anything with a solid background (it would turn them into negatives).',
+            'Turn this on for black drawings or logos with a transparent background -- they vanish on the dark theme. Readers on the dark theme see them on a cream backing, like a printed plate; the light theme is unchanged. Leave it off for photos and anything that already has a solid background.',
         }),
       ],
       preview: {
