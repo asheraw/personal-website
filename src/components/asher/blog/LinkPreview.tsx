@@ -9,6 +9,16 @@ type Card = { preview: Preview | null; // null = still loading
 const CARD_W = 320;
 const SHOW_DELAY_MS = 350;
 const HIDE_DELAY_MS = 120;
+const WARM_COUNT = 5;
+
+const isPreviewable = (href: string) => /^(https?:\/\/|\/(?!\/))/.test(href); // skips #anchors, mailto:, tel:
+
+// Used when a site blocks previews (X, Instagram, LinkedIn...) so the card
+// still says where the link goes.
+function fallbackPreview(href: string): Preview {
+  const domain = new URL(href, window.location.href).hostname.replace(/^www\./, "");
+  return { title: `Link to ${domain}`, description: "No preview available. Click to open the page.", domain };
+}
 
 // Hover preview for links inside a post body. One listener on the document
 // (event delegation), so it also covers links rendered later. Only reacts to
@@ -16,7 +26,9 @@ const HIDE_DELAY_MS = 120;
 // can really hover -- touch screens just follow the link as before.
 export function LinkPreview() {
   const [card, setCard] = useState<Card | null>(null);
-  const cache = useRef(new Map<string, Preview | null>());
+  // Holds the request itself, not just the result, so a hover while a warm-up fetch is still in flight reuses it.
+  const cache = useRef(new Map<string, Promise<Preview>>());
+  const settled = useRef(new Set<string>());
   const showTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
   const current = useRef<HTMLAnchorElement | null>(null);
@@ -35,29 +47,47 @@ export function LinkPreview() {
       });
     };
 
-    const open = async (a: HTMLAnchorElement) => {
-      const href = a.href;
-      let preview = cache.current.get(href);
-      if (preview === undefined) {
-        place(a, null);
-        try {
-          const res = await fetch(`/api/link-preview?url=${encodeURIComponent(href)}`);
-          preview = res.ok ? ((await res.json()) as Preview) : null;
-        } catch {
-          preview = null;
-        }
-        cache.current.set(href, preview);
+    const load = (href: string): Promise<Preview> => {
+      let req = cache.current.get(href);
+      if (!req) {
+        req = fetch(`/api/link-preview?url=${encodeURIComponent(href)}`)
+          .then((res) => (res.ok ? (res.json() as Promise<Preview>) : fallbackPreview(href)))
+          .catch(() => fallbackPreview(href))
+          .then((preview) => {
+            settled.current.add(href);
+            return preview;
+          });
+        cache.current.set(href, req);
       }
-      if (current.current !== a) return;
-      if (preview) place(a, preview);
-      else setCard(null);
+      return req;
     };
+
+    const open = async (a: HTMLAnchorElement) => {
+      if (!settled.current.has(a.href)) place(a, null);
+      const preview = await load(a.href);
+      if (current.current === a) place(a, preview);
+    };
+
+    // Warm the first few links once the page is idle, one at a time, so most
+    // hovers find the preview already waiting.
+    const warm = async () => {
+      const seen = new Set<string>();
+      const links = document.querySelectorAll<HTMLAnchorElement>("[data-link-preview] a[href]");
+      for (const a of links) {
+        if (seen.size >= WARM_COUNT) break;
+        if (!isPreviewable(a.getAttribute("href") || "") || seen.has(a.href)) continue;
+        seen.add(a.href);
+        await load(a.href);
+      }
+    };
+    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    const warmTimer = idle ? idle(warm) : window.setTimeout(warm, 1500);
 
     const onOver = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a || !a.closest("[data-link-preview]")) return;
       const href = a.getAttribute("href") || "";
-      if (!/^(https?:\/\/|\/(?!\/))/.test(href)) return; // skips #anchors, mailto:, tel:
+      if (!isPreviewable(href)) return;
       window.clearTimeout(hideTimer.current);
       if (current.current === a) return;
       current.current = a;
