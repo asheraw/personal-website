@@ -13,6 +13,11 @@ const WARM_COUNT = 5;
 
 const isPreviewable = (href: string) => /^(https?:\/\/|\/(?!\/))/.test(href); // skips #anchors, mailto:, tel:
 
+// The link goes in the URL path, not a query string -- Netlify's CDN caches by
+// path and would otherwise serve the first link's preview for every link.
+const toBase64Url = (s: string) =>
+  btoa(String.fromCharCode(...new TextEncoder().encode(s))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
 // Used when a site blocks previews (X, Instagram, LinkedIn...) so the card
 // still says where the link goes.
 function fallbackPreview(href: string): Preview {
@@ -50,7 +55,7 @@ export function LinkPreview() {
     const load = (href: string): Promise<Preview> => {
       let req = cache.current.get(href);
       if (!req) {
-        req = fetch(`/api/link-preview?url=${encodeURIComponent(href)}`)
+        req = fetch(`/api/link-preview/${toBase64Url(href)}`)
           .then((res) => (res.ok ? (res.json() as Promise<Preview>) : fallbackPreview(href)))
           .catch(() => fallbackPreview(href))
           .then((preview) => {
