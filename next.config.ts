@@ -35,7 +35,7 @@ const PUBLIC_SITE_CSP = [
   // dependencies either; caught only by testing the real deployed site,
   // where Vercel's own hosting infrastructure injects this beacon script
   // automatically on every page, outside anything this repo controls.
-  `script-src 'self' 'unsafe-inline'${IS_DEV ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.instagram.com https://connect.facebook.net https://www.clarity.ms https://static.cloudflareinsights.com`,
+  `script-src 'self' 'unsafe-inline'${IS_DEV ? " 'unsafe-eval'" : ""} https://www.googletagmanager.com https://www.instagram.com https://connect.facebook.net https://www.clarity.ms https://static.cloudflareinsights.com https://subscribe-forms.beehiiv.com`,
   "style-src 'self' 'unsafe-inline'",
   // https://*.giphy.com -- comment GIFs render as a plain hotlinked <img>
   // straight from Giphy's own CDN (see CommentSection.tsx's CommentGif and
@@ -59,8 +59,8 @@ const PUBLIC_SITE_CSP = [
   // server component already uses, which has useCdn:true baked in, so its
   // reads route through Sanity's CDN subdomain specifically, not the plain
   // API one SanityLive happens to use.
-  "connect-src 'self' https://*.api.sanity.io https://*.apicdn.sanity.io https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://connect.facebook.net https://www.facebook.com https://*.cloudflareinsights.com",
-  "frame-src 'self' https://www.youtube-nocookie.com https://www.instagram.com",
+  "connect-src 'self' https://*.api.sanity.io https://*.apicdn.sanity.io https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://connect.facebook.net https://www.facebook.com https://*.cloudflareinsights.com https://subscribe-forms.beehiiv.com",
+  "frame-src 'self' https://www.youtube-nocookie.com https://www.instagram.com https://subscribe-forms.beehiiv.com",
   "frame-ancestors 'self'",
   "object-src 'none'",
   "base-uri 'self'",

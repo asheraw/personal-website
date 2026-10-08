@@ -150,7 +150,7 @@ export const PAGE_BY_SLUG_QUERY = `
         }
       },
       _type == "snippetRef" => {
-        "snippetData": @->{title, snippetType, content}
+        "snippetData": @->{title, snippetType, content, beehiivFormId}
       }
     }
   }
@@ -175,7 +175,7 @@ export const POST_BY_SLUG_QUERY = `
         }
       },
       _type == "snippetRef" => {
-        "snippetData": @->{title, snippetType, content}
+        "snippetData": @->{title, snippetType, content, beehiivFormId}
       }
     },
     mainImage,
@@ -222,7 +222,7 @@ export const POST_EXPORT_PROJECTION = `{
       }
     },
     _type == "snippetRef" => {
-      "snippetData": @->{snippetType, content}
+      "snippetData": @->{snippetType, content, beehiivFormId}
     }
   }
 }`;

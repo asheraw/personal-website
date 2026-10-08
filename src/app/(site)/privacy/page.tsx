@@ -27,7 +27,7 @@ const TLDR = [
   "Your IP address is logged briefly on submissions, only to catch spam — not to track what you do on the site.",
   "If you search the blog, what you typed gets logged (just the text, nothing about you) so I know what to write about next.",
   "I use a small number of trusted services (listed below) to run the site — never to profit from your data.",
-  "There's no email newsletter yet, but if one launches: joining is opt-in only, and a sponsor paying to be mentioned in an email is not the same as me selling your email address to anyone — I don't do the second one, ever.",
+  "There's an email newsletter you can join, run through Beehiiv: joining is opt-in only, and a sponsor paying to be mentioned in an email is not the same as me selling your email address to anyone — I don't do the second one, ever.",
   "Want anything deleted? Email me and I’ll remove it — no forms, no runaround.",
 ];
 
@@ -174,19 +174,20 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="font-display text-2xl font-semibold tracking-tight text-ivory">
-              If a newsletter launches
+              The newsletter
             </h2>
             <p className="mt-3">
-              There&rsquo;s no email newsletter on asheraw.com today, but it&rsquo;s a real possibility down the
-              line &mdash; so here&rsquo;s the commitment ahead of time:
+              There&rsquo;s an email newsletter you can join from some pages on asheraw.com. The signup form and
+              the list itself are handled by Beehiiv, so your email address goes to them when you subscribe.
+              Here&rsquo;s the commitment:
             </p>
             <ul className="mt-3 list-disc space-y-2 pl-6">
               <li>
-                Joining would always be opt-in. You&rsquo;d type your own email into a dedicated subscribe form
-                &mdash; leaving a comment or using the contact form would never add you to it.
+                Joining is always opt-in. You type your own email into the subscribe form
+                &mdash; leaving a comment or using the contact form never adds you to it.
               </li>
               <li>
-                Every issue would carry a one-click unsubscribe link, honored immediately, no login or account
+                Every issue carries a one-click unsubscribe link, honored immediately, no login or account
                 needed.
               </li>
               <li>
@@ -200,9 +201,8 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <p className="mt-3">
-              Once a newsletter actually exists, this section (and the &ldquo;Third-party services&rdquo; list
-              below, if a dedicated email-marketing tool ends up handling it) will be updated with the real
-              details &mdash; not left as a placeholder.
+              The subscribe form loads from Beehiiv only on pages that show it. It isn&rsquo;t part of the
+              analytics choice in the cookie banner, because it&rsquo;s the form you chose to fill in.
             </p>
           </section>
 
@@ -235,6 +235,11 @@ export default function PrivacyPage() {
                 &mdash; delivers the emails this site sends (a contact
                 form notification to me, a reply notification to you if you opted in). Doesn&rsquo;t see anything
                 beyond the content of that one email.
+              </li>
+              <li>
+                <strong className="text-ivory">Beehiiv</strong>{" "}
+                &mdash; runs the newsletter signup form and the subscriber list. Sees the email address you
+                type into that form.
               </li>
               <li>
                 <strong className="text-ivory">Netlify</strong>{" "}&mdash; hosts the site itself.

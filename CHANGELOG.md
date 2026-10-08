@@ -11,6 +11,29 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-10-08 — Newsletter signup as a Reusable Snippet (Beehiiv)
+
+A Beehiiv signup form can now be dropped into any post or page like any other Reusable Snippet, with no code
+in the editing screen:
+
+- **New snippet type "Newsletter signup (Beehiiv)"** (`snippetType.ts`). It has one field, the Beehiiv form
+  ID (the long ID after `data-beehiiv-form="`), checked for the right shape. The rich-text Content field is
+  hidden for this type. Change the form later by changing one ID, and every post using it updates.
+- **`BeehiivForm.tsx`** (client component) creates Beehiiv's own `<script data-beehiiv-form>` tag inside its
+  wrapper when it appears on screen, and removes it again on leave. `portableTextComponents.tsx` renders it
+  for `snippetType === "newsletter"`; the three snippet queries in `queries.ts` now also fetch `beehiivFormId`.
+- **Security rules (CSP):** `https://subscribe-forms.beehiiv.com` added to `script-src`, `frame-src` and
+  `connect-src`. The `connect-src` one was only found by loading a real page in a browser (the loader fetches
+  the form's settings from `/api/v3/forms/<id>`); see RUNBOOK "Security headers".
+- **Privacy page:** the "If a newsletter launches" placeholder is now "The newsletter", with Beehiiv added to
+  the third-party services list. Same commitments, now in the present tense.
+- **Checked:** type-check clean for these files; a temporary test page in headless Chrome showed the form
+  (email box + Subscribe button) with no console errors. The temp page was deleted. Not yet seen inside a real
+  post, because that needs a snippet created in Studio.
+- Exports (HTML, Markdown, PDF) skip this snippet type, since it has no text content.
+
+---
+
 ## 2026-10-02 — Image carousel: finished slides, any slide count, per-slide backgrounds
 
 "Draft Image Carousel" used to hand back quotes plus text-free backgrounds that had to be assembled by hand

@@ -3943,6 +3943,11 @@ things:
    dependencies, or anything readable by grepping source at all. Only found by loading the real deployed page
    with a headless browser and watching the console.
 
+3. **2026-10-08, Beehiiv newsletter form:** `subscribe-forms.beehiiv.com` is allowed in `script-src` (the
+   loader), `frame-src` (the form itself is an iframe) and `connect-src` (the loader fetches the form's
+   settings). The `connect-src` one was missed by reading the code and only showed up in a headless-browser
+   console, which is why the browser check below isn't optional.
+
 If a CSP violation ever shows up in a real visitor's console for a legitimate resource, the fix is always the
 same shape: find the exact domain in the browser's console error, add it to the relevant directive in
 `PUBLIC_SITE_CSP` in `next.config.ts`, redeploy, and re-verify against the live site the same way (not just a

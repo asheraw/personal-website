@@ -9,6 +9,7 @@ import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/component
 import { SizedImage, type DisplaySize, type FloatDirection } from "@/components/asher/blog/SizedImage";
 import { WideBreakout } from "@/components/asher/blog/WideBreakout";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
+import { BeehiivForm } from "@/components/asher/blog/BeehiivForm";
 import { QuoteGrid, type QuoteEntry, type QuoteGridLayout, type QuoteGridWeight, type QuoteGridSize } from "@/components/asher/blog/QuoteGrid";
 import { DataGrid, type DataGridValue } from "@/components/asher/blog/DataGrid";
 import { isTextColorValue } from "@/lib/textColors";
@@ -345,6 +346,9 @@ export const postBodyComponents: PortableTextComponents = {
     // it, since only a reference is stored here.
     snippetRef: ({ value }) => {
       const snippet = value?.snippetData;
+      if (snippet?.snippetType === "newsletter") {
+        return snippet.beehiivFormId ? <BeehiivForm formId={snippet.beehiivFormId} /> : null;
+      }
       if (!snippet?.content) return null;
       const body = <PortableText value={snippet.content} components={snippetBodyComponents} />;
       switch (snippet.snippetType) {
