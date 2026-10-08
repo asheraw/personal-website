@@ -281,7 +281,7 @@ export function AiToolsView(props: {documentId: string}) {
       </Stack>
 
       {openDialog === 'seo' && (
-        <Dialog id="ai-tools-seo" header="AI-suggested SEO title, excerpt, tags & more" onClose={() => setOpenDialog(null)}>
+        <Dialog id="ai-tools-seo" header="AI-suggested SEO title, excerpt, tags & more" onClose={() => setOpenDialog(null)} width={2}>
           <SuggestSeoDialogBody
             status={seo.status}
             suggestions={seo.suggestions}
@@ -313,7 +313,7 @@ export function AiToolsView(props: {documentId: string}) {
       )}
 
       {openDialog === 'social' && (
-        <Dialog id="ai-tools-social" header="AI-drafted social captions" onClose={closeAndRefresh}>
+        <Dialog id="ai-tools-social" header="AI-drafted social captions" onClose={closeAndRefresh} width={2}>
           <Box padding={4}>
             <SocialCopyResults
               status={social.status}
@@ -327,7 +327,7 @@ export function AiToolsView(props: {documentId: string}) {
       )}
 
       {openDialog === 'linkedin' && (
-        <Dialog id="ai-tools-linkedin" header="AI-drafted LinkedIn post" onClose={closeAndRefresh}>
+        <Dialog id="ai-tools-linkedin" header="AI-drafted LinkedIn post" onClose={closeAndRefresh} width={2}>
           <Box padding={4}>
             <LinkedInPostResults status={linkedin.status} result={linkedin.result} error={linkedin.error} onRetry={linkedin.run} />
           </Box>
@@ -335,7 +335,7 @@ export function AiToolsView(props: {documentId: string}) {
       )}
 
       {openDialog === 'video' && (
-        <Dialog id="ai-tools-video" header="AI-drafted video script" onClose={closeAndRefresh}>
+        <Dialog id="ai-tools-video" header="AI-drafted video script" onClose={closeAndRefresh} width={2}>
           <Box padding={4}>
             <VideoScriptResults status={video.status} result={video.result} error={video.error} onRetry={video.run} />
           </Box>
@@ -343,7 +343,7 @@ export function AiToolsView(props: {documentId: string}) {
       )}
 
       {openDialog === 'carousel' && (
-        <Dialog id="ai-tools-carousel" header="AI-generated carousel materials" onClose={closeAndRefresh}>
+        <Dialog id="ai-tools-carousel" header="AI-generated carousel materials" onClose={closeAndRefresh} width={2}>
           <Box padding={4}>
             <ImageCarouselResults status={carousel.status} result={carousel.result} error={carousel.error} onRetry={carousel.run} actions={carousel.actions} />
           </Box>
@@ -351,7 +351,7 @@ export function AiToolsView(props: {documentId: string}) {
       )}
 
       {openDialog === 'comic' && (
-        <Dialog id="ai-tools-comic" header="AI-drafted comic strip" onClose={closeAndRefresh}>
+        <Dialog id="ai-tools-comic" header="AI-drafted comic strip" onClose={closeAndRefresh} width={2}>
           <Box padding={4}>
             <VisualPackResults kind="comic" pack={comic} />
           </Box>
@@ -359,7 +359,7 @@ export function AiToolsView(props: {documentId: string}) {
       )}
 
       {openDialog === 'meme' && (
-        <Dialog id="ai-tools-meme" header="AI-drafted memes" onClose={closeAndRefresh}>
+        <Dialog id="ai-tools-meme" header="AI-drafted memes" onClose={closeAndRefresh} width={2}>
           <Box padding={4}>
             <VisualPackResults kind="meme" pack={meme} />
           </Box>
@@ -367,7 +367,7 @@ export function AiToolsView(props: {documentId: string}) {
       )}
 
       {openDialog === 'image' && (
-        <Dialog id="ai-tools-image" header="AI-generated featured image" onClose={closeAndRefresh}>
+        <Dialog id="ai-tools-image" header="AI-generated featured image" onClose={closeAndRefresh} width={2}>
           <Box padding={4}>
             <FeaturedImageResults
               status={featuredImage.status}
@@ -385,6 +385,7 @@ export function AiToolsView(props: {documentId: string}) {
           id="ai-tools-view-log"
           header={`${FEATURE_LABEL[viewingLog.feature] ?? viewingLog.feature} — ${new Date(viewingLog._createdAt).toLocaleString()}`}
           onClose={() => setViewingLog(null)}
+          width={2}
         >
           <Box padding={4}>
             <Stack space={4}>

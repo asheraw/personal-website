@@ -31,7 +31,7 @@ export function SuggestSeoButton({documentId, source}: {documentId: string; sour
         }}
       />
       {dialogOpen && (
-        <Dialog id="suggest-seo-from-preview" header="AI-suggested SEO title, excerpt, tags & more" onClose={() => setDialogOpen(false)}>
+        <Dialog id="suggest-seo-from-preview" header="AI-suggested SEO title, excerpt, tags & more" onClose={() => setDialogOpen(false)} width={2}>
           <SuggestSeoDialogBody
             status={status}
             suggestions={suggestions}

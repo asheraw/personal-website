@@ -10,6 +10,7 @@ import {DocumentIcon} from '@sanity/icons/Document'
 import {TagIcon} from '@sanity/icons/Tag'
 import {DoubleQuoteIcon} from '@sanity/icons/DoubleQuote'
 import {TEXT_COLORS} from '../../lib/textColors'
+import {TextColorInput} from '../components/TextColorInput'
 import {SavedStatusInput} from '../components/SavedStatusInput'
 import {ImageGalleryStatusInput} from '../components/ImageGalleryStatusInput'
 import {CollapsedImageBlock} from '../components/CollapsedImageBlock'
@@ -222,6 +223,7 @@ export const blockContentType = defineType({
                 title: 'Color',
                 type: 'string',
                 options: {list: [...TEXT_COLORS]},
+                components: {input: TextColorInput},
                 validation: (rule) => rule.required(),
               }),
             ],

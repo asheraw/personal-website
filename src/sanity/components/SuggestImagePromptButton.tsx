@@ -36,6 +36,7 @@ export function SuggestImagePromptButton({source}: {source: ImagePromptSource | 
           id="suggest-image-prompt-inline"
           header="AI-drafted image prompts"
           onClose={() => setDialogOpen(false)}
+          width={2}
         >
           <SuggestImagePromptDialogBody
             status={status}
