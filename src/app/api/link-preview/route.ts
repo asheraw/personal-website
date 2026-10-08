@@ -115,6 +115,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // YouTube serves bots a consent/blank page, so ask its oEmbed endpoint instead.
+    if (/^(www.|m.)?youtube.com$|^youtu.be$/.test(target.hostname)) {
+      const res = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(target.toString())}`, {
+        signal: AbortSignal.timeout(4000),
+      });
+      if (!res.ok) throw new Error("no oembed");
+      const v = (await res.json()) as { title?: string; author_name?: string; thumbnail_url?: string };
+      if (!v.title) throw new Error("no title");
+      const preview: Preview = {
+        title: v.title.slice(0, 120),
+        description: v.author_name ? `YouTube video by ${v.author_name}` : "YouTube video",
+        image: v.thumbnail_url,
+        domain: "youtube.com",
+      };
+      return NextResponse.json(preview, { headers });
+    }
+
     const { html, url } = await fetchHtml(target.toString());
     const title = meta(html, ["og:title", "twitter:title"]) || decode(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || "");
     if (!title) throw new Error("no title");

@@ -41,7 +41,7 @@ const PUBLIC_SITE_CSP = [
   // straight from Giphy's own CDN (see CommentSection.tsx's CommentGif and
   // gif-search/route.ts), never rehosted; caught locally with a real
   // browser before this ever reached production, not assumed from source.
-  "img-src 'self' data: https://cdn.sanity.io https://www.google-analytics.com https://www.facebook.com https://www.clarity.ms https://*.clarity.ms https://*.giphy.com",
+  "img-src 'self' data: https://cdn.sanity.io https://i.ytimg.com https://www.google-analytics.com https://www.facebook.com https://www.clarity.ms https://*.clarity.ms https://*.giphy.com",
   "font-src 'self' data:",
   // https://*.api.sanity.io -- not found by grepping this codebase's own
   // components; caught only by actually loading the page and watching the
