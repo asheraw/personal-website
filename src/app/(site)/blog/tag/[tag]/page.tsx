@@ -9,7 +9,7 @@ import { buildBreadcrumbSchema } from "@/lib/structuredData";
 
 const SITE_URL = "https://asheraw.com";
 
-export const revalidate = 60;
+export const revalidate = 3600; // Publish in Studio refreshes pages immediately (api/revalidate); this is only the safety net
 
 type PageProps = {
   params: Promise<{ tag: string }>;

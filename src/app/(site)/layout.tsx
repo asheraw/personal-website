@@ -26,7 +26,7 @@ const FALLBACK_OG_IMAGE = `${SITE_URL}/asher/hero-stage.png`;
 // without this, a Site Settings change in Studio wouldn't actually show up
 // live until the next deploy. Matches the same 60s window already used for
 // the blog list/post pages, for consistency.
-export const revalidate = 60;
+export const revalidate = 3600; // Publish in Studio refreshes pages immediately (api/revalidate); this is only the safety net
 
 // Site title/description/social image are editable in Studio -> Site
 // Settings (siteSettingsType.ts) instead of hardcoded here, per Asher's

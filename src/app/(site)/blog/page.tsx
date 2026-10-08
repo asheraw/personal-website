@@ -41,7 +41,7 @@ const FALLBACK_BLOG_TAGLINE =
 
 // Re-check Sanity for new or edited posts at most once per minute,
 // instead of only ever showing what existed at the last deploy.
-export const revalidate = 60;
+export const revalidate = 3600; // Publish in Studio refreshes pages immediately (api/revalidate); this is only the safety net
 
 const BLOG_TITLE = "Blog";
 const BLOG_DESCRIPTION = "Essays, stories, and lessons from Asher Aw — actor, coach, and storyteller.";
