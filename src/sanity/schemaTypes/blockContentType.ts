@@ -377,6 +377,14 @@ export const blockContentType = defineType({
           initialValue: 'none',
           description: 'Stacks full-width on mobile either way, same as Small/Medium already do -- floating only kicks in on wider screens where there\'s room for text to actually wrap.',
         }),
+        defineField({
+          name: 'invertInDark',
+          title: 'Black line art (turn white in dark mode)',
+          type: 'boolean',
+          initialValue: false,
+          description:
+            'Turn this on for black drawings or logos with a transparent background -- they vanish on the dark theme. Readers on the dark theme see them in white instead; the light theme is unchanged. Leave it off for photos and anything with a solid background (it would turn them into negatives).',
+        }),
       ],
       preview: {
         select: {alt: 'alt', asset: 'asset', additionalImages: 'additionalImages', displayStyle: 'displayStyle'},

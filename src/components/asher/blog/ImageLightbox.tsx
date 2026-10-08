@@ -1,13 +1,29 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+
+// Black line art on a transparent background disappears on a dark page, so a
+// post image block can be marked "line art": everything inside this wrapper
+// flips to white in dark mode (invert keeps transparency). The lightbox is
+// portalled out of the wrapper and always sits on a black overlay, so it
+// reads the same flag from context and inverts unconditionally.
+const LineArtContext = createContext(false);
+
+export function LineArt({ children }: { children: ReactNode }) {
+  return (
+    <LineArtContext.Provider value={true}>
+      <div className="contents dark:[&_img]:invert">{children}</div>
+    </LineArtContext.Provider>
+  );
+}
 
 // Rendered via a portal so it always sits above everything else,
 // regardless of overflow/transform on whatever container (a carousel's
 // Embla viewport, in particular) happens to trigger it.
 export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const lineArt = useContext(LineArtContext);
   // On mobile, a reader's instinct to leave the lightbox is an edge-swipe
   // "back" gesture, same as leaving any full-screen view -- without this,
   // that gesture falls straight through to the browser's real back
@@ -69,7 +85,7 @@ export function ImageLightbox({ src, alt, onClose }: { src: string; alt: string;
       <img
         src={src}
         alt={alt}
-        className="max-h-full max-w-full object-contain"
+        className={`max-h-full max-w-full object-contain${lineArt ? " invert" : ""}`}
         onClick={(e) => e.stopPropagation()}
       />
     </div>,

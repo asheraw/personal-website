@@ -6,6 +6,7 @@ import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
 import { AccordionGroup } from "@/components/asher/blog/AccordionGroup";
 import { ImageCarousel, type DisplayStyle, type GalleryImage } from "@/components/asher/blog/ImageCarousel";
+import { LineArt } from "@/components/asher/blog/ImageLightbox";
 import { SizedImage, type DisplaySize, type FloatDirection } from "@/components/asher/blog/SizedImage";
 import { WideBreakout } from "@/components/asher/blog/WideBreakout";
 import { InstagramEmbed } from "@/components/asher/blog/InstagramEmbed";
@@ -204,6 +205,7 @@ export const postBodyComponents: PortableTextComponents = {
     // alongside them, rendered by ImageCarousel instead. A block with no
     // additionalImages renders exactly as a plain image always has.
     image: ({ value }) => {
+      const render = () => {
       const additional = (value.additionalImages ?? []) as GalleryImage[];
       const hasPrimary = !!value?.asset;
       // The bulk "Add multiple from Media Library" picker on additionalImages
@@ -245,6 +247,10 @@ export const postBodyComponents: PortableTextComponents = {
           float={float}
         />
       );
+      };
+      const inner = render();
+      // See LineArt in ImageLightbox.tsx -- flips black line art to white in dark mode.
+      return value?.invertInDark && inner ? <LineArt>{inner}</LineArt> : inner;
     },
     divider: () => <hr className="clear-both my-10 border-amber-faint" />,
     // Hotlinked straight to Giphy -- no Sanity asset behind this at all
