@@ -22,7 +22,10 @@ const DEFAULT_GEMINI_TEXT_MODEL = "gemini-3.6-flash";
 // so it's the fallback here, not the default -- an alias can silently
 // change behavior over time, which is fine for "rescue this one call" but
 // not something to pin every request to permanently.
-const GEMINI_FALLBACK_MODEL = "gemini-flash-latest";
+// Tried in order, one at a time, when the model before it returns 503 --
+// a single fallback wasn't enough: on 2026-10-08 both the pinned model and
+// "-latest" were 503ing together while the lighter models answered fine.
+const GEMINI_FALLBACK_MODELS = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"];
 
 function isUnavailableError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -124,27 +127,24 @@ export async function generateStructuredText<T>({
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const targetModel = model || DEFAULT_GEMINI_TEXT_MODEL;
 
+  const chain = [targetModel, ...GEMINI_FALLBACK_MODELS.filter((m) => m !== targetModel)];
   let response;
-  try {
-    response = await ai.models.generateContent({
-      model: targetModel,
-      contents,
-      config: { responseMimeType: "application/json", responseSchema },
-    });
-  } catch (error) {
-    // A pinned model version going down (Google's own infrastructure, not
-    // this account's quota -- distinct from the 429/RESOURCE_EXHAUSTED case
-    // every route already handles separately) shouldn't sink every request
-    // until Google fixes it. Retried once, only for this specific failure,
-    // only if the fallback isn't just the same model already tried.
-    if (!isUnavailableError(error) || targetModel === GEMINI_FALLBACK_MODEL) throw error;
-    console.error(`[aiText] ${targetModel} unavailable, retrying once with ${GEMINI_FALLBACK_MODEL}:`, error);
-    response = await ai.models.generateContent({
-      model: GEMINI_FALLBACK_MODEL,
-      contents,
-      config: { responseMimeType: "application/json", responseSchema },
-    });
+  for (const [index, name] of chain.entries()) {
+    try {
+      response = await ai.models.generateContent({
+        model: name,
+        contents,
+        config: { responseMimeType: "application/json", responseSchema },
+      });
+      break;
+    } catch (error) {
+      // Only Google-side capacity errors (503) move on to the next model;
+      // quota (429) and everything else surface straight away.
+      if (!isUnavailableError(error) || index === chain.length - 1) throw error;
+      console.error(`[aiText] ${name} unavailable, trying ${chain[index + 1]}:`, error instanceof Error ? error.message.slice(0, 120) : error);
+    }
   }
+  if (!response) throw new Error("No response from model");
 
   const raw = response.text;
   if (!raw) throw new Error("Empty response from model");
