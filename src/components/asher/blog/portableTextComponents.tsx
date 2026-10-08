@@ -138,7 +138,8 @@ export const postBodyComponents: PortableTextComponents = {
     textColor: ({ value, children }) => {
       const color = (value as { color?: unknown })?.color;
       if (!isTextColorValue(color)) return <>{children}</>;
-      return <span style={{ color: `var(--tc-${color})` }}>{children}</span>;
+      // Bold text sets its own colour (text-ivory), which would cancel the chosen colour -- let it inherit instead.
+      return <span className="[&_strong]:text-inherit" style={{ color: `var(--tc-${color})` }}>{children}</span>;
     },
     code: ({ children }) => (
       <code className="rounded bg-secondary px-1.5 py-0.5 font-mono-stage text-[0.9em] text-spotlight">
