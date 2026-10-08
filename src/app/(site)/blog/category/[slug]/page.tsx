@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getDefaultSocialImage } from "@/lib/defaultSocialImage";
 import { notFound } from "next/navigation";
 import { client } from "@/sanity/lib/client";
 import { CATEGORY_BY_SLUG_QUERY, POSTS_BY_CATEGORY_QUERY, type PostSummary } from "@/sanity/lib/queries";
@@ -27,6 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${category.title} — Blog`;
   const description = category.description || `Posts filed under ${category.title}.`;
   const url = `${SITE_URL}/blog/category/${slug}`;
+  const image = await getDefaultSocialImage();
   return {
     title,
     description,
@@ -43,8 +45,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // why Google started self-extracting a snippet (date prefix included)
     // instead of trusting a description it could see was duplicated
     // across the whole site.
-    openGraph: { type: "website", url, title, description },
-    twitter: { card: "summary", title, description },
+    openGraph: { type: "website", url, title, description, images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 

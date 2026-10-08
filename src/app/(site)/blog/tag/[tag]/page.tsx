@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getDefaultSocialImage } from "@/lib/defaultSocialImage";
 import { client } from "@/sanity/lib/client";
 import { POSTS_BY_TAG_QUERY, type PostSummary } from "@/sanity/lib/queries";
 import { StickyPostStack } from "@/components/asher/blog/StickyPostStack";
@@ -20,6 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `#${decoded} — Blog`;
   const description = `Posts tagged #${decoded}.`;
   const url = `${SITE_URL}/blog/tag/${tag}`;
+  const image = await getDefaultSocialImage();
   return {
     title,
     description,
@@ -31,8 +33,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     // explicit openGraph/twitter here, this page silently inherited the
     // root layout's generic site-wide bio for og:description instead of
     // its own specific one.
-    openGraph: { type: "website", url, title, description },
-    twitter: { card: "summary", title, description },
+    openGraph: { type: "website", url, title, description, images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 

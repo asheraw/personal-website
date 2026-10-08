@@ -1,0 +1,15 @@
+# Asher Aw
+
+> Asher Aw is a Singapore-based theatre actor, communications coach and storyteller. 15+ years in marketing, 10+ years on stage. He writes about authenticity, AI experiments, theatre, faith, marketing and personal development.
+
+## Main pages
+
+- [Home](https://asheraw.com/): who Asher is, his stage work, coaching and faith
+- [Blog](https://asheraw.com/blog): essays, stories and lessons
+- [Connect](https://asheraw.com/connect): all the ways to reach Asher
+- [Privacy](https://asheraw.com/privacy): what the site collects and why
+
+## Machine-readable
+
+- [Sitemap](https://asheraw.com/sitemap.xml): every public page
+- [RSS feed](https://asheraw.com/rss.xml): latest blog posts

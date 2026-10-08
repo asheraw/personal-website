@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { getDefaultSocialImage } from "@/lib/defaultSocialImage";
 import { client } from "@/sanity/lib/client";
 import {
   PAGINATED_POSTS_QUERY,
@@ -45,7 +46,9 @@ export const revalidate = 60;
 const BLOG_TITLE = "Blog";
 const BLOG_DESCRIPTION = "Essays, stories, and lessons from Asher Aw — actor, coach, and storyteller.";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const image = await getDefaultSocialImage();
+  return {
   title: BLOG_TITLE,
   description: BLOG_DESCRIPTION,
   // Metadata objects don't deep-merge across nested layouts -- defining
@@ -56,13 +59,14 @@ export const metadata: Metadata = {
   // openGraph object -- generic site-wide bio description included,
   // identical to what category/tag pages show -- instead of this page's
   // own description.
-  openGraph: { type: "website", url: `${SITE_URL}/blog`, title: BLOG_TITLE, description: BLOG_DESCRIPTION },
-  twitter: { card: "summary", title: BLOG_TITLE, description: BLOG_DESCRIPTION },
+  openGraph: { type: "website", url: `${SITE_URL}/blog`, title: BLOG_TITLE, description: BLOG_DESCRIPTION, images: [image] },
+  twitter: { card: "summary_large_image", title: BLOG_TITLE, description: BLOG_DESCRIPTION, images: [image] },
   alternates: {
     canonical: "/blog",
     types: { "application/rss+xml": "https://asheraw.com/rss.xml" },
   },
-};
+  };
+}
 
 export default async function BlogPage() {
   // Only the first page of full summaries (image, comment count, etc.) is

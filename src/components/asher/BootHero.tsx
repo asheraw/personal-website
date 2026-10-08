@@ -153,7 +153,7 @@ export function BootHero() {
             <div className="pointer-events-none absolute inset-0 bg-grid-paper opacity-40" aria-hidden />
             <div className="relative w-full max-w-3xl">
               <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }} className="text-center font-mono-stage text-xs uppercase tracking-[0.4em] text-spotlight/80 sm:text-sm">Asher Aw · Singapore</motion.p>
-              <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }} className="mt-5 text-center font-display text-[12vw] font-semibold leading-[0.95] tracking-[-0.01em] text-ivory sm:text-[8vw] lg:text-[80px]">The story{" "}<span className="italic text-spotlight-gradient">begins.</span></motion.h1>
+              <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }} className="mt-5 text-center font-display text-[12vw] font-semibold leading-[0.95] tracking-[-0.01em] text-ivory sm:text-[8vw] lg:text-[80px]">The story{" "}<span className="italic text-spotlight-gradient">begins.</span></motion.p>
               <div className="mt-12 flex min-h-[120px] flex-col items-center justify-center gap-2">
                 {BOOT_LINES.slice(0, visibleLines).map((line) => (
                   <motion.div key={line} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="font-mono-stage text-base text-stone/80 sm:text-xl"><span className="text-spotlight/70">{">"}</span> {line}</motion.div>

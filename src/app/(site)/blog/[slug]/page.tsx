@@ -14,6 +14,7 @@ import { createPostBodyComponents } from "@/components/asher/blog/portableTextCo
 import { CommentSection } from "@/components/asher/blog/CommentSection";
 import { CommentCountBadge } from "@/components/asher/blog/CommentCountBadge";
 import { FeaturedImage } from "@/components/asher/blog/FeaturedImage";
+import { LinkPreview } from "@/components/asher/blog/LinkPreview";
 import { RelatedPosts } from "@/components/asher/blog/RelatedPosts";
 import { ShareBar } from "@/components/asher/blog/ShareBar";
 import { AffiliateDisclosure } from "@/components/asher/blog/AffiliateDisclosure";
@@ -286,9 +287,10 @@ export default async function PostPage({ params }: PageProps) {
 
           {bodyHasAffiliateLinks(post.body) && <AffiliateDisclosure />}
 
-          <div className="mt-10 space-y-6 text-lg">
+          <div className="mt-10 space-y-6 text-lg" data-link-preview>
             <PortableText value={post.body as never} components={postBodyComponents} />
           </div>
+          <LinkPreview />
 
           {(post.categories?.length || post.tags?.length) ? (
             <div className="mt-14 flex flex-wrap gap-2 border-t border-amber-faint pt-8 print:hidden">

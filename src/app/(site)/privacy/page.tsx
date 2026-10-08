@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getDefaultSocialImage } from "@/lib/defaultSocialImage";
 import Link from "next/link";
 import { CONTACT_INFO } from "@/components/asher/data";
 
@@ -12,12 +13,16 @@ const DESCRIPTION = "What asheraw.com collects, why, and how to have it removed 
 // actually changes.
 const LAST_UPDATED = "August 6, 2026";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const image = await getDefaultSocialImage();
+  return {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: `${SITE_URL}/privacy` },
-  openGraph: { type: "website", url: `${SITE_URL}/privacy`, siteName: "Asher Aw", title: TITLE, description: DESCRIPTION },
-};
+  openGraph: { type: "website", url: `${SITE_URL}/privacy`, siteName: "Asher Aw", title: TITLE, description: DESCRIPTION, images: [image] },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION, images: [image] },
+  };
+}
 
 const TLDR = [
   "I only collect your name, email, or message when you type them in yourself -- through the contact form or a comment. Nothing is collected before that.",
