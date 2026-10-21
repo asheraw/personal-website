@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PortableText, type PortableTextComponents, type PortableTextBlockComponent } from "@portabletext/react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
+import { CodeBlock } from "@/components/asher/blog/CodeBlock";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
 import { AccordionGroup } from "@/components/asher/blog/AccordionGroup";
@@ -298,18 +297,7 @@ export const postBodyComponents: PortableTextComponents = {
       );
       return isWide ? <WideBreakout>{figure}</WideBreakout> : figure;
     },
-    codeBlock: ({ value }) => (
-      <div className="my-8 overflow-hidden rounded-lg border border-amber-faint text-sm">
-        <SyntaxHighlighter
-          language={value?.language || "text"}
-          style={oneDark}
-          customStyle={{ margin: 0, padding: "1.25rem", background: "transparent" }}
-          wrapLongLines
-        >
-          {value?.code || ""}
-        </SyntaxHighlighter>
-      </div>
-    ),
+    codeBlock: ({ value }) => <CodeBlock value={value} />,
     callout: ({ value }) => {
       const style = CALLOUT_STYLES[value?.style as string] ?? CALLOUT_STYLES.note;
       // `text` used to be a plain string; it's now an array of simple-

@@ -43,6 +43,7 @@ const CODE_LANGUAGES = [
   {title: 'Bash / Shell', value: 'bash'},
   {title: 'Python', value: 'python'},
   {title: 'Markdown', value: 'markdown'},
+  {title: 'Prompt (plain text, copy-ready)', value: 'prompt'},
 ]
 
 // Shared by the single Accordion block, each item inside an Accordion
@@ -714,6 +715,28 @@ export const blockContentType = defineType({
           type: 'string',
           options: {list: CODE_LANGUAGES},
           initialValue: 'text',
+        }),
+        defineField({
+          name: 'wrapLines',
+          title: 'Wrap long lines',
+          type: 'boolean',
+          initialValue: true,
+          description: 'On: long lines wrap onto the next line. Off: the block scrolls sideways instead.',
+        }),
+        defineField({
+          name: 'copyButton',
+          title: 'Copy button',
+          type: 'string',
+          initialValue: 'auto',
+          options: {
+            list: [
+              {title: 'Automatic (on for Prompt, off for the rest)', value: 'auto'},
+              {title: 'On', value: 'on'},
+              {title: 'Off', value: 'off'},
+            ],
+            layout: 'radio',
+          },
+          description: 'Adds a one-click "copy to clipboard" button above the block for readers.',
         }),
         defineField({
           name: 'code',
