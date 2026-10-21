@@ -29,6 +29,7 @@ export const snippetType = defineType({
           {title: 'Callout', value: 'callout'},
           {title: 'Call to action', value: 'cta'},
           {title: 'Newsletter signup (Beehiiv)', value: 'newsletter'},
+          {title: 'Contact options (WhatsApp, Email, form)', value: 'contact'},
           {title: 'Author bio', value: 'authorbio'},
           {title: 'Disclaimer', value: 'disclaimer'},
         ],
@@ -53,7 +54,8 @@ export const snippetType = defineType({
     defineField({
       name: 'content',
       title: 'Content',
-      hidden: ({document}) => document?.snippetType === 'newsletter',
+      hidden: ({document}) => document?.snippetType === 'newsletter' || document?.snippetType === 'contact',
+
       type: 'array',
       of: [
         defineArrayMember({

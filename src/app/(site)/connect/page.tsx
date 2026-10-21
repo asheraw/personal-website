@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Facebook, Instagram, Linkedin, Youtube, Mail, MessageCircle, Twitter, Music2, ArrowUpRight } from "lucide-react";
-import { CONTACT_INFO } from "@/components/asher/data";
+import { Facebook, Instagram, Linkedin, Youtube, Twitter, Music2, ArrowUpRight } from "lucide-react";
 import { ConfigureSiteChrome } from "@/components/asher/SiteChromeConfig";
-import { ContactForm } from "@/components/asher/ContactForm";
+import { ContactPills } from "@/components/asher/ContactPills";
 
 const SITE_URL = "https://asheraw.com";
 const TITLE = "Connect with Asher Aw";
@@ -24,11 +23,6 @@ const LINKS = [
   { label: "X (Twitter)", value: "@AsherAw", href: "https://twitter.com/AsherAw", icon: Twitter, note: "Fun fact — President Barack Obama follows me (for real)." },
   { label: "TikTok", value: "@itsAsherAw", href: "https://tiktok.com/@itsAsherAw", icon: Music2 },
   { label: "Facebook Page", value: "facebook.com/itsAsherAw", href: "https://facebook.com/itsAsherAw", icon: Facebook },
-];
-
-const DIRECT = [
-  { label: "WhatsApp", href: CONTACT_INFO.whatsappUrl, icon: MessageCircle },
-  { label: "Email", href: `mailto:${CONTACT_INFO.email}`, icon: Mail },
 ];
 
 export default function ConnectPage() {
@@ -73,25 +67,8 @@ export default function ConnectPage() {
           ))}
         </div>
 
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <p className="font-mono-stage text-[10px] uppercase tracking-[0.25em] text-stone/50">Prefer to reach me directly?</p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {DIRECT.map((d) => (
-              <a key={d.label} href={d.href} target={d.href.startsWith("http") ? "_blank" : undefined} rel={d.href.startsWith("http") ? "noreferrer" : undefined} className="inline-flex items-center gap-2 rounded-full border border-amber-faint px-4 py-2 font-mono-stage text-xs uppercase tracking-[0.16em] text-ivory/90 transition-colors hover:border-spotlight/40 hover:text-spotlight">
-                <d.icon size={14} />
-                {d.label}
-              </a>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-12 rounded-2xl border border-amber-faint bg-stage/40 p-6 sm:p-8">
-          <p className="font-mono-stage text-[10px] uppercase tracking-[0.22em] text-spotlight/70">/ send_a_message</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-ivory">Or send a message directly</h2>
-          <p className="mt-2 text-sm text-stone/70">Fill in the form and Asher will get back to you. For a faster reply, use WhatsApp above.</p>
-          <div className="mt-6">
-            <ContactForm />
-          </div>
+        <div className="mt-4">
+          <ContactPills />
         </div>
 
       </div>

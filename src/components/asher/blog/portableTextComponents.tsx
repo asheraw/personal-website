@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PortableText, type PortableTextComponents, type PortableTextBlockComponent } from "@portabletext/react";
 import { CodeBlock } from "@/components/asher/blog/CodeBlock";
+import { ContactPills } from "@/components/asher/ContactPills";
 import { urlFor } from "@/sanity/lib/image";
 import { Accordion } from "@/components/asher/blog/Accordion";
 import { AccordionGroup } from "@/components/asher/blog/AccordionGroup";
@@ -344,6 +345,8 @@ export const postBodyComponents: PortableTextComponents = {
       if (snippet?.snippetType === "newsletter") {
         return snippet.beehiivFormId ? <BeehiivForm formId={snippet.beehiivFormId} /> : null;
       }
+      // Fixed layout, nothing to write -- always the same three pills.
+      if (snippet?.snippetType === "contact") return <ContactPills />;
       if (!snippet?.content) return null;
       const body = <PortableText value={snippet.content} components={snippetBodyComponents} />;
       switch (snippet.snippetType) {
