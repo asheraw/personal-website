@@ -1,15 +1,16 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {set, unset, useClient} from 'sanity'
 import type {ArrayOfObjectsInputProps} from 'sanity'
 import {Box, Button, Card, Flex, Select, Stack, Text, TextInput} from '@sanity/ui'
 import {AddIcon} from '@sanity/icons/Add'
 import {TrashIcon} from '@sanity/icons/Trash'
 import {urlFor} from '../lib/image'
+import {ImageCropDialog, ImageLibraryDialog, type ImageCrop} from './LinkImageTools'
 
 type LinkItem = {
   _key: string
   _type: 'linkItem'
-  image?: {_type: 'image'; asset?: {_type: 'reference'; _ref: string}; alt?: string}
+  image?: {_type: 'image'; asset?: {_type: 'reference'; _ref: string}; alt?: string; crop?: ImageCrop}
   linkType: 'post' | 'external'
   post?: {_type: 'reference'; _ref: string}
   externalUrl?: string
@@ -39,6 +40,9 @@ export function LinkPageItemsInput(props: ArrayOfObjectsInputProps) {
   const [postSearch, setPostSearch] = useState('')
   const [postResults, setPostResults] = useState<{_id: string; title: string}[]>([])
   const [uploading, setUploading] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
+  const [cropOpen, setCropOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const refIds = items.filter((i) => i.linkType === 'post' && i.post?._ref).map((i) => i.post!._ref)
@@ -99,10 +103,14 @@ export function LinkPageItemsInput(props: ArrayOfObjectsInputProps) {
     setUploading(true)
     try {
       const uploaded = await client.assets.upload('image', file, {filename: file.name})
-      updateItem(key, (i) => ({...i, image: {_type: 'image', asset: {_type: 'reference', _ref: uploaded._id}, alt: i.image?.alt}}))
+      setImage(key, uploaded._id)
     } finally {
       setUploading(false)
     }
+  }
+
+  function setImage(key: string, assetId: string) {
+    updateItem(key, (i) => ({...i, image: {_type: 'image', asset: {_type: 'reference', _ref: assetId}, alt: i.image?.alt}}))
   }
 
   function tileLabel(item: LinkItem): string {
@@ -187,10 +195,16 @@ export function LinkPageItemsInput(props: ArrayOfObjectsInputProps) {
               <Text size={1} muted>
                 Image
               </Text>
+              <Flex gap={2} wrap="wrap">
+                <Button text={uploading ? 'Uploading...' : 'Upload new image'} mode="ghost" fontSize={1} disabled={uploading} onClick={() => fileInputRef.current?.click()} />
+                <Button text="Choose from Media" mode="ghost" fontSize={1} onClick={() => setLibraryOpen(true)} />
+                {editing.image?.asset?._ref && <Button text="Crop" mode="ghost" fontSize={1} onClick={() => setCropOpen(true)} />}
+              </Flex>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                disabled={uploading}
+                style={{display: 'none'}}
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   if (file) handleImageUpload(editing._key, file)
@@ -274,6 +288,30 @@ export function LinkPageItemsInput(props: ArrayOfObjectsInputProps) {
             )}
           </Stack>
         </Card>
+      )}
+      {libraryOpen && editing && (
+        <ImageLibraryDialog
+          onClose={() => setLibraryOpen(false)}
+          onPick={(assetId) => {
+            setImage(editing._key, assetId)
+            setLibraryOpen(false)
+          }}
+        />
+      )}
+      {cropOpen && editing?.image?.asset?._ref && (
+        <ImageCropDialog
+          assetRef={editing.image.asset._ref}
+          crop={editing.image.crop}
+          onClose={() => setCropOpen(false)}
+          onSave={(crop) => {
+            // Hotspot is dropped: the crop rectangle already has the card's shape, so the centre of it is the focus.
+            updateItem(editing._key, (i) => {
+              const {hotspot: _hotspot, ...rest} = (i.image ?? {}) as Record<string, unknown>
+              return {...i, image: {...rest, crop} as LinkItem['image']}
+            })
+            setCropOpen(false)
+          }}
+        />
       )}
     </Stack>
   )

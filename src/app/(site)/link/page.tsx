@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 type LinkItem = {
   _key: string;
-  image?: { asset?: { _ref: string } };
+  image?: { asset?: { _ref: string }; crop?: unknown };
   imageAlt?: string;
   linkType: "post" | "external";
   post?: { title?: string; slug?: string };
@@ -38,6 +38,14 @@ async function getData() {
     client.fetch<SiteSettings>(`*[_type == "siteSettings"][0]{siteDescription, defaultAuthor->{name, image}}`),
   ]);
   return { items: linkPage?.items ?? [], settings };
+}
+
+// A card with a crop set in Studio uses exactly that crop; otherwise it falls back
+// to the image's focal point. (Sanity's image URL builder ignores the crop
+// rectangle whenever "focalpoint" is requested, so the two can't be combined.)
+function tileUrl(image: NonNullable<LinkItem["image"]>): string {
+  const base = urlFor(image).width(600).height(800).fit("crop");
+  return image.crop ? base.url() : base.crop("focalpoint").url();
 }
 
 // A card only ever renders once it has an image and a resolved destination
@@ -111,7 +119,7 @@ export default async function LinkPage() {
                 className="group relative block aspect-[3/4] overflow-hidden bg-stage/60"
               >
                 <Image
-                  src={urlFor(item.image!).width(600).height(800).fit("crop").crop("focalpoint").url()}
+                  src={tileUrl(item.image!)}
                   alt={item.imageAlt ?? resolved!.label ?? ""}
                   fill
                   sizes="(max-width: 512px) 33vw, 170px"
