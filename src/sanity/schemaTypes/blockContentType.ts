@@ -897,12 +897,29 @@ export const blockContentType = defineType({
         },
       },
     }),
+    // An object holding a reference, NOT a bare `reference` block: with a bare reference block,
+    // two of them in one post were linked in the editor (picking a snippet in one changed the
+    // other). Objects are what every other block here uses, and they edit independently.
+    // Old posts stored it as a bare reference (_ref on the block itself); the queries read both
+    // shapes (coalesce(snippet, @)) and scripts/migrate-snippet-refs.mjs converts the old ones.
     defineArrayMember({
-      type: 'reference',
+      type: 'object',
       name: 'snippetRef',
       title: 'Reusable snippet',
       icon: ComponentIcon,
-      to: [{type: 'snippet'}],
+      fields: [
+        defineField({
+          name: 'snippet',
+          title: 'Snippet',
+          type: 'reference',
+          to: [{type: 'snippet'}],
+          validation: (rule) => rule.required(),
+        }),
+      ],
+      preview: {
+        select: {title: 'snippet.title', kind: 'snippet.snippetType'},
+        prepare: ({title, kind}) => ({title: title || 'Reusable snippet', subtitle: kind ? `Snippet · ${kind}` : 'Pick a snippet', media: ComponentIcon}),
+      },
     }),
   ],
 })
