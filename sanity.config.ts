@@ -18,6 +18,7 @@ import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
 import {createExportAction} from './src/sanity/actions/exportPost'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
+import {moveToTrashAction, restoreFromTrashAction, deleteForeverOnlyInTrash} from './src/sanity/actions/postTrash'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {compressedUploadSource} from './src/sanity/components/CompressedUploadSource'
 import {CommentsTool} from './src/sanity/components/CommentsTool'
@@ -88,11 +89,13 @@ export default defineConfig({
       // in the menu to be clicked by mistake (confirmed 2026-08-29, Asher
       // hit the paywall trying it).
       const withoutNativeSchedule = prev.filter((action) => (action as {action?: string}).action !== 'schedule')
-      const withDateAction = withoutNativeSchedule.map((action) =>
-        (action as {action?: string}).action === 'publish'
-          ? withPrePublishChecklist(withAutoPublishDate(withRevalidateOnPublish(action)))
-          : action
-      )
+      const withDateAction = withoutNativeSchedule.map((action) => {
+        const id = (action as {action?: string}).action
+        if (id === 'publish') return withPrePublishChecklist(withAutoPublishDate(withRevalidateOnPublish(action)))
+        // Posts are soft-deleted (Move to Trash); the real Delete only shows for a post already in the Trash.
+        if (id === 'delete') return deleteForeverOnlyInTrash(action)
+        return action
+      })
       // Publish must stay the primary (first) action -- Studio renders
       // whichever action is first as the big prominent button. Everything
       // else goes after it as secondary actions instead.
@@ -108,6 +111,8 @@ export default defineConfig({
         openInPresentationAction,
         createSuggestImagePromptAction(),
         createExportAction(),
+        restoreFromTrashAction,
+        moveToTrashAction,
         ...withDateAction.slice(1),
       ]
     },

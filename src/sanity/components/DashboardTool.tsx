@@ -96,7 +96,7 @@ const QUERY = `{
   "notFoundPending": count(*[_type == "notFoundHit" && (status == "pending" || !defined(status))]),
   "errorPending": count(*[_type == "errorLog" && (status == "pending" || !defined(status))]),
   "searchPending": count(*[_type == "searchQueryLog" && (status == "pending" || !defined(status))]),
-  "scheduledCount": count(*[_id in path("drafts.**") && _type == "post" && defined(scheduledPublishAt)]),
+  "scheduledCount": count(*[_id in path("drafts.**") && _type == "post" && !defined(trashedAt) && defined(scheduledPublishAt)]),
   "consent": *[_id == "consentLog"][0]{acceptedCount, declinedCount},
   "feedbackCount": count(*[_type == "cookieFeedback"])
 }`
@@ -139,7 +139,7 @@ function useDraftPosts(): DraftPost[] | null {
       // perspective: 'raw' -- same requirement as scheduledCount below,
       // the default query perspective excludes drafts.* documents entirely.
       .fetch<DraftPost[]>(
-        `*[_type == "post" && _id in path("drafts.**")] | order(_updatedAt desc){_id, title, _updatedAt}`,
+        `*[_type == "post" && !defined(trashedAt) && _id in path("drafts.**")] | order(_updatedAt desc){_id, title, _updatedAt}`,
         {},
         {perspective: 'raw'}
       )
@@ -175,7 +175,7 @@ function usePostIssueCounts(): {auditIssues: number; socialNeeded: number} | nul
         }[]
         socialDraftedSlugs: string[]
       }>(`{
-        "posts": *[_type == "post" && defined(slug.current)]{
+        "posts": *[_type == "post" && !defined(trashedAt) && defined(slug.current)]{
           _id, mainImage, "hasAltText": defined(coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)), excerpt, categories, contentAuditDismissed
         },
         "socialDraftedSlugs": *[_type == "aiOutputLog" && feature == "social"].postSlug

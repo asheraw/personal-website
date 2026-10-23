@@ -69,7 +69,7 @@ export function ContentAuditTool() {
   const load = useCallback(() => {
     client
       .fetch<RawRow[]>(
-        `*[_type == "post" && defined(slug.current)] | order(publishedAt desc) {
+        `*[_type == "post" && !defined(trashedAt) && defined(slug.current)] | order(publishedAt desc) {
           _id, title, mainImage,
           "hasAltText": defined(coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText)),
           excerpt, categories, contentAuditDismissed

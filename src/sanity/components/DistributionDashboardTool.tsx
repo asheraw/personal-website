@@ -94,7 +94,7 @@ export function DistributionDashboardTool() {
         // it's not in PULLABLE_PLATFORMS and nothing else in this file
         // reads facebookPageUrl beyond this fetch, so widening it would be
         // dead scope.
-        `*[_type == "post" && !(_id in path("drafts.**")) && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrls": socialLinks[platform == "Facebook"].url, "facebookPageUrl": socialLinks[platform == "Facebook Page"][0].url, "instagramUrls": socialLinks[platform == "Instagram"].url, "tiktokUrls": socialLinks[platform == "TikTok"].url, "youtubeUrls": socialLinks[platform == "YouTube"].url, "linkedinUrls": socialLinks[platform == "LinkedIn"].url}`,
+        `*[_type == "post" && !defined(trashedAt) && !(_id in path("drafts.**")) && defined(slug.current)] | order(publishedAt desc){_id, title, "slug": slug.current, publishedAt, "facebookUrls": socialLinks[platform == "Facebook"].url, "facebookPageUrl": socialLinks[platform == "Facebook Page"][0].url, "instagramUrls": socialLinks[platform == "Instagram"].url, "tiktokUrls": socialLinks[platform == "TikTok"].url, "youtubeUrls": socialLinks[platform == "YouTube"].url, "linkedinUrls": socialLinks[platform == "LinkedIn"].url}`,
       ),
       client.fetch<ShareLog[]>(
         `*[_type == "shareLog"]{postSlug, totalShares, postedTo, newsletterSent, facebookCommentsLastPulledAt, facebookCommentsLastPulledCount, instagramCommentsLastPulledAt, instagramCommentsLastPulledCount, tiktokCommentsLastPulledAt, tiktokCommentsLastPulledCount, youtubeCommentsLastPulledAt, youtubeCommentsLastPulledCount, linkedinCommentsLastPulledAt, linkedinCommentsLastPulledCount, engagementNotes}`,

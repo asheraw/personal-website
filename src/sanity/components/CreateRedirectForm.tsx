@@ -40,7 +40,7 @@ export function CreateRedirectForm({
   useEffect(() => {
     Promise.all([
       client.fetch<{title: string; slug: string}[]>(
-        `*[_type == "post" && defined(slug.current)]{title, "slug": slug.current}`,
+        `*[_type == "post" && !defined(trashedAt) && defined(slug.current)]{title, "slug": slug.current}`,
       ),
       client.fetch<{title: string; slug: string}[]>(
         `*[_type == "category" && defined(slug.current)]{title, "slug": slug.current}`,

@@ -4,7 +4,7 @@ import {sanityFetch} from '@/sanity/lib/live'
 export const runtime = 'edge'
 
 const OG_CARD_QUERY = `
-  *[_type == "post" && slug.current == $slug][0]{
+  *[_type == "post" && !defined(trashedAt) && slug.current == $slug][0]{
     title,
     "author": author->name,
     "category": primaryCategory->title

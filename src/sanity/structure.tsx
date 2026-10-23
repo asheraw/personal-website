@@ -10,6 +10,7 @@ import {DownloadIcon} from '@sanity/icons/Download'
 import {EditIcon} from '@sanity/icons/Edit'
 import {SearchIcon} from '@sanity/icons/Search'
 import {BugIcon} from '@sanity/icons/Bug'
+import {TrashIcon} from '@sanity/icons/Trash'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
@@ -65,8 +66,13 @@ export const structure: StructureResolver = (S) =>
         .title('Posts')
         .schemaType('post')
         .child(
-          S.documentTypeList('post')
+          // A filtered list, not documentTypeList('post'): posts in the Trash (trashedAt set) are
+          // hidden here and shown under "Trash" instead.
+          S.documentList()
             .title('Posts')
+            .schemaType('post')
+            .filter('_type == "post" && !defined(trashedAt)')
+            .defaultOrdering([{field: '_updatedAt', direction: 'desc'}])
             .child((postId) =>
               S.document()
                 .documentId(postId)
@@ -77,6 +83,19 @@ export const structure: StructureResolver = (S) =>
                   S.view.component(SeoPreviewView).title('SEO Preview'),
                 ]),
             ),
+        ),
+      // Soft-deleted posts: restore them, or delete for good. The nightly purge-trash job removes
+      // anything that has been here 30+ days.
+      S.listItem()
+        .title('Trash')
+        .icon(TrashIcon)
+        .child(
+          S.documentList()
+            .title('Trash (deleted for good after 30 days)')
+            .schemaType('post')
+            .filter('_type == "post" && defined(trashedAt)')
+            .defaultOrdering([{field: 'trashedAt', direction: 'desc'}])
+            .child((postId) => S.document().documentId(postId).schemaType('post')),
         ),
       // Custom child (instead of the plain documentTypeListItem default) so
       // each category gets a second "Posts" tab alongside the normal Editor

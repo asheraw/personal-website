@@ -77,7 +77,7 @@ export function BulkOperationsTool() {
   const load = useCallback(() => {
     client
       .fetch<PostForBulkEdit[]>(
-        `*[_type == "post" && defined(slug.current)] | order(title asc){
+        `*[_type == "post" && !defined(trashedAt) && defined(slug.current)] | order(title asc){
           _id, title, tags, "categories": categories[]{"_ref": _ref}, "author": author{"_ref": _ref}
         }`,
       )
@@ -222,7 +222,7 @@ export function BulkOperationsTool() {
     setSearchResults(null)
     try {
       const results = await client.fetch<SearchPost[]>(
-        `*[_type == "post" && (title match $t || excerpt match $t || pt::text(body) match $t)]{
+        `*[_type == "post" && !defined(trashedAt) && (title match $t || excerpt match $t || pt::text(body) match $t)]{
           _id, title, "slug": slug.current, excerpt, body
         }`,
         {t: `*${term}*`},

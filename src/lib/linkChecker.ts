@@ -55,7 +55,7 @@ function extractLinksFromBlocks(blocks: unknown, source: Source, into: Map<strin
 export async function collectLinks(): Promise<LinkEntry[]> {
   const [posts, snippets] = await Promise.all([
     writeClient.fetch<{_id: string; title: string; slug: string; body: unknown}[]>(
-      `*[_type == "post" && defined(slug.current)]{_id, title, "slug": slug.current, body}`,
+      `*[_type == "post" && !defined(trashedAt) && defined(slug.current)]{_id, title, "slug": slug.current, body}`,
     ),
     writeClient.fetch<{_id: string; title: string; content: unknown}[]>(
       `*[_type == "snippet"]{_id, title, content}`,
@@ -125,10 +125,10 @@ async function fetchInternalTargets(): Promise<InternalTargets> {
     tags: string[]
     redirectFroms: string[]
   }>(`{
-    "postSlugs": *[_type == "post" && defined(slug.current)].slug.current,
+    "postSlugs": *[_type == "post" && !defined(trashedAt) && defined(slug.current)].slug.current,
     "categorySlugs": *[_type == "category" && defined(slug.current)].slug.current,
     "authorSlugs": *[_type == "author" && defined(slug.current)].slug.current,
-    "tags": array::unique(*[_type == "post"].tags[]),
+    "tags": array::unique(*[_type == "post" && !defined(trashedAt)].tags[]),
     "redirectFroms": *[_type == "redirect" && defined(from)].from
   }`)
   return {

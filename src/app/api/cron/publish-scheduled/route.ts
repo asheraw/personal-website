@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     // changes what a query can *see*, not what a write can *target*.
     const dueDrafts: { _id: string; publishedAt?: string; scheduledPublishAt: string }[] =
       await writeClient.fetch(
-        `*[_id in path("drafts.**") && _type == "post" && defined(scheduledPublishAt) && scheduledPublishAt <= $now]{
+        `*[_id in path("drafts.**") && _type == "post" && !defined(trashedAt) && defined(scheduledPublishAt) && scheduledPublishAt <= $now]{
           _id, publishedAt, scheduledPublishAt
         }`,
         { now },

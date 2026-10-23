@@ -7,6 +7,7 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 // Vercel's built-in Cron feature via vercel.json's crons entry, replaced
 // with a GitHub Actions workflow once asheraw.com's DNS moved to Netlify,
 // which has no equivalent built-in scheduler) -- permanently deletes any
+// post that's been in Studio -> Posts -> Trash for 30+ days, AND any
 // comment that's been in Studio -> Comments' Trash view for 30+ days
 // (trashedAt set), AND any image asset that's been in Studio -> Media ->
 // Trash for 30+ days (see MediaLibraryTool.tsx / imageAssetTrashType.ts).
@@ -27,6 +28,40 @@ export async function GET(request: NextRequest) {
   }
 
   const cutoff = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
+
+  // Posts first (their comments go with them, so the comment loop below doesn't have to). A post
+  // is "in the trash" once Studio's Move to Trash stamps trashedAt on its draft and/or published
+  // copy (see src/sanity/actions/postTrash.tsx); after 30 days both copies and every comment on
+  // the post are deleted for good, in one transaction per post so a post is never half-deleted.
+  // A post that something else still strongly references (e.g. a Link Page card) makes the
+  // transaction fail; it stays in the trash and is retried tomorrow.
+  const trashedPostDocs: { _id: string }[] = await writeClient.fetch(
+    `*[_type == "post" && defined(trashedAt) && trashedAt < $cutoff]{_id}`,
+    { cutoff },
+    // raw: the default perspective hides drafts.* documents, and a trashed draft-only post must purge too.
+    { perspective: "raw" }
+  );
+  const trashedPostBaseIds = [...new Set(trashedPostDocs.map((d) => d._id.replace(/^drafts\./, "")))];
+  let postsDeleted = 0;
+  let postsSkipped = 0;
+  for (const baseId of trashedPostBaseIds) {
+    try {
+      const postIds = [baseId, `drafts.${baseId}`];
+      const postComments: string[] = await writeClient.fetch(
+        `*[_type == "comment" && post._ref in $postIds]._id`,
+        { postIds }
+      );
+      const existing: string[] = await writeClient.fetch(`*[_id in $postIds]._id`, { postIds }, { perspective: "raw" });
+      let tx = writeClient.transaction();
+      for (const id of postComments) tx = tx.delete(id);
+      for (const id of existing) tx = tx.delete(id);
+      await tx.commit();
+      postsDeleted++;
+    } catch (err) {
+      postsSkipped++;
+      console.error(`purge-trash: could not delete post ${baseId}:`, err);
+    }
+  }
 
   // One transaction per comment, not one covering all of them -- a reply
   // can still legitimately reference an expired parent (e.g. Asher's own
@@ -89,6 +124,8 @@ export async function GET(request: NextRequest) {
     success: true,
     commentsDeleted,
     commentsSkipped,
+    postsDeleted,
+    postsSkipped,
     imagesDeleted,
     imagesSkipped,
   });

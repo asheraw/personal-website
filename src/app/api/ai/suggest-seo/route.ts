@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // exact problem the Studio's tag autocomplete field is also there to
     // prevent.
     const existingTags: string[] = await writeClient.fetch(
-      `array::unique(*[_type == "post" && defined(tags)].tags[])`
+      `array::unique(*[_type == "post" && !defined(trashedAt) && defined(tags)].tags[])`
     );
 
     const existingTagsBlock = existingTags.length

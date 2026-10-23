@@ -246,6 +246,16 @@ export const postType = defineType({
         return fallbackId ? {_ref: fallbackId} : undefined
       },
     }),
+    // Soft delete: "Move to Trash" (src/sanity/actions/postTrash.tsx) stamps this on the draft and the
+    // published copy. Every public query and Studio list filters on !defined(trashedAt); the nightly
+    // purge-trash cron removes posts trashed 30+ days ago for good.
+    defineField({
+      name: 'trashedAt',
+      title: 'Moved to Trash',
+      type: 'datetime',
+      readOnly: true,
+      hidden: true,
+    }),
     // PLAY: an optional, interactive alternative way to experience this
     // post -- separate from the normal reading view (STORY), never
     // required, off by default. `presentation` is deliberately an array

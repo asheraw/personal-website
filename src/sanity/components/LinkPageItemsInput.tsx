@@ -61,7 +61,7 @@ export function LinkPageItemsInput(props: ArrayOfObjectsInputProps) {
     }
     const handle = setTimeout(() => {
       client
-        .fetch<{_id: string; title: string}[]>(`*[_type == "post" && title match $q] | order(title asc) [0...8]{_id, title}`, {
+        .fetch<{_id: string; title: string}[]>(`*[_type == "post" && !defined(trashedAt) && title match $q] | order(title asc) [0...8]{_id, title}`, {
           q: `${q}*`,
         })
         .then(setPostResults)

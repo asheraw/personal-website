@@ -65,14 +65,14 @@ export function EditorialCalendarTool() {
   const load = useCallback(async () => {
     const [published, publishedIds, drafts] = await Promise.all([
       client.fetch<{_id: string; title: string; publishedAt: string}[]>(
-        `*[_type == "post" && !(_id in path("drafts.**")) && defined(publishedAt)]{_id, title, publishedAt}`,
+        `*[_type == "post" && !defined(trashedAt) && !(_id in path("drafts.**")) && defined(publishedAt)]{_id, title, publishedAt}`,
       ),
-      client.fetch<string[]>(`*[_type == "post" && !(_id in path("drafts.**"))]._id`),
+      client.fetch<string[]>(`*[_type == "post" && !defined(trashedAt) && !(_id in path("drafts.**"))]._id`),
       // perspective: 'raw' is required here -- this API's default query
       // perspective excludes drafts.* documents entirely, even from an
       // exact _id match, unless explicitly asked for.
       client.fetch<{_id: string; title: string; scheduledPublishAt?: string}[]>(
-        `*[_id in path("drafts.**") && _type == "post"]{_id, title, scheduledPublishAt} | order(_updatedAt desc)`,
+        `*[_id in path("drafts.**") && _type == "post" && !defined(trashedAt)]{_id, title, scheduledPublishAt} | order(_updatedAt desc)`,
         {},
         {perspective: 'raw'},
       ),

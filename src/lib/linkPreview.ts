@@ -100,7 +100,7 @@ export async function getLinkPreview(raw: string | null) {
     const postMatch = isOwn && target.pathname.match(/^\/blog\/([^/]+)\/?$/);
     if (postMatch) {
       const post = await client.fetch<{ title: string; blurb?: string; mainImage?: { asset?: { _ref: string } } } | null>(
-        `*[_type == "post" && slug.current == $slug][0]{title, "blurb": coalesce(excerpt, pt::text(body)[0...200]), mainImage}`,
+        `*[_type == "post" && !defined(trashedAt) && slug.current == $slug][0]{title, "blurb": coalesce(excerpt, pt::text(body)[0...200]), mainImage}`,
         { slug: decodeURIComponent(postMatch[1]) },
       );
       if (post) {

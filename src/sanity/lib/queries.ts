@@ -42,7 +42,7 @@ export const POST_SUMMARY_PROJECTION = `{
 }`;
 
 export const ALL_POSTS_QUERY = `
-  *[_type == "post" && defined(slug.current)] | order(publishedAt desc) ${POST_SUMMARY_PROJECTION}
+  *[_type == "post" && !defined(trashedAt) && defined(slug.current)] | order(publishedAt desc) ${POST_SUMMARY_PROJECTION}
 `;
 
 // Paginated variant of ALL_POSTS_QUERY -- used only by the /blog listing
@@ -57,17 +57,17 @@ export const ALL_POSTS_QUERY = `
 // post pass an empty string, which never matches a real _id, so the filter
 // is a safe no-op rather than needing a separate unfiltered query variant.
 export const PAGINATED_POSTS_QUERY = `
-  *[_type == "post" && defined(slug.current) && _id != $excludeId] | order(publishedAt desc) [$start...$end] ${POST_SUMMARY_PROJECTION}
+  *[_type == "post" && !defined(trashedAt) && defined(slug.current) && _id != $excludeId] | order(publishedAt desc) [$start...$end] ${POST_SUMMARY_PROJECTION}
 `;
 
-export const POSTS_COUNT_QUERY = `count(*[_type == "post" && defined(slug.current) && _id != $excludeId])`;
+export const POSTS_COUNT_QUERY = `count(*[_type == "post" && !defined(trashedAt) && defined(slug.current) && _id != $excludeId])`;
 
 // The Site Settings singleton's Featured post reference, dereferenced to
 // the same summary shape every other post card already uses -- shown in
 // its own larger spot at the top of /blog, above the regular paginated
 // feed (see FeaturedPostCard.tsx).
 export const FEATURED_POST_QUERY = `
-  *[_type == "siteSettings"][0].featuredPost-> ${POST_SUMMARY_PROJECTION}
+  *[_type == "post" && _id == *[_type == "siteSettings"][0].featuredPost._ref && !defined(trashedAt)][0] ${POST_SUMMARY_PROJECTION}
 `;
 
 // Comment social-proof section on /blog -- two honest counts, both scoped
@@ -107,7 +107,7 @@ export const LINK_PAGE_QUERY = `
       image,
       "imageAlt": coalesce(image.alt, *[_type == "imageAssetAlt" && assetId == ^.image.asset._ref][0].altText),
       linkType,
-      "post": post->{title, "slug": slug.current},
+      "post": select(!defined(post->trashedAt) => post->{title, "slug": slug.current}),
       externalUrl
     }
   }
@@ -118,7 +118,7 @@ export const LINK_PAGE_QUERY = `
 // deliberately *not* paginated: search has to be able to find a post
 // regardless of whether its card has been scrolled/loaded into view yet.
 export const SEARCH_INDEX_QUERY = `
-  *[_type == "post" && defined(slug.current)] | order(publishedAt desc) {
+  *[_type == "post" && !defined(trashedAt) && defined(slug.current)] | order(publishedAt desc) {
     _id,
     title,
     "slug": slug.current,
@@ -157,7 +157,7 @@ export const PAGE_BY_SLUG_QUERY = `
 `;
 
 export const POST_BY_SLUG_QUERY = `
-  *[_type == "post" && slug.current == $slug][0]{
+  *[_type == "post" && !defined(trashedAt) && slug.current == $slug][0]{
     _id,
     title,
     "slug": slug.current,
@@ -230,14 +230,14 @@ export const POST_EXPORT_PROJECTION = `{
 export const POST_EXPORT_BY_ID_QUERY = `*[_id == $id][0] ${POST_EXPORT_PROJECTION}`;
 
 export const ALL_POSTS_EXPORT_QUERY = `
-  *[_type == "post" && defined(slug.current)] | order(publishedAt asc) ${POST_EXPORT_PROJECTION}
+  *[_type == "post" && !defined(trashedAt) && defined(slug.current)] | order(publishedAt asc) ${POST_EXPORT_PROJECTION}
 `;
 
 // Lean, purpose-specific query for the PLAY page (src/app/(site)/blog/
 // [slug]/play/page.tsx) -- doesn't need the post's full body/comments/etc,
 // just enough to render the PLAY presentation and link back to STORY.
 export const POST_PLAY_QUERY = `
-  *[_type == "post" && slug.current == $slug][0]{
+  *[_type == "post" && !defined(trashedAt) && slug.current == $slug][0]{
     title,
     "slug": slug.current,
     play
@@ -245,17 +245,17 @@ export const POST_PLAY_QUERY = `
 `;
 
 export const POSTS_BY_CATEGORY_QUERY = `
-  *[_type == "post" && defined(slug.current) && $categorySlug in categories[]->slug.current]
+  *[_type == "post" && !defined(trashedAt) && defined(slug.current) && $categorySlug in categories[]->slug.current]
   | order(publishedAt desc) ${POST_SUMMARY_PROJECTION}
 `;
 
 export const POSTS_BY_AUTHOR_QUERY = `
-  *[_type == "post" && defined(slug.current) && author->slug.current == $authorSlug]
+  *[_type == "post" && !defined(trashedAt) && defined(slug.current) && author->slug.current == $authorSlug]
   | order(publishedAt desc) ${POST_SUMMARY_PROJECTION}
 `;
 
 export const POSTS_BY_TAG_QUERY = `
-  *[_type == "post" && defined(slug.current) && $tag in tags]
+  *[_type == "post" && !defined(trashedAt) && defined(slug.current) && $tag in tags]
   | order(publishedAt desc) ${POST_SUMMARY_PROJECTION}
 `;
 
@@ -273,7 +273,7 @@ export const POSTS_BY_TAG_QUERY = `
 // "related" means here.
 export const RELATED_POSTS_QUERY = `
   *[
-    _type == "post" && defined(slug.current) && _id != $excludeId &&
+    _type == "post" && !defined(trashedAt) && defined(slug.current) && _id != $excludeId &&
     (
       count((categories[]->slug.current)[@ in $categorySlugs]) > 0 ||
       count((tags[])[@ in $tags]) > 0
@@ -300,8 +300,8 @@ export const ALL_CATEGORIES_QUERY = `
 // be a dead-end click. ALL_CATEGORIES_QUERY above stays as-is (sitemap.ts
 // still wants every category, empty or not).
 export const BLOG_CATEGORIES_WITH_POSTS_QUERY = `
-  *[_type == "category" && count(*[_type == "post" && references(^._id)]) > 0] | order(title asc) {
-    title, "slug": slug.current, "count": count(*[_type == "post" && references(^._id)])
+  *[_type == "category" && count(*[_type == "post" && !defined(trashedAt) && references(^._id)]) > 0] | order(title asc) {
+    title, "slug": slug.current, "count": count(*[_type == "post" && !defined(trashedAt) && references(^._id)])
   }
 `;
 
