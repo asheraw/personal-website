@@ -43,3 +43,11 @@ A local, on-this-machine backup of what's been installed and why. The canonical,
 ## Everything before 2026-08-31
 
 See the live Sanity table (canonical) for the full history: `design-taste-frontend`, `design-motion-principles`, `task-observer`, `design-references`, `ui-ux-pro-max` (2026-08-24/25), `claude-mem` (real install 2026-08-30, after an earlier attempt in a since-gone remote sandbox didn't stick), `claude-code-setup`, `headroom` (2026-08-30), plus everything evaluated and shelved (`design-md-chrome`, `OmniRoute`, `twenty`, `voicebox`). The `arcads-*` skill pack and `markitdown` also exist, on branches/PRs from a separate (remote sandbox) environment not reachable from this machine's git history.
+
+---
+
+## 2026-10-23 - asher-reel (own skill)
+
+| Skill | Source | Status |
+|---|---|---|
+| asher-reel | Written by Asher + Claude from the Offer Regrets reels (1-8) and Leaving Job at 42. Nested styles: website-default, whiteboard-explainer, pixel-rpg, living-screencast, news-package, halftone-dossier, game-show, pictogram-motion, microgame (several built on the lemo-opuscar library). Live copy: `~/.claude/skills/asher-reel`; this repo copy is the GitHub backup. | Installed, in use |

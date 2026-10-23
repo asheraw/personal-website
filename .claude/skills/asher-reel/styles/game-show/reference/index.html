@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Reel 7 panel</title>
+<style>
+  :root { --ink:#1b1b2f; --cream:#fff4d6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #ffb870; font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif; color: var(--ink); }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  .g { position: absolute; inset: 0; opacity: 0; }
+  .set { position: absolute; inset: -200px; }
+  .abs { position: absolute; }
+  .tel { color: #fff; -webkit-text-stroke: 14px var(--ink); paint-order: stroke fill; white-space: nowrap; line-height: 1; letter-spacing: .01em; }
+  .tel.y { color: #ffe14d; } .tel.p { color: #ff7fb1; } .tel.k { color: var(--ink); -webkit-text-stroke: 0; }
+  .rc { position: absolute; background: var(--cream); border: 8px solid var(--ink); border-radius: 36px; box-shadow: 14px 14px 0 var(--ink); padding: 28px 38px; }
+  .ban { position: absolute; left: 50px; top: 40px; padding: 10px 44px; background: #fff; border: 8px solid var(--ink); border-radius: 18px; box-shadow: 10px 10px 0 var(--ink); font-size: 48px; transform: rotate(-3deg); z-index: 20; white-space: nowrap; }
+  .bean { position: absolute; width: 220px; height: 300px; }
+  .bean .body { position: absolute; left: 10px; top: 40px; width: 200px; height: 250px; border: 8px solid var(--ink); border-radius: 100px 100px 70px 70px; background: var(--c); }
+  .bean .belly { position: absolute; left: 50px; top: 150px; width: 120px; height: 110px; border-radius: 60px; background: var(--b); }
+  .bean .eye { position: absolute; top: 80px; width: 40px; height: 56px; background: #fff; border: 6px solid var(--ink); border-radius: 50%; overflow: hidden; }
+  .bean .eye::after { content: ""; position: absolute; left: 10px; top: 16px; width: 16px; height: 22px; border-radius: 50%; background: var(--ink); }
+  .bean .eye.l { left: 62px; } .bean .eye.r { left: 118px; }
+  .bean .mouth { position: absolute; left: 86px; top: 150px; width: 50px; height: 26px; border-bottom: 8px solid var(--ink); border-radius: 0 0 40px 40px; }
+  .bean .arm { position: absolute; top: 170px; width: 40px; height: 90px; background: var(--c); border: 8px solid var(--ink); border-radius: 30px; }
+  .bean .arm.l { left: -22px; transform: rotate(18deg); } .bean .arm.r { left: 200px; transform: rotate(-18deg); }
+  .bean .name { position: absolute; left: -30px; right: -30px; top: 262px; text-align: center; font-size: 30px; background: #fff; border: 6px solid var(--ink); border-radius: 14px; padding: 2px 6px; white-space: nowrap; }
+  .judge { position: absolute; font-size: 150px; transform-origin: center; opacity: 0; z-index: 25; }
+  .bub { position: absolute; background: #fff; border: 8px solid var(--ink); border-radius: 40px; box-shadow: 10px 10px 0 var(--ink); padding: 18px 34px; font-size: 56px; line-height: 1.05; }
+  .tag { position: absolute; background: #ffe14d; border: 8px solid var(--ink); border-radius: 18px; box-shadow: 8px 8px 0 var(--ink); padding: 8px 30px; font-size: 64px; white-space: nowrap; }
+  .coin { position: absolute; width: 84px; height: 84px; border-radius: 50%; background: #ffd23f; border: 8px solid var(--ink); text-align: center; line-height: 68px; font-size: 52px; }
+  #wipe { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
+  #bpm { position: absolute; left: 0; bottom: 0; height: 16px; background: var(--ink); width: 100%; z-index: 30; }
+</style></head>
+<body><div id="stage"></div><canvas id="wipe" width="1920" height="1080"></canvas><div id="bpm"></div>
+<script type="module" src="main.js"></script></body></html>

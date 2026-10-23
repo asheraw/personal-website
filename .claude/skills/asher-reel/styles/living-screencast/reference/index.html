@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Reel 4 panel</title>
+<style>
+  :root { --bg:#1c1916; --bg2:#15120f; --line:#34302a; --ink:#ece6dc; --dim:#9a9184; --gold:#f0b865; --red:#e2685c; --green:#6fd08c; --mint:#52f2b5; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0a0807; font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); }
+  #screen { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(ellipse 70% 60% at 50% 0%, #4a3a1f 0%, #1a130c 45%, #0a0807 100%); }
+  #cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+  .win { position: absolute; left: 110px; top: 60px; width: 1700px; height: 960px; border-radius: 30px; background: var(--bg); box-shadow: 0 40px 120px rgba(0,0,0,.7), 0 0 0 2px #3a342b; overflow: hidden; opacity: 0; }
+  .bar { position: absolute; left: 0; top: 0; right: 0; height: 74px; background: var(--bg2); border-bottom: 2px solid var(--line); display: flex; align-items: center; padding-left: 30px; gap: 16px; }
+  .dot { width: 26px; height: 26px; border-radius: 50%; background: #5a5148; display: inline-block; }
+  .dot.r { background: #e2685c; } .dot.y { background: #e7b94d; } .dot.g { background: #6fd08c; }
+  .ttl { margin-left: 22px; font-size: 34px; color: var(--dim); letter-spacing: .02em; }
+  .abs { position: absolute; }
+  /* chat */
+  #side { left: 0; top: 74px; width: 440px; bottom: 0; background: var(--bg2); border-right: 2px solid var(--line); padding: 24px 20px; }
+  .row { height: 78px; border-radius: 16px; padding: 0 22px; display: flex; align-items: center; font-size: 36px; color: #cfc7bb; white-space: nowrap; position: relative; }
+  .row.on { background: #2a251e; color: var(--ink); }
+  .row .tag { position: absolute; right: 12px; font-size: 26px; padding: 4px 12px; border-radius: 10px; }
+  #thread { left: 470px; top: 100px; right: 40px; height: 600px; }
+  .bub { position: absolute; right: 0; max-width: 900px; padding: 22px 34px; background: #2c2620; border-radius: 28px 28px 8px 28px; font-size: 44px; border: 2px solid var(--line); }
+  .card { position: absolute; left: 0; width: 1100px; height: 92px; border-radius: 20px; background: #26211b; border: 2px solid var(--line); display: flex; align-items: center; padding: 0 30px; font-size: 44px; gap: 24px; }
+  .card b { color: var(--gold); font-weight: 600; } .card .ok { margin-left: auto; color: var(--green); font-size: 52px; }
+  #inp { left: 490px; bottom: 36px; right: 50px; height: 120px; border-radius: 36px; background: #26211b; border: 2px solid var(--line); display: flex; align-items: center; padding: 0 40px; font-size: 46px; }
+  .caret { display: inline-block; width: 4px; height: 52px; background: var(--gold); margin-left: 4px; }
+  .send { margin-left: auto; width: 76px; height: 76px; border-radius: 50%; background: var(--gold); color: #1c1916; font-size: 48px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  /* misc layers */
+  .toast { position: absolute; left: 520px; top: 150px; width: 880px; padding: 34px 44px; border-radius: 26px; background: #3a1c18; border: 3px solid var(--red); font-size: 62px; color: #ffd9d4; opacity: 0; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .tagtime { position: absolute; right: 70px; top: 110px; padding: 10px 28px; border-radius: 18px; background: rgba(240,184,101,.18); border: 2px solid var(--gold); color: var(--gold); font-size: 46px; font-family: Consolas, monospace; opacity: 0; }
+  .pop2 { position: absolute; border-radius: 26px; background: #2b2520; border: 2px solid #4a4237; box-shadow: 0 30px 80px rgba(0,0,0,.65); opacity: 0; overflow: hidden; }
+  .av { width: 92px; height: 92px; border-radius: 50%; background: #5a4a8a; display: flex; align-items: center; justify-content: center; font-size: 46px; font-weight: 600; color: #fff; flex: none; }
+  /* meeting */
+  #slide { left: 60px; top: 120px; width: 1090px; height: 640px; border-radius: 24px; background: linear-gradient(135deg, #f6f1e8, #e8dfcf); color: #1b1714; padding: 50px 60px; overflow: hidden; }
+  .tile { position: absolute; left: 1190px; width: 440px; height: 270px; border-radius: 22px; background: #26211b; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; }
+  .tile .lab { position: absolute; left: 18px; bottom: 12px; font-size: 34px; color: var(--ink); background: rgba(0,0,0,.45); padding: 2px 14px; border-radius: 10px; }
+  .bubq { position: absolute; padding: 16px 30px; border-radius: 26px; font-size: 44px; opacity: 0; white-space: nowrap; }
+  /* notes + rehearsal */
+  #paper { left: 300px; top: 130px; width: 1100px; height: 780px; background: #f3ead8; color: #2a211a; border-radius: 10px; padding: 40px 70px; box-shadow: 0 20px 60px rgba(0,0,0,.5); font-family: "Segoe Print", "Bradley Hand", cursive; opacity: 0; }
+  #paper .ln { font-size: 60px; height: 112px; border-bottom: 3px solid #cdbf9e; white-space: nowrap; }
+  #room { left: 60px; top: 110px; width: 1580px; height: 560px; border-radius: 24px; background: linear-gradient(#2a2118, #1a140e); overflow: hidden; }
+  .chair { position: absolute; width: 90px; height: 90px; border-radius: 14px 14px 6px 6px; background: #4b3d2d; border-top: 14px solid #6a5842; }
+  #wave { left: 60px; top: 710px; width: 1580px; height: 130px; }
+  .cap2 { position: absolute; left: 60px; top: 850px; right: 60px; font-size: 52px; color: var(--ink); white-space: nowrap; }
+  .stamp { position: absolute; padding: 12px 40px; border: 8px solid var(--red); color: var(--red); font-size: 90px; font-weight: 800; letter-spacing: .06em; border-radius: 12px; opacity: 0; transform-origin: center; background: rgba(28,25,22,.75); }
+  #mascot { position: absolute; width: 144px; height: 144px; image-rendering: pixelated; z-index: 20; opacity: 0; }
+  #wipe { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 50; pointer-events: none; }
+  #vig { position: absolute; inset: 0; z-index: 40; pointer-events: none; opacity: 0; background: radial-gradient(ellipse 60% 60% at 50% 50%, transparent 45%, rgba(110,10,0,.65) 100%); }
+  #cursor { position: absolute; width: 40px; height: 40px; z-index: 30; opacity: 0; }
+</style></head>
+<body><div id="screen"><div id="cam"></div><div id="vig"></div><canvas id="wipe" width="1920" height="1080"></canvas></div>
+<script type="module" src="main.js"></script></body></html>

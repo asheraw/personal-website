@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Leaving Job at 42 - full</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Playfair Display"; font-style: normal; font-weight: 400 900; src: url("assets/fonts/PlayfairDisplay-normal-400_900.woff2") format("woff2"); }
+      @font-face { font-family: "Playfair Display"; font-style: italic; font-weight: 400 900; src: url("assets/fonts/PlayfairDisplay-italic-400_900.woff2") format("woff2"); }
+      @font-face { font-family: "Geist Mono"; font-style: normal; font-weight: 500; src: url("assets/fonts/GeistMono-normal-500.woff2") format("woff2"); }
+      @font-face { font-family: "Patrick Hand"; font-style: normal; font-weight: 400; src: url("assets/fonts/PatrickHand-normal-400.woff2") format("woff2"); }
+      @font-face { font-family: "Montserrat"; font-style: normal; font-weight: 800; src: url("assets/fonts/Montserrat-800.woff2") format("woff2"); }
+
+      :root {
+        --stage: #0a0807; --ivory: #f5efe4; --stone: #9a8d78; --spotlight: #f0b865; --paper: #efe6d2; --ink: #1b1714; --stamp: #c44d3f;
+        --grid-line: rgba(245, 239, 228, 0.03);
+        --gradient-spotlight-text: linear-gradient(180deg, #fff3d8 0%, #f0b865 45%, #d99846 80%, #b8924a 100%);
+      }
+      body { margin: 0; background: var(--stage); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--stage); }
+      .clip { position: absolute; inset: 0; }
+      #vwrap { position: absolute; inset: 0; }
+      #a-roll { width: 100%; height: 100%; object-fit: cover; }
+
+      /* Graphics panel 1080 x 1000. Essential content stays inside x 130-940, y 250-1436 (platform safe area). */
+      #panel { position: absolute; left: 0; top: 0; width: 100%; height: 1000px; background: var(--stage); overflow: hidden; z-index: 10; }
+      .layer { position: absolute; inset: 0; }
+      .glow { left: -20%; width: 140%; background: radial-gradient(ellipse 58% 70% at 50% -8%, rgba(240, 184, 101, 0.32), rgba(240, 184, 101, 0.09) 52%, transparent 75%); }
+      .grid { background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 64px 64px; background-position: -1px -1px; }
+      .grain { opacity: 0.8; background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.83  0 0 0 0.10 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+      #flash { background: radial-gradient(ellipse 70% 60% at 50% 45%, rgba(255, 226, 170, 0.9), transparent 70%); opacity: 0; pointer-events: none; }
+      #mark { position: absolute; left: 884px; top: 262px; width: 56px; height: 56px; }
+
+      .scene { position: absolute; left: 130px; width: 810px; opacity: 0; }
+      .abs { position: absolute; }
+      .h { display: block; margin: 0; font-family: "Playfair Display", Georgia, serif; font-weight: 600; letter-spacing: -0.02em; color: var(--ivory); white-space: nowrap; }
+      .gold { font-style: italic; font-weight: 500; padding-right: 0.08em; background: var(--gradient-spotlight-text); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+      .cap { display: block; font-family: "Geist Mono", monospace; font-weight: 500; font-size: 28px; letter-spacing: 0.24em; color: var(--stone); margin-bottom: 22px; white-space: nowrap; }
+      .stroke { position: absolute; overflow: visible; }
+      .mono { font-family: "Geist Mono", monospace; font-weight: 500; }
+      .fit { width: max-content; position: relative; }
+
+      /* paper speech bubble (down tail by default, .up = tail on top) */
+      .bubble { position: absolute; }
+      .bubble .body { background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 26px 20px 28px 18px / 18px 26px 20px 28px; padding: 14px 28px 16px; font-family: "Patrick Hand", cursive; font-size: 56px; line-height: 1.1; white-space: nowrap; }
+      .bubble svg { position: absolute; left: 14%; top: 100%; margin-top: -4px; }
+      .bubble.up svg { top: auto; bottom: 100%; margin-top: 0; margin-bottom: -4px; transform: scaleY(-1); }
+
+      /* 1 */  #s1 { top: 370px; } #l1 { font-size: 128px; line-height: 1; } #l2 { font-size: 144px; line-height: 1.05; }
+      #strike { left: -22px; top: 50%; width: calc(100% + 44px); height: 44px; margin-top: -14px; } #bubble1 { left: 415px; top: 122px; }
+      /* 2 */  #s2 { top: 477px; } #h2 { font-size: 140px; line-height: 1.1; } #ul { left: 0; bottom: 4px; width: 100%; height: 26px; }
+      /* 3 */  #s3 { top: 477px; }
+      #polished { font-size: 160px; line-height: 1.1; padding-right: 0.06em; background: linear-gradient(100deg, #f5efe4 0%, #f5efe4 42%, #ffffff 50%, #f0b865 56%, #f5efe4 64%, #f5efe4 100%); background-size: 260% 100%; background-position: 130% 0; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+      /* 4 */  #s4 { top: 405px; } #h4a { font-size: 150px; line-height: 1.02; } #h4b { font-size: 150px; line-height: 1.05; } #ul4 { left: 0; bottom: 0; width: 100%; height: 26px; }
+      #qmark { left: 660px; top: 35px; width: 150px; font-family: "Playfair Display", serif; font-style: italic; font-weight: 500; font-size: 300px; line-height: 1; text-align: center; background: var(--gradient-spotlight-text); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+      /* 5 */  #s5 { top: 385px; } #h5 { font-size: 112px; line-height: 1.05; margin-bottom: 40px; } #chips { display: flex; align-items: center; width: 810px; }
+      .chip { width: 230px; height: 250px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; border: 2px solid rgba(240, 184, 101, 0.4); border-radius: 16px; background: rgba(240, 184, 101, 0.06); }
+      .ic { width: 88px; height: 88px; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(240, 184, 101, 0.5); background: rgba(240, 184, 101, 0.08); display: flex; align-items: center; justify-content: center; }
+      .ico { width: 44px; height: 44px; stroke: var(--spotlight); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      .chip .lb { font-family: "Geist Mono", monospace; font-weight: 500; font-size: 26px; letter-spacing: 0.14em; color: var(--ivory); }
+      #chip3 { border-color: var(--spotlight); background: rgba(240, 184, 101, 0.12); } .arrow { width: 60px; height: 40px; overflow: visible; flex: none; }
+      /* 6 */  #s6 { top: 440px; } #l6a, #l6b { font-size: 128px; line-height: 1.05; } .spk { width: 70px; height: 70px; stroke: var(--spotlight); fill: none; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+      /* 7 */  #s7 { top: 380px; } #h7 { font-size: 128px; line-height: 1.05; } #users { display: flex; gap: 30px; margin-top: 44px; }
+      .usr { width: 90px; height: 90px; } .usr svg { width: 90px; height: 90px; stroke: var(--stone); fill: none; stroke-width: 1.6; stroke-linecap: round; } #bubble7 { left: 300px; top: 300px; }
+      #s7b { top: 440px; } #hv1 { font-size: 150px; line-height: 1.02; } #hv2 { font-size: 150px; line-height: 1.05; }
+      /* 8 */  #s8 { top: 430px; } #r1, #r2, #r3 { font-size: 104px; line-height: 1.06; }
+      #stamp { left: 490px; top: 240px; width: 300px; box-sizing: border-box; text-align: center; padding: 8px 0 10px; border: 6px double var(--stamp); border-radius: 8px; color: var(--stamp); font-family: "Geist Mono", monospace; font-weight: 500; font-size: 54px; letter-spacing: 0.18em; }
+      /* 9 */  #s9 { top: 400px; } #l9a, #l9b { font-size: 128px; line-height: 1.05; } #pills { display: flex; gap: 30px; margin-top: 38px; }
+      .pillr { position: relative; width: 250px; height: 78px; box-sizing: border-box; border: 3px solid rgba(240, 184, 101, 0.45); border-radius: 40px; display: flex; align-items: center; justify-content: center; font-family: "Geist Mono", monospace; font-weight: 500; font-size: 26px; letter-spacing: 0.14em; color: var(--ivory); }
+      .pillr svg { position: absolute; left: -8px; top: 0; width: 266px; height: 78px; overflow: visible; } #n9 { font-family: "Patrick Hand", cursive; font-size: 64px; color: var(--ivory); margin-top: 10px; white-space: nowrap; }
+      /* 10 */ #s10 { top: 400px; } #h10a, #h10b { font-size: 130px; line-height: 1.04; } #stall { left: 560px; top: 40px; width: 250px; height: 210px; overflow: visible; }
+      /* 11 */ #s11 { top: 330px; }
+      #receipt { width: 810px; box-sizing: border-box; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 10px 14px 8px 16px / 14px 8px 16px 10px; padding: 30px 44px 34px; }
+      .rhead { display: flex; justify-content: space-between; font-family: "Geist Mono", monospace; font-weight: 500; font-size: 30px; letter-spacing: 0.24em; padding-bottom: 18px; margin-bottom: 14px; border-bottom: 3px dashed rgba(27, 23, 20, 0.45); }
+      .ritem { display: flex; justify-content: space-between; align-items: center; font-family: "Patrick Hand", cursive; font-size: 58px; line-height: 1.22; } .ritem svg { width: 46px; height: 46px; stroke: var(--ink); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      /* 12 */ #s12 { top: 430px; } #l12a { font-size: 100px; line-height: 1.05; } #l12b, #l12c { font-size: 110px; line-height: 1.06; }
+      .ring { left: 660px; top: 190px; width: 60px; height: 60px; border: 4px solid var(--spotlight); border-radius: 50%; opacity: 0; } #dot { left: 679px; top: 209px; width: 22px; height: 22px; border-radius: 50%; background: var(--spotlight); }
+      /* 13 */ #s13 { top: 320px; } #h13 { font-size: 128px; line-height: 1.05; } #flow { display: flex; align-items: center; margin-top: 56px; }
+      .card { width: 340px; height: 200px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 2px solid rgba(240, 184, 101, 0.4); border-radius: 16px; background: rgba(240, 184, 101, 0.06); position: relative; }
+      .card .k { font-family: "Geist Mono", monospace; font-weight: 500; font-size: 22px; letter-spacing: 0.26em; color: var(--stone); } .card .v { font-family: "Playfair Display", serif; font-weight: 600; font-size: 46px; color: var(--ivory); }
+      #cardB { border-color: var(--spotlight); background: rgba(240, 184, 101, 0.12); } #cardB .v { color: var(--spotlight); } #cardA svg { position: absolute; left: -6px; top: 0; width: 352px; height: 200px; overflow: visible; }
+      #flow .arrow { width: 130px; } #bubble13 { left: 580px; top: 462px; }
+      /* 14a */ #s14a { top: 330px; } #h14a { font-size: 100px; line-height: 1.05; }
+      #win { position: absolute; left: 85px; top: 140px; width: 640px; height: 340px; box-sizing: border-box; border: 3px solid rgba(240, 184, 101, 0.55); border-radius: 18px; background: rgba(240, 184, 101, 0.04); }
+      #win .bar { height: 54px; border-bottom: 2px solid rgba(240, 184, 101, 0.3); display: flex; align-items: center; gap: 10px; padding-left: 22px; } #win .bar i { width: 14px; height: 14px; border-radius: 50%; background: rgba(240, 184, 101, 0.5); }
+      #win .tiles { display: flex; gap: 24px; padding: 34px 41px; } .tile { width: 170px; height: 190px; box-sizing: border-box; border: 2px solid rgba(240, 184, 101, 0.5); border-radius: 12px; background: rgba(240, 184, 101, 0.08); display: flex; align-items: center; justify-content: center; }
+      .tile .ico { width: 64px; height: 64px; }
+      /* 14b */ #s14b { top: 400px; } #h14b1, #h14b2 { font-size: 104px; line-height: 1.06; } #which { font-size: 34px; letter-spacing: 0.3em; color: var(--spotlight); margin-top: 26px; white-space: nowrap; }
+      #s14c { top: 420px; } #trust { font-size: 240px; line-height: 1.05; font-style: italic; font-weight: 500; padding-right: 0.08em; background: var(--gradient-spotlight-text); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+      .ring2 { left: 330px; top: 100px; width: 150px; height: 150px; border: 4px solid var(--spotlight); border-radius: 50%; opacity: 0; }
+      /* 15 */ #s15 { top: 330px; } #h15a, #h15b { font-size: 140px; line-height: 1.07; } #counter { font-size: 54px; color: var(--ivory); margin-top: 38px; white-space: nowrap; letter-spacing: 0.02em; } #bubble15 { left: 610px; top: 372px; }
+      /* 16 */ #s16 { top: 360px; } #h16 { font-size: 104px; line-height: 1.05; } #pocket { position: absolute; left: 255px; top: 150px; width: 300px; height: 240px; overflow: visible; }
+      #coin { left: 349px; top: 150px; width: 76px; height: 76px; border-radius: 50%; background: var(--gradient-spotlight-text); border: 3px solid #b8924a; box-sizing: border-box; text-align: center; line-height: 68px; font-family: "Playfair Display", serif; font-weight: 600; font-size: 44px; color: var(--ink); }
+      /* 17 */ #s17 { top: 380px; } #l17a { font-size: 120px; line-height: 1.05; } #l17b, #l17c { font-size: 100px; line-height: 1.08; }
+      /* 18 */ #s18 { top: 340px; } #h18 { font-size: 120px; line-height: 1.05; }
+      .urlbox { position: relative; box-sizing: border-box; width: 810px; margin-top: 30px; padding: 20px 0 26px; text-align: center; border: 3px solid rgba(240, 184, 101, 0.65); border-radius: 22px 18px 24px 16px / 16px 22px 18px 24px; background: rgba(240, 184, 101, 0.07); font-family: "Playfair Display", serif; font-weight: 600; color: var(--ivory); letter-spacing: -0.01em; }
+      #url18 { font-size: 104px; line-height: 1.1; } .urlbox .g { color: var(--spotlight); font-style: italic; font-weight: 500; }
+      .socs { display: flex; gap: 40px; margin-top: 40px; } .soc { width: 96px; height: 96px; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(240, 184, 101, 0.5); background: rgba(240, 184, 101, 0.08); display: flex; align-items: center; justify-content: center; } .soc .ico { width: 48px; height: 48px; }
+      /* 19 */ #s19a { top: 430px; } #l19a { font-size: 128px; line-height: 1.05; } #l19b { font-size: 84px; line-height: 1.1; margin-top: 10px; }
+      #s19b { top: 410px; } .wd { font-size: 110px; line-height: 1.04; } .wdw { position: relative; margin-bottom: 14px; } .wdw svg { position: absolute; left: 0; bottom: -2px; width: 100%; height: 22px; overflow: visible; }
+      /* 20 */ #s20 { top: 320px; } #endmark { left: 335px; top: 0; width: 140px; height: 140px; } #h20 { font-size: 100px; line-height: 1.05; text-align: center; margin-top: 150px; } #url20box { width: 640px; margin: 20px auto 0; padding: 12px 0 18px; } #url20 { font-size: 72px; line-height: 1.1; } #socs20 { justify-content: center; margin-top: 24px; }
+
+      /* subtitles: centred on x=535 (middle of the safe area), 3 words max, sentence case, KEYWORD in caps + gold */
+      #subs { position: absolute; left: 130px; top: 1200px; width: 810px; height: 90px; z-index: 30; }
+      .sub { position: absolute; left: 0; top: 0; width: 100%; text-align: center; white-space: nowrap; opacity: 0; font-family: "Montserrat", sans-serif; font-weight: 800; font-size: 84px; line-height: 90px; letter-spacing: 0.01em; color: var(--ivory); -webkit-text-stroke: 0.13em #0a0807; paint-order: stroke fill; text-shadow: 0 4px 18px rgba(0, 0, 0, 0.55); }
+      .sub b { font-weight: 800; color: var(--spotlight); }
+      #edge { position: absolute; left: 0; bottom: -2px; width: 100%; height: 14px; overflow: visible; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-width="1080" data-height="1920" data-duration="88.33">
+      <div id="vwrap"><video id="a-roll" class="clip" src="assets/video.mp4" playsinline data-has-audio="true" data-start="0" data-duration="88.33" data-track-index="0"></video></div>
+
+      <div id="panel" data-layout-allow-overflow data-layout-allow-overlap>
+        <div class="layer glow" id="glow" data-layout-allow-overflow></div>
+        <div class="layer grid"></div>
+        <div class="layer grain"></div>
+        <div class="layer" id="flash"></div>
+        <img id="mark" src="assets/asher-mark-gold.svg" alt="" />
+
+        <!-- 1: Leaving work at 42 -->
+        <div class="scene" id="s1">
+          <div data-layout-allow-overlap class="h" id="l1">Leaving work</div>
+          <div data-layout-allow-overlap class="h fit" id="l2"><span>at </span><span class="gold" id="n42">42</span>
+            <svg class="stroke" id="strike" viewBox="0 0 400 44" preserveAspectRatio="none" aria-hidden="true"><path d="M2,30 C70,10 150,38 230,18 C290,4 350,26 398,12" fill="none" stroke="#f0b865" stroke-width="9" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          <div data-layout-allow-overlap class="bubble" id="bubble1"><div class="body">not the point.</div><svg width="44" height="34" viewBox="0 0 28 22" aria-hidden="true"><path d="M2,1 C8,8 10,14 6,21 C14,15 20,9 26,1" fill="#efe6d2" stroke="#1b1714" stroke-width="2" stroke-linejoin="round" /><path d="M3,0 L25,0" stroke="#efe6d2" stroke-width="4" /></svg></div>
+        </div>
+        <!-- 2: Right now on social media -->
+        <div class="scene" id="s2"><span data-layout-allow-overlap class="cap" id="cap2">RIGHT NOW ON</span>
+          <div data-layout-allow-overlap class="h fit" id="h2"><span id="w1">Social </span><span class="gold" id="w2">media</span>
+            <svg class="stroke" id="ul" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4,9 C80,3 150,12 230,5 C290,11 350,3 396,8" fill="none" stroke="#f0b865" stroke-width="6" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div></div>
+        <!-- 3: everything looks very polished -->
+        <div class="scene" id="s3"><span data-layout-allow-overlap class="cap" id="cap3">EVERYTHING LOOKS VERY</span><div data-layout-allow-overlap class="h fit" id="polished">Polished.</div></div>
+        <!-- 4: the thing we are missing is the proof of thought -->
+        <div class="scene" id="s4"><span data-layout-allow-overlap class="cap" id="cap4">THE THING WE'RE MISSING</span>
+          <div class="abs" id="qmark" aria-hidden="true">?</div>
+          <div data-layout-allow-overlap class="h" id="h4a">Proof of</div>
+          <div data-layout-allow-overlap class="h fit" id="h4b"><span class="gold" id="thought">thought</span>
+            <svg class="stroke" id="ul4" viewBox="0 0 400 16" preserveAspectRatio="none" aria-hidden="true"><path d="M4,10 C70,14 130,4 200,10 C270,15 330,4 396,9" fill="none" stroke="#f0b865" stroke-width="6" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div></div>
+        <!-- 5: record -> any AI -> edited -->
+        <div class="scene" id="s5"><div data-layout-allow-overlap class="h" id="h5">Anyone can</div>
+          <div id="chips">
+            <div class="chip" id="chip1"><div class="ic"><svg class="ico" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /><rect x="2" y="6" width="14" height="12" rx="2" /></svg></div><div class="lb">RECORD</div></div>
+            <svg class="arrow" id="arr1" viewBox="0 0 60 40" aria-hidden="true"><path d="M4,22 C18,16 34,26 52,20 M42,9 L54,20 L42,31" fill="none" stroke="#f0b865" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg>
+            <div class="chip" id="chip2"><div class="ic"><svg class="ico" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></svg></div><div class="lb">ANY AI</div></div>
+            <svg class="arrow" id="arr2" viewBox="0 0 60 40" aria-hidden="true"><path d="M4,20 C18,26 34,14 52,20 M42,9 L54,20 L42,31" fill="none" stroke="#f0b865" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg>
+            <div class="chip" id="chip3"><div class="ic"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg></div><div class="lb">EDITED</div></div>
+          </div></div>
+        <!-- 6: looks very very good -->
+        <div class="scene" id="s6"><div data-layout-allow-overlap class="h" id="l6a">Looks very,</div><div data-layout-allow-overlap class="h fit" id="l6b">very <span class="gold" id="good">good.</span></div>
+          <svg class="abs spk" id="spk1" style="left:560px;top:165px" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>
+          <svg class="abs spk" id="spk2" style="left:720px;top:105px;width:50px;height:50px" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>
+          <svg class="abs spk" id="spk3" style="left:660px;top:250px;width:44px;height:44px" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg></div>
+        <!-- 7: many people, myself included -->
+        <div class="scene" id="s7"><span data-layout-allow-overlap class="cap" id="cap7">WITH SOCIAL MEDIA…</span>
+          <div data-layout-allow-overlap class="h" id="h7" style="margin-top:-6px">Many people</div>
+          <div id="users"><div class="usr" id="usr0"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></div><div class="usr" id="usr1"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></div><div class="usr" id="usr2"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></div><div class="usr" id="usr3"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></div><div class="usr" id="usr4"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></div><div class="usr" id="usr5"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></div><div class="usr" id="usr6"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg></div></div>
+          <div data-layout-allow-overlap class="bubble up" id="bubble7"><div class="body">me too.</div><svg width="44" height="34" viewBox="0 0 28 22" aria-hidden="true"><path d="M2,1 C8,8 10,14 6,21 C14,15 20,9 26,1" fill="#efe6d2" stroke="#1b1714" stroke-width="2" stroke-linejoin="round" /><path d="M3,0 L25,0" stroke="#efe6d2" stroke-width="4" /></svg></div></div>
+        <div class="scene" id="s7b"><div data-layout-allow-overlap class="h" id="hv1">have</div><div data-layout-allow-overlap class="h fit" id="hv2"><span class="gold" id="fgt">forgotten</span></div></div>
+        <!-- 8: social media is a rented platform -->
+        <div class="scene" id="s8"><div data-layout-allow-overlap class="h" id="r1">Social media</div><div data-layout-allow-overlap class="h fit" id="r2">is a <span class="gold" id="rented">rented</span></div><div data-layout-allow-overlap class="h" id="r3">platform.</div><div class="abs" id="stamp">RENTED</div></div>
+        <!-- 9: the rules can change -->
+        <div class="scene" id="s9"><div data-layout-allow-overlap class="h" id="l9a">The rules</div><div data-layout-allow-overlap class="h fit" id="l9b">can <span class="gold" id="chg">change.</span></div>
+          <div id="pills">
+            <div class="pillr" id="pl1">RULE_01<svg viewBox="0 0 266 78"><path d="M10,42 C60,28 130,52 256,34" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+            <div class="pillr" id="pl2">RULE_02<svg viewBox="0 0 266 78"><path d="M10,34 C70,48 150,26 256,42" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+            <div class="pillr" id="pl3">RULE_03<svg viewBox="0 0 266 78"><path d="M10,40 C80,30 160,50 256,36" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          </div>
+          <div data-layout-allow-overlap id="n9">…and it will affect you.</div></div>
+        <!-- 10: a stall in the mall -->
+        <div class="scene" id="s10"><span data-layout-allow-overlap class="cap" id="cap10">THINK OF SOCIAL MEDIA LIKE…</span>
+          <div data-layout-allow-overlap class="h fit" id="h10a" style="margin-top:-8px">A stall</div>
+          <svg class="abs" id="stall" viewBox="0 0 250 210" aria-hidden="true">
+            <path class="dr" d="M20,70 L40,20 H210 L230,70" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" />
+            <path class="dr" d="M20,70 q15,24 30,0 q15,24 30,0 q15,24 30,0 q15,24 30,0 q15,24 30,0 q15,24 30,0 q15,24 30,0" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" />
+            <path class="dr" d="M38,92 V196 M212,92 V196" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" />
+            <path class="dr" d="M18,134 H232 V176 H18 Z M80,108 h90" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg>
+          <div data-layout-allow-overlap class="h fit" id="h10b" style="margin-top:56px">in the <span class="gold" id="mall">mall.</span></div></div>
+        <!-- 11: they are collecting rent -->
+        <div class="scene" id="s11"><div id="receipt"><div class="rhead"><span>RENT DUE</span><span>FROM YOU</span></div>
+          <div data-layout-allow-overlap class="ritem" id="ri1"><span>Ads</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          <div data-layout-allow-overlap class="ritem" id="ri2"><span>Your social media</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          <div data-layout-allow-overlap class="ritem" id="ri3"><span>Your connections</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          <div data-layout-allow-overlap class="ritem" id="ri4"><span>Your personal data</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          <div data-layout-allow-overlap class="ritem" id="ri5"><span>etc. etc.</span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div></div></div>
+        <!-- 12: when the rules change, you are affected -->
+        <div class="scene" id="s12"><span data-layout-allow-overlap class="cap" id="cap12">AT ANY POINT IN TIME</span><div data-layout-allow-overlap class="h" id="l12a" style="margin-top:-6px">Rules change.</div><div data-layout-allow-overlap class="h" id="l12b">You'll be</div><div data-layout-allow-overlap class="h fit" id="l12c"><span class="gold" id="aff">affected.</span></div>
+          <div class="abs ring" id="rg1"></div><div class="abs ring" id="rg2"></div><div class="abs ring" id="rg3"></div><div class="abs" id="dot"></div></div>
+        <!-- 13: help people go from social media to a home page -->
+        <div class="scene" id="s13"><span data-layout-allow-overlap class="cap" id="cap13">SO WHAT I WANT TO DO…</span><div data-layout-allow-overlap class="h" id="h13" style="margin-top:-6px">Help people</div>
+          <div id="flow">
+            <div class="card" id="cardA"><span class="k">FROM</span><span class="v">social media</span><svg viewBox="0 0 352 200"><path d="M6,40 C110,90 230,120 346,150" fill="none" stroke="#f0b865" stroke-width="7" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+            <svg class="arrow" id="arr13" viewBox="0 0 60 40" aria-hidden="true"><path d="M4,22 C18,16 34,26 52,20 M42,9 L54,20 L42,31" fill="none" stroke="#f0b865" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg>
+            <div class="card" id="cardB"><span class="k">TO</span><svg class="ico" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg><span class="v">home page</span></div>
+          </div>
+          <div data-layout-allow-overlap class="bubble up" id="bubble13"><div class="body">your own.</div><svg width="44" height="34" viewBox="0 0 28 22" aria-hidden="true"><path d="M2,1 C8,8 10,14 6,21 C14,15 20,9 26,1" fill="#efe6d2" stroke="#1b1714" stroke-width="2" stroke-linejoin="round" /><path d="M3,0 L25,0" stroke="#efe6d2" stroke-width="4" /></svg></div></div>
+        <!-- 14: take content, place it here, build the thing that matters... Trust -->
+        <div class="scene" id="s14a"><div data-layout-allow-overlap class="h" id="h14a">Your content,</div>
+          <div id="win"><div class="bar"><i></i><i></i><i></i></div><div class="tiles">
+            <div class="tile" id="tl1"><svg class="ico" viewBox="0 0 24 24"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" /><rect x="2" y="6" width="14" height="12" rx="2" /></svg></div>
+            <div class="tile" id="tl2"><svg class="ico" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg></div>
+            <div class="tile" id="tl3"><svg class="ico" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></svg></div></div></div></div>
+        <div class="scene" id="s14b"><span data-layout-allow-overlap class="cap" id="cap14b">SO THAT YOU CAN START TO BUILD</span><div data-layout-allow-overlap class="h" id="h14b1">the thing that</div><div data-layout-allow-overlap class="h fit" id="h14b2">really <span class="gold" id="mtr">matters,</span></div><div class="mono" id="which">WHICH IS…</div></div>
+        <div class="scene" id="s14c"><div class="abs ring2" id="rr1"></div><div class="abs ring2" id="rr2"></div><div data-layout-allow-overlap class="h fit" id="trust">Trust.</div></div>
+        <!-- 15: virality or views... vain -->
+        <div class="scene" id="s15"><span data-layout-allow-overlap class="cap" id="cap15">IF YOU ARE CHASING…</span><div data-layout-allow-overlap class="h" id="h15a" style="margin-top:-6px">Virality</div><div data-layout-allow-overlap class="h fit" id="h15b">or <span class="gold" id="vws">views</span></div>
+          <div class="mono" id="counter"><span id="cup">▲</span> <span id="cnum">0</span> views</div>
+          <div data-layout-allow-overlap class="bubble" id="bubble15"><div class="body">vain.</div><svg width="44" height="34" viewBox="0 0 28 22" aria-hidden="true"><path d="M2,1 C8,8 10,14 6,21 C14,15 20,9 26,1" fill="#efe6d2" stroke="#1b1714" stroke-width="2" stroke-linejoin="round" /><path d="M3,0 L25,0" stroke="#efe6d2" stroke-width="4" /></svg></div></div>
+        <!-- 16: views != money -->
+        <div class="scene" id="s16"><div data-layout-allow-overlap class="h" id="h16"><span id="v16a">Views</span> <span class="gold" id="v16b">≠</span> <span id="v16c">money.</span></div>
+          <svg id="pocket" viewBox="0 0 300 240" aria-hidden="true"><path d="M20,20 H280 V140 C280,205 220,230 150,230 C80,230 20,205 20,140 Z" fill="rgba(240,184,101,0.06)" stroke="#f0b865" stroke-width="6" stroke-linejoin="round" /><path d="M42,52 H258" fill="none" stroke="#f0b865" stroke-opacity="0.5" stroke-width="4" stroke-dasharray="10 9" stroke-linecap="round" /></svg>
+          <div class="abs" id="coin">$</div></div>
+        <!-- 17: build trust, your own personal brand -->
+        <div class="scene" id="s17"><span data-layout-allow-overlap class="cap" id="cap17">IF YOU ARE TRYING TO…</span><div data-layout-allow-overlap class="h fit" id="l17a" style="margin-top:-6px">Build <span class="gold" id="tr17">trust.</span></div><div data-layout-allow-overlap class="h" id="l17b">Your own</div><div data-layout-allow-overlap class="h fit" id="l17c"><span class="gold" id="pb">personal brand.</span></div></div>
+        <!-- 18: follow along at asheraw.com or on my social medias -->
+        <div class="scene" id="s18"><span data-layout-allow-overlap class="cap" id="cap18">TOGETHER WITH ME AT…</span><div data-layout-allow-overlap class="h" id="h18" style="margin-top:-6px">Follow along</div>
+          <div class="urlbox" id="urlbox18"><div id="url18">asher<span class="g">aw</span>.com</div></div>
+          <div class="socs" id="socs18">
+            <div class="soc" id="sc1"><svg class="ico" viewBox="0 0 24 24"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg></div>
+            <div class="soc" id="sc2"><svg class="ico" viewBox="0 0 24 24"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" /><path d="m10 15 5-3-5-3z" /></svg></div>
+            <div class="soc" id="sc3"><svg class="ico" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect width="4" height="12" x="2" y="9" /><circle cx="4" cy="4" r="2" /></svg></div>
+            <div class="soc" id="sc4"><svg class="ico" viewBox="0 0 24 24"><circle cx="8" cy="18" r="4" /><path d="M12 18V2l7 4" /></svg></div></div></div>
+        <!-- 19: more content on how to do it; authentic, sustainable, long term -->
+        <div class="scene" id="s19a"><span data-layout-allow-overlap class="cap" id="cap19">BECAUSE I'M GOING TO BE SHARING…</span><div data-layout-allow-overlap class="h fit" id="l19a" style="margin-top:-6px">More <span class="gold" id="cnt">content</span></div><div data-layout-allow-overlap class="h" id="l19b">on how to do it.</div></div>
+        <div class="scene" id="s19b">
+          <div class="wdw fit" id="wd1"><div data-layout-allow-overlap class="h wd">Authentic</div><svg viewBox="0 0 400 16" preserveAspectRatio="none"><path d="M4,9 C80,3 150,12 230,5 C290,11 350,3 396,8" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          <div class="wdw fit" id="wd2"><div data-layout-allow-overlap class="h wd"><span class="gold">Sustainable</span></div><svg viewBox="0 0 400 16" preserveAspectRatio="none"><path d="M4,10 C70,14 130,4 200,10 C270,15 330,4 396,9" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div>
+          <div class="wdw fit" id="wd3"><div data-layout-allow-overlap class="h wd">Long-term</div><svg viewBox="0 0 400 16" preserveAspectRatio="none"><path d="M4,8 C90,13 160,3 240,9 C300,13 350,4 396,9" fill="none" stroke="#f0b865" stroke-width="5" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg></div></div>
+        <!-- 20: end card -->
+        <div class="scene" id="s20"><img class="abs" id="endmark" src="assets/asher-mark-gold-end.svg" alt="" /><div data-layout-allow-overlap class="h" id="h20">Follow <span class="gold">along.</span></div>
+          <div class="urlbox" id="url20box"><div id="url20">asher<span class="g">aw</span>.com</div></div>
+          <div class="socs" id="socs20"><div class="soc" id="e1"><svg class="ico" viewBox="0 0 24 24"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg></div><div class="soc" id="e2"><svg class="ico" viewBox="0 0 24 24"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" /><path d="m10 15 5-3-5-3z" /></svg></div><div class="soc" id="e3"><svg class="ico" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect width="4" height="12" x="2" y="9" /><circle cx="4" cy="4" r="2" /></svg></div><div class="soc" id="e4"><svg class="ico" viewBox="0 0 24 24"><circle cx="8" cy="18" r="4" /><path d="M12 18V2l7 4" /></svg></div></div></div>
+
+        <svg id="edge" viewBox="0 0 400 8" preserveAspectRatio="none" aria-hidden="true"><path d="M0,4.5 C20,2 35,6.5 55,3.5 C78,1 95,7 118,4 C140,1.5 158,6 180,3 C205,0.5 222,6.5 248,4 C270,2 288,6 310,3.5 C332,1 350,6.5 372,4 C385,2.5 395,5 400,4" fill="none" stroke="#f0b865" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1" /></svg>
+      </div>
+
+      <div id="subs"></div>
+
+      <!--AUDIO-->
+    </div>
+
+    <script>
+      const CHUNKS = /*CHUNKS_JSON*/[];
+      const subsEl = document.getElementById("subs");
+      CHUNKS.forEach(([s, e, ws], i) => {
+        const d = document.createElement("div");
+        d.className = "sub"; d.id = "sub" + i;
+        d.innerHTML = ws.map((w) => (w.k ? "<b>" + w.t + "</b>" : w.t)).join(" ");
+        subsEl.appendChild(d);
+      });
+
+      function build() {
+        // shrink long chunks so every caption stays inside the 810px safe width
+        CHUNKS.forEach((_, i) => {
+          const el = document.getElementById("sub" + i);
+          const probe = document.createElement("span");
+          probe.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;font:inherit;letter-spacing:inherit";
+          probe.innerHTML = el.innerHTML; el.appendChild(probe);
+          const pw = probe.getBoundingClientRect().width; el.removeChild(probe);
+          if (pw > 790) el.style.fontSize = Math.floor(84 * 790 / pw) + "px";
+        });
+
+        const tl = gsap.timeline({ paused: true });
+        const IN = (sel, t, d = 0.7) => tl.fromTo(sel, { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: d, ease: "expo.out" }, t);
+        const POP = (sel, t) => tl.fromTo(sel, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }, t);
+        const SHOW = (sel, t) => tl.set(sel, { opacity: 1 }, t);
+        const HIDE = (sel, t) => tl.to(sel, { y: -26, opacity: 0, duration: 0.3, ease: "power2.in" }, t);
+        const DRAW = (sel, t, d = 0.45) => tl.to(sel, { strokeDashoffset: 0, duration: d, ease: "power2.inOut" }, t);
+
+        tl.fromTo("#glow", { x: -80 }, { x: 80, duration: 88.33, ease: "none" }, 0);
+
+        // THE MOVE (1.8s): panel drops, you slide down, subtitles glide up above your head
+        tl.fromTo("#panel", { y: -1000 }, { y: 0, duration: 0.75, ease: "expo.out" }, 1.8);
+        tl.fromTo("#vwrap", { y: 0 }, { y: 350, duration: 0.75, ease: "expo.out" }, 1.8);
+        tl.fromTo("#subs", { y: 0 }, { y: -295, duration: 0.75, ease: "expo.out" }, 1.8);
+        DRAW("#edge path", 2.0, 0.6);
+        tl.fromTo("#mark", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 2.3);
+
+        // 1) Leaving work at 42 ... not the point
+        SHOW("#s1", 1.9); IN("#l1", 2.0); IN("#l2", 2.1); DRAW("#strike path", 2.55, 0.4);
+        tl.to("#n42", { opacity: 0.4, duration: 0.3, ease: "power2.out" }, 2.7);
+        tl.fromTo("#bubble1", { scale: 0.6, opacity: 0, rotation: -9, transformOrigin: "14% 100%" }, { scale: 1, opacity: 1, rotation: -3, duration: 0.5, ease: "back.out(1.7)" }, 2.9);
+        HIDE("#s1", 3.75);
+        // 2) Right now on social media
+        SHOW("#s2", 3.9); IN("#cap2", 4.05);
+        tl.fromTo("#w1", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 4.72);
+        tl.fromTo("#w2", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 4.96);
+        DRAW("#ul path", 5.0); HIDE("#s2", 5.35);
+        // 3) everything looks very polished
+        SHOW("#s3", 5.4); IN("#cap3", 5.45); IN("#polished", 6.3);
+        tl.to("#polished", { backgroundPosition: "-30% 0", duration: 0.8, ease: "power1.inOut" }, 6.15); HIDE("#s3", 6.95);
+        // 4) the thing we are missing... proof of thought
+        SHOW("#s4", 7.0); IN("#cap4", 7.1);
+        tl.fromTo("#qmark", { scale: 0.5, opacity: 0, rotation: -12 }, { scale: 1, opacity: 1, rotation: -5, duration: 0.5, ease: "back.out(1.8)" }, 7.35);
+        tl.to("#qmark", { scale: 1.35, opacity: 0, duration: 0.3, ease: "power2.in" }, 8.1);
+        IN("#h4a", 8.45); IN("#h4b", 9.1); DRAW("#ul4 path", 9.3); HIDE("#s4", 9.75);
+        // 5) Anyone can record -> any AI -> edited
+        SHOW("#s5", 9.8); IN("#h5", 9.9);
+        const chip = (sel, t) => tl.fromTo(sel, { scale: 0.7, opacity: 0, y: 24 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.6)" }, t);
+        chip("#chip1", 10.3); DRAW("#arr1 path", 11.9, 0.4); chip("#chip2", 12.7); DRAW("#arr2 path", 14.1, 0.4); chip("#chip3", 14.65);
+        tl.fromTo("#chip3", { boxShadow: "0 0 0 rgba(240,184,101,0)" }, { boxShadow: "0 0 60px rgba(240,184,101,0.35)", duration: 0.4, ease: "power2.out" }, 14.7);
+        HIDE("#s5", 16.35);
+        // 6) ...and it makes them look very, very good
+        SHOW("#s6", 16.45); IN("#l6a", 17.2); IN("#l6b", 17.68);
+        [["#spk1", 17.95], ["#spk2", 18.05], ["#spk3", 18.15]].forEach(([s, t]) => tl.fromTo(s, { scale: 0, opacity: 0, rotation: -40 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.45, ease: "back.out(2.2)" }, t));
+        HIDE("#s6", 18.3);
+        // 7) with social media, many people, myself included, have forgotten
+        SHOW("#s7", 18.35); IN("#cap7", 18.4); IN("#h7", 20.2);
+        for (let i = 0; i < 7; i++) tl.fromTo("#usr" + i, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.8)" }, 20.45 + i * 0.07);
+        tl.to("#usr3 svg", { stroke: "#f0b865", strokeWidth: 2.4, duration: 0.3 }, 20.85);
+        tl.fromTo("#bubble7", { scale: 0.6, opacity: 0, rotation: 6, transformOrigin: "14% 0%" }, { scale: 1, opacity: 1, rotation: 2, duration: 0.5, ease: "back.out(1.7)" }, 21.0);
+        HIDE("#s7", 21.85);
+        SHOW("#s7b", 21.9); IN("#hv1", 21.95); IN("#hv2", 22.15);
+        tl.to("#fgt", { opacity: 0, filter: "blur(14px)", duration: 0.4, ease: "power2.in" }, 22.95); tl.set("#s7b", { opacity: 0 }, 23.35);
+        // 8) social media is a rented platform
+        SHOW("#s8", 23.3); IN("#r1", 23.44); IN("#r2", 24.16); IN("#r3", 24.8);
+        tl.fromTo("#stamp", { scale: 2.2, opacity: 0, rotation: -22 }, { scale: 1, opacity: 1, rotation: -9, duration: 0.25, ease: "power4.in" }, 24.45);
+        HIDE("#s8", 25.8);
+        // 9) at any point in time the rules can change and it will affect you
+        SHOW("#s9", 25.85); IN("#l9a", 26.75); IN("#l9b", 27.4);
+        ["#pl1", "#pl2", "#pl3"].forEach((s, i) => POP(s, 26.85 + i * 0.12));
+        DRAW("#pl1 path", 27.7, 0.3); DRAW("#pl2 path", 27.9, 0.3); DRAW("#pl3 path", 28.1, 0.3);
+        tl.to(["#pl1", "#pl2", "#pl3"], { opacity: 0.5, duration: 0.3 }, 28.1);
+        IN("#n9", 28.35); HIDE("#s9", 29.45);
+        // 10) think of social media like a stall in the mall
+        SHOW("#s10", 29.5); IN("#cap10", 29.6); IN("#h10a", 32.1);
+        tl.to("#stall .dr", { strokeDashoffset: 0, duration: 0.5, ease: "power2.inOut", stagger: 0.18 }, 32.2);
+        IN("#h10b", 32.7); HIDE("#s10", 33.35);
+        // 11) collecting rent: ads, social media, connections, personal data, etc.
+        SHOW("#s11", 33.4); IN("#receipt", 33.45);
+        [["#ri1", 35.9], ["#ri2", 37.2], ["#ri3", 38.3], ["#ri4", 39.6], ["#ri5", 40.5]].forEach(([s, t]) => { IN(s, t, 0.5); DRAW(s + " path", t + 0.25, 0.3); });
+        HIDE("#s11", 41.25);
+        // 12) when the rules change, you will be affected
+        SHOW("#s12", 41.3); IN("#cap12", 41.4); IN("#l12a", 42.5); IN("#l12b", 43.6); IN("#l12c", 43.85);
+        tl.fromTo("#dot", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(2)" }, 43.8);
+        ["#rg1", "#rg2", "#rg3"].forEach((s, i) => tl.fromTo(s, { scale: 1, opacity: 0.8 }, { scale: 6, opacity: 0, duration: 1.0, ease: "power2.out" }, 44.0 + i * 0.35));
+        HIDE("#s12", 44.9);
+        // 13) help people go away from social media, to their own home page
+        SHOW("#s13", 44.95); IN("#cap13", 45.0); IN("#h13", 46.1); IN("#cardA", 47.9);
+        DRAW("#cardA path", 48.7, 0.35); tl.to("#cardA", { opacity: 0.45, duration: 0.3 }, 48.8);
+        DRAW("#arr13 path", 49.0, 0.4); POP("#cardB", 49.5);
+        tl.fromTo("#bubble13", { scale: 0.6, opacity: 0, rotation: 6, transformOrigin: "14% 0%" }, { scale: 1, opacity: 1, rotation: 2, duration: 0.5, ease: "back.out(1.7)" }, 50.0);
+        HIDE("#s13", 50.65);
+        // 14) take your content, place it here, so you can build the thing that matters... TRUST
+        SHOW("#s14a", 50.7); IN("#h14a", 50.8); IN("#win", 51.0);
+        ["#tl1", "#tl2", "#tl3"].forEach((s, i) => tl.fromTo(s, { y: -260, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: "bounce.out" }, 51.7 + i * 0.35));
+        HIDE("#s14a", 53.2);
+        SHOW("#s14b", 53.25); IN("#cap14b", 53.3); IN("#h14b1", 54.1); IN("#h14b2", 54.5);
+        tl.fromTo("#which", { opacity: 0 }, { opacity: 1, duration: 0.25 }, 55.65);
+        tl.to("#which", { opacity: 0.35, duration: 0.18, yoyo: true, repeat: 3, ease: "none" }, 55.9);
+        HIDE("#s14b", 56.35);
+        SHOW("#s14c", 56.45);
+        tl.fromTo("#trust", { scale: 1.5, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: "expo.out" }, 56.55);
+        tl.fromTo("#flash", { opacity: 0 }, { opacity: 0.3, duration: 0.06 }, 56.55); tl.to("#flash", { opacity: 0, duration: 0.55 }, 56.61);
+        ["#rr1", "#rr2"].forEach((s, i) => tl.fromTo(s, { scale: 0.6, opacity: 0.9 }, { scale: 5, opacity: 0, duration: 1.0, ease: "power2.out" }, 56.58 + i * 0.18));
+        HIDE("#s14c", 57.25);
+        // 15) chasing virality or views... very vain
+        SHOW("#s15", 57.3); IN("#cap15", 57.35); IN("#h15a", 59.3); IN("#h15b", 60.45); IN("#counter", 60.55);
+        const cnt = { v: 0 };
+        tl.to(cnt, { v: 1248903, duration: 2.2, ease: "power2.out", onUpdate: () => { document.getElementById("cnum").textContent = Math.round(cnt.v).toLocaleString("en-US"); } }, 60.6);
+        tl.to("#counter", { opacity: 0.35, duration: 0.3 }, 62.75);
+        tl.fromTo("#bubble15", { scale: 0.6, opacity: 0, rotation: 8, transformOrigin: "14% 100%" }, { scale: 1, opacity: 1, rotation: -4, duration: 0.5, ease: "back.out(1.7)" }, 62.95);
+        HIDE("#s15", 63.45);
+        // 16) it doesn't add up to money into the pocket
+        SHOW("#s16", 63.5); IN("#v16a", 63.8); POP("#v16b", 64.4);
+        tl.fromTo("#pocket", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: "expo.out" }, 66.6);
+        IN("#v16c", 66.95);
+        tl.fromTo("#coin", { y: -150, opacity: 0 }, { y: 70, opacity: 1, duration: 0.7, ease: "bounce.out" }, 67.3);
+        HIDE("#s16", 68.1);
+        // 17) if you are trying to build trust, build your own personal brand
+        SHOW("#s17", 68.15); IN("#cap17", 68.3); IN("#l17a", 69.15); IN("#l17b", 70.25); IN("#l17c", 70.95); HIDE("#s17", 71.8);
+        // 18) follow along together with me at asheraw.com or on my social medias
+        SHOW("#s18", 71.85); IN("#cap18", 72.4); IN("#h18", 71.95); POP("#urlbox18", 73.2);
+        ["#sc1", "#sc2", "#sc3", "#sc4"].forEach((s, i) => POP(s, 75.05 + i * 0.15));
+        HIDE("#s18", 76.1);
+        // 19) because I am going to share more content on how to do so... authentic, sustainable, long-term
+        SHOW("#s19a", 76.15); IN("#cap19", 76.3); IN("#l19a", 77.6); IN("#l19b", 79.0); HIDE("#s19a", 79.8);
+        SHOW("#s19b", 79.85);
+        [["#wd1", 80.4], ["#wd2", 81.6], ["#wd3", 82.7]].forEach(([s, t]) => { IN(s, t); DRAW(s + " path", t + 0.3, 0.4); });
+        HIDE("#s19b", 83.5);
+        // 20) end card
+        SHOW("#s20", 83.6); POP("#endmark", 83.75); IN("#h20", 84.4); POP("#url20box", 85.0);
+        ["#e1", "#e2", "#e3", "#e4"].forEach((s, i) => POP(s, 85.35 + i * 0.12));
+
+        // subtitles: quick pop-in, hard cut out
+        CHUNKS.forEach(([s, e], i) => {
+          tl.fromTo("#sub" + i, { opacity: 0, scale: 0.9, y: 10 }, { opacity: 1, scale: 1, y: 0, duration: 0.12, ease: "back.out(2)" }, s);
+          tl.set("#sub" + i, { opacity: 0 }, e - 0.02);
+        });
+
+        window.__timelines["main"] = tl;
+      }
+      document.fonts.load('800 84px "Montserrat"').then(() => document.fonts.ready).then(build);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Reel 6 panel</title>
+<style>
+  :root { --paper:#efe3c6; --ink:#1d2540; --cobalt:#2f5fd0; --pink:#ef4f88; --yellow:#f7c92b; --red:#d63a2f; --green:#2f9a5a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--paper); color: var(--ink); }
+  body { font-family: "Arial Black", "Rockwell Extra Bold", sans-serif; }
+  #stage { position: absolute; inset: 0; background: var(--paper); overflow: hidden; }
+  canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+  #ht { z-index: 1; } #paper { z-index: 60; mix-blend-mode: multiply; pointer-events: none; } #grain { z-index: 61; pointer-events: none; } #wipe { z-index: 70; pointer-events: none; } #flash { position: absolute; inset: 0; background: #fff; opacity: 0; z-index: 80; pointer-events: none; }
+  .abs { position: absolute; }
+  .g { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; opacity: 0; z-index: 10; }
+  .slab { font-family: "Rockwell Extra Bold", "Arial Black", serif; font-weight: 800; line-height: .95; letter-spacing: -.01em; white-space: nowrap; }
+  .mono { font-family: "Courier New", Consolas, monospace; font-weight: 700; letter-spacing: .06em; white-space: nowrap; }
+  .coop { font-family: "Cooper Black Std", "Cooper Black", "Rockwell Extra Bold", serif; white-space: nowrap; }
+  .hand { font-family: "Comic Sans MS", "Segoe Print", cursive; font-weight: 700; white-space: nowrap; }
+  .sh { text-shadow: 7px 7px 0 rgba(239,79,136,.85); }
+  .card { position: absolute; background: #fbf5e3; border: 7px solid var(--ink); border-radius: 18px; box-shadow: 12px 12px 0 rgba(29,37,64,.9); padding: 26px 34px; }
+  .bub { position: absolute; background: #fff; border: 7px solid var(--ink); border-radius: 44px; padding: 20px 40px; font-family: "Arial Black"; font-size: 64px; line-height: 1.05; box-shadow: 10px 10px 0 var(--cobalt); }
+  .stamp { position: absolute; padding: 8px 40px; border: 10px double var(--red); border-radius: 16px; color: var(--red); font-family: "Arial Black"; font-size: 104px; letter-spacing: .04em; opacity: 0; white-space: nowrap; background: rgba(239,227,198,.55); transform-origin: center; }
+  .chip { position: absolute; padding: 6px 22px; border: 5px solid var(--ink); border-radius: 12px; background: var(--paper); font-size: 30px; }
+  .bar { background: var(--ink); position: absolute; height: 74px; transform-origin: 0 50%; }
+  .num { position: absolute; font-family: "Cooper Black Std", "Rockwell Extra Bold", serif; font-size: 640px; line-height: 1; color: rgba(47,95,208,.28); z-index: 0; }
+</style></head>
+<body><div id="stage"><canvas id="ht" width="1920" height="1080"></canvas></div><canvas id="paper" width="1920" height="1080"></canvas><canvas id="grain" width="1920" height="1080"></canvas><canvas id="wipe" width="1920" height="1080"></canvas><div id="flash"></div>
+<script type="module" src="main.js"></script></body></html>
