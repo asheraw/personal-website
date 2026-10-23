@@ -37,6 +37,11 @@ export const siteSettingsType = defineType({
       options: {collapsible: false},
     },
     {
+      name: 'newsletter',
+      title: 'Newsletter',
+      options: {collapsible: false},
+    },
+    {
       name: 'distribution',
       title: 'Connected accounts',
       description: 'One-time registry of your real accounts on each platform, so posts can reference a known account instead of retyping a handle every time.',
@@ -111,6 +116,16 @@ export const siteSettingsType = defineType({
       fieldset: 'publishing',
       description: 'Every new post starts assigned to this author. Change it here any time — it only affects posts created afterward, never existing ones.',
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: 'defaultBeehiivFormId',
+      title: 'Default Beehiiv form ID',
+      type: 'string',
+      fieldset: 'newsletter',
+      description:
+        'The signup form every "Newsletter signup (Beehiiv)" snippet uses unless the snippet has its own ID. The long ID from the Beehiiv embed code: the part after data-beehiiv-form=" (e.g. 307a7d3a-414d-...). Not the whole script.',
+      validation: (rule) =>
+        rule.custom((value) => !value || /^[0-9a-f-]{36}$/i.test(value) || 'This should look like 307a7d3a-414d-4b32-b79c-313966dc9d45.'),
     }),
     defineField({
       name: 'connectedAccounts',

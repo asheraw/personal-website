@@ -39,15 +39,15 @@ export const snippetType = defineType({
     }),
     defineField({
       name: 'beehiivFormId',
-      title: 'Beehiiv form ID',
+      title: 'Beehiiv form ID (optional)',
       type: 'string',
       description:
-        'The long ID from the Beehiiv embed code: the part after data-beehiiv-form=" (e.g. 307a7d3a-414d-...). Not the whole script.',
+        'Leave blank to use the default newsletter set in Site Settings. Only fill this in for a different newsletter: the long ID from its Beehiiv embed code, the part after data-beehiiv-form=" (e.g. 307a7d3a-414d-...).',
       hidden: ({document}) => document?.snippetType !== 'newsletter',
       validation: (rule) =>
         rule.custom((value, context) => {
           if (context.document?.snippetType !== 'newsletter') return true
-          if (!value) return 'Paste the form ID from Beehiiv.'
+          if (!value) return true
           return /^[0-9a-f-]{36}$/i.test(value) || 'This should look like 307a7d3a-414d-4b32-b79c-313966dc9d45.'
         }),
     }),

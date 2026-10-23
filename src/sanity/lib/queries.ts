@@ -150,7 +150,7 @@ export const PAGE_BY_SLUG_QUERY = `
         }
       },
       _type == "snippetRef" => {
-        "snippetData": @->{title, snippetType, content, beehiivFormId}
+        "snippetData": @->{title, snippetType, content, beehiivFormId, "defaultBeehiivFormId": *[_type == "siteSettings"][0].defaultBeehiivFormId}
       }
     }
   }
@@ -175,7 +175,7 @@ export const POST_BY_SLUG_QUERY = `
         }
       },
       _type == "snippetRef" => {
-        "snippetData": @->{title, snippetType, content, beehiivFormId}
+        "snippetData": @->{title, snippetType, content, beehiivFormId, "defaultBeehiivFormId": *[_type == "siteSettings"][0].defaultBeehiivFormId}
       }
     },
     mainImage,
@@ -222,7 +222,7 @@ export const POST_EXPORT_PROJECTION = `{
       }
     },
     _type == "snippetRef" => {
-      "snippetData": @->{snippetType, content, beehiivFormId}
+      "snippetData": @->{snippetType, content, beehiivFormId, "defaultBeehiivFormId": *[_type == "siteSettings"][0].defaultBeehiivFormId}
     }
   }
 }`;

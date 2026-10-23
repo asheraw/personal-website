@@ -343,7 +343,9 @@ export const postBodyComponents: PortableTextComponents = {
     snippetRef: ({ value }) => {
       const snippet = value?.snippetData;
       if (snippet?.snippetType === "newsletter") {
-        return snippet.beehiivFormId ? <BeehiivForm formId={snippet.beehiivFormId} /> : null;
+        // The snippet's own ID wins; otherwise the default newsletter from Site Settings.
+        const formId = snippet.beehiivFormId || snippet.defaultBeehiivFormId;
+        return formId ? <BeehiivForm formId={formId} /> : null;
       }
       // Fixed layout, nothing to write -- always the same three pills.
       if (snippet?.snippetType === "contact") return <ContactPills />;
