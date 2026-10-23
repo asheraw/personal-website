@@ -11,6 +11,78 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-10-23 — Security upgrade, Studio navigation cleanup, snippet fixes, link-page tools, calendar
+
+Deployed to production 2026-10-24 (`61b69d9`), after a full production build passed.
+
+- **Security: Next.js 16.2.12 → 16.4.2** (`7cc184f`). `npm audit` listed critical remote-code-execution advisories
+  for the image optimizer (AVIF/SVG) and `next/og` `ImageResponse`, both used here. DOMPurify 3.4.14 → 3.4.17
+  (critical bypass; it sits inside Sanity's tooling). No critical advisories remain. Turbopack in 16.4 could
+  not resolve the string-form plugin in `postcss.config.mjs`, so it is now `plugins: { "@tailwindcss/postcss": {} }`.
+  Not done, on purpose: `npm audit fix` also bumped `@sanity/ui` 3 → 4, which removed exports Studio code uses,
+  so the lockfile was restored and only `next` and `dompurify` were updated individually.
+- **Known open risk — public API routes with no login check.** `/api/ai/*` (Gemini cost; `generate-featured-image`
+  can replace any post's cover), `/api/export/pdf` (can export a draft by id), `/api/check-links` and
+  `/api/comments/notify-subscribers` rely on being called from Studio but are reachable by anyone. Needs a
+  Sanity-verified check per route; not built yet. Bots probing `shell.php` etc. just 404 (no PHP, no disk uploads).
+- **Studio top bar:** the Presentation tab is hidden with a style rule in `StudioNavbar.tsx` (the tool stays
+  installed so "Open in Presentation" on a post still works) and Sanity's paid "Scheduled drafts" is off
+  (`scheduledDrafts: {enabled: false}`; the Calendar covers scheduling).
+- **Per-post PLAY archived** (hidden in the editor, `hidden: true` on the `play` field in `postType.ts`).
+  Existing data, `/blog/<slug>/play` and the homepage PLAY world are untouched. Noted in `IDEAS.md`.
+- **Newsletter snippet:** the default Beehiiv form ID now lives in Site Settings (`defaultBeehiivFormId`); a
+  snippet's own ID is an optional override.
+- **Two snippets in one post were linked in Studio** (changing one changed the other). Cause: `snippetRef` was a
+  bare `reference` block. It is now an object holding a `snippet` reference, like every other block.
+  Queries read both shapes (`coalesce(snippet, @)->`); `scripts/migrate-snippet-refs.mjs --all` converted the
+  published posts after deploy (use `--drafts` first when the new code isn't live yet).
+- **Link Page cards** (`0da1857`, `96dd164`): visible "Upload new image" button (the native file input was
+  invisible on the dark theme), "Choose from Media" picker, and a Crop dialog (pan + zoom in a 3:4 frame, saved
+  as the image's crop). The live `/link` page now uses the crop when present, because Sanity's image URL
+  builder ignores a crop rectangle whenever `crop=focalpoint` is requested. Zoom is a labelled slider with −/+
+  buttons; the alt-text box shows the post title it falls back to.
+- **Editorial Calendar** (`61b69d9`): click a card to open the post, today highlighted, only the needed weeks
+  shown, legend at the top, undo toast after every move (published moves say the public date changed), save
+  errors shown, and an "Unscheduled drafts" tray (drag onto a day to schedule at 09:00, drag a scheduled card
+  back to unschedule).
+- **Not verified in a browser:** all the Studio items above (Studio login can't be automated); type-check and
+  production build are clean.
+
+## 2026-10-21 — Code blocks, contact pills, dead-file cleanup
+
+Deployed to production the same day (`3e49dfb`).
+
+- **Code blocks:** "Wrap long lines" tickbox (default on; wrapping needed `codeTagProps` white-space on the
+  syntax highlighter), a new "Prompt" language (plain text with a label), and a "Copy button" setting
+  (Automatic = on for Prompt only / On / Off). New client component `CodeBlock.tsx`.
+- **Contact pills:** `/connect` shows WhatsApp, Email and a "Send a message" pill that reveals the form
+  (`ContactPills.tsx`). Also a new snippet type "Contact options".
+- **Removed:** `src/app/robots.ts` (conflicted with `public/robots.txt`), `IsometricWorld.tsx`,
+  `SortableTableHead.tsx`, `src/lib/db.ts`, Prisma (schema, scripts, both packages), `vercel.json`,
+  `Caddyfile`, `bun.lock`, the unused `z-cdn.chatglm.cn` image host. Left alone: ~30 unused shadcn UI files and
+  ~18 unused packages (no runtime cost), and `backups/`, `tasks/`, `docs/`.
+
+## 2026-10-08 (later the same day) — SEO checklist, link previews, line art, AI fallbacks
+
+Deployed in two pushes (`74139cf`, then the follow-ups on 2026-10-21).
+
+- **SEO:** social-share image restored on `/blog`, category, tag and privacy pages (each page's own
+  `openGraph` replaces the site-wide one, so the default image is re-added via `getDefaultSocialImage()`),
+  one H1 on the homepage (the boot splash headline became a paragraph), sitemap `#anchor` entries removed,
+  `public/llms.txt` added, `Sitemap:` line added to `public/robots.txt`.
+- **Hover link previews** in post bodies (`LinkPreview.tsx`, `/api/link-preview/[key]`, shared logic in
+  `src/lib/linkPreview.ts`): loading card, YouTube via oEmbed (`i.ytimg.com` allowed in CSP), fallback card
+  when a site blocks previews, first 5 links warmed on idle. Private/internal addresses are refused. The link
+  travels in the URL path (base64url), not `?url=`, because Netlify's CDN ignores unknown query strings and
+  served the first link's preview for every link.
+- **"Black line art" checkbox on image blocks:** cream backing in dark mode (`LineArt` in `ImageLightbox.tsx`);
+  inverting colours was tried first and looked like a photo negative.
+- **Gemini 503s:** `generateStructuredText` now tries a chain of four models (`aiText.ts`).
+- **Studio:** text-colour picker is a radio list with swatches (`TextColorInput.tsx`); AI dialogs one size
+  wider. Bold text inside coloured text now inherits the colour.
+- **Netlify credits:** page `revalidate` raised from 60 s to 3600 s on the layout and blog pages (Publish still
+  refreshes pages immediately via `/api/revalidate`). Backups and cron jobs cost nothing on Netlify.
+
 ## 2026-10-08 — Newsletter signup as a Reusable Snippet (Beehiiv)
 
 A Beehiiv signup form can now be dropped into any post or page like any other Reusable Snippet, with no code
