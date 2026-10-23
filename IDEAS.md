@@ -48,6 +48,17 @@ again, only worth considering once the flagging half has a track record of being
 
 ---
 
+## Per-post PLAY alternatives (archived)
+
+**What:** an optional interactive "PLAY" way to experience an individual blog post (Key Moments was the one
+component built), as an alternative to the normal reading view.
+
+**Why archived:** 2026-10-23, Asher's call. Re-imagining each post as an interactive piece takes too much work to be
+realistic, and seeing the field in the editor was a constant reminder of it. Hidden from the post editor, not deleted:
+any post that already has PLAY data still serves it at `/blog/<slug>/play`, and the code (`src/components/asher/play/`,
+the `play` field in `postType.ts`) is untouched. To bring it back, remove `hidden: true` from the `play` field. The
+homepage PLAY mode is a separate feature and is not affected.
+
 ## The Avatar Door (3D/2D talking avatar greeter)
 
 **What:** from `ACE_MASTER_SPEC.md` Part VI / Phase 10 — a talking avatar (3D head on desktop, lighter 2D

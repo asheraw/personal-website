@@ -261,6 +261,9 @@ export const postType = defineType({
       title: 'PLAY mode',
       type: 'object',
       fieldset: 'playMode',
+      // Archived 2026-10-23: per-post PLAY isn't being pursued (too much work to re-imagine posts).
+      // Hidden from the editor only -- existing data and the public /blog/<slug>/play route are untouched.
+      hidden: true,
       description: 'An optional, interactive alternative way to experience this post. Off by default -- every post works perfectly well without it.',
       fields: [
         defineField({name: 'enabled', title: 'Enabled', type: 'boolean', initialValue: false}),

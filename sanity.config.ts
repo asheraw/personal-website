@@ -46,6 +46,9 @@ export default defineConfig({
   // `plugins` below) went for the same reason -- a developer tool on a
   // site run by a non-technical owner.
   releases: {enabled: false},
+  // Sanity's "Scheduled drafts" (paid feature, not used -- the Calendar tool plus the
+  // "Schedule for later" field cover scheduling). Turned off so it stops showing in the top nav.
+  scheduledDrafts: {enabled: false},
   studio: {
     components: {
       // Floating "N comments need review" badge, always visible regardless
