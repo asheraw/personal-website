@@ -213,7 +213,11 @@ export function LinkPageItemsInput(props: ArrayOfObjectsInputProps) {
               />
               <TextInput
                 fontSize={1}
-                placeholder="Alt text (optional)"
+                placeholder={
+                  editing.linkType === 'post' && editing.post?._ref && postTitles[editing.post._ref]
+                    ? `Alt text (optional) -- blank uses the post title: ${postTitles[editing.post._ref]}`
+                    : 'Alt text (optional)'
+                }
                 value={editing.image?.alt ?? ''}
                 onChange={(e) => {
                   const alt = e.currentTarget.value

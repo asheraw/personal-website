@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
 import {useClient} from 'sanity'
 import {Box, Button, Card, Dialog, Flex, Grid, Spinner, Stack, Text, TextInput} from '@sanity/ui'
+import {AddIcon} from '@sanity/icons/Add'
+import {RemoveIcon} from '@sanity/icons/Remove'
 import {urlFor} from '../lib/image'
 
 type LibraryAsset = {_id: string; url: string; originalFilename: string | null}
@@ -192,7 +194,7 @@ export function ImageCropDialog({
       <Box padding={4}>
         <Stack space={4}>
           <Text size={1} muted>
-            Drag the picture to move it, and use the slider to zoom. The frame is the exact shape of a card on the Link page.
+            Drag the picture to move it, and use the − / + buttons or the slider to zoom. The frame is the exact shape of a card on the Link page.
           </Text>
           <Flex justify="center">
             <div
@@ -237,16 +239,37 @@ export function ImageCropDialog({
               />
             </div>
           </Flex>
-          <input
-            type="range"
-            min={1}
-            max={4}
-            step={0.01}
-            value={zoom}
-            onChange={(e) => changeZoom(Number(e.currentTarget.value))}
-            aria-label="Zoom"
-            style={{width: '100%'}}
-          />
+          <Stack space={2}>
+            <Flex justify="space-between" align="center">
+              <Text size={1} weight="semibold">
+                Zoom
+              </Text>
+              <Text size={1} muted>
+                {zoom.toFixed(1)}x
+              </Text>
+            </Flex>
+            <Flex gap={2} align="center">
+              <Button icon={RemoveIcon} mode="ghost" fontSize={1} padding={2} aria-label="Zoom out" disabled={zoom <= 1} onClick={() => changeZoom(Math.max(1, zoom - 0.25))} />
+              <style>{`
+                .zoom-slider { -webkit-appearance: none; appearance: none; flex: 1; height: 28px; background: transparent; cursor: pointer; }
+                .zoom-slider::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: rgba(150,150,150,0.45); }
+                .zoom-slider::-moz-range-track { height: 8px; border-radius: 4px; background: rgba(150,150,150,0.45); }
+                .zoom-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -7px; border-radius: 50%; background: #fff; border: 3px solid #2276fc; }
+                .zoom-slider::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid #2276fc; }
+              `}</style>
+              <input
+                className="zoom-slider"
+                type="range"
+                min={1}
+                max={4}
+                step={0.01}
+                value={zoom}
+                onChange={(e) => changeZoom(Number(e.currentTarget.value))}
+                aria-label="Zoom"
+              />
+              <Button icon={AddIcon} mode="ghost" fontSize={1} padding={2} aria-label="Zoom in" disabled={zoom >= 4} onClick={() => changeZoom(Math.min(4, zoom + 0.25))} />
+            </Flex>
+          </Stack>
           <Flex gap={2} justify="flex-end">
             <Button text="Cancel" mode="ghost" fontSize={1} onClick={onClose} />
             <Button text="Save crop" tone="primary" fontSize={1} onClick={save} />
