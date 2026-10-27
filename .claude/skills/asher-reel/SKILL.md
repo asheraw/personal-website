@@ -61,6 +61,11 @@ Layout (same as `pipeline/thumbnail-template.html`, 1080x1920): gold glow, "OFFE
 - Run order that worked overnight: IG v1 + thumbnail for each reel, web version only after approval (Reel 6 web was approved in advance).
 - Windows quirks: the shell hook blocks heredocs combined with redirects (use the Write tool + small python patch files), and `\n` typed into python/sed patches can become real newlines (use `chr(92)`).
 
+## Hook + thumbnail rules added 2026-10-28 (Asher: old thumbnails were not clickworthy)
+- **Every reel gets a text HOOK at the very top of the video** (y ~96-280, above the panel; fine if the IG feed crop hides it). 3-7 words, big Montserrat 800, keyword gold. Set `HOOK="LINE 1|LINE 2 with <b>GOLD</b>"` when running `node build.mjs` (run-reel.sh: export HOOK first). Use the same hook as the thumbnail.
+- **Thumbnails v2 layout (use for all future ones)**: HUGE hook at the top (3-7 words, 2 lines, auto-fit ~100-150 px, gold keyword), series label + big reel number "01" in the top row, panel image below at 960x540, Asher (grade A) at the bottom, logo bottom-right. Keep key content inside y 250-1680 (IG grid crops 3:4). No full caption, no thin fonts. Generator: `pipeline/thumbnail-v2-gen.mjs` (edit the T list; run from a folder with thumbnails' assets); output `N Title - thumbnail v2.png`.
+- Asher renamed finals to `N Title - IG.mp4`, `N Title.mp4` (other platforms) and `N Title - thumbnail.png`; follow that naming for new reels.
+
 ## Standing rules from Asher (do not re-learn)
 - Text must FINISH writing/typing before the scene or camera moves on (failed twice on the whiteboard; pen write speed has a floor, so start earlier or delay the camera). Check a frame strip right before every scene change. Leave >= 1 s tail after the last spoken word so the last panel element completes (he complained when the ending cut off).
 - No clipped/overlapping/duplicate text; keep text inside bubbles/windows; keep overlays out of the caption lane.

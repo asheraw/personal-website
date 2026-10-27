@@ -36,6 +36,8 @@ const zoomAt = (w, min) => { const x = WORDS.find((q) => q.w.toLowerCase().start
 const ZOOM_PLAN = [["if", 0, 1.34], ["but", 13, 1.28], ["eventually", 22, 1.38], ["now", 28, 1.28], ["turns", 33, 1.38], ["here", 45, 1.26], ["for", 50, 1.38], ["if", 55, 1.28], ["of", 60, 1.38], [process.env.WEB === "1" ? "click" : "comment", 72, 1.28]];
 const ZOOMS = ZOOM_PLAN.map(([w, min, sc]) => { const z = zoomAt(w, min); return z && [...z, sc]; }).filter(Boolean).map(([a, b, sc], i) => [a, b, i % 2 ? 640 : 460, sc]);
 
+// text HOOK at the very top of the video (Asher 2026-10-28): HOOK="AI SAID 8/10.|<b>BUY</b> IT?" (| = line break, <b> = gold word); 3-7 words
+const HOOK = (process.env.HOOK || "").split("|").filter(Boolean).map((l) => `<div>${l}</div>`).join("");
 const html = `<!doctype html>
 <html lang="en"><head><meta charset="UTF-8" />
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
@@ -52,6 +54,8 @@ const html = `<!doctype html>
   .nw { position: absolute; left: 0; top: 0; width: 1080px; height: 810px; }
   .pv { position: absolute; left: -169px; top: 0; width: 1440px; height: 810px; }
   .seam { position: absolute; left: 0; top: 996px; width: 1080px; height: 4px; background: #b8924a; opacity: .6; z-index: 5; }
+  #hook { position: absolute; left: 60px; right: 60px; top: 96px; z-index: 31; text-align: center; font: 800 96px/1.03 "Montserrat", sans-serif; color: #fff7ea; -webkit-text-stroke: .1em #0a0807; paint-order: stroke fill; opacity: 0; }
+  #hook b { color: #f0b865; } #hook div { white-space: nowrap; }
   #flash { position: absolute; inset: 0; background: #fff; opacity: 0; z-index: 40; pointer-events: none; }
   #subs { position: absolute; left: 130px; top: 868px; width: 810px; height: 92px; z-index: 30; }
   .sub { position: absolute; left: 0; top: 0; width: 100%; text-align: center; white-space: nowrap; opacity: 0; font-family: "Montserrat", sans-serif; font-weight: 800; font-size: 80px; line-height: 92px; color: #f5efe4; -webkit-text-stroke: .13em #0a0807; paint-order: stroke fill; text-shadow: 0 4px 18px rgba(0,0,0,.55); }
@@ -66,6 +70,7 @@ const html = `<!doctype html>
         ${vids}
   </div></div></div>
   <div id="subs"></div>
+  ${HOOK ? `<div id="hook">${HOOK}</div>` : ""}
   <div id="flash"></div>
 </div>
 <script>
@@ -78,6 +83,7 @@ const html = `<!doctype html>
       p.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;font:inherit"; p.innerHTML = el.innerHTML; el.appendChild(p);
       const pw = p.getBoundingClientRect().width; el.removeChild(p); if (pw > 790) el.style.fontSize = Math.floor(80 * 790 / pw) + "px"; });
     const tl = gsap.timeline({ paused: true });
+    if (document.getElementById("hook")) { const h = document.getElementById("hook"); let sz = 96; while (sz > 64 && [...h.children].some((d) => d.getBoundingClientRect().width > 900)) { sz -= 4; h.style.fontSize = sz + "px"; } tl.fromTo("#hook", { opacity: 0, y: -30, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.3, ease: "back.out(2)" }, 0.15); }
     tl.fromTo("#vdrift", { scale: 1, x: 0, transformOrigin: "540px 260px" }, { scale: 1.09, x: -18, duration: ${DUR}, ease: "none" }, 0);   // slow push-in all the way through
     ${JSON.stringify(ZOOMS)}.forEach(([a, b, ox, sc]) => {                                       // punch-ins on the lines that matter
       tl.set("#vzoom", { transformOrigin: ox + "px 260px" }, Math.max(0, a - 0.02));
