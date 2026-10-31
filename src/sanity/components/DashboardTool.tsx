@@ -139,7 +139,7 @@ function useDraftPosts(): DraftPost[] | null {
       // perspective: 'raw' -- same requirement as scheduledCount below,
       // the default query perspective excludes drafts.* documents entirely.
       .fetch<DraftPost[]>(
-        `*[_type == "post" && !defined(trashedAt) && _id in path("drafts.**")] | order(_updatedAt desc){_id, title, _updatedAt}`,
+        `*[_type == "post" && !defined(trashedAt) && !defined(shelvedAt) && _id in path("drafts.**")] | order(_updatedAt desc){_id, title, _updatedAt}`,
         {},
         {perspective: 'raw'}
       )

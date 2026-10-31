@@ -18,6 +18,7 @@ import {openInPresentationAction} from './src/sanity/actions/openInPresentation'
 import {createSuggestImagePromptAction} from './src/sanity/actions/suggestImagePrompt'
 import {createExportAction} from './src/sanity/actions/exportPost'
 import {withCategoryDeleteGuard} from './src/sanity/actions/categoryDeleteGuard'
+import {shelveAction, unshelveAction} from './src/sanity/actions/postShelve'
 import {moveToTrashAction, restoreFromTrashAction, deleteForeverOnlyInTrash} from './src/sanity/actions/postTrash'
 import {MediaLibraryTool} from './src/sanity/components/MediaLibraryTool'
 import {compressedUploadSource} from './src/sanity/components/CompressedUploadSource'
@@ -112,6 +113,8 @@ export default defineConfig({
         createSuggestImagePromptAction(),
         createExportAction(),
         restoreFromTrashAction,
+        shelveAction,
+        unshelveAction,
         moveToTrashAction,
         ...withDateAction.slice(1),
       ]

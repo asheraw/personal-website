@@ -26,6 +26,7 @@ export function withAutoPublishDate(originalAction: DocumentActionComponent): Do
     if (!original) return null
 
     const hasPublishedAt = Boolean((props.draft as {publishedAt?: string} | null)?.publishedAt)
+    const isShelved = Boolean((props.draft as {shelvedAt?: string} | null)?.shelvedAt)
 
     return {
       ...original,
@@ -33,6 +34,8 @@ export function withAutoPublishDate(originalAction: DocumentActionComponent): Do
         if (!hasPublishedAt) {
           patch.execute([{set: {publishedAt: new Date().toISOString()}}])
         }
+        // Publishing a shelved draft takes it off the shelf, so the live post isn't listed under Shelved.
+        if (isShelved) patch.execute([{unset: ['shelvedAt']}])
         original.onHandle?.()
       },
     }

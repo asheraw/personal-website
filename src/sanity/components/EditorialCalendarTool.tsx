@@ -72,7 +72,7 @@ export function EditorialCalendarTool() {
       // perspective excludes drafts.* documents entirely, even from an
       // exact _id match, unless explicitly asked for.
       client.fetch<{_id: string; title: string; scheduledPublishAt?: string}[]>(
-        `*[_id in path("drafts.**") && _type == "post" && !defined(trashedAt)]{_id, title, scheduledPublishAt} | order(_updatedAt desc)`,
+        `*[_id in path("drafts.**") && _type == "post" && !defined(trashedAt) && !defined(shelvedAt)]{_id, title, scheduledPublishAt} | order(_updatedAt desc)`,
         {},
         {perspective: 'raw'},
       ),

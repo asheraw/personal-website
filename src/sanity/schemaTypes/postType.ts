@@ -256,6 +256,15 @@ export const postType = defineType({
       readOnly: true,
       hidden: true,
     }),
+    // "Shelved" drafts: parked for later, not deleted. Stamped by the Shelve action
+    // (src/sanity/actions/postShelve.tsx) or by the nightly job for first-time drafts untouched 30+ days.
+    defineField({
+      name: 'shelvedAt',
+      title: 'Shelved',
+      type: 'datetime',
+      readOnly: true,
+      hidden: true,
+    }),
     // PLAY: an optional, interactive alternative way to experience this
     // post -- separate from the normal reading view (STORY), never
     // required, off by default. `presentation` is deliberately an array

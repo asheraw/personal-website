@@ -63,6 +63,27 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Shelve first-time drafts nobody has touched for 30 days (shelvedAt marks them; nothing is deleted).
+  // They move to Studio -> Posts -> Shelved and off the Dashboard. Skipped: drafts that are just edits
+  // to an already-published post, drafts scheduled to publish, and anything already trashed or shelved.
+  // A draft's _updatedAt is its last edit, so this stamps drafts that have really been idle.
+  const staleDrafts: { _id: string }[] = await writeClient.fetch(
+    `*[_id in path("drafts.**") && _type == "post" && !defined(trashedAt) && !defined(shelvedAt) && !defined(scheduledPublishAt) && _updatedAt < $cutoff]{_id}`,
+    { cutoff },
+    { perspective: "raw" }
+  );
+  const livePostIds = new Set<string>(await writeClient.fetch(`*[_type == "post" && !(_id in path("drafts.**"))]._id`));
+  let draftsShelved = 0;
+  for (const d of staleDrafts) {
+    if (livePostIds.has(d._id.replace(/^drafts\./, ""))) continue;
+    try {
+      await writeClient.patch(d._id).set({ shelvedAt: new Date().toISOString() }).commit();
+      draftsShelved++;
+    } catch (err) {
+      console.error(`purge-trash: could not shelve draft ${d._id}:`, err);
+    }
+  }
+
   // One transaction per comment, not one covering all of them -- a reply
   // can still legitimately reference an expired parent (e.g. Asher's own
   // reply kept live after the comment it answers was trashed), which Sanity
@@ -126,6 +147,7 @@ export async function GET(request: NextRequest) {
     commentsSkipped,
     postsDeleted,
     postsSkipped,
+    draftsShelved,
     imagesDeleted,
     imagesSkipped,
   });

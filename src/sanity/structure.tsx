@@ -11,6 +11,7 @@ import {EditIcon} from '@sanity/icons/Edit'
 import {SearchIcon} from '@sanity/icons/Search'
 import {BugIcon} from '@sanity/icons/Bug'
 import {TrashIcon} from '@sanity/icons/Trash'
+import {ArchiveIcon} from '@sanity/icons/Archive'
 import type {StructureResolver} from 'sanity/structure'
 import {ReferencedByPostsView} from './components/ReferencedByPostsView'
 import {SeoPreviewView} from './components/SeoPreviewView'
@@ -71,7 +72,28 @@ export const structure: StructureResolver = (S) =>
           S.documentList()
             .title('Posts')
             .schemaType('post')
-            .filter('_type == "post" && !defined(trashedAt)')
+            .filter('_type == "post" && !defined(trashedAt) && !defined(shelvedAt)')
+            .defaultOrdering([{field: '_updatedAt', direction: 'desc'}])
+            .child((postId) =>
+              S.document()
+                .documentId(postId)
+                .schemaType('post')
+                .views([
+                  S.view.form(),
+                  S.view.component(AiToolsView).title('AI Tools'),
+                  S.view.component(SeoPreviewView).title('SEO Preview'),
+                ]),
+            ),
+        ),
+      // Drafts parked for later (by hand, or automatically after 30 days untouched). Not deleted.
+      S.listItem()
+        .title('Shelved')
+        .icon(ArchiveIcon)
+        .child(
+          S.documentList()
+            .title('Shelved drafts')
+            .schemaType('post')
+            .filter('_type == "post" && !defined(trashedAt) && defined(shelvedAt)')
             .defaultOrdering([{field: '_updatedAt', direction: 'desc'}])
             .child((postId) =>
               S.document()
