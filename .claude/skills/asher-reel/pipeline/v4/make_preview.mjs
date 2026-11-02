@@ -8,8 +8,8 @@ const hasVideo = spec.video && fs.existsSync(path.join(P, spec.video));
 const endT = (i) => { const n = spec.scenes[i + 1]; return n ? n.t - 0.45 : spec.duration - 0.2; };
 spec.scenes.forEach((s, i) => {
   const out = path.join(dir, `s${String(i).padStart(2, "0")}e.jpg`), t = Math.max(s.t + 0.2, endT(i));
-  if (hasVideo) spawnSync("ffmpeg", ["-v", "error", "-y", "-ss", String(t), "-i", path.join(P, spec.video), "-frames:v", "1", "-vf", "scale=480:-1", "-q:v", "3", out]);
-  else { const g = path.join(spec.stills, `t_${+t.toFixed(2)}.jpg`); spawnSync("ffmpeg", ["-v", "error", "-y", "-i", g, "-vf", "scale=480:-1", "-q:v", "3", out]); }
+  if (hasVideo) spawnSync("ffmpeg", ["-v", "error", "-y", "-ss", String(t), "-i", path.join(P, spec.video), "-frames:v", "1", "-vf", "scale=960:-1", "-q:v", "3", out]);
+  else { const g = path.join(spec.stills, `t_${+t.toFixed(2)}.jpg`); spawnSync("ffmpeg", ["-v", "error", "-y", "-i", g, "-vf", "scale=960:-1", "-q:v", "3", out]); }
 });
 fs.copyFileSync(path.join(P, spec.thumb), path.join(dir, "thumb.png"));
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -19,8 +19,12 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>
 :root{--bg:#0f0d0b;--card:#1a1612;--line:#3a3128;--gold:#f0b865;--ink:#f5efe4;--dim:#a89c8c;--ok:#6fd08c}
 *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 "Segoe UI",system-ui,sans-serif;padding:20px 24px}
 h1{font-size:24px;margin:0 0 2px} h2{font-size:17px;color:var(--gold);margin:26px 0 8px} .sub{color:var(--dim)}
-.main{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;margin-top:14px;max-width:1300px}
-.story{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.main{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;margin-top:14px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.story{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.sc img:hover,.phone img:hover{outline:2px solid var(--gold)} .phone img{cursor:zoom-in}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:9;cursor:zoom-out}#lb img{max-width:94vw;max-height:94vh;border-radius:10px}
+.opt{display:block;padding:3px 0;font-size:14px}.opt input{margin-right:6px}
 .sc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px} .sc img{width:100%;border-radius:8px;display:block;cursor:pointer;border:1px solid var(--line)}
 .sc .t{color:var(--gold);font-weight:600;margin-top:6px} .sc .n{color:var(--dim);font-size:13px}
 .side{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 24px);overflow:auto}
@@ -35,17 +39,16 @@ button{background:var(--gold);color:#1a1612;border:0;border-radius:8px;padding:9
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap} label{cursor:pointer;font-size:13px}
 @media(max-width:1000px){.main{grid-template-columns:1fr}.side{position:static}}
 </style></head><body>
-<h1>${esc(spec.title)}</h1><div class="sub">${esc(spec.subtitle)} · ${mmss(spec.duration)} · leave a box blank = no change</div>
+<div class="top"><div><h1>${esc(spec.title)}</h1><div class="sub">${esc(spec.subtitle)} · ${mmss(spec.duration)} · leave a box blank = no change</div></div><div class="row"><span class="sub" id="msg"></span><button id="copy">Copy all feedback</button></div></div><div id="lb"><img alt=""></div>
 <div class="main">
 <div><h2 style="margin-top:0">Storyboard <span class="sub" style="font-weight:400">(end of each scene, so you see it complete${hasVideo ? "; click a frame to jump the video" : ""})</span></h2>
 <div class="story">${spec.scenes.map((s, i) => `<div class="sc"><img src="preview/${spec.id}/s${String(i).padStart(2, "0")}e.jpg" data-t="${s.t}" alt=""><div class="t">${mmss(s.t)} · ${esc(s.label)}</div><div class="n">${esc(s.note)}</div><textarea data-k="s${i}" placeholder="What to change? (blank = none)"></textarea></div>`).join("")}</div></div>
 <div class="side">
   <div class="phone">${hasVideo ? `<video id="v" src="${esc(spec.video)}" controls playsinline></video>` : `<img src="preview/${spec.id}/thumb.png" alt="thumbnail (frame 0)">`}<div class="safe" id="safe"><i></i></div></div>
   <div class="row" style="justify-content:center"><label><input type="checkbox" id="sz"> safe zones</label></div>
-  <div class="card"><b>Hook</b> (top of video, all the time)<div class="sub">${esc(spec.hook)}</div><textarea data-k="hook" placeholder="New hook? (blank = keep)"></textarea></div>
+  <div class="card"><b>Hook</b> (top of video, all the time; teases the payoff without giving it away)${(spec.hooks || [spec.hook]).map((h, i) => `<label class="opt"><input type="radio" name="hook" value="${esc(h)}"${i === 0 ? " checked" : ""}>${esc(h)}</label>`).join("")}<textarea data-k="hook" placeholder="Or write your own hook (overrides the choice above)"></textarea></div>
   <div class="card"><b>Thumbnail</b><div class="sub">${esc(spec.thumbText)}</div><textarea data-k="thumb" placeholder="Change? (blank = keep)"></textarea></div>
   <div class="card"><b>Overall</b><textarea data-k="overall" placeholder="Music, pacing, colour, anything else"></textarea></div>
-  <div class="row"><button id="copy">Copy all feedback</button><span class="sub" id="msg"></span></div>
 </div></div>
 <h2>Where this points</h2><div class="card">${esc(spec.linkNote)}</div>
 <h2>Checklist</h2><div class="card"><ul class="chk">${spec.checklist.map((c) => `<li class="${c.s === "todo" ? "todo" : ""}">${esc(c.t)}</li>`).join("")}</ul></div>
@@ -53,11 +56,19 @@ button{background:var(--gold);color:#1a1612;border:0;border-radius:8px;padding:9
 <script>
 const id=${JSON.stringify(spec.id)}, v=document.getElementById("v");
 document.getElementById("sz").onchange=e=>document.getElementById("safe").style.display=e.target.checked?"block":"none";
-if(v)document.querySelectorAll(".sc img").forEach(i=>i.onclick=()=>{v.currentTime=+i.dataset.t;v.play()});
+const lb=document.getElementById("lb");lb.onclick=()=>lb.style.display="none";
+const zoom=i=>{lb.firstChild.src=i.src;lb.style.display="flex"};
+document.querySelectorAll(".sc img").forEach(i=>i.onclick=()=>{if(v){v.currentTime=+i.dataset.t;v.play()}else zoom(i)});
+document.querySelectorAll(".phone img").forEach(i=>i.onclick=()=>zoom(i));
+document.onkeydown=e=>{if(e.key==="Escape")lb.style.display="none"};
+const radios=[...document.querySelectorAll('input[name=hook]')];
+try{const h=localStorage.getItem(id+"hookpick");radios.forEach(r=>{if(r.value===h)r.checked=true});}catch{}
+radios.forEach(r=>r.onchange=()=>{try{localStorage.setItem(id+"hookpick",r.value)}catch{}});
 const tas=[...document.querySelectorAll("textarea")];
 tas.forEach(t=>{try{t.value=localStorage.getItem(id+t.dataset.k)||""}catch{}; t.oninput=()=>{try{localStorage.setItem(id+t.dataset.k,t.value)}catch{}}});
 document.getElementById("copy").onclick=()=>{const L=["FEEDBACK for "+${JSON.stringify(spec.title)}+":"];const lab={hook:"HOOK",thumb:"THUMBNAIL",overall:"OVERALL"};
  tas.forEach(t=>{if(!t.value.trim())return;const k=t.dataset.k;const sc=/^s\\d+$/.test(k)?t.closest(".sc").querySelector(".t").textContent:(lab[k]||k);L.push("- "+sc+": "+t.value.trim())});
+ const pick=radios.find(r=>r.checked);if(pick&&!document.querySelector('[data-k=hook]').value.trim())L.push("- HOOK (chosen option): "+pick.value);
  if(L.length==1)L.push("- No changes needed.");const txt=L.join("\\n");navigator.clipboard.writeText(txt).then(()=>document.getElementById("msg").textContent="Copied! Paste it to Claude.").catch(()=>{prompt("Copy this:",txt)})};
 </script></body></html>`;
 const out = path.join(P, `${spec.id} - preview.html`); fs.writeFileSync(out, html); console.log("wrote", out);

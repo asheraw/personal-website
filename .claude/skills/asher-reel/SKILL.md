@@ -102,6 +102,13 @@ Asher's 4 rules: (1) thumbnail is FRAME 0 of the video; (2) start with him in fu
 - Shell hook blocks heredocs that redirect output; write files with the Write/Edit tools and use `_work/snap.mjs <dir> <out.png>` to snapshot a HyperFrames page.
 - Thumbnail rule: keep each hook line short enough (check width) or shrink font; no text off the edge.
 
+## v8 (Claude Reel 2, storyboard round 2)
+- **Preview page v3** (`pipeline/v4/make_preview.mjs`): click any frame or the thumbnail = lightbox (Esc/click closes); full-width layout; "Copy all feedback" button top-right; Hook = 3 radio options (spec `hooks`, first = default) + own-hook textbox that overrides. Hooks must tease the payoff BLIND (promise the result, never reveal the answer).
+- **Memes**: `D:\Work\memecub\meme.py search "<phrase>" [--kind gif] [--get N]` (memecub API; key lives only in `D:\Work\memecub\.env`, never commit or write it into the skill). Wrapper drops anything with Chinese text (target market is not Chinese). GIFs are rendered by extracting frames to `img/<name>/fNNN.png` and toggling the frame `<img>`s by time (deterministic). Pause the speaker slightly during a meme with a sound bite; keep meme audio soft.
+- **Fake top time bar** (video stage, build4.mjs): bar at the very top; first 40% fills fast, easing to the slow steady pace of the remaining 60% by the 35-40% mark, ending exactly with the video.
+- **Sounds that are copyrighted (e.g. Street Fighter "Perfect")** cannot be fetched: ask Asher for the audio file.
+- Reuse one character image across consecutive scenes (zoom, arrow + label, thought bubble) instead of swapping new pictures.
+
 ## Standing rules from Asher (do not re-learn)
 - Text must FINISH writing/typing before the scene or camera moves on (failed twice on the whiteboard; pen write speed has a floor, so start earlier or delay the camera). Check a frame strip right before every scene change. Leave >= 1 s tail after the last spoken word so the last panel element completes (he complained when the ending cut off).
 - No clipped/overlapping/duplicate text; keep text inside bubbles/windows; keep overlays out of the caption lane.
