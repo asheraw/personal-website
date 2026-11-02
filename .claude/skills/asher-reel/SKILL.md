@@ -119,6 +119,13 @@ Asher's 4 rules: (1) thumbnail is FRAME 0 of the video; (2) start with him in fu
 - **Meme**: key meme takes over the board briefly (scale ~2.5), then shrinks to its polaroid spot; speaker freezes (hold) while it plays.
 - **Dead tails**: trim the silent tail after the last word of a range (edl.mjs END1) - it reads as a freeze.
 
+## v10 (storyboard generator for Reels 3-5)
+- **Fast storyboards without HyperFrames**: `pipeline/v4/deck.mjs <n>` renders static end-of-scene stills (1920x1080) + the 1080x1920 thumbnail with Playwright from `cN/deck.json` (themes: `stitched`, `news`, `paper`; layouts: title, cards, versus, bubble, big, rows, cta; thumbnail copy with gold line + doodle double underline; both endings). Flow: whisper `tx.json` -> `silence.mjs` -> `plan.mjs <n> <mainStart> <mainEnd>` (final-time transcript to place scenes) -> write `deck.json` -> `deck.mjs` -> `mkspec.mjs <n>` -> `make_preview.mjs cN/preview_spec.json`. Run from `_work/`. The animated film (for the video stage) is built only after approval.
+- Playwright pages need real files: write the HTML to disk and `goto file:///...` (setContent blocks file:// images/fonts).
+- Raw files hold: main take, other-platforms ending take(s), IG ending take(s), sometimes aborted tries: pick the clean ones and flag incomplete takes (Reel 5 web take stops mid-sentence).
+- Styles used so far: R1 Halftone Dossier, R2 Evidence Board, R3 Stitched Lab, R4 Breaking News, R5 Paper Mad-Libs.
+- Never run `shutdown`-type actions unless asked; when asked use a 60 s timer so it can be aborted.
+
 ## Standing rules from Asher (do not re-learn)
 - Text must FINISH writing/typing before the scene or camera moves on (failed twice on the whiteboard; pen write speed has a floor, so start earlier or delay the camera). Check a frame strip right before every scene change. Leave >= 1 s tail after the last spoken word so the last panel element completes (he complained when the ending cut off).
 - No clipped/overlapping/duplicate text; keep text inside bubbles/windows; keep overlays out of the caption lane.

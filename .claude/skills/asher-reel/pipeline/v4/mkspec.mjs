@@ -1,0 +1,24 @@
+// node mkspec.mjs <n>  -> cN/preview_spec.json (from cN/deck.json + the per-reel text below), then run: node make_preview.mjs cN/preview_spec.json
+import fs from "fs";
+const n = process.argv[2], D = JSON.parse(fs.readFileSync(`c${n}/deck.json`, "utf8"));
+const CHECK = [{ t: "Thumbnail = frame 0, then you full-frame, then a quick push-down to the lower half" }, { t: "Hook at the very top, all the time" }, { t: "Fake time bar at the very top: fast to 50%, then steady" }, { t: "AsherAw.com/link spelling; both endings fade you out and centre the slides" }, { t: "Normal speed (under 90 s)" }, { t: "Ending splice: listen once", s: "todo" }];
+const X = {
+  3: { title: "Claude Reel 3 - More courses won't get you a buyer", hooks: ["More courses won't get you a buyer", "The monster I built from 5 courses", "Stop collecting courses. Do this instead."],
+    thumbCopy: "More Courses? STOP!  (STOP! in gold with a doodle double underline)", thumbImage: "Stack of books stitched together with a thread + a cheeky ghost 'monster' + lightning. Caption: \"I built a MONSTER\".",
+    why: "<b>Stitched Lab</b> (dark lab green, dashed 'stitch' borders, hazard-orange accents). The reel is the Frankenstein story: an offer stitched from spare parts. Runner-ups: <b>Pixel RPG</b> (too game-like for a horror metaphor), <b>Whiteboard</b> (plain). Say if you prefer another.",
+    link: "IG ends: comment PERFECT. Other platforms: AsherAw.com/link. (IG take: the first try at 93.8 s was abandoned; the preview uses your clean take at 102.7 s.)", endNote: ["Fade you out fast, slides move to the middle, big COMMENT PERFECT.", "Fade you out fast, slides move to the middle, huge AsherAw.com/link + 'or click the link in my bio'."] },
+  4: { title: "Claude Reel 4 - Why people pay YOU when ChatGPT is free", hooks: ["This is why people pay you when ChatGPT is free", "What are people actually paying you for now?", "Free answers everywhere. Here's what still sells."],
+    thumbCopy: "ChatGPT is FREE. So why pay YOU?  (second line gold, double underline)", thumbImage: "Robot + money bag + a thinking face and a red question mark. Caption: \"I had ALL the answers\".",
+    why: "<b>Breaking News</b> (navy studio, red 'BREAKING' tag, ticker bar). The hook is 'answers are free now', which reads like a news bulletin, and the ticker repeats the key phrase. Runner-ups: <b>Courtroom</b> (heavy), <b>Receipt</b> (cute but small). Say if you prefer another.",
+    link: "IG ends: comment PERFECT. Other platforms: AsherAw.com/link. (Your alternative first lines B, C are offered as hook options.)", endNote: ["Fade you out fast, slides to the middle, big COMMENT PERFECT.", "Fade you out fast, slides to the middle, huge AsherAw.com/link + 'or click the link in my bio'. Note: the raw web take was transcribed as 'hr .com' - will use AsherAw.com/link."] },
+  5: { title: "Claude Reel 5 - Can't explain your offer in a minute? Start over.", hooks: ["Can't explain your offer in a minute? Start over.", "The 4-blank sentence that fixes a muddy offer", "Say this one sentence out loud before you sell anything"],
+    thumbCopy: "Can't say it in 1 minute?  (second line gold, double underline)", thumbImage: "Stopwatch + a speaking head + a screaming face (the cringe). Caption: \"I help ____ get ____\".",
+    why: "<b>Paper Mad-Libs</b> (notebook paper, marker handwriting, blanks underlined in red). The lesson IS a fill-in-the-blank sentence, so the whole reel looks like one. Runner-ups: <b>Whiteboard</b> (used in the Offer Regrets series), <b>Pixel RPG</b> (too playful). Say if you prefer another.",
+    link: "IG ends: comment PERFECT. Other platforms: AsherAw.com/link. Trial Reels alternatives (05a) are not storyboarded yet.", endNote: ["Fade you out fast, slides to the middle, big COMMENT PERFECT.", "WARNING: the raw 'other platforms' take at 78.4 s stops mid-sentence ('...with free'). It probably needs a re-record before I can render this ending."] },
+}[n];
+const spec = { id: `0${n} Claude Reel ${n}`, project: "D:/Work/Social Media/2026/11-02 Imperfect offers", stills: `D:/Work/Social Media/2026/11-02 Imperfect offers/_work/c${n}-deck/stills`, thumb: `_work/c${n}-deck/stills/thumb.png`,
+  title: X.title, subtitle: `STORYBOARD ONLY (no video yet) · ${D.tag.replace(/^THE /, "").toLowerCase()} style · both endings shown at the end`, duration: D.dur,
+  hook: X.hooks[0], hooks: X.hooks, thumbCopy: X.thumbCopy, thumbImage: X.thumbImage, linkNote: X.link, why: X.why, checklist: CHECK,
+  endings: D.endings.map((e, i) => ({ label: e.label, note: X.endNote[i], still: `end${i}.jpg` })),
+  scenes: D.scenes.map((s) => ({ t: s.t, label: s.label, note: s.note })) };
+fs.writeFileSync(`c${n}/preview_spec.json`, JSON.stringify(spec, null, 1)); console.log("spec", spec.id);
