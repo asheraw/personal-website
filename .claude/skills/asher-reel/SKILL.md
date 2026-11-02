@@ -109,6 +109,16 @@ Asher's 4 rules: (1) thumbnail is FRAME 0 of the video; (2) start with him in fu
 - **Sounds that are copyrighted (e.g. Street Fighter "Perfect")** cannot be fetched: ask Asher for the audio file.
 - Reuse one character image across consecutive scenes (zoom, arrow + label, thought bubble) instead of swapping new pictures.
 
+## v9 (Reel 2 round 3 - STANDING RULES)
+- **Never render a video until Asher confirms, and render ONE version only** (he is low on credits). Show the other ending as preview stills.
+- **Previews separate three things**: Hook (text at top of the video), Thumbnail copy (words on the thumbnail), Thumbnail image (picture). Previews also show BOTH endings (IG comment-word + other platforms link) via spec `endings` [{label,note,still}].
+- **Entrance (norm)**: frame 0 = thumbnail, then Asher FULL FRAME (~0.55 s), then a quick push-down (~0.4 s) into the lower window. CSS vars in build4.mjs (--wt/--wh/--tx/--ty/--s/--mk).
+- **Ending (norm)**: when he stops speaking his video + subtitles fade out fast and the slides (board frame) move to the screen centre; ~1.6 s CTA tail added as a frozen hold in edl3.mjs.
+- **Spelling**: always `AsherAw.com/link`, never lowercase. Other-platforms ending: huge AsherAw.com/link + "or click the link in my bio" (no "LINK IN BIO" headline).
+- **Time bar**: fast to 50%, then steady to the end.
+- **Meme**: key meme takes over the board briefly (scale ~2.5), then shrinks to its polaroid spot; speaker freezes (hold) while it plays.
+- **Dead tails**: trim the silent tail after the last word of a range (edl.mjs END1) - it reads as a freeze.
+
 ## Standing rules from Asher (do not re-learn)
 - Text must FINISH writing/typing before the scene or camera moves on (failed twice on the whiteboard; pen write speed has a floor, so start earlier or delay the camera). Check a frame strip right before every scene change. Leave >= 1 s tail after the last spoken word so the last panel element completes (he complained when the ending cut off).
 - No clipped/overlapping/duplicate text; keep text inside bubbles/windows; keep overlays out of the caption lane.

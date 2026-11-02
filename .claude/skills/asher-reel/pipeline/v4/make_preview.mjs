@@ -11,6 +11,7 @@ spec.scenes.forEach((s, i) => {
   if (hasVideo) spawnSync("ffmpeg", ["-v", "error", "-y", "-ss", String(t), "-i", path.join(P, spec.video), "-frames:v", "1", "-vf", "scale=960:-1", "-q:v", "3", out]);
   else { const g = path.join(spec.stills, `t_${+t.toFixed(2)}.jpg`); spawnSync("ffmpeg", ["-v", "error", "-y", "-i", g, "-vf", "scale=960:-1", "-q:v", "3", out]); }
 });
+(spec.endings || []).forEach((e, i) => spawnSync("ffmpeg", ["-v", "error", "-y", "-i", path.join(spec.stills, e.still), "-vf", "scale=960:-1", "-q:v", "3", path.join(dir, `e${i}.jpg`)]));
 fs.copyFileSync(path.join(P, spec.thumb), path.join(dir, "thumb.png"));
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
@@ -42,12 +43,13 @@ button{background:var(--gold);color:#1a1612;border:0;border-radius:8px;padding:9
 <div class="top"><div><h1>${esc(spec.title)}</h1><div class="sub">${esc(spec.subtitle)} · ${mmss(spec.duration)} · leave a box blank = no change</div></div><div class="row"><span class="sub" id="msg"></span><button id="copy">Copy all feedback</button></div></div><div id="lb"><img alt=""></div>
 <div class="main">
 <div><h2 style="margin-top:0">Storyboard <span class="sub" style="font-weight:400">(end of each scene, so you see it complete${hasVideo ? "; click a frame to jump the video" : ""})</span></h2>
-<div class="story">${spec.scenes.map((s, i) => `<div class="sc"><img src="preview/${spec.id}/s${String(i).padStart(2, "0")}e.jpg" data-t="${s.t}" alt=""><div class="t">${mmss(s.t)} · ${esc(s.label)}</div><div class="n">${esc(s.note)}</div><textarea data-k="s${i}" placeholder="What to change? (blank = none)"></textarea></div>`).join("")}</div></div>
+<div class="story">${spec.scenes.map((s, i) => `<div class="sc"><img src="preview/${spec.id}/s${String(i).padStart(2, "0")}e.jpg" data-t="${s.t}" alt=""><div class="t">${mmss(s.t)} · ${esc(s.label)}</div><div class="n">${esc(s.note)}</div><textarea data-k="s${i}" placeholder="What to change? (blank = none)"></textarea></div>`).join("")}${(spec.endings || []).map((e, i) => `<div class="sc"><img src="preview/${spec.id}/e${i}.jpg" alt=""><div class="t">ENDING ${"AB"[i]} · ${esc(e.label)}</div><div class="n">${esc(e.note)}</div><textarea data-k="e${i}" placeholder="What to change? (blank = none)"></textarea></div>`).join("")}</div></div>
 <div class="side">
   <div class="phone">${hasVideo ? `<video id="v" src="${esc(spec.video)}" controls playsinline></video>` : `<img src="preview/${spec.id}/thumb.png" alt="thumbnail (frame 0)">`}<div class="safe" id="safe"><i></i></div></div>
   <div class="row" style="justify-content:center"><label><input type="checkbox" id="sz"> safe zones</label></div>
   <div class="card"><b>Hook</b> (top of video, all the time; teases the payoff without giving it away)${(spec.hooks || [spec.hook]).map((h, i) => `<label class="opt"><input type="radio" name="hook" value="${esc(h)}"${i === 0 ? " checked" : ""}>${esc(h)}</label>`).join("")}<textarea data-k="hook" placeholder="Or write your own hook (overrides the choice above)"></textarea></div>
-  <div class="card"><b>Thumbnail</b><div class="sub">${esc(spec.thumbText)}</div><textarea data-k="thumb" placeholder="Change? (blank = keep)"></textarea></div>
+  <div class="card"><b>Thumbnail copy</b> (the words on the thumbnail, not the hook)<div class="sub">${esc(spec.thumbCopy)}</div><textarea data-k="thumbcopy" placeholder="Change the thumbnail copy? (blank = keep)"></textarea></div>
+  <div class="card"><b>Thumbnail image</b> (the picture)<div class="sub">${esc(spec.thumbImage)}</div><textarea data-k="thumbimg" placeholder="Change the picture? (blank = keep)"></textarea></div>
   <div class="card"><b>Overall</b><textarea data-k="overall" placeholder="Music, pacing, colour, anything else"></textarea></div>
 </div></div>
 <h2>Where this points</h2><div class="card">${esc(spec.linkNote)}</div>
@@ -66,8 +68,8 @@ try{const h=localStorage.getItem(id+"hookpick");radios.forEach(r=>{if(r.value===
 radios.forEach(r=>r.onchange=()=>{try{localStorage.setItem(id+"hookpick",r.value)}catch{}});
 const tas=[...document.querySelectorAll("textarea")];
 tas.forEach(t=>{try{t.value=localStorage.getItem(id+t.dataset.k)||""}catch{}; t.oninput=()=>{try{localStorage.setItem(id+t.dataset.k,t.value)}catch{}}});
-document.getElementById("copy").onclick=()=>{const L=["FEEDBACK for "+${JSON.stringify(spec.title)}+":"];const lab={hook:"HOOK",thumb:"THUMBNAIL",overall:"OVERALL"};
- tas.forEach(t=>{if(!t.value.trim())return;const k=t.dataset.k;const sc=/^s\\d+$/.test(k)?t.closest(".sc").querySelector(".t").textContent:(lab[k]||k);L.push("- "+sc+": "+t.value.trim())});
+document.getElementById("copy").onclick=()=>{const L=["FEEDBACK for "+${JSON.stringify(spec.title)}+":"];const lab={hook:"HOOK",thumbcopy:"THUMBNAIL COPY",thumbimg:"THUMBNAIL IMAGE",overall:"OVERALL"};
+ tas.forEach(t=>{if(!t.value.trim())return;const k=t.dataset.k;const sc=/^[se]\\d+$/.test(k)?t.closest(".sc").querySelector(".t").textContent:(lab[k]||k);L.push("- "+sc+": "+t.value.trim())});
  const pick=radios.find(r=>r.checked);if(pick&&!document.querySelector('[data-k=hook]').value.trim())L.push("- HOOK (chosen option): "+pick.value);
  if(L.length==1)L.push("- No changes needed.");const txt=L.join("\\n");navigator.clipboard.writeText(txt).then(()=>document.getElementById("msg").textContent="Copied! Paste it to Claude.").catch(()=>{prompt("Copy this:",txt)})};
 </script></body></html>`;
