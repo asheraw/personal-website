@@ -5,8 +5,8 @@ import fs from "fs";
 const EDL = JSON.parse(fs.readFileSync("edl.json", "utf8"));
 const WORDS = JSON.parse(fs.readFileSync("words.json", "utf8"));
 const DUR = EDL.dur;
-const T0 = 0.7, PD = 0.5, T1 = T0 + PD;          // push-down start / duration / settled
-const WIN_TOP = 1050, WIN_H = 810, X0 = 460, Y1 = 270, FACE_X = 1000;
+const T0 = 0.7, PD = 0.5, T1 = 0.3;          // push-down start / duration / settled
+const WIN_TOP = 1030, WIN_H = 830, X0 = 460, Y1 = 90, FACE_X = 1000;
 const KEYS = new Set((process.env.KEYS || "nothing,experts,expert,stitched,nobody,pay,copy,me,source,check,believed,lived,did,borrowed,find").split(","));
 const ws = WORDS.map((w, i) => {
   const punct = (w.w.match(/[.,?!]$/) || [""])[0], bare = w.w.replace(/[.,?!]+$/, "");
@@ -36,17 +36,17 @@ const html = `<!doctype html>
 <style>
   @font-face { font-family: "Montserrat"; font-weight: 800; src: url("assets/fonts/Montserrat-800.woff2") format("woff2"); }
   body { margin: 0; background: #0a0807; }
-  #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #0a0807; --d: 1; --p: 1; --ox: 460px; --tx: -460px; --ty: -270px; --s: 1; --wt: 1050px; --wh: 810px; }
+  #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #0a0807; --d: 1; --p: 1; --ox: 500px; --tx: -460px; --ty: -90px; --s: 1; --wt: 1030px; --wh: 830px; }
   .glow { position: absolute; left: -15%; top: 0; width: 130%; height: 900px; background: radial-gradient(ellipse 55% 70% at 50% -5%, rgba(240,184,101,.30), rgba(240,184,101,.07) 55%, transparent 76%); }
   .headglow { position: absolute; left: 140px; top: 860px; width: 800px; height: 360px; background: radial-gradient(ellipse 50% 50% at 50% 55%, rgba(240,184,101,.26), rgba(240,184,101,.08) 60%, transparent 100%); }
   #boardframe { position: absolute; left: 54px; top: 284px; width: 972px; height: 552px; box-sizing: border-box; border: 6px solid #b8924a; border-radius: 16px; overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,.55); }
   #board { position: absolute; left: 0; top: 0; width: 960px; height: 540px; }
-  #vwin { position: absolute; left: 0; top: var(--wt); width: 1080px; height: var(--wh); overflow: hidden; }
+  #vwin { position: absolute; left: 0; top: var(--wt); width: 1080px; height: var(--wh); overflow: hidden; -webkit-mask-image: linear-gradient(transparent 0, #000 90px); mask-image: linear-gradient(transparent 0, #000 90px); }
   #vz1 { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
   .pvid { position: absolute; left: 0; width: 1920px; height: 1080px; transform-origin: 0 0; transform: translate(var(--ox), 260px) scale(calc(var(--d) * var(--p))) translate(calc(var(--ox) * -1), -260px) translate(var(--tx), var(--ty)) scale(var(--s)); }
   #pv { top: 0; }
-  #seam { position: absolute; left: 0; top: ${WIN_TOP - 3}px; width: 1080px; height: 4px; background: #b8924a; opacity: .75; }
-  #vpop { position: absolute; left: 0; top: 0; width: 1080px; height: var(--wt); overflow: hidden; }
+  #seam { display: none; position: absolute; left: 0; top: ${WIN_TOP - 3}px; width: 1080px; height: 4px; background: #b8924a; opacity: .75; }
+  #vpop { display: none; position: absolute; left: 0; top: 0; width: 1080px; height: var(--wt); overflow: hidden; }
   #vpop .pvid { top: var(--wt); }
   #pM { mix-blend-mode: multiply; } #pP { mix-blend-mode: plus-lighter; }
   #subs { position: absolute; left: 130px; top: 852px; width: 810px; height: 92px; z-index: 30; }
@@ -80,8 +80,6 @@ const html = `<!doctype html>
     tl.set("#thumb", { autoAlpha: 0 }, 0.066);
     if (hk) tl.fromTo("#hook", { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: 0.25, ease: "power2.out" }, 0.1);
     // Asher full screen -> swift push-down into the lower window
-    tl.set("#root", { "--wt": "0px", "--wh": "1920px", "--tx": "${Math.round(540 - FACE_X * 1.778)}px", "--ty": "0px", "--s": 1.778 }, 0);
-    tl.to("#root", { "--wt": "${WIN_TOP}px", "--wh": "${WIN_H}px", "--tx": "-${X0}px", "--ty": "-${Y1}px", "--s": 1, duration: ${PD}, ease: "expo.inOut" }, ${T0});
     // slow push-in + punch-ins (CSS variables so the three person layers share one transform)
     tl.fromTo("#root", { "--d": 1 }, { "--d": 1.06, duration: ${DUR} - ${T1}, ease: "none" }, ${T1});
     ${JSON.stringify(ZOOMS)}.forEach(([a, b, ox, sc]) => {

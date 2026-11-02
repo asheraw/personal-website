@@ -85,6 +85,16 @@ Asher's 4 rules: (1) thumbnail is FRAME 0 of the video; (2) start with him in fu
 - Link screenshot: `Link screenshot.png` in the project folder (asheraw.com/link, left tab = the perfect-offer article) is shown on the "full article" scene with the left tab circled.
 - Thumbnail idea that Asher asked for: mugshot polaroids of well-known experts with a black bar across the eyes, arrow to a circled "Zero", text "But WHY?". Generator: `_work/c1/thumb/thumb2.mjs` (drop photos in `experts/`).
 
+## v6 rules (2026-11-02, after Claude Reel 1 feedback round 2)
+- **Previews first, NOT video.** For a new reel send ONLY the preview page: one finished (end-of-scene) still per scene + why-this-style + hook options + thumbnail. Stills cost far fewer tokens than rendering and checking a cut. Render the video only after Asher approves the stills.
+- **Preview checklist = SHORT** (about 8 items, <= 6 words each). No long sentences.
+- **Speed**: play at 1.0x. Use SP=1.1 only if the cut is >= ~85 s (limit 90 s). Panel timing hints must match the speed used (hints written at 1.1x need x1.1 at 1.0x; re-check `at()` errors).
+- **Layout for the Imperfect-offers series (v7)**: Asher stays in the LOWER half, no full-screen intro, no push-down, no cut-out/pop-out (his black cap on black background matted badly). Window top 1030, src crop x460 y90, soft fade on the top edge (no hard line crossing cap/chin). Asher will revisit zoom/crop effects next series.
+- **Thumbnail (series 11-02)**: hook "I Copied EXPERTS. Sold Zero." with Zero circled, small "but why?", then mugshot polaroids with bar over eyes (Dan, Alex, Codie; first names only, heads cropped from `Materials/`, `thumb/crop_heads.py`, `thumb/thumb3.mjs`). Video frame 0 = this thumbnail for 2 frames.
+- **Other-platforms ending** (asheraw.com/link): Whisper writes "asheroll.com": it is a transcription error, he says it right; map to "asheraw.com/link". End card: FIND IT AT / asheraw.com/link / THE FIRST TAB; keep ~1.2 s tail after the last word.
+- **Render scripts must stop on error** (`set -e`, no `| tail` after render commands): a silent failed board render once produced a video with stale panel timing.
+- Icon overlays must not cover card text (put icons at the card's top-right corner, ~90 px).
+
 ## Standing rules from Asher (do not re-learn)
 - Text must FINISH writing/typing before the scene or camera moves on (failed twice on the whiteboard; pen write speed has a floor, so start earlier or delay the camera). Check a frame strip right before every scene change. Leave >= 1 s tail after the last spoken word so the last panel element completes (he complained when the ending cut off).
 - No clipped/overlapping/duplicate text; keep text inside bubbles/windows; keep overlays out of the caption lane.

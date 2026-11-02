@@ -16,8 +16,9 @@ for i, s in enumerate(E["segs"]):
     parts.append(f"[0:v]trim={s['in']}:{s['out']},setpts=(PTS-STARTPTS)/{s.get('rate', 1.0)},fps=30[v{i}]")
 fc = ";".join(parts) + ";" + "".join(f"[v{i}]" for i in range(len(E["segs"]))) + f"concat=n={len(E['segs'])}:v=1:a=0,{G}[v]"
 open("bake.filter", "w").write(fc)
-if not os.path.exists("person.mp4") or "--rebake" in sys.argv: subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", "src.mp4", "-/filter_complex", "bake.filter", "-map", "[v]", "-c:v", "libx264", "-crf", "14", "-preset", "fast", "-pix_fmt", "yuv420p", "person.mp4"], check=True)
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", "src.mp4", "-/filter_complex", "bake.filter", "-map", "[v]", "-c:v", "libx264", "-crf", "14", "-preset", "fast", "-pix_fmt", "yuv420p", "person.mp4"], check=True)
 print("person.mp4 done")
+if "--person-only" in sys.argv: sys.exit(0)
 
 # Robust Video Matting (https://github.com/PeterL1n/RobustVideoMatting, cloned at D:/Work/RobustVideoMatting): clean, temporally stable alpha
 import torch

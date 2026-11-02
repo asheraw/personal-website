@@ -10,13 +10,14 @@ for (const w of raw) {
   if (/^-/.test(t) && words.length) { const p = words[words.length - 1]; p.text += t.replace(/\s/g, ""); p.end = w.end; continue; }
   words.push({ text: t, start: w.start, end: w.end });
 }
-const FIX = { "saw": "sold", "Commence": "Comment", "comment": "Comment", "perfect": "PERFECT", "perfect.": "PERFECT.", "believed,": "believed,", "asheroll": "asheraw" };
+const FIX = { "saw": "sold", "Commence": "Comment", "comment": "Comment", "perfect": "PERFECT", "perfect.": "PERFECT.", "believed,": "believed,", "asheroll": "asheraw.com/link." };
 words.forEach((w) => { const b = w.text.replace(/[.,?!]+$/, ""), p = w.text.slice(b.length); if (FIX[b] && !(b === "saw" && w.start > 10)) w.text = FIX[b] + p; });
 words.forEach((w) => { if (/^15$/.test(w.text)) w.text = "15"; });
+const J = words.findIndex((w) => /^asheraw/i.test(w.text)); if (J >= 0 && /^\.?com/i.test(words[J + 1]?.text || "")) { words[J].end = words[J + 1].end; words.splice(J + 1, 1); }
 // Whisper stretches first/last words over silence: pin the first word to the real start
 const F = words.findIndex((w) => w.start > 4.5 && /^I$/.test(w.text)); words[F].start = 4.84;
 const IN = 4.75;
-const RANGES = WEB ? [[IN, 73.7], [74.5, 82.5]] : [[IN, 73.7], [74.5, 80.2], [110.85, 113.9]];
+const RANGES = WEB ? [[IN, 73.7], [74.5, 83.9]] : [[IN, 73.7], [74.5, 80.2], [110.85, 113.9]];
 const segs = [], ranges = []; let t = 0;
 for (const [a, b] of RANGES) { segs.push({ clip: "src", in: a, out: b, start: +t.toFixed(3), dur: +(b - a).toFixed(3), kind: "a" }); ranges.push([a, b, +t.toFixed(3)]); t += b - a; }
 const v1 = []; words.forEach((w) => { ranges.forEach(([a, b, s], si) => { if (w.start >= a - 0.05 && w.start < b) v1.push({ w: w.text, s: +(s + w.start - a).toFixed(3), e: +(s + w.end - a).toFixed(3), seg: si }); }); });

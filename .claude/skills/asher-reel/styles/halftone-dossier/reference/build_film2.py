@@ -3,9 +3,9 @@ import re
 R6 = open('../../../10-22 Offer regrets/_work/reel-6-board/film.js', encoding='utf-8').read()
 head = R6[:R6.index('  // ───────── beats (final time)')]
 head = head.replace("Reel 6 \"If AI explains it for free…\" — Halftone Dossier panel (lemo-opuscar halftone-dossier style, own case: THE PEOPLE vs. YOUR COURSE).", "Claude Reel 1 \"I copied the experts. I sold nothing.\" — Halftone Dossier panel with 3D emoji images (Fluent) + Lottie (Noto).")
-head = re.sub(r"  const words = await \(await fetch\('words_clip.json'\)\).json\(\);\n.*?  const X = t => M\(V\(t\)\);\n", "  const words = await (await fetch('words.json')).json();\n  const DURJ = await (await fetch(`edl${SUF}.json`)).json();\n", head, flags=re.S)
+head = re.sub(r"  const words = await \(await fetch\('words_clip.json'\)\).json\(\);\n.*?  const X = t => M\(V\(t\)\);\n", "  const words = await (await fetch('words.json')).json();\n  const DURJ = await (await fetch('edl.json')).json();\n", head, flags=re.S)
 head = head.replace("const norm = s =>", "await Promise.all(['900 40px \"Arial Black\"', '40px \"Cooper Black Std\"', '700 40px \"Courier New\"', '700 40px \"Comic Sans MS\"'].map(f => document.fonts.load(f).catch(() => null)));\n  const LJ = {}; for (const n of ['1f4b8', '1f92f', '2705']) LJ[n] = await (await fetch('lottie/' + n + '.json')).json();\n  const norm = s =>", 1)
-head = head.replace("const a = (w, near) => X(at(w, near));", "const a = (w, near) => at(w, near);")
+head = head.replace("const a = (w, near) => X(at(w, near));", "const a = (w, near) => at(w, near * 1.1);   // hint times were written at 1.1x speed; reel now plays at 1.0x")
 head = head.replace("const DUR = warp.dur;", "const DUR = DURJ.dur;")
 helpers = R6[R6.index('  // ───────── helpers'):R6.index('  // chapter labels')]
 paper = [l for l in R6.split('\n') if l.startswith('  const pc = document.getElementById')][0]
@@ -27,7 +27,7 @@ body = r'''
   T.open = a('Open', 50.6); T.point = a('point', 51.7); T.where = a('where', 53.1);
   T.ifans = a('If', 54.7); T.someone = a('someone', 55.6); T.swap = a('swap', 57.1); T.believed = a('believed', 58.5); T.lived = a('lived', 59.5); T.did = a('did', 60.2);
   T.limited = a("I'm", 60.7); T.article = a('article', 63.8); T.prompts = a('prompts', 65.4);
-  const cta = a('Comment', 66.0), ctaB = a('PERFECT', 66.3), ctaC = a('send', 67.2);
+  const cta = WEB ? a('get', 66.2) : a('Comment', 66.0), ctaB = WEB ? a('asheraw', 66.9) : a('PERFECT', 66.3), ctaC = WEB ? a('asheraw', 66.9) + .7 : a('send', 67.2);
   const BND = [0, T.worked - .12, T.took - .12, T.every - .12, T.if40 - .12, T.so - .12, T.then - .12, T.picture - .12, T.borrowed - .12, T.this - .05, T.open - .12, T.ifans - .12, T.limited - .12, cta - .25, DUR + 9];
   const NSC = 14;
   const sceneOf = t => { let s = 0; for (let i = 0; i < NSC; i++) if (t >= BND[i]) s = i; return s; };
@@ -87,7 +87,7 @@ body = r'''
 
   <div class="g" id="g5">
     <div class="abs slab sh" id="h5" style="left:90px;top:100px;font-size:100px">SO I DID WHAT THEY SAID</div>
-    ${[['STEPS', 'clipboard_3d', '#d9e4ff'], ['MODULES', 'books_3d', '#ffd9e6'], ['BONUSES', 'wrapped_gift_3d', '#fff0b3']].map(([s, im, c], i) => `<div class="card" id="o5${i}" style="left:${90 + i * 600}px;top:290px;width:540px;height:230px;background:${c};opacity:0"><div class="mono" style="font-size:30px">THEIR</div><div class="slab" style="font-size:74px">${s}</div>${IM(im, 120, 'position:absolute;right:16px;top:50px')}</div><div class="abs" id="a5${i}" style="left:${250 + i * 600}px;top:540px;opacity:0">${IM('printer_3d', 160)}</div><div class="card" id="c5${i}" style="left:${90 + i * 600}px;top:740px;width:540px;height:230px;background:#fff;opacity:0"><div class="mono" style="font-size:30px;color:var(--red)">MY COPY</div><div class="slab" style="font-size:74px">${s}</div></div>`).join('')}
+    ${[['STEPS', 'clipboard_3d', '#d9e4ff'], ['MODULES', 'books_3d', '#ffd9e6'], ['BONUSES', 'wrapped_gift_3d', '#fff0b3']].map(([s, im, c], i) => `<div class="card" id="o5${i}" style="left:${90 + i * 600}px;top:290px;width:540px;height:230px;background:${c};opacity:0"><div class="mono" style="font-size:30px">THEIR</div><div class="slab" style="font-size:74px">${s}</div>${IM(im, 90, 'position:absolute;right:8px;top:-40px')}</div><div class="abs" id="a5${i}" style="left:${250 + i * 600}px;top:540px;opacity:0">${IM('printer_3d', 160)}</div><div class="card" id="c5${i}" style="left:${90 + i * 600}px;top:740px;width:540px;height:230px;background:#fff;opacity:0"><div class="mono" style="font-size:30px;color:var(--red)">MY COPY</div><div class="slab" style="font-size:74px">${s}</div></div>`).join('')}
   </div>
 
   <div class="g" id="g6">
@@ -219,7 +219,7 @@ body = r'''
       const kc = clamp((t - (T.article - .2)) / .6); $('lnkc').style.opacity = kc > 0 ? 1 : 0; $('lne').style.strokeDashoffset = (1 - eo(kc)) * 1200; op($('thisone'), t >= T.article + .3 ? 1 : 0);
       R('tk0', T.article - .1, .3, 300); R('tk1', T.article + .6, .3, 300); R('tk2', T.prompts - .5, .3, 300);
     }
-    if (s === 13) { chars($('c0t'), 'COMMENT', t, cta, .05); typed($('c1t'), 'PERFECT', t, ctaB - .1, 9); typed($('c2t'), "AND I'LL SEND IT TO YOU", t, ctaC - .15, 30); }
+    if (s === 13) { if (WEB) { chars($('c0t'), 'FIND IT AT', t, cta, .05); $('c1t').style.fontSize = '150px'; $('c1t').style.top = '330px'; typed($('c1t'), 'asheraw.com/link', t, ctaB - .1, 24); typed($('c2t'), 'THE FIRST TAB', t, ctaB + .9, 24); } else { chars($('c0t'), 'COMMENT', t, cta, .05); typed($('c1t'), 'PERFECT', t, ctaB - .1, 9); typed($('c2t'), "AND I'LL SEND IT TO YOU", t, ctaC - .15, 30); } }
 '''
 out = head + body + tail
 open('film.js', 'w', encoding='utf-8').write(out)
