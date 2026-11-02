@@ -6,7 +6,7 @@ const spec = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const P = path.resolve(spec.project), dir = path.join(P, "preview", spec.id); fs.mkdirSync(dir, { recursive: true });
 const vid = path.join(P, spec.video);
 const fr = (t, name) => spawnSync("ffmpeg", ["-v", "error", "-y", "-ss", String(t), "-i", vid, "-frames:v", "1", "-vf", "scale=360:-1", "-q:v", "3", path.join(dir, name)]);
-spec.scenes.forEach((s, i) => fr(Math.min(s.t + (s.at ?? 0.9), spec.duration - 0.1), `s${String(i).padStart(2, "0")}.jpg`));
+spec.scenes.forEach((s, i) => { const nxt = spec.scenes[i + 1]; const tEnd = nxt ? nxt.t - 0.3 : spec.duration - 0.15; fr(Math.max(s.t + 0.2, tEnd), `s${String(i).padStart(2, "0")}e.jpg`); if (s.mid) fr(s.t + s.mid, `s${String(i).padStart(2, "0")}.jpg`); });
 if (spec.thumb) fs.copyFileSync(path.join(P, spec.thumb), path.join(dir, "thumb.png"));
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
@@ -40,12 +40,13 @@ button{background:var(--gold);color:#1a1612;border:0;border-radius:8px;padding:9
   <div>
     <div class="card"><b>Where this points</b><div class="sub">${esc(spec.linkNote)}</div></div>
     <h2>Checklist</h2><div class="card"><ul class="chk">${spec.checklist.map((c) => `<li><span class="tick ${c.s === "todo" ? "todo" : c.s === "no" ? "no" : ""}">${c.s === "todo" ? "·" : c.s === "no" ? "!" : "✓"}</span><span>${esc(c.t)}</span></li>`).join("")}</ul></div>
+    <h2>Why this style</h2><div class="card">${spec.why}</div>
     <h2>Hook text (very top of the video, shown the whole time)</h2><div class="card"><b>${esc(spec.hook)}</b><textarea data-k="hook" placeholder="Change the hook? Write the new hook here, or leave blank."></textarea></div>
     <h2>Thumbnail (frame 0 of the video)</h2><div class="card thumbrow"><img src="preview/${spec.id}/thumb.png" alt=""><div><div class="sub">Headline: ${esc(spec.thumbText)}</div><textarea data-k="thumb" placeholder="Change the thumbnail text / graphic / face? Leave blank if fine."></textarea></div></div>
   </div>
 </div>
-<h2>Storyboard <span class="sub" style="font-weight:400">(click a frame to jump the video there)</span></h2>
-<div class="story">${spec.scenes.map((s, i) => `<div class="card sc"><img src="preview/${spec.id}/s${String(i).padStart(2, "0")}.jpg" data-t="${s.t}" alt=""><div class="t">${mmss(s.t)} · ${esc(s.label)}</div><div class="n">${esc(s.note)}</div><textarea data-k="s${i}" placeholder="What to change? (blank = none)"></textarea></div>`).join("")}</div>
+<h2>Storyboard <span class="sub" style="font-weight:400">(each frame = the END of the scene, so you see it complete; click to jump the video there)</span></h2>
+<div class="story">${spec.scenes.map((s, i) => `<div class="card sc"><img src="preview/${spec.id}/s${String(i).padStart(2, "0")}e.jpg" data-t="${s.t}" alt="" title="end of this scene"><div class="t">${mmss(s.t)} · ${esc(s.label)}</div><div class="n">${esc(s.note)}</div><textarea data-k="s${i}" placeholder="What to change? (blank = none)"></textarea></div>`).join("")}</div>
 <h2>Overall notes</h2><div class="card"><textarea data-k="overall" placeholder="Anything else: music, pacing, zoom, colour, captions..."></textarea></div>
 <div class="row" style="margin:18px 0 40px"><button id="copy">Copy all feedback</button><span class="sub" id="msg">Your notes save in this browser automatically. Paste the copied text back to Claude.</span></div>
 <script>
