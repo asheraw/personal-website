@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Hover-triggered hand-drawn underline -- same "line draws itself on hover"
@@ -12,9 +12,11 @@ import { motion, AnimatePresence } from "framer-motion";
 // ring in CommentSocialProof.tsx. Colour swapped from the reference's red
 // to the site's own spotlight accent, per Asher's ask.
 //
-// Desktop only (sm: and up) -- gated by breakpoint on the <svg> itself, not
-// just group-hover, since a touch tap can leave a CSS :hover state stuck on
-// mobile with no real "leave" event to reverse it.
+// The line also draws itself once, shortly after the page loads, and then
+// stays: hover alone meant most visitors (and every phone) never saw it.
+// Hovering afterwards just redraws it with a different wobble. Since nothing
+// depends on :hover staying or leaving any more, a stuck touch-hover is
+// harmless, so it shows on mobile too.
 //
 // -bottom-1 keeps the line tight under the text -- the headline's own
 // tagline sits mt-4 (16px) below it, so there's real clearance before the
@@ -26,28 +28,33 @@ const WOBBLE_PATHS = [
 ];
 
 export function HoverDrawHeadline({ text, className }: { text: string; className: string }) {
-  const [hovered, setHovered] = useState(false);
+  const [drawn, setDrawn] = useState(false);
   const [variant, setVariant] = useState(0);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setDrawn(true), 600);
+    return () => window.clearTimeout(t);
+  }, []);
 
   return (
     <h1
       className={`relative inline-block ${className}`}
       onMouseEnter={() => {
         setVariant(Math.floor(Math.random() * WOBBLE_PATHS.length));
-        setHovered(true);
+        setDrawn(true);
       }}
-      onMouseLeave={() => setHovered(false)}
     >
       {text}
       <svg
         viewBox="0 0 400 16"
         preserveAspectRatio="none"
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-1 left-0 hidden h-3 w-full text-spotlight sm:block"
+        className="pointer-events-none absolute -bottom-1 left-0 h-3 w-full text-spotlight"
       >
         <AnimatePresence>
-          {hovered && (
+          {drawn && (
             <motion.path
+              key={variant}
               d={WOBBLE_PATHS[variant]}
               fill="none"
               stroke="currentColor"

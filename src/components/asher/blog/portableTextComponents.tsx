@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PortableText, type PortableTextComponents, type PortableTextBlockComponent } from "@portabletext/react";
+import { AnimatedHeading } from "@/components/asher/blog/AnimatedHeading";
 import { CodeBlock } from "@/components/asher/blog/CodeBlock";
 import { ContactPills } from "@/components/asher/ContactPills";
 import { urlFor } from "@/sanity/lib/image";
@@ -95,9 +96,9 @@ export const postBodyComponents: PortableTextComponents = {
       </h2>
     ),
     h2: ({ children }) => (
-      <h2 className="clear-both mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl">
+      <AnimatedHeading level={2} className="clear-both mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl">
         {children}
-      </h2>
+      </AnimatedHeading>
     ),
     // NOTE: createPostBodyComponents() below overrides this specific
     // renderer to add an id -- this bare version (no id) stays as the
@@ -105,12 +106,14 @@ export const postBodyComponents: PortableTextComponents = {
     // (e.g. an author bio), so it's never silently missing an id it
     // never had a reading-progress checkpoint to match anyway.
     h3: ({ children }) => (
-      <h3 className="clear-both mt-8 font-display text-xl font-semibold tracking-tight text-ivory sm:text-2xl">
+      <AnimatedHeading level={3} className="clear-both mt-8 font-display text-xl font-semibold tracking-tight text-ivory sm:text-2xl">
         {children}
-      </h3>
+      </AnimatedHeading>
     ),
     h4: ({ children }) => (
-      <h4 className="clear-both mt-6 font-display text-lg font-semibold tracking-tight text-ivory">{children}</h4>
+      <AnimatedHeading level={4} className="clear-both mt-6 font-display text-lg font-semibold tracking-tight text-ivory">
+        {children}
+      </AnimatedHeading>
     ),
     blockquote: ({ children }) => (
       <blockquote className="clear-both border-l-2 border-spotlight/60 pl-5 italic text-stone/90">
@@ -418,12 +421,13 @@ export function createPostBodyComponents(headingIds: Map<string, string>): Porta
   const block: Record<string, PortableTextBlockComponent> = {
     ...(postBodyComponents.block as Record<string, PortableTextBlockComponent>),
     h2: ({ children, value }) => (
-      <h2
+      <AnimatedHeading
+        level={2}
         id={headingIds.get((value as { _key?: string })._key ?? "")}
         className="clear-both mt-10 font-display text-2xl font-semibold tracking-tight text-ivory sm:text-3xl scroll-mt-24"
       >
         {children}
-      </h2>
+      </AnimatedHeading>
     ),
   };
   return { ...postBodyComponents, block };

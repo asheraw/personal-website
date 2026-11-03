@@ -321,6 +321,27 @@ body { scrollbar-gutter: stable; }
   }
 }
 
+/* Post heading effects (AnimatedHeading.tsx): per-character spans for h2/h3,
+   a highlighter sweep for h4. */
+.fx-w { display: inline-block; white-space: nowrap; }
+.fx-c { transition: opacity 0.12s ease-out; }
+@property --hl-a { syntax: "<number>"; inherits: false; initial-value: 1; }
+.fx-mark {
+  background-image: linear-gradient(color-mix(in srgb, var(--spotlight) calc(var(--hl-a) * 55%), transparent), color-mix(in srgb, var(--spotlight) calc(var(--hl-a) * 55%), transparent));
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 0% 45%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.fx-mark-on .fx-mark { animation: fx-mark-sweep 1.9s ease-out forwards; }
+@keyframes fx-mark-sweep {
+  0% { background-size: 0% 45%; --hl-a: 1; }
+  35% { background-size: 100% 45%; --hl-a: 1; }
+  60% { background-size: 100% 45%; --hl-a: 1; }
+  100% { background-size: 100% 45%; --hl-a: 0; }
+}
+
 /* Printing a blog post: force plain black-on-white regardless of the
    current dark/light theme (nobody wants a dark background eating their
    printer's ink), drop the decorative cursor glow, and print a link's
