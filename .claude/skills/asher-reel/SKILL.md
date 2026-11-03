@@ -126,6 +126,8 @@ Asher's 4 rules: (1) thumbnail is FRAME 0 of the video; (2) start with him in fu
 - Styles used so far: R1 Halftone Dossier, R2 Evidence Board, R3 Stitched Lab, R4 Breaking News, R5 Paper Mad-Libs.
 - Never run `shutdown`-type actions unless asked; when asked use a 60 s timer so it can be aborted.
 
+- **v10b**: supplied artwork goes in `cN/overrides.mjs` (see `pipeline/v4/overrides_example_r3.mjs`; scenes get `"ov":"name"`, `bare`, `full` for 1080x1920). Black-background artwork needs `mix-blend-mode:screen` on the dark theme. Ending stills with `pics` render the full 1080x1920 end frame (hook top, slide centred, pictures at the bottom). Keep text big: fill the slide, no stingy margins; pastel cards need dark text; highlight only the key phrase, sentence case unless asked.
+
 ## Standing rules from Asher (do not re-learn)
 - Text must FINISH writing/typing before the scene or camera moves on (failed twice on the whiteboard; pen write speed has a floor, so start earlier or delay the camera). Check a frame strip right before every scene change. Leave >= 1 s tail after the last spoken word so the last panel element completes (he complained when the ending cut off).
 - No clipped/overlapping/duplicate text; keep text inside bubbles/windows; keep overlays out of the caption lane.
