@@ -132,6 +132,8 @@ Asher's 4 rules: (1) thumbnail is FRAME 0 of the video; (2) start with him in fu
 
 - **v10d**: Bad Boy-style music swaps: skip a track's near-silent intro (BADBOY_SKIP) so it is audible the moment it enters, no slow fade-in. Subtitles: Whisper drops/lowercases words, so fix in edl.mjs (fixAt/insert) and proper nouns in build4. Subtitles sit above full-screen pictures (z 60). Same-picture scenes: `nofade` + `zoom` in/out (Ken Burns) instead of a fade. Scene changes never dip to black (opacity stays 1). Other-platforms cut must show the Link screenshot (Materials) - only after IG is approved.
 
+- **v10e**: thumbnail copy stays inside the safe zone (x 130-940, y 250-1440 of 1080x1920) on every reel. News/branded motifs recede after the opening beat (`nobar`, calmer chip). Storyboard scenes should show a visual consequence, not another list. Endings can be multi-card (`sc` = override scene, e.g. Link screenshot slide before the big link). Own photo for thumbnails: crop a frame from the raw (`ffmpeg crop`) into a circle.
+
 ## Standing rules from Asher (do not re-learn)
 - Text must FINISH writing/typing before the scene or camera moves on (failed twice on the whiteboard; pen write speed has a floor, so start earlier or delay the camera). Check a frame strip right before every scene change. Leave >= 1 s tail after the last spoken word so the last panel element completes (he complained when the ending cut off).
 - No clipped/overlapping/duplicate text; keep text inside bubbles/windows; keep overlays out of the caption lane.
