@@ -54,17 +54,17 @@ if (process.argv[3] === "film") {
   const S = D.scenes.filter((x) => WEBV ? !x.igOnly : !x.webOnly).map((x) => ({ ...x }));
   S.forEach((x) => { if (x.anchor) { const m = W.filter((w) => w.w.toLowerCase().startsWith(x.anchor)).pop(); x.t = +(m.s - 0.1).toFixed(2); } });
   const EV = [];
-  const divs = S.map((x, i) => { EV.push({ t: Math.max(0, +(x.t - 0.04).toFixed(2)), type: i ? "swish" : "hit" }); return `<div class="sl" id="sl${i}">${x.full ? "" : cp(sceneDiv(x))}</div>`; }).join("\n");
+  const divs = S.map((x, i) => { EV.push({ t: Math.max(0, +(x.t - 0.04).toFixed(2)), type: i ? "swish" : "hit" }); return `<div class="sl" id="sl${i}">${x.full ? "" : cp(sceneDiv(x)).replace(/data-word="([^"]+)"/g, (m, w) => { const wd = W.find((q) => q.w.toLowerCase().startsWith(w) && q.s >= x.t - 0.05); return `data-ts="${wd ? Math.max(0, wd.s - x.t - 0.05).toFixed(2) : 0}"`; })}</div>`; }).join("\n");
   const fsi = S.findIndex((x) => x.full); if (fsi >= 0) fs.writeFileSync(`${FD}/times.json`, JSON.stringify({ fs: [S[fsi].t, S[fsi + 1].t] }));
   fs.writeFileSync(`${FD}/index.html`, `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}html,body{width:1920px;height:1080px;overflow:hidden;background:#000}.sl{position:absolute;left:0;top:0;width:1920px;height:1080px;opacity:0}</style></head><body>${divs}<script>
 const S=${JSON.stringify(S.map((x) => ({ t: x.t, zoom: x.zoom, nofade: x.nofade, delay: x.delay })))}, EV=${JSON.stringify(EV)};
 const sl=[...document.querySelectorAll('.sl')];
-const tg=sl.map(el=>{const c=[...el.querySelectorAll('.card,.bub,.stamp,h1,.scene>.abs,.scene>img,.scene>div:not(.chip):not(.bar)')];return c.filter(a=>!c.some(b=>b!==a&&(a.contains(b)||false))).filter(a=>!a.classList.contains('chip')&&!a.classList.contains('zimg'))});
+const tg=sl.map(el=>{const c=[...el.querySelectorAll('.card,.bub,.stamp,h1,.scene>.abs,.scene>img,.scene>div:not(.chip):not(.bar),[data-ts]')];return c.filter(a=>!c.some(b=>b!==a&&(a.contains(b)||false))).filter(a=>!a.classList.contains('chip')&&!a.classList.contains('zimg'))});
 const zi=sl.map(el=>el.querySelector('.zimg'));
 tg.forEach((a,i)=>a.forEach((e,j)=>{if(j>0)EV.push({t:+(S[i].t+0.05+j*0.12).toFixed(2),type:'pop',r:1+0.06*(j%3)})}));
 window.DUR=${E.dur};window.EV=EV.sort((a,b)=>a.t-b.t);window.CHK=()=>[];
 window.render=t=>{let k=0;S.forEach((s,i)=>{if(t>=s.t-1e-6)k=i});sl.forEach((el,i)=>{el.style.opacity=i===k?1:0});
- const lt=t-S[k].t;tg[k].forEach((e,j)=>{const p=Math.min(1,Math.max(0,(lt-0.04-j*0.12-(S[k].delay||0))/0.3)),q=1-Math.pow(1-p,3);e.style.opacity=p;e.style.translate='0 '+((1-q)*40)+'px';e.style.scale=String(0.9+0.1*q)});
+ const lt=t-S[k].t;tg[k].forEach((e,j)=>{const p=Math.min(1,Math.max(0,(lt-0.04-(e.dataset.ts!==undefined?+e.dataset.ts:j*0.12)-(S[k].delay||0))/0.3)),q=1-Math.pow(1-p,3);e.style.opacity=p;e.style.translate='0 '+((1-q)*40)+'px';e.style.scale=String(0.9+0.1*q)});
  const z=S[k].zoom;if(z&&zi[k]){let q;if(z.mode==='in'){const p=Math.min(1,lt/z.dur);q=1-Math.pow(1-p,1.6)}else{const p=Math.min(1,Math.max(0,(lt-0.15)/z.dur));q=1-(p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2)}zi[k].style.transformOrigin=z.o;zi[k].style.transform='translate('+z.tx*q+'px,'+z.ty*q+'px) scale('+(1+(z.s-1)*q)+')'}};
 window.READY=true;</script></body></html>`);
   console.log("film", S.length, "scenes ->", FD); process.exit(0);
