@@ -11,6 +11,18 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-11-21 — /contenttoclients page (loaded as a Studio draft)
+
+- **New page copy for the Content to Clients cohort letter**, living at `asheraw.com/contenttoclients`. It uses the
+  existing generic `page` type (Studio > Pages), so there is no new route or component: the root `[slug]` catch-all
+  already serves it and the sitemap already lists it once published. Edit it in Studio exactly like a post.
+- **`scripts/import-pages.mjs` + `scripts/pages/contenttoclients.md`**: loads a markdown file into Sanity as a
+  *draft* (`drafts.page-<slug>`), modelled on `import-legacy-posts.mjs`. Nothing is published by the script. It
+  skips a slug that already exists (draft or published), so re-running can never overwrite Studio edits; `--force`
+  overrides that, `--dry-run` prints the result without a token. Needs `SANITY_API_WRITE_TOKEN` in `.env.local`.
+- The letter still has 13 `[bracketed]` blanks (price, dates, guarantee, spots, call schedule, reply channel) to fill
+  in Studio before publishing.
+
 ## 2026-10-23 — Security upgrade, Studio navigation cleanup, snippet fixes, link-page tools, calendar
 
 Deployed to production 2026-10-24 (`61b69d9`), after a full production build passed.
