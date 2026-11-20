@@ -11,6 +11,19 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-11-21 — /contenttoclients page (loaded as a Studio draft)
+
+- **New page for the Content to Clients cohort letter** at . It uses the existing generic
+   type (Studio > Pages), so there is no new route or component: the root  catch-all serves it and the
+  sitemap lists it once published. Edit it in Studio exactly like a post.
+- ** + ** (written in a parallel web session, branch
+  ): loads a markdown file into Sanity as a *draft* (). Nothing is
+  published by the script. It skips a slug that already exists;  overrides,  needs no token.
+  Fixed here: the existence check used the default perspective, which hides drafts, so a re-run would have overwritten
+  an edited draft; it now reads the raw perspective.
+- Imported on 2026-11-21: draft  (35 blocks). A re-run correctly skipped it. Still to do
+  in Studio before publishing: 13  blanks (price, dates, guarantee, spots, call schedule, reply channel).
+
 ## 2026-11-03 — Post Trash, Shelved drafts, heading effects, Dashboard restyle
 
 Work done 24 Oct – 3 Nov. Deployed to production 2026-11-03 (`513747f`; fast-forward of `pending-deploy`, which also carried the asher-reel skill commits from another session).
