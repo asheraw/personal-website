@@ -11,6 +11,24 @@ picking up the project cold. For *why* something works the way it does, or what 
 
 ---
 
+## 2026-11-21 — Meta Pixel for ads retargeting + privacy page update
+
+- **New Meta Pixel "AsherAw.com" (`975936355230100`)**, created in the Asher Aw ad account for the Reels to Clients
+  ad plan. The older "Sig Strat Pixel" in that account belongs to significancestrategy.com; don't use it here.
+- **Installed in `src/components/asher/Analytics.tsx`** behind the same cookie-banner consent gate as GTM and Clarity:
+  nothing Meta loads until a visitor clicks Accept. It fires `PageView` on every page, including client-side route
+  changes, plus `ViewContent` on `/contenttoclients` so ads can retarget sales-letter readers. Events use
+  `trackSingle` so they only go to this pixel. The CSP already allowed `connect.facebook.net` and `facebook.com`.
+- Checked locally with a headless browser: no Meta requests without consent; with consent, `PageView` + one
+  `ViewContent` on the sales letter and a `PageView` after navigating. Headless Chromium's automation flag makes
+  Meta drop events, so the check turns that flag off.
+- **Known duplicate:** GTM container `GTM-PVCX5DQ` has an old Facebook pixel tag (`360011935413768`) that fires
+  `fbq('track','PageView')`, which reaches every pixel on the page, so this pixel counts PageView twice where that
+  tag fires. Fix it in GTM (pause or delete that tag), not in code.
+- **Privacy page** (`/privacy`, last updated now November 21, 2026): removed the "no ad trackers or retargeting
+  pixels" claims, and added the Meta Pixel to the summary, the "how it's used" section, the Cookies section and the
+  third-party services list. Still to do in Studio: the cookie banner text should mention ads as well as analytics.
+
 ## 2026-11-21 — /contenttoclients page (loaded as a Studio draft)
 
 - **New page for the Content to Clients cohort letter** at `asheraw.com/contenttoclients`. It uses the existing generic

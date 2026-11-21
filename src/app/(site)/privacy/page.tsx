@@ -11,7 +11,7 @@ const DESCRIPTION = "What asheraw.com collects, why, and how to have it removed 
 // and it changes rarely enough that a code change (reviewed like any other)
 // is the right amount of friction. Bump this whenever the wording below
 // actually changes.
-const LAST_UPDATED = "August 6, 2026";
+const LAST_UPDATED = "November 21, 2026";
 
 export async function generateMetadata(): Promise<Metadata> {
   const image = await getDefaultSocialImage();
@@ -28,7 +28,7 @@ const TLDR = [
   "I only collect your name, email, or message when you type them in yourself -- through the contact form or a comment. Nothing is collected before that.",
   "A comment's email address is never shown publicly. Only I can see it.",
   "Analytics tracking is off by default, including heatmaps and session recordings. It only turns on if you click “Accept” on the cookie banner, and you can decline it entirely.",
-  "I never sell your data, and there are no ad trackers or retargeting pixels on this site.",
+  "I never sell your data. If you accept the cookie banner, the Meta Pixel also loads, so I can show my ads on Facebook and Instagram to people who have visited this site. Decline, and it never loads.",
   "Your IP address is logged briefly on submissions, only to catch spam — not to track what you do on the site.",
   "If you search the blog, what you typed gets logged (just the text, nothing about you) so I know what to write about next.",
   "I use a small number of trusted services (listed below) to run the site — never to profit from your data.",
@@ -169,11 +169,15 @@ export default function PrivacyPage() {
               <li>Moderating and, where relevant, replying to a comment.</li>
               <li>Sending a reply notification you specifically opted into.</li>
               <li>Understanding, in aggregate, how the site is used (only with analytics consent).</li>
+              <li>Showing my own ads on Facebook and Instagram to people who have visited this site (only with consent).</li>
               <li>Spotting and blocking spam.</li>
             </ul>
             <p className="mt-3">
-              Nothing here is ever sold, rented, or shared with advertisers, and there&rsquo;s no cross-site ad
-              tracking or retargeting on this site.
+              Nothing you type into the site is ever sold, rented, or shared with advertisers. The one ad tool
+              here is the Meta Pixel, and it only loads if you click &ldquo;Accept&rdquo; on the cookie banner.
+              It tells Meta which pages of asheraw.com you visited, so I can show my own ads to past visitors on
+              Facebook and Instagram, and see whether those ads bring people here. I don&rsquo;t send Meta your
+              name, email, or anything you type into a form.
             </p>
           </section>
 
@@ -216,9 +220,10 @@ export default function PrivacyPage() {
             <p className="mt-3">
               This site uses a small note saved in your browser to remember whether you accepted or declined
               analytics &mdash; that choice is respected until you clear your browser data or change your mind. If
-              you accept, Google Analytics and Microsoft Clarity each set their own standard cookies to do their
-              job. If you decline (or never answer), neither loads and no analytics cookies are set at all. No
-              cookies are used for advertising.
+              you accept, Google Analytics, Microsoft Clarity and the Meta Pixel each set their own standard
+              cookies to do their job. The Meta Pixel&rsquo;s cookies are used for advertising, as described above.
+              If you decline (or never answer), none of them load and no analytics or advertising cookies are
+              set at all.
             </p>
           </section>
 
@@ -258,6 +263,16 @@ export default function PrivacyPage() {
                 <strong className="text-ivory">Microsoft Clarity</strong>{" "}
                 &mdash; heatmaps and session recordings,
                 also only loads if you accept the cookie banner. See &ldquo;Cookies&rdquo; above.
+              </li>
+              <li>
+                <strong className="text-ivory">Meta Pixel</strong>{" "}
+                &mdash; lets me show my ads on Facebook and Instagram to people who have visited this site, and
+                count which pages those ads bring people to. Only loads if you accept the cookie banner. Meta&rsquo;s
+                own use of this data is covered by{" "}
+                <a href="https://www.facebook.com/privacy/policy/" className="underline" target="_blank" rel="noopener noreferrer">
+                  Meta&rsquo;s privacy policy
+                </a>
+                .
               </li>
             </ul>
           </section>

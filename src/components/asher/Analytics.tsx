@@ -2,15 +2,54 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import { usePathname } from "next/navigation";
 import { CONSENT_EVENT, getConsent } from "@/lib/consent";
 
 const GTM_ID = "GTM-PVCX5DQ";
 // Microsoft Clarity (heatmaps + session recordings) -- clarity.microsoft.com
 // -> Settings -> Setup -> Install tracking code. Project ID for asheraw.com.
 const CLARITY_PROJECT_ID = "xw9besolc9";
+// Meta Pixel "AsherAw.com" (Events Manager), created 2026-11-21 for retargeting
+// ads. Not the old "Sig Strat Pixel" -- that one belongs to significancestrategy.com.
+const META_PIXEL_ID = "975936355230100";
+// Sales letter: also fires ViewContent so ads can retarget people who read it.
+const SALES_PAGES = ["/contenttoclients"];
+
+type Fbq = (...args: unknown[]) => void;
 
 export function Analytics() {
   const [allowed, setAllowed] = useState(false);
+  const pathname = usePathname();
+
+  // Meta Pixel lives entirely in this effect (no <Script>), so every page --
+  // first load and each client-side route change -- fires exactly once, from
+  // one place. Same consent gate as GTM/Clarity: nothing runs until "granted".
+  // trackSingle keeps these events on this pixel only (GTM loads an older one).
+  useEffect(() => {
+    if (!allowed) return;
+    const w = window as unknown as { fbq?: Fbq };
+    if (!w.fbq) {
+      // Standard Meta base code, unrolled: queueing stub + async fbevents.js.
+      /* eslint-disable */
+      (function (f: any, b: Document, e: string, v: string) {
+        if (f.fbq) return;
+        const n: any = (f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        });
+        if (!f._fbq) f._fbq = n;
+        n.push = n; n.loaded = true; n.version = "2.0"; n.queue = [];
+        const t = b.createElement(e) as HTMLScriptElement;
+        t.async = true; t.src = v;
+        const s = b.getElementsByTagName(e)[0];
+        s.parentNode!.insertBefore(t, s);
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+      /* eslint-enable */
+      w.fbq!("init", META_PIXEL_ID);
+    }
+    const fbq = w.fbq!;
+    fbq("trackSingle", META_PIXEL_ID, "PageView");
+    if (SALES_PAGES.includes(pathname)) fbq("trackSingle", META_PIXEL_ID, "ViewContent", { content_name: pathname });
+  }, [allowed, pathname]);
 
   useEffect(() => {
     setAllowed(getConsent() === "granted");
