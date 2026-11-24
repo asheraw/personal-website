@@ -77,9 +77,29 @@ export function LinkPageItemsInput(props: ArrayOfObjectsInputProps) {
     patchItems(items.map((i) => (i._key === key ? patchFn(i) : i)))
   }
 
-  function addItem() {
+  // New cards go first (top-left on the live grid, which renders in array order), pre-filled with
+  // the newest published post that has no card yet. If every post already has one, or the lookup
+  // fails, the card is added empty to pick by hand.
+  async function addItem() {
     const key = randomKey()
-    patchItems([...items, {_key: key, _type: 'linkItem', linkType: 'post'}])
+    const used = items.filter((i) => i.linkType === 'post' && i.post?._ref).map((i) => i.post!._ref)
+    let latest: {_id: string; title: string} | null = null
+    try {
+      latest = await client.fetch<{_id: string; title: string} | null>(
+        `*[_type == "post" && !(_id in path("drafts.**")) && !defined(trashedAt) && defined(slug.current) && publishedAt <= now() && !(_id in $used)] | order(publishedAt desc)[0]{_id, title}`,
+        {used}
+      )
+    } catch {
+      // fall through to an empty card
+    }
+    const item: LinkItem = {
+      _key: key,
+      _type: 'linkItem',
+      linkType: 'post',
+      ...(latest ? {post: {_type: 'reference' as const, _ref: latest._id}} : {}),
+    }
+    if (latest) setPostTitles((prev) => ({...prev, [latest!._id]: latest!.title}))
+    patchItems([item, ...items])
     setEditingKey(key)
   }
 

@@ -36,7 +36,7 @@ export const linkPageType = defineType({
       name: 'items',
       title: 'Cards',
       type: 'array',
-      description: 'Shown top to bottom exactly in this order -- drag to reorder. Click a card to edit it.',
+      description: 'Shown top-left first, in this order -- drag to reorder. New cards are added at the top-left and start on your newest post that has no card yet. Click a card to edit it.',
       // A real 3-column preview grid matching the live /link page almost
       // exactly (same aspect-[3/4] tiles, same title overlay), not
       // Sanity's built-in `layout: 'grid'` option -- that auto-fits tiles
