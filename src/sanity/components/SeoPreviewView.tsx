@@ -1,12 +1,15 @@
-import {useMemo} from 'react'
-import {useEditState} from 'sanity'
-import {Badge, Box, Card, Flex, Heading, Stack, Text} from '@sanity/ui'
+import {useMemo, useState} from 'react'
+import {useDocumentOperation, useEditState} from 'sanity'
+import {Badge, Box, Button, Card, Flex, Heading, Stack, Text} from '@sanity/ui'
 import {urlFor} from '../lib/image'
+import {activeSocialCrop, socialImageBuilder, SHARE_HEIGHT, SHARE_WIDTH, type SocialCrop} from '../lib/socialImage'
+import {ImageCropDialog} from './LinkImageTools'
 import {getChecklistIssues, type PostDraft} from '../actions/prepareForPublish'
 
 type PostForPreview = PostDraft & {
   slug?: {current?: string}
   socialImage?: unknown
+  socialCrop?: SocialCrop
   useBrandedSocialCard?: boolean
   noIndex?: boolean
 }
@@ -45,6 +48,12 @@ export function SeoPreviewView(props: {documentId: string}) {
   const socialImage = doc?.socialImage ?? doc?.mainImage
   const brandedCardUrl = doc?.useBrandedSocialCard && slug ? `/api/og/${slug}` : null
   const issues = useMemo(() => getChecklistIssues(doc ?? null), [doc])
+  const {patch} = useDocumentOperation(publishedId, 'post')
+  const [cropOpen, setCropOpen] = useState(false)
+  const shareSource = socialImage as {asset?: {_ref?: string}} | undefined
+  const shareRef = shareSource?.asset?._ref
+  const savedCrop = activeSocialCrop(shareSource, doc?.socialCrop)
+  const shareUrl = shareSource?.asset ? socialImageBuilder(shareSource, doc?.socialCrop, 600).url() : null
 
   if (!ready) {
     return (
@@ -126,7 +135,7 @@ export function SeoPreviewView(props: {documentId: string}) {
               />
             ) : socialImage ? (
               <img
-                src={urlFor(socialImage).width(600).height(315).fit('crop').crop('focalpoint').url()}
+                src={shareUrl ?? ''}
                 alt=""
                 style={{width: '100%', display: 'block', aspectRatio: '1.91 / 1', objectFit: 'cover'}}
               />
@@ -156,6 +165,61 @@ export function SeoPreviewView(props: {documentId: string}) {
           <Text size={0} muted>
             This is the crop used for OG/X/LinkedIn/WhatsApp previews (1.91:1) — the one that actually ships.
           </Text>
+          {shareRef && !brandedCardUrl && (
+            <Stack space={3}>
+              <Flex gap={2} align="center" wrap="wrap">
+                <Button text="Adjust share crop" tone="primary" fontSize={1} onClick={() => setCropOpen(true)} />
+                {savedCrop && (
+                  <Button
+                    text="Back to automatic"
+                    mode="ghost"
+                    fontSize={1}
+                    onClick={() => patch.execute([{unset: ['socialCrop']}])}
+                  />
+                )}
+                <Text size={0} muted>
+                  {savedCrop ? 'Using your saved crop.' : 'Automatic: centred on the image’s focus point.'}
+                </Text>
+              </Flex>
+              <Text size={0} muted>
+                Same picture, as other apps cut it down:
+              </Text>
+              <Flex gap={3} wrap="wrap" align="flex-start">
+                <Stack space={2} style={{width: 190}}>
+                  <Card radius={2} border style={{overflow: 'hidden'}}>
+                    <img src={shareUrl ?? ''} alt="" style={{width: '100%', display: 'block', aspectRatio: '2 / 1', objectFit: 'cover'}} />
+                  </Card>
+                  <Text size={0} muted style={{textAlign: 'center'}}>
+                    X large card (2:1)
+                  </Text>
+                </Stack>
+                <Stack space={2} style={{width: 96}}>
+                  <Card radius={2} border style={{overflow: 'hidden'}}>
+                    <img src={shareUrl ?? ''} alt="" style={{width: '100%', display: 'block', aspectRatio: '1 / 1', objectFit: 'cover'}} />
+                  </Card>
+                  <Text size={0} muted style={{textAlign: 'center'}}>
+                    Square thumbnail (WhatsApp, Telegram, iMessage)
+                  </Text>
+                </Stack>
+              </Flex>
+            </Stack>
+          )}
+          {cropOpen && shareRef && (
+            <ImageCropDialog
+              assetRef={shareRef}
+              crop={savedCrop ?? undefined}
+              aspect={SHARE_WIDTH / SHARE_HEIGHT}
+              viewW={400}
+              title="Share image crop"
+              help="Drag the picture to move it, and use the − / + buttons or the slider to zoom. The frame is the exact shape of the share picture on Facebook, LinkedIn and WhatsApp (X trims a sliver off the top and bottom). Keep the subject inside the dashed square so apps that show a square thumbnail don't cut it."
+              guides={[{label: 'Square thumbnails', aspect: 1}]}
+              onClose={() => setCropOpen(false)}
+              onSave={(c) => {
+                patch.execute([{set: {socialCrop: {assetRef: shareRef, left: c.left, top: c.top, right: c.right, bottom: c.bottom}}}])
+                setCropOpen(false)
+              }}
+            />
+          )}
         </Stack>
 
         <Stack space={3}>

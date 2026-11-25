@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { urlFor } from "@/sanity/lib/image";
+import { socialImageBuilder, type SocialCrop } from "@/sanity/lib/socialImage";
 import { notFound } from "next/navigation";
 import { draftMode, headers } from "next/headers";
 import { isMobileUserAgent } from "@/lib/device";
@@ -43,6 +44,7 @@ type Post = {
   mainImageAlt?: string;
   seoTitle?: string;
   socialImage?: { asset?: { _ref: string } };
+  socialCrop?: SocialCrop;
   useBrandedSocialCard?: boolean;
   noIndex?: boolean;
   commentsLocked?: boolean;
@@ -116,7 +118,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const image = post.useBrandedSocialCard
     ? `${SITE_URL}/api/og/${post.slug}`
     : imageSource
-      ? urlFor(imageSource).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()
+      ? socialImageBuilder(imageSource, post.socialCrop).format("jpg").quality(75).url()
       : undefined;
   const url = `${SITE_URL}/blog/${post.slug}`;
 
@@ -185,7 +187,7 @@ export default async function PostPage({ params }: PageProps) {
     image: post.useBrandedSocialCard
       ? `${SITE_URL}/api/og/${post.slug}`
       : imageSource
-        ? urlFor(imageSource).width(1200).height(630).fit("crop").crop("focalpoint").format("jpg").quality(75).url()
+        ? socialImageBuilder(imageSource, post.socialCrop).format("jpg").quality(75).url()
         : undefined,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };

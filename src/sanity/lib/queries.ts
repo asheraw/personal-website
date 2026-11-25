@@ -182,6 +182,7 @@ export const POST_BY_SLUG_QUERY = `
     "mainImageAlt": coalesce(mainImage.alt, *[_type == "imageAssetAlt" && assetId == ^.mainImage.asset._ref][0].altText),
     seoTitle,
     socialImage,
+    socialCrop,
     useBrandedSocialCard,
     noIndex,
     commentsLocked,

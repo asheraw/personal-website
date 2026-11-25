@@ -154,6 +154,23 @@ export const postType = defineType({
         hotspot: true,
       },
     }),
+    // Share-image crop (1.91:1), drawn on the SEO Preview tab ("Adjust share crop") rather than in
+    // this form, so it's hidden here. assetRef ties it to the image it was drawn on; see
+    // src/sanity/lib/socialImage.ts. Blank = automatic crop around the image's focus point.
+    defineField({
+      name: 'socialCrop',
+      title: 'Share image crop',
+      type: 'object',
+      fieldset: 'seoSharing',
+      hidden: true,
+      fields: [
+        defineField({name: 'assetRef', type: 'string'}),
+        defineField({name: 'left', type: 'number'}),
+        defineField({name: 'top', type: 'number'}),
+        defineField({name: 'right', type: 'number'}),
+        defineField({name: 'bottom', type: 'number'}),
+      ],
+    }),
     defineField({
       name: 'useBrandedSocialCard',
       title: 'Use branded social card instead of the photo',

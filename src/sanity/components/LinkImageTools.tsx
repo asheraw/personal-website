@@ -115,22 +115,33 @@ function sizeFromRef(ref: string): {w: number; h: number} | null {
   return m ? {w: Number(m[1]), h: Number(m[2])} : null
 }
 
-const VIEW_W = 300
-const VIEW_H = 400 // 3:4, same shape as the tiles on the live /link page
-
-// Pan + zoom inside a 3:4 frame; saves the visible area as the image's crop so
-// the live page and the Studio grid both show exactly what the frame shows.
+// Pan + zoom inside a fixed-shape frame; saves the visible area as the image's crop so
+// the live page and the Studio grid both show exactly what the frame shows. Default frame is
+// 3:4, the shape of the tiles on the live /link page; the SEO Preview tab reuses this with a
+// 1.91:1 frame for the social share image (and dashed guides for the shapes it gets cut down to).
 export function ImageCropDialog({
   assetRef,
   crop,
   onSave,
   onClose,
+  aspect = 3 / 4,
+  viewW = 300,
+  title = 'Crop image',
+  help = 'Drag the picture to move it, and use the − / + buttons or the slider to zoom. The frame is the exact shape of a card on the Link page.',
+  guides,
 }: {
   assetRef: string
   crop?: Partial<ImageCrop>
   onSave: (crop: ImageCrop) => void
   onClose: () => void
+  aspect?: number
+  viewW?: number
+  title?: string
+  help?: string
+  guides?: {label: string; aspect: number}[]
 }) {
+  const VIEW_W = viewW
+  const VIEW_H = Math.round(viewW / aspect)
   const size = sizeFromRef(assetRef)
   const w = size?.w ?? 1
   const h = size?.h ?? 1
@@ -181,7 +192,7 @@ export function ImageCropDialog({
 
   if (!size) {
     return (
-      <Dialog id="link-image-crop" header="Crop image" onClose={onClose} width={1}>
+      <Dialog id="link-image-crop" header={title} onClose={onClose} width={1}>
         <Box padding={4}>
           <Text size={1}>This image's size couldn't be read, so it can't be cropped here.</Text>
         </Box>
@@ -190,11 +201,11 @@ export function ImageCropDialog({
   }
 
   return (
-    <Dialog id="link-image-crop" header="Crop image" onClose={onClose} width={1}>
+    <Dialog id="link-image-crop" header={title} onClose={onClose} width={1}>
       <Box padding={4}>
         <Stack space={4}>
           <Text size={1} muted>
-            Drag the picture to move it, and use the − / + buttons or the slider to zoom. The frame is the exact shape of a card on the Link page.
+            {help}
           </Text>
           <Flex justify="center">
             <div
@@ -237,6 +248,27 @@ export function ImageCropDialog({
                   pointerEvents: 'none',
                 }}
               />
+              {guides?.map((g) => {
+                const gw = g.aspect >= aspect ? VIEW_W : VIEW_H * g.aspect
+                const gh = g.aspect >= aspect ? VIEW_W / g.aspect : VIEW_H
+                return (
+                  <div
+                    key={g.label}
+                    style={{
+                      position: 'absolute',
+                      left: (VIEW_W - gw) / 2,
+                      top: (VIEW_H - gh) / 2,
+                      width: gw,
+                      height: gh,
+                      border: '2px dashed rgba(255,255,255,0.9)',
+                      boxShadow: '0 0 0 1px rgba(0,0,0,0.5)',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <span style={{position: 'absolute', left: 4, top: 2, fontSize: 10, color: '#fff', textShadow: '0 0 3px #000, 0 0 3px #000'}}>{g.label}</span>
+                  </div>
+                )
+              })}
             </div>
           </Flex>
           <Stack space={2}>
